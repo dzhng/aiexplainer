@@ -52,7 +52,7 @@ the checklist below, and any new blockers.
 
 ### Global checklist
 
-- [ ] M1 — Chapter 0 through every layer (D14): slices ✅[01](slices/01-scaffold-harness.md) · ✅[02](slices/02-manifest-and-counts-model.md) · ✅[03](slices/03-chapter-contract.md) · ✅[04](slices/04-hud-shell.md) · ✅[05](slices/05-renderer-foundation.md) · ✅[06](slices/06-gltf-pipeline.md) · ✅[07](slices/07-room-lighting.md) · ✅[08](slices/08-bloom.md) · ✅[09](slices/09-labels-occlusion.md) · [10](slices/10-ch0-compose-framing.md) · [11](slices/11-ch0-loop-pacing.md) · [12](slices/12-fallback-share-deploy.md)
+- [ ] M1 — Chapter 0 through every layer (D14): slices ✅[01](slices/01-scaffold-harness.md) · ✅[02](slices/02-manifest-and-counts-model.md) · ✅[03](slices/03-chapter-contract.md) · ✅[04](slices/04-hud-shell.md) · ✅[05](slices/05-renderer-foundation.md) · ✅[06](slices/06-gltf-pipeline.md) · ✅[07](slices/07-room-lighting.md) · ✅[08](slices/08-bloom.md) · ✅[09](slices/09-labels-occlusion.md) · ✅[10](slices/10-ch0-compose-framing.md) · [11](slices/11-ch0-loop-pacing.md) · [12](slices/12-fallback-share-deploy.md)
 - [ ] M2 — Vocabulary lock: [13](slices/13-vocabulary-lock.md)
 - [ ] M3 — Model lab: ✅[14](slices/14-tokenizer.md) · ✅[15](slices/15-transformer-core.md) · ✅[16](slices/16-model-lab-early.md) · [17](slices/17-model-lab-late.md) · ✅[18](slices/18-production-arithmetic.md)
 - [ ] M4 — Chapters: [19](slices/19-ch-tokenizer.md) · [20](slices/20-ch-embeddings.md) · [21](slices/21-ch-sampling.md) · [22](slices/22-ch-attention-width.md) · [23](slices/23-ch-attention-sealed.md) · [24](slices/24-ch-attention-flow.md) · [25](slices/25-ch-positions.md) · [26](slices/26-ch-mlp.md) · [27](slices/27-ch-residual.md) · [28](slices/28-ch-stack.md) · [29](slices/29-ch-generation.md) · [30](slices/30-ch-kv-cache.md) · [31](slices/31-ch-batching.md) · [32](slices/32-ch-quantization.md) · [33](slices/33-ch-speculative.md) · [34](slices/34-ch-experts.md) · [35](slices/35-ch-finished.md)
@@ -193,7 +193,6 @@ exactly one owner. A second copy is a bug.
 
 **Short-lived seams:**
 
-- **Slice 10 → removed in slice 15.** Chapter 0 calls `nextWords` synchronously on the main thread. Slice 15 moves every inference call into the `session.ts` worker and deletes the synchronous path.
 - **Slice 05 → removed in slice 05.** The `/lab/typegpu-smoke` reproduction of an official example is deleted once `frame.ts` passes.
 
 If a slice needs any other seam, name it here together with the slice that removes it.
