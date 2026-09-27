@@ -72,6 +72,19 @@
     }
   },
   "tonemap": {
-    "exposure": 0.7
+    "exposure": 0.7,
+    "saturation": 1.25
+  },
+  "bloom": {
+    "threshold": 1.6,
+    "knee": 0.6,
+    "intensity": 0.45,
+    "radius": 1.0,
+    "emissive": {
+      "flow": 3,
+      "focus": 6,
+      "active": 4,
+      "ink": 3
+    }
   }
 }

@@ -4,7 +4,7 @@
  * room on `setLook`, instances on view change, camera and dynamics every frame. Drawing
  * itself is `encodeFrame`.
  */
-import { d, type TgpuBuffer, type TgpuRoot } from "typegpu";
+import { d, type TgpuBuffer, type TgpuRoot, type TgpuSampler, type TgpuTextureView } from "typegpu";
 import type { AnyData } from "typegpu/data";
 import { cameraMatrices, createCameraMatrices } from "./camera.ts";
 import { initGpu } from "./device.ts";
@@ -15,7 +15,14 @@ import {
   type FrameScene,
   type FrameTargets,
 } from "./frame.ts";
-import type { FrameInput, FrameReceipt, LookConfig, Renderer, ViewMode } from "./frame-input.ts";
+import {
+  Layer,
+  type FrameInput,
+  type FrameReceipt,
+  type LookConfig,
+  type Renderer,
+  type ViewMode,
+} from "./frame-input.ts";
 import {
   DYNAMICS_BYTES_PER_SLOT,
   FRAME_UNIFORM_BYTES,
@@ -34,12 +41,19 @@ import {
   VERTEX_BYTES,
 } from "./pack.ts";
 import { createBackgroundPipeline } from "./passes/background.ts";
+import {
+  bloomMipCount,
+  bloomSourceLayout,
+  createBloomPipelines,
+  describeBloomChain,
+} from "./passes/bloom.ts";
 import { createGeometryPipelines } from "./passes/geometry.ts";
 import { createRoomPipeline, roomGeometry, roomLayout } from "./passes/room.ts";
 import { createTonemapPipeline, postLayout } from "./passes/tonemap.ts";
 import { DEPTH_FORMAT, frameLayout, HDR_FORMAT, SAMPLE_COUNT, sceneLayout } from "./pipeline.ts";
 import { Registry, type Scope } from "./registry.ts";
 import { compileScene, packInstances, type CompiledScene } from "./scene.ts";
+import { FrameTimer } from "./timing.ts";
 
 interface SceneResources extends FrameScene {
   revision: number;
@@ -76,7 +90,14 @@ function uploadGeometry(
   return { vertexBuffer, indexBuffer };
 }
 
-function buildTargets(root: TgpuRoot, registry: Registry, width: number, height: number) {
+function buildTargets(
+  root: TgpuRoot,
+  registry: Registry,
+  linear: TgpuSampler,
+  width: number,
+  height: number,
+  timer?: FrameTimer,
+) {
   const scope = registry.scope();
   const size = [width, height] as const;
   const depth = scope
@@ -86,6 +107,22 @@ function buildTargets(root: TgpuRoot, registry: Registry, width: number, height:
     .texture({ size, format: HDR_FORMAT, sampleCount: SAMPLE_COUNT })
     .$usage("render");
   const hdr = scope.texture({ size, format: HDR_FORMAT }).$usage("render", "sampled");
+
+  // The bloom chain starts at half resolution.
+  const bloomSize = [Math.max(1, width >> 1), Math.max(1, height >> 1)] as const;
+  const mipLevelCount = bloomMipCount(bloomSize[0], bloomSize[1]);
+  const bloom = scope
+    .texture({ size: bloomSize, format: HDR_FORMAT, mipLevelCount })
+    .$usage("render", "sampled");
+  const level = (baseMipLevel: number) =>
+    bloom.createView(d.texture2d(d.f32), { baseMipLevel, mipLevelCount: 1 });
+  const source = (view: TgpuTextureView<d.WgslTexture2d<d.F32>>) =>
+    root.unwrap(root.createBindGroup(bloomSourceLayout, { source: view, linear }));
+  const mips = Array.from({ length: mipLevelCount }, (_, i) => ({
+    render: root.unwrap(bloom).createView({ baseMipLevel: i, mipLevelCount: 1 }),
+    source: source(level(i)),
+  }));
+
   const targets: FrameTargets = {
     width,
     height,
@@ -93,8 +130,10 @@ function buildTargets(root: TgpuRoot, registry: Registry, width: number, height:
       root.unwrap(depth).createView(),
       root.unwrap(colourMs).createView(),
       root.unwrap(hdr).createView(),
+      timer,
     ),
-    postBindGroup: root.unwrap(root.createBindGroup(postLayout, { hdr })),
+    postBindGroup: root.unwrap(root.createBindGroup(postLayout, { hdr, bloom: level(0), linear })),
+    bloom: describeBloomChain(source(hdr.createView(d.texture2d(d.f32))), mips),
   };
   return { scope, targets };
 }
@@ -175,24 +214,39 @@ function buildScene(root: TgpuRoot, registry: Registry, input: FrameInput, look:
   return { scope, value };
 }
 
+export interface RendererOptions {
+  /** Measure whole-frame GPU time into `FrameReceipt.gpuMs` (needs `timestamp-query`). */
+  timing?: boolean;
+}
+
 export async function createRenderer(
   canvas: HTMLCanvasElement,
   initialLook: LookConfig,
+  options: RendererOptions = {},
 ): Promise<Renderer | { unsupported: string }> {
   const gpu = await initGpu();
   if ("unsupported" in gpu) return gpu;
   const { root, device, caps } = gpu;
   const context = root.configureContext({ canvas, format: caps.canvasFormat, alphaMode: "opaque" });
-  const [geometry, background, room, tonemap] = await Promise.all([
+  const [geometry, background, room, bloom, tonemap] = await Promise.all([
     createGeometryPipelines(root),
     createBackgroundPipeline(root),
     createRoomPipeline(root),
+    createBloomPipelines(root),
     createTonemapPipeline(root, caps.canvasFormat),
   ]);
-  const pipelines = { geometry, background, room, tonemap };
+  const pipelines = { geometry, background, room, bloom, tonemap };
+  const linear = root.createSampler({
+    magFilter: "linear",
+    minFilter: "linear",
+    addressModeU: "clamp-to-edge",
+    addressModeV: "clamp-to-edge",
+  });
 
   const registry = new Registry(root);
-  const frameUniform = registry.scope().buffer(FrameUniform).$usage("uniform");
+  const fixed = registry.scope();
+  const frameUniform = fixed.buffer(FrameUniform).$usage("uniform");
+  const timer = options.timing && caps.timestampQuery ? new FrameTimer(device, fixed) : undefined;
   const frameData = new Float32Array(FRAME_UNIFORM_BYTES / 4);
   const gpuFrameUniform = root.unwrap(frameUniform);
 
@@ -200,7 +254,12 @@ export async function createRenderer(
   const lookSlot = registry.slot<LookResources>();
   const scene = registry.slot<SceneResources>();
   const camera = createCameraMatrices();
-  const receipt: FrameReceipt = { drawCalls: 0, triangles: 0, registry: { count: 0, bytes: 0 } };
+  const receipt: FrameReceipt = {
+    drawCalls: 0,
+    triangles: 0,
+    registry: { count: 0, bytes: 0 },
+    gpuMs: null,
+  };
 
   const setLook = (look: LookConfig) => {
     if (registry.disposed) return;
@@ -217,7 +276,7 @@ export async function createRenderer(
     if (current && current.width === width && current.height === height) return;
     canvas.width = width;
     canvas.height = height;
-    const built = buildTargets(root, registry, width, height);
+    const built = buildTargets(root, registry, linear, width, height, timer);
     targets.swap(built.scope, built.targets);
   };
 
@@ -253,10 +312,15 @@ export async function createRenderer(
 
       const t = targets.value!;
       cameraMatrices(input.camera, input.viewport, camera);
-      packFrame(frameData, camera, input.timeSec, t.width, t.height);
+      const layers = input.debug?.layers ?? ~0;
+      const bloomOn = input.debug?.bloom !== false;
+      const emissive = layers & Layer.emissive ? 1 : 0;
+      packFrame(frameData, camera, input.timeSec, t.width, t.height, emissive, bloomOn ? 1 : 0);
       device.queue.writeBuffer(gpuFrameUniform, 0, frameData);
 
-      encodeFrame(device, context.getCurrentTexture().createView(), pipelines, t, s, look, receipt);
+      const swapchain = context.getCurrentTexture().createView();
+      encodeFrame(device, swapchain, pipelines, t, s, look, bloomOn, receipt, timer);
+      receipt.gpuMs = timer?.lastMs ?? null;
       registry.stats(receipt.registry);
       return receipt;
     },

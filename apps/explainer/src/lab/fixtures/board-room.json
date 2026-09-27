@@ -11,10 +11,11 @@
   },
   "materials": {
     "bar": {
-      "color": "flow",
+      "color": "metalDeep",
       "metallic": 0.1,
       "roughness": 0.45,
-      "opacity": 1
+      "opacity": 1,
+      "emissive": "flow"
     },
     "card": {
       "color": "ink",

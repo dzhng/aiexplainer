@@ -4,18 +4,22 @@
  *   2. colour pass into 4× MSAA rgba16float — backdrop, room (depth read-only), opaque
  *      (depth `equal`), then translucent (depth read-only); the pass end resolves into
  *      the HDR target;
- *   3. tonemap from the resolved HDR target to the swapchain.
+ *   3. bloom: prefilter, downsample and upsample through the mip chain (skippable);
+ *   4. tonemap from the resolved HDR target plus bloom to the swapchain.
  * Nothing here allocates except the encoder objects WebGPU itself hands out.
  */
 import type { FrameReceipt } from "./frame-input.ts";
+import { encodeBloom, type BloomChain, type BloomPipelines } from "./passes/bloom.ts";
 import type { GeometryPipelines } from "./passes/geometry.ts";
 import { DEPTH_CLEAR } from "./pipeline.ts";
+import type { FrameTimer } from "./timing.ts";
 import type { Draw } from "./scene.ts";
 
 export interface FramePipelines {
   geometry: GeometryPipelines;
   background: GPURenderPipeline;
   room: GPURenderPipeline;
+  bloom: BloomPipelines;
   tonemap: GPURenderPipeline;
 }
 
@@ -27,6 +31,7 @@ export interface FrameTargets {
   colour: GPURenderPassDescriptor;
   tonemap: GPURenderPassDescriptor & { colorAttachments: [GPURenderPassColorAttachment] };
   postBindGroup: GPUBindGroup;
+  bloom: BloomChain;
 }
 
 export interface FrameScene {
@@ -74,7 +79,9 @@ export function encodeFrame(
   targets: FrameTargets,
   scene: FrameScene,
   look: FrameLook,
+  bloom: boolean,
   receipt: FrameReceipt,
+  timer?: FrameTimer,
 ): void {
   receipt.drawCalls = 0;
   receipt.triangles = 0;
@@ -106,6 +113,12 @@ export function encodeFrame(
   drawGeometry(colour, scene.draws, true, receipt);
   colour.end();
 
+  if (bloom) {
+    const draws = encodeBloom(encoder, pipelines.bloom, targets.bloom, look.frame);
+    receipt.drawCalls += draws;
+    receipt.triangles += draws;
+  }
+
   targets.tonemap.colorAttachments[0].view = swapchain;
   const tonemap = encoder.beginRenderPass(targets.tonemap);
   tonemap.setBindGroup(0, look.frame);
@@ -114,7 +127,9 @@ export function encodeFrame(
   fullscreen(tonemap, receipt);
   tonemap.end();
 
+  timer?.encode(encoder);
   device.queue.submit([encoder.finish()]);
+  timer?.collect();
 }
 
 /** Pass descriptors for one target set; built once per resize, mutated per frame. */
@@ -122,10 +137,12 @@ export function describePasses(
   depth: GPUTextureView,
   colourMs: GPUTextureView,
   hdr: GPUTextureView,
+  timer?: FrameTimer,
 ): Pick<FrameTargets, "prepass" | "colour" | "tonemap"> {
   return {
     prepass: {
       label: "prepass",
+      timestampWrites: timer?.begin,
       colorAttachments: [],
       depthStencilAttachment: {
         view: depth,
@@ -149,6 +166,7 @@ export function describePasses(
     },
     tonemap: {
       label: "tonemap",
+      timestampWrites: timer?.end,
       colorAttachments: [
         // The swapchain view is filled in every frame.
         { view: hdr, clearValue: [0, 0, 0, 1], loadOp: "clear", storeOp: "store" },

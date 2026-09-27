@@ -8,8 +8,9 @@
  *   bun scripts/verify.ts --route '/lab/renderer?fixture=boxes' --t 0 --out boxes --crop 'part:*'
  *   bun scripts/verify.ts --route /lab/kit/board --t 0,1,2,3 --out board --crop part:board
  *
- * `--crop` takes comma-separated probe crop names (a trailing `*` matches a prefix) and
- * screenshots their union, padded, instead of the whole viewport.
+ * `--crop` takes comma-separated probe crop names (a trailing `*` matches a prefix, and
+ * `rect:x,y,w,h` is a literal rectangle) and screenshots their union, padded, instead of
+ * the whole viewport. `--size N` instead shoots an N×N square centred on that union.
  */
 import { mkdir } from "node:fs/promises";
 import path from "node:path";
@@ -32,6 +33,7 @@ const { values: args } = parseArgs({
     height: { type: "string", default: "900" },
     crop: { type: "string" },
     pad: { type: "string", default: "16" },
+    size: { type: "string" },
   },
 });
 
@@ -58,6 +60,11 @@ interface Rect {
 
 /** The padded union of the named crops, clamped to the viewport. */
 function unionCrop(crops: Record<string, Rect>, spec: string): Rect {
+  const literal = /^rect:(\d+),(\d+),(\d+),(\d+)$/.exec(spec);
+  if (literal) {
+    const [x, y, width, height] = literal.slice(1).map(Number) as [number, number, number, number];
+    return { x, y, width, height };
+  }
   const names = spec.split(",").flatMap((name) => {
     const matches = name.endsWith("*")
       ? Object.keys(crops).filter((key) => key.startsWith(name.slice(0, -1)))
@@ -68,8 +75,18 @@ function unionCrop(crops: Record<string, Rect>, spec: string): Rect {
       throw new Error(`crop "${name}" matched nothing; have ${Object.keys(crops).join(", ")}`);
     return matches;
   });
-  const pad = Number(args.pad);
   const rects = names.map((name) => crops[name]!);
+  if (args.size) {
+    const size = Number(args.size);
+    const cx =
+      (Math.min(...rects.map((r) => r.x)) + Math.max(...rects.map((r) => r.x + r.width))) / 2;
+    const cy =
+      (Math.min(...rects.map((r) => r.y)) + Math.max(...rects.map((r) => r.y + r.height))) / 2;
+    const x = Math.min(Math.max(0, Math.round(cx - size / 2)), Number(args.width) - size);
+    const y = Math.min(Math.max(0, Math.round(cy - size / 2)), Number(args.height) - size);
+    return { x, y, width: size, height: size };
+  }
+  const pad = Number(args.pad);
   const x0 = Math.max(0, Math.min(...rects.map((r) => r.x)) - pad);
   const y0 = Math.max(0, Math.min(...rects.map((r) => r.y)) - pad);
   const x1 = Math.min(Number(args.width), Math.max(...rects.map((r) => r.x + r.width)) + pad);

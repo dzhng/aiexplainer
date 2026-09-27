@@ -41,17 +41,20 @@ ${LIGHTING_WGSL}
 
 @fragment
 fn fs(in: VertexOut, @builtin(front_facing) frontFacing: bool) -> @location(0) vec4f {
-  let material = sceneLayout.$.materials[sceneLayout.$.instances[in.instance].material];
+  let instance = sceneLayout.$.instances[in.instance];
+  let material = sceneLayout.$.materials[instance.material];
   let v = normalize(frameLayout.$.frame.eye.xyz - in.worldPos);
+  // Emission is scaled per part slot by the frame's dynamics (and zeroed by the debug layer).
+  let emitted = material.emissive * sceneLayout.$.dynamics[instance.slot].x * frameLayout.$.frame.debug.x;
   let n = select(-1.0, 1.0, frontFacing) * normalize(in.normal);
   let shading = shadeSurface(Surface(material.baseColor, material.metallic, material.roughness), n, v);
   if (material.opacity >= 1.0) {
-    return vec4f(shading.diffuse + shading.specular, 1.0);
+    return vec4f(shading.diffuse + shading.specular + emitted, 1.0);
   }
   // Clear glass: no diffuse. It absorbs by its opacity, more toward grazing angles
   // (Fresnel), and reflects the lights on top (premultiplied, so reflections never fade).
   let edge = fresnelSchlick(vec3f(0.04), max(dot(n, v), 0.0)).x;
-  return vec4f(shading.specular, mix(material.opacity, 1.0, edge));
+  return vec4f(shading.specular + emitted, mix(material.opacity, 1.0, edge));
 }
 `;
 

@@ -16,9 +16,11 @@ export const FrameUniform = d
     eye: d.vec4f,
     /** Device pixels: width, height, 1/width, 1/height. */
     viewport: d.vec4f,
+    /** x: emission scale (0 when the emissive layer is off); y: bloom scale (0 when off). */
+    debug: d.vec4f,
   })
   .$name("FrameUniform");
-export const FRAME_UNIFORM_BYTES = 160;
+export const FRAME_UNIFORM_BYTES = 176;
 
 export const Vertex = d.struct({ position: d.vec3f, normal: d.vec3f }).$name("Vertex");
 export const VERTEX_BYTES = 32;
@@ -37,11 +39,12 @@ export const Material = d
   .struct({
     baseColor: d.vec3f,
     opacity: d.f32,
+    emissive: d.vec3f,
     metallic: d.f32,
     roughness: d.f32,
   })
   .$name("Material");
-export const MATERIAL_BYTES = 32;
+export const MATERIAL_BYTES = 48;
 
 /** Per part slot: intensity, width scale, flow phase, unused. */
 export const DYNAMICS_BYTES_PER_SLOT = 16;
@@ -64,9 +67,14 @@ export const LookUniform = d
     vignetteRadius: d.f32,
     lightSize: d.f32,
     reflection: d.f32,
+    bloomThreshold: d.f32,
+    bloomKnee: d.f32,
+    bloomIntensity: d.f32,
+    bloomRadius: d.f32,
+    saturation: d.f32,
   })
   .$name("LookUniform");
-export const LOOK_UNIFORM_BYTES = 176;
+export const LOOK_UNIFORM_BYTES = 208;
 
 export function packVec3(out: Float32Array, offset: number, v: Vec3): void {
   out[offset] = v[0];
@@ -110,6 +118,8 @@ export function packFrame(
   timeSec: number,
   pixelWidth: number,
   pixelHeight: number,
+  emissiveScale: number,
+  bloomScale: number,
 ): void {
   packMat4(out, 0, m.viewProj);
   packMat4(out, 16, m.invViewProj);
@@ -119,6 +129,10 @@ export function packFrame(
   out[37] = pixelHeight;
   out[38] = 1 / pixelWidth;
   out[39] = 1 / pixelHeight;
+  out[40] = emissiveScale;
+  out[41] = bloomScale;
+  out[42] = 0;
+  out[43] = 0;
 }
 
 /** Writes instance `index` into views over the same instance buffer. */
@@ -144,10 +158,12 @@ export function packMaterial(out: Float32Array, index: number, m: MaterialLook):
   const base = index * (MATERIAL_BYTES / 4);
   packVec3(out, base, m.baseColor);
   out[base + 3] = m.opacity;
-  out[base + 4] = m.metallic;
-  out[base + 5] = m.roughness;
-  out[base + 6] = 0;
-  out[base + 7] = 0;
+  packVec3(out, base + 4, m.emissive);
+  out[base + 7] = m.metallic;
+  out[base + 8] = m.roughness;
+  out[base + 9] = 0;
+  out[base + 10] = 0;
+  out[base + 11] = 0;
 }
 
 export function packLook(out: Float32Array, look: LookConfig): void {
@@ -170,4 +186,12 @@ export function packLook(out: Float32Array, look: LookConfig): void {
   out[41] = look.room.vignette.radius;
   out[42] = look.lights.size;
   out[43] = look.room.reflection;
+  out[44] = look.bloom.threshold;
+  out[45] = look.bloom.knee;
+  out[46] = look.bloom.intensity;
+  out[47] = look.bloom.radius;
+  out[48] = look.tonemap.saturation;
+  out[49] = 0;
+  out[50] = 0;
+  out[51] = 0;
 }

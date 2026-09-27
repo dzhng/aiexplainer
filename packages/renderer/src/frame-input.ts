@@ -85,6 +85,9 @@ export interface FrameDynamics {
   flowPhase: Float32Array;
 }
 
+/** Bits of `FrameInput.debug.layers`; a cleared bit hides that layer. */
+export const Layer = { emissive: 1 } as const;
+
 export interface FrameInput {
   timeSec: number;
   viewport: Viewport;
@@ -92,6 +95,7 @@ export interface FrameInput {
   view: { mode: ViewMode; t: number };
   scene: SceneDesc;
   dynamics: FrameDynamics;
+  /** `layers` defaults to every `Layer`; `bloom: false` skips the bloom passes. */
   debug?: { layers?: number; bloom?: boolean };
 }
 
@@ -104,10 +108,14 @@ export interface FrameReceipt {
   drawCalls: number;
   triangles: number;
   registry: RegistryStats;
+  /** Whole-frame GPU milliseconds of a recent frame, when timing is on; else null. */
+  gpuMs: number | null;
 }
 
 export interface MaterialLook {
   baseColor: LinearRgb;
+  /** Emitted radiance at dynamics intensity 1, linear (token colour × its bloom multiplier). */
+  emissive: LinearRgb;
   metallic: number;
   roughness: number;
   /** 1 is opaque; anything lower draws in the translucent pass. */
@@ -146,7 +154,17 @@ export interface LookConfig {
   ambient: LinearRgb;
   /** Presets bound by name; `floor` also shades the room floor. */
   materials: Record<string, MaterialLook> & { floor: MaterialLook };
-  tonemap: { exposure: number };
+  /** `saturation` is AgX's look saturation: 1 is the base look, higher keeps glows coloured. */
+  tonemap: { exposure: number; saturation: number };
+  bloom: {
+    /** Brightest-channel radiance where bloom starts, and the width of its soft knee. */
+    threshold: number;
+    knee: number;
+    /** How much of the blurred chain is added back. */
+    intensity: number;
+    /** Tent-filter spread per upsample, in source texels. */
+    radius: number;
+  };
 }
 
 export interface Renderer {

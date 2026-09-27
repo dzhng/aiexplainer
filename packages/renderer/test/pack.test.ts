@@ -53,7 +53,7 @@ test("packFrame fills exactly FRAME_UNIFORM_BYTES", () => {
     { width: 640, height: 480, dpr: 1 },
     createCameraMatrices(),
   );
-  const out = packed(FRAME_UNIFORM_BYTES, (o) => packFrame(o, m, 1.5, 640, 480));
+  const out = packed(FRAME_UNIFORM_BYTES, (o) => packFrame(o, m, 1.5, 640, 480, 1, 0));
   expectFillsExactly(out, FRAME_UNIFORM_BYTES);
   expect(out[35]).toBe(1.5);
   expect(out.subarray(36, 40)).toEqual(new Float32Array([640, 480, 1 / 640, 1 / 480]));

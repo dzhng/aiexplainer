@@ -1,5 +1,5 @@
 /**
- * Resolved HDR → swapchain: exposure, a corner vignette, then AgX (the Blender/Filament
+ * Resolved HDR plus bloom → swapchain: exposure, a corner vignette, then AgX (the Blender/Filament
  * operator, via three.js's polynomial fit) and the sRGB transfer curve, because the
  * swapchain format is not an sRGB format. Half a code value of ordered noise breaks up
  * banding in the dark gradients.
@@ -7,7 +7,13 @@
 import { d, tgpu, type TgpuRoot } from "typegpu";
 import { createPipeline, frameLayout } from "../pipeline.ts";
 
-export const postLayout = tgpu.bindGroupLayout({ hdr: { texture: d.texture2d(d.f32) } }).$idx(1);
+export const postLayout = tgpu
+  .bindGroupLayout({
+    hdr: { texture: d.texture2d(d.f32) },
+    bloom: { texture: d.texture2d(d.f32) },
+    linear: { sampler: "filtering" },
+  })
+  .$idx(1);
 
 const template = /* wgsl */ `
 @vertex
@@ -48,7 +54,10 @@ fn agxContrast(x: vec3f) -> vec3f {
 fn agx(linearSrgb: vec3f) -> vec3f {
   var c = AGX_INSET * (LINEAR_SRGB_TO_REC2020 * linearSrgb);
   c = clamp((log2(max(c, vec3f(1e-10))) - AGX_MIN_EV) / (AGX_MAX_EV - AGX_MIN_EV), vec3f(0.0), vec3f(1.0));
-  c = AGX_OUTSET * agxContrast(c);
+  c = agxContrast(c);
+  // AgX "look": saturation around luma, applied in the encoded space (1 = the base look).
+  let luma = dot(c, vec3f(0.2126, 0.7152, 0.0722));
+  c = AGX_OUTSET * (luma + frameLayout.$.look.saturation * (c - luma));
   c = pow(max(c, vec3f(0.0)), vec3f(2.2));
   return clamp(REC2020_TO_LINEAR_SRGB * c, vec3f(0.0), vec3f(1.0));
 }
@@ -68,9 +77,12 @@ fn ditherNoise(p: vec2f) -> f32 {
 fn fs(@builtin(position) position: vec4f) -> @location(0) vec4f {
   let look = frameLayout.$.look;
   let viewport = frameLayout.$.frame.viewport;
-  let hdr = textureLoad(postLayout.$.hdr, vec2i(position.xy), 0).rgb;
+  let uv = position.xy * viewport.zw;
+  let bloom = textureSampleLevel(postLayout.$.bloom, postLayout.$.linear, uv, 0.0).rgb;
+  let hdr = textureLoad(postLayout.$.hdr, vec2i(position.xy), 0).rgb
+    + bloom * look.bloomIntensity * frameLayout.$.frame.debug.y;
   // 0 at the centre, 1 at the corners.
-  let r = length(position.xy * viewport.zw * 2.0 - 1.0) * 0.70710678;
+  let r = length(uv * 2.0 - 1.0) * 0.70710678;
   let vignette = 1.0 - look.vignetteStrength * smoothstep(look.vignetteRadius, 1.0, r);
   let display = linearToSrgb(agx(hdr * look.exposure * vignette));
   return vec4f(display + (ditherNoise(position.xy) - 0.5) / 255.0, 1.0);

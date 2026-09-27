@@ -12,6 +12,8 @@ export type ColourToken = keyof LookJson["palette"];
 
 export interface MaterialToken {
   color: string;
+  /** A palette token that glows at its `bloom.emissive` multiplier (× the part's intensity). */
+  emissive?: string;
   metallic?: number;
   roughness?: number;
   opacity: number;
@@ -61,10 +63,21 @@ function material(name: string, m: MaterialToken, look: LookJson): MaterialLook 
     throw new Error(`look: ${name}.opacity ${m.opacity} is not in (0, 1]`);
   return {
     baseColor: linear(m.color, look),
+    emissive: m.emissive ? emissive(`${name}.emissive`, m.emissive, look) : [0, 0, 0],
     metallic: unit(`${name}.metallic`, m.metallic ?? 0),
     roughness: unit(`${name}.roughness`, m.roughness ?? 0.6),
     opacity: m.opacity,
   };
+}
+
+/** An emissive token's radiance: its linear colour × its multiplier in `bloom.emissive`. */
+export function emissive(name: string, token: string, look: LookJson = lookJson): LinearRgb {
+  const multiplier = (look.bloom.emissive as Record<string, number>)[token];
+  if (multiplier === undefined)
+    throw new Error(`look: ${name} "${token}" has no bloom.emissive multiplier`);
+  return linear(token, look).map(
+    (c) => c * positive(`bloom.emissive.${token}`, multiplier),
+  ) as LinearRgb;
 }
 
 function light(name: string, l: LightToken, look: LookJson): LightLook {
@@ -91,7 +104,7 @@ export function lookConfig(
   const materials: Record<string, MaterialLook> = {};
   for (const [name, m] of Object.entries({ ...look.materials, ...extraMaterials }))
     materials[name] = material(name, m, look);
-  const { room, lights, ambient, tonemap } = look;
+  const { room, lights, ambient, tonemap, bloom } = look;
   return {
     room: {
       wallTop: linear(room.wallTop, look),
@@ -112,6 +125,15 @@ export function lookConfig(
     },
     ambient: linear(ambient.color, look).map((c) => c * ambient.intensity) as LinearRgb,
     materials: { ...materials, floor: materials.floor! },
-    tonemap: { exposure: positive("tonemap.exposure", tonemap.exposure) },
+    tonemap: {
+      exposure: positive("tonemap.exposure", tonemap.exposure),
+      saturation: positive("tonemap.saturation", tonemap.saturation),
+    },
+    bloom: {
+      threshold: positive("bloom.threshold", bloom.threshold),
+      knee: positive("bloom.knee", bloom.knee),
+      intensity: unit("bloom.intensity", bloom.intensity),
+      radius: positive("bloom.radius", bloom.radius),
+    },
   };
 }

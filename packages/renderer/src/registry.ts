@@ -63,6 +63,13 @@ export class Scope {
     return texture;
   }
 
+  /** Tracks a raw WebGPU resource TypeGPU has no typed form for (query sets, map buffers). */
+  raw<T extends { destroy(): void }>(resource: T, bytes: number): T {
+    this.#assertLive();
+    this.#items.push({ destroy: () => resource.destroy(), bytes });
+    return resource;
+  }
+
   stats(into: RegistryStats): void {
     into.count += this.#items.length;
     for (const item of this.#items) into.bytes += item.bytes;

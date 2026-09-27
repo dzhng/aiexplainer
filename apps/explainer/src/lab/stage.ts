@@ -29,6 +29,8 @@ export interface StageOptions {
   probe: ProbeApi;
   /** Called once the first frames are on screen (or the stage failed). */
   onReady: () => void;
+  /** Debug layers and bloom, e.g. from `?emissive=0&bloom=0`. */
+  debug?: FrameInput["debug"];
   /** Adjusts the drawn camera from the orbit pose each frame (e.g. a turntable). */
   pose?: (pose: OrbitPose, timeSec: number) => void;
 }
@@ -47,7 +49,12 @@ export async function runStage(o: StageOptions): Promise<Stage | null> {
     return null;
   }
   const renderer = created;
-  const input: FrameInput = { ...o.input, timeSec: 0, viewport: { width: 1, height: 1, dpr: 1 } };
+  const input: FrameInput = {
+    ...o.input,
+    timeSec: 0,
+    viewport: { width: 1, height: 1, dpr: 1 },
+    debug: o.debug,
+  };
   const orbit = new OrbitController(input.camera);
   const pose: OrbitPose = { ...orbit.pose, target: [...orbit.pose.target] };
   input.camera = pose;

@@ -75,7 +75,7 @@ test("project agrees with the packed uniform within 0.5 px", () => {
     createCameraMatrices(),
   );
   const packed = new Float32Array(FRAME_UNIFORM_BYTES / 4);
-  packFrame(packed, m, 0, viewport.width, viewport.height);
+  packFrame(packed, m, 0, viewport.width, viewport.height, 1, 1);
   const out = createProjected();
   const f = Math.fround;
   for (const p of [
