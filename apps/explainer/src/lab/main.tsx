@@ -1,20 +1,43 @@
 import { probeAdapter } from "@repo/renderer";
 import { createRoot } from "react-dom/client";
 import { clockFromSearch, type HeldClock } from "../runtime/clock.ts";
+import { calibScene } from "./calib.ts";
+import { loadFixture } from "./fixtures.ts";
 import { installProbe } from "./probe.ts";
+import { registryBaseline } from "./registry-baseline.ts";
 import { AdapterPage } from "./pages/AdapterPage.tsx";
+import { StagePage } from "./pages/StagePage.tsx";
 
 const clock = clockFromSearch(location.search);
 const { probe, markReady } = installProbe((t) => (clock as Partial<HeldClock>).set?.(t));
+const params = new URLSearchParams(location.search);
 const route = location.pathname.replace(/^\/lab\/?/, "").split("/")[0] || "adapter";
 const root = createRoot(document.getElementById("root")!);
 
 probe.adapter = await probeAdapter(navigator.gpu);
+const stage = (scene: Parameters<typeof StagePage>[0]["scene"]) =>
+  root.render(<StagePage scene={scene} clock={clock} probe={probe} onReady={markReady} />);
+
 switch (route) {
   case "adapter":
     root.render(<AdapterPage adapter={probe.adapter} />);
+    markReady();
     break;
+  case "renderer":
+    stage(() => loadFixture(params.get("fixture") ?? "boxes"));
+    break;
+  case "calib":
+    stage(calibScene);
+    break;
+  case "registry": {
+    const canvas = document.createElement("canvas");
+    document.body.append(canvas);
+    registryBaseline(canvas, probe)
+      .catch((error) => probe.errors.push(String(error)))
+      .finally(markReady);
+    break;
+  }
   default:
     root.render(<p>Unknown lab route: {route}</p>);
+    markReady();
 }
-markReady();

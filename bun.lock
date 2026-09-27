@@ -17,6 +17,7 @@
       "dependencies": {
         "@repo/llm": "workspace:*",
         "@repo/renderer": "workspace:*",
+        "math": "catalog:",
         "react": "19.3.0",
         "react-dom": "19.3.0",
         "typegpu": "catalog:",

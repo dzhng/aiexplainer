@@ -1,0 +1,25 @@
+{
+  "palette": {
+    "bgTop": "#0b1020",
+    "bgBottom": "#1a1f3a",
+    "floor": "#161b30",
+    "floorEdge": "#2a3155",
+    "metal": "#3a4370",
+    "metalDeep": "#26304f",
+    "flow": "#b58cff",
+    "focus": "#ffb86b",
+    "sealed": "#3a3f58",
+    "ink": "#e8ecff",
+    "active": "#6ea8ff"
+  },
+  "room": {
+    "wallTop": "bgTop",
+    "wallBottom": "bgBottom"
+  },
+  "materials": {
+    "metal": { "color": "metal", "opacity": 1 },
+    "housing": { "color": "metalDeep", "opacity": 1 },
+    "glass": { "color": "active", "opacity": 0.3 },
+    "floor": { "color": "floor", "opacity": 1 }
+  }
+}

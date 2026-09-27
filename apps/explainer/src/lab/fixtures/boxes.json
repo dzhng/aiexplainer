@@ -1,0 +1,54 @@
+{
+  "camera": { "target": [0, 0.6, 0], "yaw": 0.5, "pitch": 0.35, "distance": 6.5, "fovY": 0.75 },
+  "materials": {
+    "amber": { "color": "focus", "opacity": 1 },
+    "blue": { "color": "active", "opacity": 1 },
+    "violet": { "color": "flow", "opacity": 1 },
+    "ink": { "color": "ink", "opacity": 1 }
+  },
+  "parts": [
+    {
+      "kind": "block",
+      "id": "floor",
+      "slot": 0,
+      "material": "floor",
+      "transform": [6, 0, 0, 0, 0, 0.1, 0, 0, 0, 0, 4, 0, 0, -0.05, 0, 1]
+    },
+    {
+      "kind": "block",
+      "id": "near",
+      "slot": 1,
+      "material": "amber",
+      "transform": [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, -0.5, 0.5, 0.9, 1]
+    },
+    {
+      "kind": "block",
+      "id": "far",
+      "slot": 2,
+      "material": "blue",
+      "transform": [1.2, 0, 0, 0, 0, 1.2, 0, 0, 0, 0, 1.2, 0, 0.2, 0.6, -0.2, 1]
+    },
+    {
+      "kind": "block",
+      "id": "crossing",
+      "slot": 3,
+      "material": "ink",
+      "transform": [0.8, 0, 0, 0, 0, 0.8, 0, 0, 0, 0, 0.8, 0, 1.0, 0.4, 0.35, 1]
+    },
+    {
+      "kind": "tube",
+      "id": "pipe",
+      "slot": 4,
+      "material": "violet",
+      "radius": 0.12,
+      "path": [
+        [-2.2, 0.15, -1.2],
+        [-1.2, 1.5, -0.6],
+        [0.3, 1.45, -0.1],
+        [1.6, 0.9, 0.9],
+        [2.2, 0.15, 1.4]
+      ],
+      "transform": [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]
+    }
+  ]
+}

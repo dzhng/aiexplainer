@@ -5,6 +5,10 @@
  *
  *   bun scripts/verify.ts --route /lab/adapter [--t 12.5] [--out name] [--base http://…]
  *   bun scripts/verify.ts --route /lab/adapter --browser shell   # negative control: expect failure
+ *   bun scripts/verify.ts --route '/lab/renderer?fixture=boxes' --t 0 --out boxes --crop 'part:*'
+ *
+ * `--crop` takes comma-separated probe crop names (a trailing `*` matches a prefix) and
+ * screenshots their union, padded, instead of the whole viewport.
  */
 import { mkdir } from "node:fs/promises";
 import path from "node:path";
@@ -25,6 +29,8 @@ const { values: args } = parseArgs({
     browser: { type: "string", default: "chrome" },
     width: { type: "string", default: "1440" },
     height: { type: "string", default: "900" },
+    crop: { type: "string" },
+    pad: { type: "string", default: "16" },
   },
 });
 
@@ -40,6 +46,39 @@ async function serve(): Promise<{ base: string; server?: ViteDevServer }> {
   const base = server.resolvedUrls?.local[0]?.replace(/\/$/, "");
   if (!base) throw new Error("vite dev server did not report a local URL");
   return { base, server };
+}
+
+interface Rect {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
+/** The padded union of the named crops, clamped to the viewport. */
+function unionCrop(crops: Record<string, Rect>, spec: string): Rect {
+  const names = spec.split(",").flatMap((name) => {
+    const matches = name.endsWith("*")
+      ? Object.keys(crops).filter((key) => key.startsWith(name.slice(0, -1)))
+      : name in crops
+        ? [name]
+        : [];
+    if (!matches.length)
+      throw new Error(`crop "${name}" matched nothing; have ${Object.keys(crops).join(", ")}`);
+    return matches;
+  });
+  const pad = Number(args.pad);
+  const rects = names.map((name) => crops[name]!);
+  const x0 = Math.max(0, Math.min(...rects.map((r) => r.x)) - pad);
+  const y0 = Math.max(0, Math.min(...rects.map((r) => r.y)) - pad);
+  const x1 = Math.min(Number(args.width), Math.max(...rects.map((r) => r.x + r.width)) + pad);
+  const y1 = Math.min(Number(args.height), Math.max(...rects.map((r) => r.y + r.height)) + pad);
+  return {
+    x: Math.floor(x0),
+    y: Math.floor(y0),
+    width: Math.ceil(x1 - x0),
+    height: Math.ceil(y1 - y0),
+  };
 }
 
 function withClock(route: string): string {
@@ -77,9 +116,14 @@ try {
   const probe = await page.evaluate(() => ({
     adapter: window.__explainer!.adapter,
     errors: window.__explainer!.errors,
+    receipt: window.__explainer!.receipt?.(),
+    crops: window.__explainer!.crops?.(),
+    results: window.__explainer!.results,
   }));
 
   console.log("adapter", JSON.stringify(probe.adapter));
+  if (probe.receipt) console.log("receipt", JSON.stringify(probe.receipt));
+  if (probe.results !== undefined) console.log("results", JSON.stringify(probe.results));
   if (!probe.adapter) failures.push("no WebGPU adapter");
   else if (probe.adapter.isFallbackAdapter) failures.push("fallback (software) adapter");
   failures.push(...probe.errors.map((e) => `probe: ${e}`));
@@ -88,7 +132,9 @@ try {
     const dir = path.join(repoRoot, "throwaway/shots", args.slice);
     await mkdir(dir, { recursive: true });
     const file = path.join(dir, `${args.out}.png`);
-    await page.screenshot({ path: file });
+    const clip = args.crop ? unionCrop(probe.crops ?? {}, args.crop) : undefined;
+    if (clip) console.log("crop", JSON.stringify(clip));
+    await page.screenshot({ path: file, clip });
     console.log("shot", path.relative(repoRoot, file));
   }
 } finally {

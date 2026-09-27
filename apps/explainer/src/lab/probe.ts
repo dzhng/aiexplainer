@@ -1,4 +1,4 @@
-import type { AdapterReport } from "@repo/renderer";
+import type { AdapterReport, FrameReceipt, ScreenRect } from "@repo/renderer";
 
 /** What the verification harness reads from `window.__explainer`. */
 export interface ProbeApi {
@@ -6,6 +6,12 @@ export interface ProbeApi {
   adapter: AdapterReport | null;
   errors: string[];
   setTime(t: number): void;
+  /** The last frame's receipt, on pages that render. */
+  receipt?: () => FrameReceipt;
+  /** Named screen rectangles in CSS pixels (`part:<id>`, …), from the app's own shapes. */
+  crops?: () => Record<string, ScreenRect>;
+  /** Free-form results of in-page checks, printed by the harness. */
+  results?: unknown;
 }
 
 declare global {
