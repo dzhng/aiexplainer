@@ -304,3 +304,20 @@ standalone. Entries are appended per pass and consolidated when the spec closes.
   faces z-fought in the cut. Verdict: sound.
 - **From the hero angle, Exploded reads mostly as a depth shift.** Verdict: accepted for
   chapter 0; later chapters with more parts should explode sideways.
+
+## Slice 04b
+
+- **Direction: holo-tactical, taken whole (the human's pick).** Verdict: sound.
+- **The HUD cyan is a HUD-only `hud.accent`, not the palette's `active`,** so restyling the
+  HUD can never change the scene. Verdict: sound.
+- **Body copy stays in Inter.** Chakra Petch (caps) is for headings, controls, chips and
+  labels only, for legibility. Verdict: sound.
+- **Labels are sentence case, not the mock's caps,** because caps overflow the renderer's
+  220 px label box. Verdict: sound.
+- **The help panel's plate is opaque.** Verdict: sound.
+- **Stat chips count up over 400 ms and then show the exact settled text; a held clock or
+  reduced motion skips it.** Verdict: sound; tested.
+- **Panels slide in over 360 ms on arrival via `useArrivalIntro`, keyed on `loopEpoch`.**
+  11c may key it to the camera-move start. Verdict: sound.
+- **Only Chakra Petch weights 600 and 700 ship.** Verdict: sound.
+- **The brand mark is not redrawn;** brand art is deferred to slice 36. Verdict: sound.
