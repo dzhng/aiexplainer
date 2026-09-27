@@ -4,6 +4,7 @@
  * the copy budget (README Copy rules), the loop budget (D24), the caps (D18), and that every
  * anchor, shot and colour token exists.
  */
+import { ARITH, arithProblems, type ArithUnit } from "@repo/llm";
 import shots from "../look/shots.json";
 import { isPaletteToken } from "../look/look.ts";
 import { isSceneAnchor } from "./scenes.ts";
@@ -12,6 +13,7 @@ import {
   STAT_SCALES,
   type Caption,
   type ChapterDef,
+  type StatFormat,
   type Timeline,
 } from "./types.ts";
 
@@ -19,6 +21,14 @@ export const LOOP_SEC = { min: 20, max: 30 } as const;
 export const MAX_SENTENCE_WORDS = 25;
 export const MAX_FOLLOW = 3;
 export const MAX_LABELS = 5;
+
+/** Which chip formats can display each arithmetic unit. */
+const FORMATS_FOR_UNIT: Record<ArithUnit, readonly StatFormat[]> = {
+  bytes: ["bytes"],
+  "tok/s": ["tok/s"],
+  s: ["s"],
+  count: ["int", "x"],
+};
 
 const wordCount = (s: string) => s.trim().split(/\s+/).filter(Boolean).length;
 /** A sentence end followed by more text means the string holds more than one sentence. */
@@ -100,6 +110,19 @@ export function validateChapter(def: ChapterDef): string[] {
     if (!(STAT_FORMATS as readonly string[]).includes(stat.format))
       problems.push(`stat ${stat.id}: unknown format ${stat.format}`);
     if (!stat.label?.trim()) problems.push(`stat ${stat.id}: missing label`);
+    if (stat.value.kind === "arith") {
+      const { fn, args } = stat.value;
+      const argProblems = arithProblems(fn, args);
+      problems.push(...argProblems.map((p) => `stat ${stat.id}: ${p}`));
+      if (argProblems.length) continue;
+      const { scale, unit } = ARITH[fn];
+      if (scale !== null && scale !== stat.scale)
+        problems.push(`stat ${stat.id}: ${fn} is at scale "${scale}", not "${stat.scale}"`);
+      if (!FORMATS_FOR_UNIT[unit].includes(stat.format))
+        problems.push(
+          `stat ${stat.id}: ${fn} gives ${unit}, which format ${stat.format} can't show`,
+        );
+    }
   }
 
   for (const s of def.scenarios)

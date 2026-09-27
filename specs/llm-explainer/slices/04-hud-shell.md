@@ -46,6 +46,7 @@ content competes with them.
   Judge the panel grammar and density; the mock and reference are targets for form, not pixels.
 
 - Run [screenshot-critique](../../../.agents/skills/screenshot-critique/SKILL.md) as the last check on each crop.
+- **Deferred from slice 18:** shoot the stat-chip specimen on `/lab/tokens`, once per scale label (`this tiny model`, `Llama-3-8B`, `Llama-3-8B on H100 SXM`, `TinyStories`), with values from `evalArith`/`formatStat`. **Variable:** scale-label prominence: the scale is legible and can't be mistaken for the value. Run screenshot-critique last.
 - **Human checkpoint (non-blocking):** the font and type scale.
   - Delegated default: Inter for the UI, JetBrains Mono for stat values, both self-hosted.
   - Process: preview-shots, wait about 5 minutes, then decide and record the call here.

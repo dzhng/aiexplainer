@@ -1,0 +1,23 @@
+{
+  "name": "Llama-3-8B",
+  "source": "https://huggingface.co/NousResearch/Meta-Llama-3-8B/raw/main/config.json",
+  "retrieved": "2026-09-27",
+  "fromConfig": {
+    "nLayers": { "value": 32, "key": "num_hidden_layers" },
+    "nHeads": { "value": 32, "key": "num_attention_heads" },
+    "nKvHeads": { "value": 8, "key": "num_key_value_heads" },
+    "hidden": { "value": 4096, "key": "hidden_size" },
+    "intermediate": { "value": 14336, "key": "intermediate_size" },
+    "vocab": { "value": 128256, "key": "vocab_size" },
+    "ropeTheta": { "value": 500000, "key": "rope_theta" },
+    "maxPos": { "value": 8192, "key": "max_position_embeddings" },
+    "tiedEmbeddings": { "value": false, "key": "tie_word_embeddings" }
+  },
+  "derived": {
+    "headDim": { "value": 128, "from": "hidden / nHeads" },
+    "params": {
+      "value": 8030261248,
+      "from": "paramsFromShapes(): embedding + unembedding + nLayers × (q, k, v, o, gate, up, down, 2 RMSNorms) + final RMSNorm"
+    }
+  }
+}

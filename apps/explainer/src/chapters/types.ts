@@ -2,6 +2,7 @@
  * A chapter is pure data (slice 03). The HUD, the loop, the stats and the scene are all
  * driven by a `ChapterDef`; `validateChapter()` enforces the copy rules and references.
  */
+import type { ArithFnName } from "@repo/llm";
 import type shots from "../look/shots.json";
 import type { PaletteToken } from "../look/look.ts";
 import type { ChapterSlug } from "./ladder.ts";
@@ -35,7 +36,7 @@ export const STAT_SCALES = [
 ] as const;
 export type StatScale = (typeof STAT_SCALES)[number];
 
-export const STAT_FORMATS = ["int", "bytes", "tok/s", "pct", "x"] as const;
+export const STAT_FORMATS = ["int", "bytes", "tok/s", "s", "pct", "x"] as const;
 export type StatFormat = (typeof STAT_FORMATS)[number];
 
 export interface ChapterDef {
@@ -75,7 +76,7 @@ export interface StatChip {
   scale: StatScale;
   value:
     | { kind: "model"; metric: string }
-    | { kind: "arith"; fn: string; args: Record<string, number> }
+    | { kind: "arith"; fn: ArithFnName; args: Record<string, number> }
     | { kind: "probe"; probe: string };
 }
 

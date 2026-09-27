@@ -1,7 +1,8 @@
-import { expect, test } from "bun:test";
+import { describe, expect, test } from "bun:test";
 import { readdir } from "node:fs/promises";
 import path from "node:path";
 import { autocomplete } from "../src/chapters/data/autocomplete.ts";
+import { formatStat } from "../src/chapters/format.ts";
 import { CHAPTERS } from "../src/chapters/index.ts";
 import { LADDER, displayNumber, slugAt } from "../src/chapters/ladder.ts";
 import type { ChapterDef } from "../src/chapters/types.ts";
@@ -84,4 +85,52 @@ test("rejects more than 3 follow targets and more than 5 labels", () => {
     while (d.labels.length < 6) d.labels.push({ ...d.labels[0]! });
   });
   expect(validateChapter(labels)).toContain("6 labels (max 5)");
+});
+
+describe("arith stats resolve through the registry", () => {
+  type Chip = ChapterDef["stats"][0];
+  const withArith = (value: Chip["value"], patch: Partial<Chip> = {}) =>
+    broken((d) => {
+      d.stats[0] = {
+        id: "kv",
+        label: "KV cache per token",
+        format: "bytes",
+        scale: "Llama-3-8B",
+        value,
+        ...patch,
+      };
+    });
+  const kv: Chip["value"] = { kind: "arith", fn: "kvBytesPerToken", args: { kvBytes: 2 } };
+
+  test("a registered function at its own scale and unit validates", () => {
+    expect(validateChapter(withArith(kv))).toEqual([]);
+  });
+
+  test("rejects an unknown function, a missing argument, and a mismatched scale or format", () => {
+    const unknown = withArith({ kind: "arith", fn: "vibes" as never, args: {} });
+    expect(validateChapter(unknown)).toContain("stat kv: unknown arithmetic function vibes");
+    const missing = withArith({ kind: "arith", fn: "kvBytesPerToken", args: {} });
+    expect(validateChapter(missing)).toContain(
+      "stat kv: kvBytesPerToken: missing argument kvBytes",
+    );
+    const scale = withArith(kv, { scale: "this tiny model" });
+    expect(validateChapter(scale)).toContain(
+      'stat kv: kvBytesPerToken is at scale "Llama-3-8B", not "this tiny model"',
+    );
+    const format = withArith(kv, { format: "tok/s" });
+    expect(validateChapter(format)).toContain(
+      "stat kv: kvBytesPerToken gives bytes, which format tok/s can't show",
+    );
+  });
+});
+
+test("stat formatting names units and keeps three significant figures", () => {
+  expect(formatStat(131_072, "bytes")).toBe("131 kB");
+  expect(formatStat(16_060_522_496, "bytes")).toBe("16.1 GB");
+  expect(formatStat(8_030_261_248, "int")).toBe("8.03 billion");
+  expect(formatStat(14_336, "int")).toBe("14,336");
+  expect(formatStat(208.37, "tok/s")).toBe("208 tok/s");
+  expect(formatStat(0.0322, "s")).toBe("32.2 ms");
+  expect(formatStat(0.623, "pct")).toBe("62%");
+  expect(formatStat(3.3616, "x")).toBe("3.36×");
 });

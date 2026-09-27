@@ -9,7 +9,7 @@
   "scripts": {
     "check-types": "tsc --noEmit",
     "lint": "oxlint src",
-    "test": "bun test test --pass-with-no-tests"
+    "test": "bun test test"
   },
   "dependencies": {
     "math": "catalog:"
