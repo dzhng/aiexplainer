@@ -48,3 +48,19 @@ Pill styling within the tokens, the leader-line geometry, and the overlap heuris
 ## Feedback that would change this slice
 
 A preference for labels that fade instead of snapping. That is a CSS transition only.
+
+## Record (2026-09-27)
+
+- **Pixel check** (`--check label-dots` on `/lab/renderer?fixture=label-markers&bloom=0`):
+  every dot and its placement lie within 0.71 px of its marker's rendered centroid at
+  1280×720 (0.2 px at 1440×900); a shifted anchor fails at 10.6 px (negative control).
+- **Sweeps:** `throwaway/shots/09/sweep-occluded-labels-t{0..11}.png`,
+  `sweep-board-room-t{0..11}.png` (1280×720, cropped to `label:*`, whole frame when every
+  label is hidden) and the sheets `sweep-occluded-sheet.png`, `sweep-board-sheet.png`.
+  An unprimed critique found no label over geometry that should hide it and no overlaps;
+  it caught one over-eager overlap hide, fixed by testing real pill widths.
+- **Overlap rule:** two labels clash when their pills intersect or either pill covers the
+  other's dot; the pill width is measured from the label layer when known.
+- **Occluders:** translucent parts (glass) never hide a label, so `sceneOccluders` takes
+  the look. Meshes are tested per triangle behind a per-node bounds check, because a
+  node's box (e.g. the board's two-post stand) is far larger than the node.

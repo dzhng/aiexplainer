@@ -20,6 +20,7 @@ test("blocks share one instanced draw per pass; translucent draws come last", ()
     {
       revision: 1,
       assets: {},
+      anchors: [],
       parts: [
         block("a", "metal"),
         block("g", "glass", 3),
@@ -54,7 +55,7 @@ test("blocks share one instanced draw per pass; translucent draws come last", ()
 
 test("an unknown material is rejected with the part named", () => {
   expect(() =>
-    compileScene({ revision: 1, parts: [block("x", "chrome")], assets: {} }, look),
+    compileScene({ revision: 1, parts: [block("x", "chrome")], assets: {}, anchors: [] }, look),
   ).toThrow(/x.*chrome/);
 });
 
@@ -101,7 +102,12 @@ test("mesh nodes bind presets by name and instance across parts", () => {
     cutaway: "keep",
   });
   const compiled = compileScene(
-    { revision: 1, assets: { board: asset }, parts: [mesh("whole"), mesh("slot", "board.slot.3")] },
+    {
+      revision: 1,
+      assets: { board: asset },
+      anchors: [],
+      parts: [mesh("whole"), mesh("slot", "board.slot.3")],
+    },
     look,
   );
   // The slot node is drawn by both parts in one instanced draw; the glass node is translucent.
@@ -112,6 +118,9 @@ test("mesh nodes bind presets by name and instance across parts", () => {
   expect([...compiled.materialIndex]).toEqual([0, 0, 1]);
   const orphan = { ...asset, nodes: [node("board.rail", "chrome")] };
   expect(() =>
-    compileScene({ revision: 1, assets: { board: orphan }, parts: [mesh("whole")] }, look),
+    compileScene(
+      { revision: 1, assets: { board: orphan }, anchors: [], parts: [mesh("whole")] },
+      look,
+    ),
   ).toThrow(/board.rail/);
 });

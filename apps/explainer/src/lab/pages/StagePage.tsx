@@ -1,32 +1,33 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
+import { Labels, type LabelReading, type LabelsHandle, type LabelText } from "../../hud/Labels.tsx";
 import type { Clock } from "../../runtime/clock.ts";
 import type { ProbeApi } from "../probe.ts";
 import { runStage, type StageOptions } from "../stage.ts";
 
-export type StageScene = Pick<StageOptions, "look" | "input" | "pose">;
+export type StageScene = Pick<StageOptions, "look" | "input" | "pose"> & { labels?: LabelText[] };
 
 export interface StagePageProps {
   scene: () => StageScene | Promise<StageScene>;
   debug?: StageOptions["debug"];
+  /** `null` hides the label layer (`?labels=0`). */
+  reading: LabelReading | null;
   clock: Clock;
   probe: ProbeApi;
   onReady: () => void;
 }
 
 /** A full-window canvas running the real renderer on the scene `scene()` returns. */
-export function StagePage({ scene, debug, clock, probe, onReady }: StagePageProps) {
-  const ref = useRef<HTMLCanvasElement>(null);
+export function StagePage({ scene, debug, reading, clock, probe, onReady }: StagePageProps) {
+  const canvas = useRef<HTMLCanvasElement>(null);
+  const labels = useRef<LabelsHandle>(null);
+  const [loaded, setLoaded] = useState<StageScene | null>(null);
+
   useEffect(() => {
-    let dispose = () => {};
     let cancelled = false;
     Promise.resolve()
       .then(scene)
-      .then((s) => runStage({ canvas: ref.current!, ...s, debug, clock, probe, onReady }))
       .then(
-        (stage) => {
-          if (cancelled) stage?.dispose();
-          else if (stage) dispose = stage.dispose;
-        },
+        (s) => cancelled || setLoaded(s),
         (error) => {
           probe.errors.push(String(error));
           onReady();
@@ -34,20 +35,53 @@ export function StagePage({ scene, debug, clock, probe, onReady }: StagePageProp
       );
     return () => {
       cancelled = true;
+    };
+  }, [scene, probe, onReady]);
+
+  useEffect(() => {
+    if (!loaded) return;
+    let dispose = () => {};
+    let cancelled = false;
+    runStage({
+      canvas: canvas.current!,
+      ...loaded,
+      labels: labels.current,
+      debug,
+      clock,
+      probe,
+      onReady,
+    }).then(
+      (stage) => {
+        if (cancelled) stage?.dispose();
+        else if (stage) dispose = stage.dispose;
+      },
+      (error) => {
+        probe.errors.push(String(error));
+        onReady();
+      },
+    );
+    return () => {
+      cancelled = true;
       dispose();
     };
-  }, [scene, debug, clock, probe, onReady]);
+  }, [loaded, debug, clock, probe, onReady]);
+
   return (
-    <canvas
-      ref={ref}
-      style={{
-        position: "fixed",
-        inset: 0,
-        width: "100vw",
-        height: "100vh",
-        display: "block",
-        touchAction: "none",
-      }}
-    />
+    <>
+      <canvas
+        ref={canvas}
+        style={{
+          position: "fixed",
+          inset: 0,
+          width: "100vw",
+          height: "100vh",
+          display: "block",
+          touchAction: "none",
+        }}
+      />
+      {loaded?.labels && reading && (
+        <Labels ref={labels} labels={loaded.labels} reading={reading} />
+      )}
+    </>
   );
 }

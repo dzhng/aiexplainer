@@ -70,10 +70,21 @@ export interface MeshPart extends PartBase {
 
 export type Part = BlockPart | TubePart | MeshPart;
 
+/** A point on a part where a label pins; the label's text stays with the app. */
+export interface SceneAnchor {
+  id: string;
+  part: string;
+  /** In the part's local space. */
+  local: Vec3;
+  /** Higher wins when labels overlap. */
+  priority: number;
+}
+
 export interface SceneDesc {
   /** Bump to make the renderer re-upload the scene; unchanged means reuse. */
   revision: number;
   parts: Part[];
+  anchors: SceneAnchor[];
   /** Parsed props (`parseGlb`), loaded by the app. */
   assets: Record<AssetId, MeshAsset>;
 }

@@ -43,7 +43,7 @@ interface Piece {
 
 const cube = blockGeometry();
 
-function meshNodes(part: MeshPart, assets: Assets): MeshNode[] {
+export function meshNodes(part: MeshPart, assets: Assets): MeshNode[] {
   const asset: MeshAsset | undefined = assets[part.asset];
   if (!asset) throw new Error(`scene: part ${part.id} uses unloaded asset "${part.asset}"`);
   if (part.node === undefined) return asset.nodes;

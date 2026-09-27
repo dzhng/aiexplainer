@@ -1,6 +1,7 @@
 /**
- * The lab's renderer host: one canvas, the real renderer, orbit controls and the probe
- * hooks (`receipt`, `crops`). Lab pages hand it a look and a frame input; it owns the loop.
+ * The lab's renderer host: one canvas, the real renderer, orbit controls, pinned labels
+ * and the probe hooks (`receipt`, `crops`, `labels`). Lab pages hand it a look and a frame
+ * input; it owns the loop: clock → orbit → renderer.frame → placeLabels → label refs.
  */
 import {
   cameraMatrices,
@@ -8,7 +9,13 @@ import {
   createRenderer,
   OrbitController,
   partWorldBounds,
+  placeLabels,
   projectBox,
+  sceneAnchors,
+  sceneOccluders,
+  type LabelPlacement,
+  type Occluder,
+  type WorldAnchor,
   type FrameInput,
   type FrameReceipt,
   type LookConfig,
@@ -18,6 +25,7 @@ import {
 } from "@repo/renderer";
 import type { Box3 } from "math/shapes";
 import type { Clock } from "../runtime/clock.ts";
+import type { LabelsHandle } from "../hud/Labels.tsx";
 import type { ProbeApi } from "./probe.ts";
 
 export interface StageOptions {
@@ -33,6 +41,8 @@ export interface StageOptions {
   debug?: FrameInput["debug"];
   /** Adjusts the drawn camera from the orbit pose each frame (e.g. a turntable). */
   pose?: (pose: OrbitPose, timeSec: number) => void;
+  /** The label layer to drive, when the scene has anchors. */
+  labels?: LabelsHandle | null;
 }
 
 export interface Stage {
@@ -88,6 +98,32 @@ export async function runStage(o: StageOptions): Promise<Stage | null> {
   const resizeObserver = new ResizeObserver(() => renderer.resize());
   resizeObserver.observe(canvas);
 
+  const matrices = createCameraMatrices();
+  const placements: LabelPlacement[] = [];
+  // Occluders and world anchors change only with the scene or the view.
+  const placedFor = { revision: -1, mode: input.view.mode, t: Number.NaN };
+  let occluders: Occluder[] = [];
+  let anchors: WorldAnchor[] = [];
+  const placeAll = () => {
+    const { scene, view } = input;
+    if (
+      placedFor.revision !== scene.revision ||
+      placedFor.mode !== view.mode ||
+      placedFor.t !== view.t
+    ) {
+      occluders = sceneOccluders(scene, view, o.look);
+      anchors = sceneAnchors(scene, view);
+      const widths = o.labels?.pillWidths() ?? {};
+      for (const anchor of anchors) anchor.pillWidth = widths[anchor.id];
+      placedFor.revision = scene.revision;
+      placedFor.mode = view.mode;
+      placedFor.t = view.t;
+    }
+    cameraMatrices(input.camera, input.viewport, matrices);
+    placeLabels(matrices, anchors, occluders, placements);
+    o.labels?.update(placements);
+  };
+
   let receipt: FrameReceipt | null = null;
   let frames = 0;
   let last = o.clock.now();
@@ -109,17 +145,18 @@ export async function runStage(o: StageOptions): Promise<Stage | null> {
     input.viewport.height = canvas.clientHeight;
     input.viewport.dpr = devicePixelRatio;
     receipt = renderer.frame(input);
+    placeAll();
     if (++frames === 2) o.onReady();
     raf = requestAnimationFrame(tick);
   };
   raf = requestAnimationFrame(tick);
 
-  const matrices = createCameraMatrices();
   const box: Box3 = [0, 0, 0, 0, 0, 0];
   o.probe.receipt = () => receipt!;
+  o.probe.labels = () => placements.map((p) => ({ ...p }));
   o.probe.crops = () => {
     cameraMatrices(input.camera, input.viewport, matrices);
-    const crops: Record<string, ScreenRect> = {};
+    const crops: Record<string, ScreenRect> = { ...o.labels?.rects() };
     for (const part of input.scene.parts) {
       const rect = projectBox(matrices, partWorldBounds(part, input.scene.assets, input.view, box));
       if (rect) crops[`part:${part.id}`] = rect;

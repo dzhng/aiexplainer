@@ -1,4 +1,4 @@
-import type { AdapterReport, FrameReceipt, ScreenRect } from "@repo/renderer";
+import type { AdapterReport, FrameReceipt, LabelPlacement, ScreenRect } from "@repo/renderer";
 
 /** What the verification harness reads from `window.__explainer`. */
 export interface ProbeApi {
@@ -8,8 +8,10 @@ export interface ProbeApi {
   setTime(t: number): void;
   /** The last frame's receipt, on pages that render. */
   receipt?: () => FrameReceipt;
-  /** Named screen rectangles in CSS pixels (`part:<id>`, …), from the app's own shapes. */
+  /** Named screen rectangles in CSS pixels: `part:<id>` from the app's own shapes, `label:<id>` from the label layer. */
   crops?: () => Record<string, ScreenRect>;
+  /** The latest label placements. */
+  labels?: () => LabelPlacement[];
   /** Free-form results of in-page checks, printed by the harness. */
   results?: unknown;
 }

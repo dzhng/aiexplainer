@@ -6,9 +6,11 @@ import {
   type MeshAsset,
   type OrbitPose,
   type Part,
+  type SceneAnchor,
   type SceneDesc,
   type ViewMode,
 } from "@repo/renderer";
+import type { LabelText } from "../hud/Labels.tsx";
 import { lookConfig, type MaterialToken } from "../look/look.ts";
 
 export interface FixtureJson {
@@ -19,9 +21,16 @@ export interface FixtureJson {
   /** Prop URLs by asset id, e.g. `{ "board": "/props/counter_board.glb" }`. */
   assets?: Record<string, string>;
   parts: Part[];
+  anchors?: SceneAnchor[];
+  /** Fixture label text, one per anchor (the product's comes from `ChapterDef.labels`). */
+  labels?: LabelText[];
 }
 
-export type LabScene = { look: LookConfig; input: Omit<FrameInput, "timeSec" | "viewport"> };
+export interface LabScene {
+  look: LookConfig;
+  input: Omit<FrameInput, "timeSec" | "viewport">;
+  labels?: LabelText[];
+}
 
 const fixtures = import.meta.glob<FixtureJson>("./fixtures/*.json", {
   eager: true,
@@ -43,12 +52,13 @@ export function frameFromParts(
   parts: Part[],
   view: FrameInput["view"] = { mode: "whole", t: 0 },
   assets: SceneDesc["assets"] = {},
+  anchors: SceneAnchor[] = [],
 ): LabScene["input"] {
   const slots = parts.reduce((n, p) => Math.max(n, p.slot + 1), 1);
   return {
     camera,
     view,
-    scene: { revision: 1, parts, assets },
+    scene: { revision: 1, parts, assets, anchors },
     dynamics: {
       intensity: new Float32Array(slots).fill(1),
       widthScale: new Float32Array(slots).fill(1),
@@ -64,6 +74,13 @@ export async function loadFixture(name: string): Promise<LabScene> {
   for (const [id, url] of Object.entries(fixture.assets ?? {})) assets[id] = await loadAsset(url);
   return {
     look: lookConfig(fixture.materials),
-    input: frameFromParts(structuredClone(fixture.camera), fixture.parts, fixture.view, assets),
+    input: frameFromParts(
+      structuredClone(fixture.camera),
+      fixture.parts,
+      fixture.view,
+      assets,
+      fixture.anchors,
+    ),
+    labels: fixture.labels,
   };
 }

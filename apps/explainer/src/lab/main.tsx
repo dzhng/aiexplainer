@@ -23,9 +23,22 @@ const debug = {
   layers: params.get("emissive") === "0" ? ~Layer.emissive : ~0,
   bloom: params.get("bloom") !== "0",
 };
+// `?labels=0` hides the label layer; `?reading=precise` shows the precise wording.
+const reading =
+  params.get("labels") === "0" ? null : params.get("reading") === "precise" ? "precise" : "analogy";
+// `?turntable=<rad/s>` spins the renderer fixtures' camera, for held-time orbit sweeps.
+const turntable = Number(params.get("turntable") ?? 0);
+
 const stage = (scene: Parameters<typeof StagePage>[0]["scene"]) =>
   root.render(
-    <StagePage scene={scene} debug={debug} clock={clock} probe={probe} onReady={markReady} />,
+    <StagePage
+      scene={scene}
+      debug={debug}
+      reading={reading}
+      clock={clock}
+      probe={probe}
+      onReady={markReady}
+    />,
   );
 
 switch (route) {
@@ -34,7 +47,12 @@ switch (route) {
     markReady();
     break;
   case "renderer":
-    stage(() => loadFixture(params.get("fixture") ?? "boxes"));
+    stage(async () => ({
+      ...(await loadFixture(params.get("fixture") ?? "boxes")),
+      pose: (pose, t) => {
+        pose.yaw += t * turntable;
+      },
+    }));
     break;
   case "calib":
     stage(calibScene);
