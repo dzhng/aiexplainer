@@ -1,14 +1,12 @@
 /**
- * Shared helpers for chapter scene tests: the shipped models through the same in-process
- * session the fixture script uses, and a chapter's frame at a loop time.
+ * Shared helpers for chapter scene tests: a chapter's run through the same in-process
+ * context the fixture script uses, and its frame at a loop time.
  */
-import { fetchModel, type LoadedModel, type ModelId } from "@repo/llm";
 import type { SceneDesc } from "@repo/renderer";
 import path from "node:path";
-import { pathToFileURL } from "node:url";
+import { shippedContext } from "../scripts/shipped.ts";
 import { createTimelineState, evalTimeline } from "../src/chapters/timeline.ts";
 import type { ChapterDef } from "../src/chapters/types.ts";
-import { localSession } from "../src/runtime/local-session.ts";
 import { computeRun } from "../src/runtime/scene-run.ts";
 import {
   buildFrame,
@@ -18,19 +16,12 @@ import {
   type SceneUi,
 } from "../src/scene/build-frame.ts";
 
-export const publicDir = path.resolve(import.meta.dirname, "../public");
-export const modelsUrl = pathToFileURL(path.join(publicDir, "models/"));
-
-export function shippedModel(id: ModelId): Promise<LoadedModel> {
-  return fetchModel(new URL(`${id}/manifest.json`, modelsUrl));
-}
+export { shippedModel } from "../scripts/shipped.ts";
 
 /** A chapter's run as the app computes it, for its loop inputs or `text`. */
 export async function chapterRun(def: ChapterDef, text: string | null = null): Promise<SceneRun> {
   if (!def.model) throw new Error(`${def.slug} has no model`);
-  const session = localSession(modelsUrl);
-  await session.load(def.model);
-  const run = await computeRun(def, text, session, await shippedModel(def.model));
+  const run = await computeRun(def, text, await shippedContext(def.model));
   if (!run) throw new Error(`${def.slug} has no run`);
   return run;
 }

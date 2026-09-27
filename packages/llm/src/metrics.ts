@@ -1,12 +1,12 @@
 // What a stat chip may read off a loaded model (`StatChip.value.kind: 'model' | 'probe'`).
 // A chapter names a metric or a probe; the number itself always comes from the model files.
-import type { LoadedModel } from "./load.ts";
+import { sourceId, type LoadedModel, type ModelSource } from "./load.ts";
 import type { ModelManifest, ProbeResult } from "./manifest.ts";
 
 export interface ModelMetricEntry {
   /** Where the number comes from, in plain words (shown in the help panel). */
   describe: string;
-  read(model: LoadedModel): number;
+  read(model: ModelSource): number;
 }
 
 export const MODEL_METRICS = {
@@ -21,9 +21,9 @@ export const MODEL_METRICS = {
   mlpNeurons: {
     describe: "MLP neurons in each block, from the model's shape",
     read: (model) => {
-      const { manifest } = model;
-      if (manifest.kind !== "transformer" || manifest.arch.mlp === "none")
-        throw new Error(`${manifest.id} has no MLP`);
+      const manifest = "manifest" in model ? model.manifest : null;
+      if (manifest?.kind !== "transformer" || manifest.arch.mlp === "none")
+        throw new Error(`${sourceId(model)} has no MLP`);
       return manifest.arch.mlp.hidden;
     },
   },
@@ -35,18 +35,22 @@ export function isModelMetric(name: string): name is ModelMetric {
   return Object.hasOwn(MODEL_METRICS, name);
 }
 
-export function modelMetric(model: LoadedModel, metric: ModelMetric): number {
+export function modelMetric(model: ModelSource, metric: ModelMetric): number {
   return MODEL_METRICS[metric].read(model);
 }
 
-/** The measured probe named `probe` in the manifest's evidence; throws if the model has none. */
-export function probeResult(manifest: ModelManifest, probe: string): ProbeResult {
-  const found = manifest.evidence.find((e) => e.probe === probe);
-  if (!found) throw new Error(`${manifest.id}: no evidence for probe "${probe}"`);
+/** The measured probe named `probe` in a model's evidence; throws if it has none. */
+export function probeResult(
+  source: Pick<ModelManifest, "id" | "evidence">,
+  probe: string,
+): ProbeResult {
+  const found = source.evidence.find((e) => e.probe === probe);
+  if (!found) throw new Error(`${source.id}: no evidence for probe "${probe}"`);
   return found;
 }
 
-function vocabSize(model: LoadedModel): number {
+function vocabSize(model: ModelSource): number {
+  if (!("manifest" in model)) return model.tokenizer.vocabSize;
   const ref = model.manifest.tokenizer;
   if (ref.kind === "bpe") {
     if (!model.tokenizer) throw new Error(`${model.manifest.id}: tokenizer not loaded`);
@@ -57,9 +61,9 @@ function vocabSize(model: LoadedModel): number {
   return vocab.shape[0];
 }
 
-/** Shipped models always carry a training record; only test fixtures omit it. */
-function trainingRecord(model: LoadedModel): NonNullable<ModelManifest["training"]> {
-  const record = model.manifest.training;
-  if (!record) throw new Error(`model "${model.manifest.id}" has no training record`);
-  return record;
+/** Shipped models always carry a training record; test fixtures and the tokenizer lack one. */
+function trainingRecord(model: ModelSource): NonNullable<LoadedModel["manifest"]["training"]> {
+  if ("manifest" in model && model.manifest.training) return model.manifest.training;
+  const id = "manifest" in model ? model.manifest.id : model.id;
+  throw new Error(`model "${id}" has no training record`);
 }

@@ -1,28 +1,29 @@
 import { describe, expect, test } from "bun:test";
-import { countsModel, fetchModel, nextWords } from "@repo/llm";
+import { countsModel, nextWords } from "@repo/llm";
 import { parseGlb, type SceneDesc } from "@repo/renderer";
 import path from "node:path";
-import { pathToFileURL } from "node:url";
+import { shippedContext } from "../scripts/shipped.ts";
 import { autocomplete } from "../src/chapters/data/autocomplete.ts";
 import { createTimelineState, evalTimeline } from "../src/chapters/timeline.ts";
 import { SCENE_KIT } from "../src/chapters/scenes.ts";
-import { buildFrame, createSceneFrame, type SceneUi } from "../src/scene/build-frame.ts";
+import {
+  buildFrame,
+  createSceneFrame,
+  type SceneRun,
+  type SceneUi,
+} from "../src/scene/build-frame.ts";
 import { share } from "../src/scene/builders/autocomplete.ts";
-import { localSession } from "../src/runtime/local-session.ts";
-import { computeRun as computeAnyRun } from "../src/runtime/scene-run.ts";
+import { computeRun as runFor } from "../src/runtime/scene-run.ts";
 import type { CountsRun } from "../src/scene/builders/autocomplete.ts";
 
 const publicDir = path.resolve(import.meta.dirname, "../public");
 const board = parseGlb(
   await Bun.file(path.join(publicDir, "props/counter_board.glb")).arrayBuffer(),
 );
-const modelsUrl = pathToFileURL(path.join(publicDir, "models/"));
-const loaded = await fetchModel(new URL("counts/manifest.json", modelsUrl));
-const model = countsModel(loaded);
-const session = localSession(modelsUrl);
-await session.load("counts");
+const ctx = await shippedContext("counts");
+const model = countsModel(ctx.model as Parameters<typeof countsModel>[0]);
 const computeRun = async (def: typeof autocomplete, text: string | null) =>
-  (await computeAnyRun(def, text, session, loaded)) as CountsRun;
+  (await runFor(def, text, ctx)) as CountsRun;
 
 function frameAt(t: number, ui: Partial<SceneUi> = {}, text: string | null = null) {
   const assets: SceneDesc["assets"] = { board };

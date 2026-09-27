@@ -5,6 +5,7 @@
  */
 import { bars } from "./bars.ts";
 import { block } from "./block.ts";
+import { brick } from "./brick.ts";
 import { contactShadow } from "./contact-shadow.ts";
 import { mesh } from "./mesh.ts";
 import type { KitPrimitive } from "./primitive.ts";
@@ -19,6 +20,7 @@ export const KIT = {
   mesh,
   bars,
   contactShadow,
+  brick,
   questionPanel,
   river,
   volumeKnob,

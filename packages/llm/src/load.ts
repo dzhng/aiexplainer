@@ -4,10 +4,11 @@ import {
   DTYPE_ALIGNMENT,
   type Dtype,
   ModelManifest,
+  type ProbeResult,
   type TensorEntry,
   tensorByteLength,
 } from "./manifest.ts";
-import { type Tokenizer, loadTokenizer } from "./tokenizer.ts";
+import { type Tokenizer, TokenizerEvidence, loadTokenizer } from "./tokenizer.ts";
 
 interface TypedArrays {
   f16: Float16Array;
@@ -69,13 +70,61 @@ export async function loadModel(
   return { manifest: parsed, tensors, tokenizer };
 }
 
+/**
+ * The shared tokenizer on its own, with its measured probes (`evidence.json`): chapter 1's
+ * model. It has no weights and so no manifest; its evidence names the tokenizer file by hash
+ * instead, and loading checks it.
+ */
+export interface LoadedTokenizer {
+  id: "tokenizer";
+  tokenizer: Tokenizer;
+  evidence: ProbeResult[];
+  /** Prompts the tokenizer probe chose (O2). */
+  prompts: string[];
+}
+
+/** What a chapter's model can be: a trained model, or the tokenizer alone (chapter 1). */
+export type ModelSource = LoadedModel | LoadedTokenizer;
+
+/** The id a chapter names its model by: a trained model's id, or `"tokenizer"`. */
+export function sourceId(source: ModelSource): string {
+  return "manifest" in source ? source.manifest.id : source.id;
+}
+
+/** The measured probes a model carries: its manifest's evidence, or the tokenizer's. */
+export function sourceEvidence(source: ModelSource): { id: string; evidence: ProbeResult[] } {
+  return "manifest" in source ? source.manifest : source;
+}
+
+export async function loadTokenizerWithEvidence(
+  tokenizerFile: ArrayBuffer,
+  evidenceJson: unknown,
+): Promise<LoadedTokenizer> {
+  const { tokenizerSha256, evidence, prompts } = TokenizerEvidence.parse(evidenceJson);
+  const sha = await sha256Hex(tokenizerFile);
+  if (sha !== tokenizerSha256)
+    throw new Error(`tokenizer sha256 ${sha} does not match its evidence (${tokenizerSha256})`);
+  const tokenizer = loadTokenizer(JSON.parse(new TextDecoder().decode(tokenizerFile)));
+  return { id: "tokenizer", tokenizer, evidence, prompts };
+}
+
+/** Fetches `tokenizer.json` and its `evidence.json` from the tokenizer's directory. */
+export async function fetchTokenizer(dirUrl: URL): Promise<LoadedTokenizer> {
+  const [file, evidence] = await Promise.all([
+    bytes(new URL("tokenizer.json", dirUrl)),
+    bytes(new URL("evidence.json", dirUrl)),
+  ]);
+  return loadTokenizerWithEvidence(file, JSON.parse(new TextDecoder().decode(evidence)));
+}
+
+async function bytes(url: URL): Promise<ArrayBuffer> {
+  const response = await fetch(url);
+  if (!response.ok) throw new Error(`${url}: HTTP ${response.status}`);
+  return response.arrayBuffer();
+}
+
 /** Fetches a manifest, its weights and (for BPE models) its tokenizer, then loads them. */
 export async function fetchModel(manifestUrl: URL): Promise<LoadedModel> {
-  const bytes = async (url: URL) => {
-    const response = await fetch(url);
-    if (!response.ok) throw new Error(`${url}: HTTP ${response.status}`);
-    return response.arrayBuffer();
-  };
   const manifest = JSON.parse(new TextDecoder().decode(await bytes(manifestUrl)));
   const parsed = ModelManifest.parse(manifest);
   const [weights, tokenizerFile] = await Promise.all([

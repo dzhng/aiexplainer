@@ -9,7 +9,7 @@
  */
 import { probabilities, promptTokens, type ModelId, type Tokenizer } from "@repo/llm";
 import type { ResidualPass, ResidualRun } from "../../scene/builders/residual.ts";
-import type { RunSession, SceneRunFn } from "../scene-run.ts";
+import type { RunContext, SceneRunFn } from "../scene-run.ts";
 
 const rms = (values: ArrayLike<number>) => {
   let squares = 0;
@@ -18,7 +18,7 @@ const rms = (values: ArrayLike<number>) => {
 };
 
 async function pass(
-  session: RunSession,
+  session: RunContext["session"],
   model: ModelId,
   tokens: number[],
   tokenizer: Tokenizer,
@@ -49,7 +49,7 @@ async function pass(
   };
 }
 
-export const residualRun: SceneRunFn = async (def, text, session, model) => {
+export const residualRun: SceneRunFn = async (def, text, { model, session }) => {
   const prompt = text ?? def.loop.inputs?.[0] ?? "";
   const tokenizer = model.tokenizer as Tokenizer;
   const tokens = promptTokens(tokenizer, prompt);

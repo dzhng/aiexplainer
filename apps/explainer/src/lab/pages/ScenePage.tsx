@@ -61,6 +61,7 @@ export function ScenePage({ slug, reading, debug, clock, probe, onReady }: Scene
     const scene = chapterScene(def, assets, () => ({ def, ui, run, loopTime: clock.now() }));
     // Filmstrips burn the loop's beat in under each frame.
     probe.beat = scene.beat;
+    // `?yaw=<degrees>` turns the camera around the shot's target: a label sweep's azimuths.
     const yaw = (Number(new URLSearchParams(location.search).get("yaw") ?? 0) * Math.PI) / 180;
     void loadSceneAssets(def, assets)
       .then(() =>

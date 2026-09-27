@@ -9,7 +9,7 @@
  */
 import { probabilities, promptTokens, type Tokenizer } from "@repo/llm";
 import { MLP_LAMPS, type MlpRun } from "../../scene/builders/mlp.ts";
-import type { RunSession, SceneRunFn } from "../scene-run.ts";
+import type { RunContext, SceneRunFn } from "../scene-run.ts";
 
 /** Neurons switched off for the readout: the `mlp` probe's `TOP_NEURONS`. */
 export const MLP_OFF = 16;
@@ -21,7 +21,7 @@ function argmax(values: ArrayLike<number>): number {
 }
 
 /** The stream's RMS at the last token entering each layer and leaving the last, ÷ the first. */
-async function streamFade(session: RunSession, tokens: number[]): Promise<number[]> {
+async function streamFade(session: RunContext["session"], tokens: number[]): Promise<number[]> {
   await session.load("noresidual");
   const last = tokens.length - 1;
   const { trace } = await session.run(tokens, { model: "noresidual", trace: { tokens: [last] } });
@@ -36,7 +36,7 @@ async function streamFade(session: RunSession, tokens: number[]): Promise<number
   return sizes.map((size) => size / sizes[0]!);
 }
 
-export const mlpRun: SceneRunFn = async (def, text, session, model) => {
+export const mlpRun: SceneRunFn = async (def, text, { model, session }) => {
   const prompt = text ?? def.loop.inputs?.[0] ?? "";
   const tokenizer = model.tokenizer as Tokenizer;
   const tokens = promptTokens(tokenizer, prompt);

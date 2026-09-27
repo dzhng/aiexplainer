@@ -1,0 +1,96 @@
+{
+  "kind": "pieces",
+  "vocab": 4096,
+  "steps": [
+    {
+      "text": "onse",
+      "pieces": [
+        {
+          "id": 292,
+          "text": "on",
+          "bytes": 2
+        },
+        {
+          "id": 374,
+          "text": "se",
+          "bytes": 2
+        }
+      ]
+    },
+    {
+      "text": "It was a birdcage!",
+      "pieces": [
+        {
+          "id": 1016,
+          "text": "It",
+          "bytes": 2
+        },
+        {
+          "id": 284,
+          "text": " was",
+          "bytes": 4
+        },
+        {
+          "id": 260,
+          "text": " a",
+          "bytes": 2
+        },
+        {
+          "id": 419,
+          "text": " bird",
+          "bytes": 5
+        },
+        {
+          "id": 68,
+          "text": "c",
+          "bytes": 1
+        },
+        {
+          "id": 942,
+          "text": "age",
+          "bytes": 3
+        },
+        {
+          "id": 2,
+          "text": "!",
+          "bytes": 1
+        }
+      ]
+    },
+    {
+      "text": "The cat and the kitten.",
+      "pieces": [
+        {
+          "id": 411,
+          "text": "The",
+          "bytes": 3
+        },
+        {
+          "id": 460,
+          "text": " cat",
+          "bytes": 4
+        },
+        {
+          "id": 268,
+          "text": " and",
+          "bytes": 4
+        },
+        {
+          "id": 264,
+          "text": " the",
+          "bytes": 4
+        },
+        {
+          "id": 2083,
+          "text": " kitten",
+          "bytes": 7
+        },
+        {
+          "id": 15,
+          "text": ".",
+          "bytes": 1
+        }
+      ]
+    }
+  ]
+}

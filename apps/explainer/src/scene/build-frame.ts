@@ -11,6 +11,7 @@ import type { SceneTags } from "../hud/SceneTags.tsx";
 import { autocomplete, type CountsRun } from "./builders/autocomplete.ts";
 import { mlp, type MlpRun } from "./builders/mlp.ts";
 import { residual, type ResidualRun } from "./builders/residual.ts";
+import { tokenizer } from "./builders/tokenizer.ts";
 import { withEnvironment } from "./environment.ts";
 
 /** The HUD controls a scene reads. */
@@ -23,10 +24,22 @@ export interface SceneUi {
 }
 
 /**
- * The chapter's model output for what the scene shows (computed through the session,
- * `runtime/scene-run.ts`). Each scene's builder defines its own kind.
+ * The chapter's model output for what the scene shows (`runtime/scene-run.ts`). Each scene's
+ * builder reads its own kind.
  */
-export type SceneRun = CountsRun | MlpRun | ResidualRun;
+export type SceneRun = CountsRun | PiecesRun | MlpRun | ResidualRun;
+
+/** Chapter 1's run (`runtime/runs/tokenizer.ts`). */
+export interface PiecesRun {
+  kind: "pieces";
+  /** Entries in the tokenizer's vocabulary: the box of shapes. */
+  vocab: number;
+  /**
+   * One step per loop input (or one for typed text): the text and its tokenizer pieces,
+   * each with its id, its text (a leading space included) and its length in bytes.
+   */
+  steps: { text: string; pieces: { id: number; text: string; bytes: number }[] }[];
+}
 
 export interface SceneBuilder {
   /** Prop URLs by asset id; the app loads them before the first frame. */
@@ -45,6 +58,7 @@ export interface SceneBuilder {
 
 export const SCENE_BUILDERS: Record<SceneBuilderId, SceneBuilder> = {
   autocomplete,
+  tokenizer,
   mlp,
   residual,
 };

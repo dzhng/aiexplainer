@@ -14,7 +14,8 @@ function splitter(model: LoadedModel): (text: string) => string[] {
   return split;
 }
 
-export const autocompleteRun: SceneRunFn = async (def, text, session, model) => {
+export const autocompleteRun: SceneRunFn = async (def, text, { model, session }) => {
+  if (!("manifest" in model)) throw new Error("autocomplete needs the counts model");
   const typed = text === null ? [] : splitter(model)(text);
   const words = text === null ? (def.loop.inputs ?? []) : [typed.at(-1) ?? text.trim()];
   const steps: CountsRun["steps"] = [];
