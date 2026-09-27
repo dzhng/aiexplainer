@@ -1,32 +1,37 @@
 /**
- * The lab's renderer host: one canvas, the real renderer, orbit controls, pinned labels
- * and the probe hooks (`receipt`, `crops`, `labels`). Lab pages hand it a look and a frame
- * input; it owns the loop: clock → orbit → renderer.frame → placeLabels → label refs.
+ * The one frame loop: a canvas, the real renderer, orbit controls, pinned labels and scene
+ * text. Every frame: clock → `update` (the app's timeline → buildFrame, or a lab fixture's
+ * tweak) → orbit → renderer.frame → placeLabels → label and tag refs. The app and every lab
+ * page run through it; it also installs the probe's `receipt`, `labels` and scene crops.
  */
 import {
   cameraMatrices,
   createCameraMatrices,
   createRenderer,
+  DEFAULT_LABEL_BOX,
   OrbitController,
   partWorldBounds,
   placeLabels,
   projectBox,
   sceneAnchors,
   sceneOccluders,
-  type LabelPlacement,
-  type Occluder,
-  type WorldAnchor,
   type FrameInput,
   type FrameReceipt,
+  type LabelBox,
+  type LabelPlacement,
   type LookConfig,
+  type Occluder,
   type OrbitPose,
   type Renderer,
   type ScreenRect,
+  type WorldAnchor,
 } from "@repo/renderer";
 import type { Box3 } from "math/shapes";
-import type { Clock } from "../runtime/clock.ts";
 import type { LabelsHandle } from "../hud/Labels.tsx";
-import type { ProbeApi } from "./probe.ts";
+import type { SceneTags, SceneTagsHandle } from "../hud/SceneTags.tsx";
+import type { ProbeApi } from "../lab/probe.ts";
+import type { Clock } from "./clock.ts";
+import { bindOrbit } from "./orbit-input.ts";
 
 export interface StageOptions {
   canvas: HTMLCanvasElement;
@@ -39,17 +44,26 @@ export interface StageOptions {
   onReady: () => void;
   /** Debug layers and bloom, e.g. from `?emissive=0&bloom=0`. */
   debug?: FrameInput["debug"];
+  /** Runs before each frame is drawn; mutates `input` (scene, transforms, dynamics, view). */
+  update?: (input: FrameInput, timeSec: number) => void;
   /** Adjusts the drawn camera from the orbit pose each frame (e.g. a turntable). */
   pose?: (pose: OrbitPose, timeSec: number) => void;
-  /** The label layer to drive, when the scene has anchors. */
+  /** The label layer to drive, for the scene's anchors. */
   labels?: LabelsHandle | null;
+  /** Scene text: the overlay and the builder's current tags. */
+  tags?: { layer: SceneTagsHandle | null; current: () => SceneTags };
 }
 
 export interface Stage {
   renderer: Renderer;
   input: FrameInput;
+  /** Cuts the camera to `pose` (a chapter's shot on arrival). */
+  jumpTo(pose: OrbitPose): void;
   dispose(): void;
 }
+
+/** Scene text never hides for overlap: a 1 px box. */
+const TAG_BOX: LabelBox = { dx: 0, dy: 0, width: 1, height: 1 };
 
 export async function runStage(o: StageOptions): Promise<Stage | null> {
   const created = await createRenderer(o.canvas, o.look);
@@ -70,58 +84,45 @@ export async function runStage(o: StageOptions): Promise<Stage | null> {
   input.camera = pose;
 
   const { canvas } = o;
-  const onDown = (e: PointerEvent) => {
-    canvas.setPointerCapture(e.pointerId);
-    orbit.pointerDown({
-      pointerId: e.pointerId,
-      x: e.clientX,
-      y: e.clientY,
-      button: e.button,
-      shiftKey: e.shiftKey,
-    });
-  };
-  const onMove = (e: PointerEvent) =>
-    orbit.pointerMove({ pointerId: e.pointerId, x: e.clientX, y: e.clientY, button: e.button });
-  const onUp = (e: PointerEvent) =>
-    orbit.pointerUp({ pointerId: e.pointerId, x: e.clientX, y: e.clientY, button: e.button });
-  const onWheel = (e: WheelEvent) => {
-    e.preventDefault();
-    orbit.wheel(e.deltaY);
-  };
-  const onMenu = (e: Event) => e.preventDefault();
-  canvas.addEventListener("pointerdown", onDown);
-  canvas.addEventListener("pointermove", onMove);
-  canvas.addEventListener("pointerup", onUp);
-  canvas.addEventListener("pointercancel", onUp);
-  canvas.addEventListener("wheel", onWheel, { passive: false });
-  canvas.addEventListener("contextmenu", onMenu);
+  const unbind = bindOrbit(canvas, orbit);
   const resizeObserver = new ResizeObserver(() => renderer.resize());
   resizeObserver.observe(canvas);
 
   const matrices = createCameraMatrices();
-  const placements: LabelPlacement[] = [];
-  // Occluders and world anchors change only with the scene or the view.
-  const placedFor = { revision: -1, mode: input.view.mode, t: Number.NaN };
+  const labelAnchors: WorldAnchor[] = [];
+  const labelPlacements: LabelPlacement[] = [];
+  const tagAnchors: WorldAnchor[] = [];
+  const tagPlacements: LabelPlacement[] = [];
+  const obstacles: ScreenRect[] = [];
+  // Occluders change with the scene's structure or the view; anchors move every frame.
+  const occludedFor = { revision: -1, mode: input.view.mode, t: Number.NaN };
   let occluders: Occluder[] = [];
-  let anchors: WorldAnchor[] = [];
   const placeAll = () => {
     const { scene, view } = input;
     if (
-      placedFor.revision !== scene.revision ||
-      placedFor.mode !== view.mode ||
-      placedFor.t !== view.t
+      occludedFor.revision !== scene.revision ||
+      occludedFor.mode !== view.mode ||
+      occludedFor.t !== view.t
     ) {
       occluders = sceneOccluders(scene, view, o.look);
-      anchors = sceneAnchors(scene, view);
-      const widths = o.labels?.pillWidths() ?? {};
-      for (const anchor of anchors) anchor.pillWidth = widths[anchor.id];
-      placedFor.revision = scene.revision;
-      placedFor.mode = view.mode;
-      placedFor.t = view.t;
+      occludedFor.revision = scene.revision;
+      occludedFor.mode = view.mode;
+      occludedFor.t = view.t;
     }
     cameraMatrices(input.camera, input.viewport, matrices);
-    placeLabels(matrices, anchors, occluders, placements);
-    o.labels?.update(placements);
+    // Scene text first: labels then steer clear of it.
+    if (o.tags) {
+      const tags = o.tags.current();
+      sceneAnchors(scene, view, tags.anchors, tagAnchors);
+      placeLabels(matrices, tagAnchors, occluders, tagPlacements, TAG_BOX);
+      o.tags.layer?.update(tagPlacements, tags);
+      o.tags.layer?.obstacles(obstacles);
+    }
+    sceneAnchors(scene, view, scene.anchors, labelAnchors);
+    const widths = o.labels?.pillWidths();
+    for (const anchor of labelAnchors) anchor.pillWidth = widths?.[anchor.id];
+    placeLabels(matrices, labelAnchors, occluders, labelPlacements, DEFAULT_LABEL_BOX, obstacles);
+    o.labels?.update(labelPlacements);
   };
 
   let receipt: FrameReceipt | null = null;
@@ -144,6 +145,7 @@ export async function runStage(o: StageOptions): Promise<Stage | null> {
     input.viewport.width = canvas.clientWidth;
     input.viewport.height = canvas.clientHeight;
     input.viewport.dpr = devicePixelRatio;
+    o.update?.(input, now);
     receipt = renderer.frame(input);
     placeAll();
     if (++frames === 2) o.onReady();
@@ -153,7 +155,7 @@ export async function runStage(o: StageOptions): Promise<Stage | null> {
 
   const box: Box3 = [0, 0, 0, 0, 0, 0];
   o.probe.receipt = () => receipt!;
-  o.probe.labels = () => placements.map((p) => ({ ...p }));
+  o.probe.labels = () => labelPlacements.map((p) => ({ ...p }));
   o.probe.sceneCrops = () => {
     cameraMatrices(input.camera, input.viewport, matrices);
     const crops: Record<string, ScreenRect> = { ...o.labels?.rects() };
@@ -167,15 +169,13 @@ export async function runStage(o: StageOptions): Promise<Stage | null> {
   return {
     renderer,
     input,
+    jumpTo(target) {
+      orbit.jumpTo(target);
+    },
     dispose() {
       cancelAnimationFrame(raf);
       resizeObserver.disconnect();
-      canvas.removeEventListener("pointerdown", onDown);
-      canvas.removeEventListener("pointermove", onMove);
-      canvas.removeEventListener("pointerup", onUp);
-      canvas.removeEventListener("pointercancel", onUp);
-      canvas.removeEventListener("wheel", onWheel);
-      canvas.removeEventListener("contextmenu", onMenu);
+      unbind();
       renderer.dispose();
     },
   };

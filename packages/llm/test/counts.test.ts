@@ -16,6 +16,16 @@ interface GoldenCase {
   next: NextWord[];
 }
 
+describe("split", () => {
+  test("splits text exactly like training/counts.py, from the manifest's rule", async () => {
+    const cases: { text: string; words: string[] }[] = await Bun.file(
+      new URL("counts-split.json", training),
+    ).json();
+    for (const model of [await loadCounts(new URL("counts/", training)), await loadCounts(app)])
+      for (const { text, words } of cases) expect(model.split(text)).toEqual(words);
+  });
+});
+
 describe("nextWords", () => {
   test("matches the Python reference on the fixture export exactly", async () => {
     const model = await loadCounts(new URL("counts/", training));

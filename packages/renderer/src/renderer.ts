@@ -1,7 +1,7 @@
 /**
  * `createRenderer`: owns the device, the registry and the resources, and updates each at its
  * own frequency — targets on resize, the scene on `revision` change, look numbers and the
- * room on `setLook`, instances on view change, camera and dynamics every frame. Drawing
+ * room on `setLook`, and instances (part transforms), camera and dynamics every frame. Drawing
  * itself is `encodeFrame`.
  */
 import { d, type TgpuBuffer, type TgpuRoot, type TgpuSampler, type TgpuTextureView } from "typegpu";
@@ -21,7 +21,6 @@ import {
   type FrameReceipt,
   type LookConfig,
   type Renderer,
-  type ViewMode,
 } from "./frame-input.ts";
 import {
   DYNAMICS_BYTES_PER_SLOT,
@@ -63,7 +62,6 @@ interface SceneResources extends FrameScene {
   instanceU32: Uint32Array;
   dynamics: GPUBuffer;
   dynamicsData: Float32Array<ArrayBuffer>;
-  view: { mode: ViewMode | null; t: number };
 }
 
 interface LookResources extends FrameLook {
@@ -209,7 +207,6 @@ function buildScene(root: TgpuRoot, registry: Registry, input: FrameInput, look:
     instanceU32: new Uint32Array(instanceData),
     dynamics: root.unwrap(dynamics),
     dynamicsData: new Float32Array((compiled.slotCount * DYNAMICS_BYTES_PER_SLOT) / 4),
-    view: { mode: null, t: 0 },
   };
   return { scope, value };
 }
@@ -296,12 +293,9 @@ export async function createRenderer(
         scene.swap(built.scope, built.value);
         s = built.value;
       }
-      if (s.view.mode !== input.view.mode || s.view.t !== input.view.t) {
-        packInstances(s.compiled, input.view, s.instanceF32, s.instanceU32);
-        device.queue.writeBuffer(s.instances, 0, s.instanceF32);
-        s.view.mode = input.view.mode;
-        s.view.t = input.view.t;
-      }
+      // Part transforms are per-frame data (bars grow, cards slide); repacking is allocation-free.
+      packInstances(s.compiled, input.view, s.instanceF32, s.instanceU32);
+      device.queue.writeBuffer(s.instances, 0, s.instanceF32);
       const dyn = input.dynamics;
       for (let slot = 0; slot < s.compiled.slotCount; slot++) {
         s.dynamicsData[slot * 4] = dyn.intensity[slot] ?? 0;

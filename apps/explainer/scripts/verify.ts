@@ -17,6 +17,8 @@
  *   `--pad` px. Within one crop, `a+b` shoots the union, a trailing `*` matches a prefix (a
  *   wildcard that matches nothing, e.g. every label hidden, shoots the whole viewport), and
  *   `rect:x,y,w,h` is a literal rectangle. `--size N` shoots an N×N square centred on it.
+ * - `--ui '{"text":"happy"}'` sets app controls through the probe (`setUi`) once ready.
+ * - `--outline safe` draws that crop's rectangle on the page before shooting (framing review).
  * - `--check label-dots` (on a fixture of flat magenta markers with one anchor each) proves
  *   CPU placement and GPU raster agree: every visible label's dot, and the placement it came
  *   from, must lie within 2 px of its marker's rendered pixel centroid.
@@ -46,6 +48,8 @@ const { values: args } = parseArgs({
     pad: { type: "string", default: "12" },
     size: { type: "string" },
     check: { type: "string" },
+    ui: { type: "string" },
+    outline: { type: "string" },
   },
 });
 
@@ -225,6 +229,17 @@ try {
   else if (adapter.isFallbackAdapter) failures.push("fallback (software) adapter");
 
   for (const key of args.press?.split(",") ?? []) await page.keyboard.press(key);
+  if (args.ui) {
+    const ui = JSON.parse(args.ui) as Record<string, unknown>;
+    const set = await page.evaluate((u) => {
+      if (!window.__explainer!.setUi) return false;
+      window.__explainer!.setUi(u);
+      return true;
+    }, ui);
+    if (!set) failures.push("--ui: this page has no setUi");
+    // The scene's model output comes back from the worker asynchronously.
+    await page.waitForTimeout(500);
+  }
   // Two frames: React commits what the keys changed, then the browser paints it.
   await page.evaluate(
     () => new Promise((done) => requestAnimationFrame(() => requestAnimationFrame(done))),
@@ -267,6 +282,27 @@ try {
             .map((l) => `${l.id}:${l.hiddenBy ?? "shown"}@${Math.round(l.x)},${Math.round(l.y)}`)
             .join(" "),
         );
+      if (args.outline) {
+        const rect = crops[args.outline];
+        if (!rect) failures.push(`--outline: no crop ${args.outline}`);
+        else
+          await page.evaluate(({ x, y, width, height }) => {
+            const box = document.getElementById("harness-outline") ?? document.createElement("div");
+            box.id = "harness-outline";
+            Object.assign(box.style, {
+              position: "fixed",
+              left: `${x}px`,
+              top: `${y}px`,
+              width: `${width}px`,
+              height: `${height}px`,
+              border: "2px dashed #ff3bd4",
+              boxSizing: "border-box",
+              pointerEvents: "none",
+              zIndex: "10",
+            });
+            document.body.append(box);
+          }, rect);
+      }
       const name = t === undefined ? args.out : `${args.out}-t${t}`;
       const cropIds = args.crop?.split(",") ?? [];
       if (cropIds.length === 0) await save(name);

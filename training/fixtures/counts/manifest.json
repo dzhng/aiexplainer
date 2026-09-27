@@ -4,7 +4,14 @@
   "kind": "word-counts",
   "tokenizer": {
     "kind": "words",
-    "vocabTensor": "vocab"
+    "vocabTensor": "vocab",
+    "pattern": "[a-z]+(?:'[a-z]+)*|[.!?]",
+    "replace": [
+      [
+        "’",
+        "'"
+      ]
+    ]
   },
   "weightsFile": "weights.bin",
   "weightsSha256": "739aaaee069946bdcaddd226dd133a993806bf9d45ee6e3e81e4e773313ae510",

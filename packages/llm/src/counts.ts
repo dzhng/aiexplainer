@@ -4,6 +4,8 @@ import { type LoadedModel, tensor } from "./load.ts";
 
 export interface CountsModel {
   vocab: readonly string[];
+  /** Splits text into the words and sentence marks the model counts (the manifest's rule). */
+  split: (text: string) => string[];
   index: ReadonlyMap<string, number>;
   /** Successors kept per word (the row width of the tables below). */
   successorsPerWord: number;
@@ -38,8 +40,16 @@ export function countsModel(model: LoadedModel): CountsModel {
     throw new Error(`${manifest.id}: vocab, successors and counts shapes disagree`);
   }
   const vocab = decodeVocab(vocabTensor.data, vocabSize);
+  const { pattern, replace } = manifest.tokenizer;
+  const regex = new RegExp(pattern, "gu");
+  const split = (text: string) => {
+    let normal = text.toLowerCase();
+    for (const [from, to] of replace) normal = normal.replaceAll(from, to);
+    return normal.match(regex) ?? [];
+  };
   return {
     vocab,
+    split,
     index: new Map(vocab.map((word, i) => [word, i])),
     successorsPerWord,
     successors: successors.data,

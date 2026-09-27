@@ -3,7 +3,7 @@ import type { LabelDef } from "../../chapters/types.ts";
 import { Labels, type LabelReading, type LabelsHandle } from "../../hud/Labels.tsx";
 import type { Clock } from "../../runtime/clock.ts";
 import type { ProbeApi } from "../probe.ts";
-import { runStage, type StageOptions } from "../stage.ts";
+import { runStage, type StageOptions } from "../../runtime/stage.ts";
 
 export type StageScene = Pick<StageOptions, "look" | "input" | "pose"> & { labels?: LabelDef[] };
 

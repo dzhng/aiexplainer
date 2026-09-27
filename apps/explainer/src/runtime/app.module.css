@@ -5,10 +5,14 @@
   overflow: hidden;
 }
 
-/* A flat stand-in for the WebGPU canvas until slice 10 mounts the renderer here. */
+/* The WebGPU canvas; the background shows only until the first frame. */
 .canvas {
   position: absolute;
   inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
   z-index: 0;
   background: var(--bg-deep);
+  touch-action: none;
 }

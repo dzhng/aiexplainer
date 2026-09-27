@@ -21,6 +21,10 @@ export interface ProbeApi {
   receipt?: () => FrameReceipt;
   /** The latest label placements. */
   labels?: () => LabelPlacement[];
+  /** The app only: go to a chapter by slug, as the ladder does. */
+  goto?: (slug: string) => void;
+  /** The app only: set HUD controls (`text`, `follow`, `slider`, `view`, `playing: false`). */
+  setUi?: (ui: Record<string, unknown>) => void;
   /** Free-form results of in-page checks, printed by the harness. */
   results?: unknown;
 }

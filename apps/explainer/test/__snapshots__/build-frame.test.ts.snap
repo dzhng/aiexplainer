@@ -1,0 +1,66 @@
+// Bun Snapshot v1, https://bun.sh/docs/test/snapshots
+
+exports[`the scene is the board, ten bars and a card, in stable slots 1`] = `
+[
+  [
+    "board",
+    "mesh",
+    0,
+  ],
+  [
+    "bar.0",
+    "block",
+    1,
+  ],
+  [
+    "bar.1",
+    "block",
+    2,
+  ],
+  [
+    "bar.2",
+    "block",
+    3,
+  ],
+  [
+    "bar.3",
+    "block",
+    4,
+  ],
+  [
+    "bar.4",
+    "block",
+    5,
+  ],
+  [
+    "bar.5",
+    "block",
+    6,
+  ],
+  [
+    "bar.6",
+    "block",
+    7,
+  ],
+  [
+    "bar.7",
+    "block",
+    8,
+  ],
+  [
+    "bar.8",
+    "block",
+    9,
+  ],
+  [
+    "bar.9",
+    "block",
+    10,
+  ],
+  [
+    "card",
+    "block",
+    11,
+  ],
+]
+`;

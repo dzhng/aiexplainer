@@ -11,6 +11,7 @@ import { measureBloom } from "./perf.ts";
 import { registryBaseline } from "./registry-baseline.ts";
 import { tokensScene } from "./tokens.ts";
 import { AdapterPage } from "./pages/AdapterPage.tsx";
+import { ScenePage } from "./pages/ScenePage.tsx";
 import { StagePage } from "./pages/StagePage.tsx";
 import { ArithPage } from "./pages/ArithPage.tsx";
 import { ModelsPage } from "./pages/ModelsPage.tsx";
@@ -70,6 +71,18 @@ switch (route) {
     break;
   case "calib":
     stage(calibScene);
+    break;
+  case "scene":
+    root.render(
+      <ScenePage
+        slug={sub}
+        reading={reading}
+        debug={debug}
+        clock={clock}
+        probe={probe}
+        onReady={markReady}
+      />,
+    );
     break;
   case "kit":
     stage(() => kitScene(sub));

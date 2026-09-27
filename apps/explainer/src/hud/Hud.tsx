@@ -81,6 +81,21 @@ function TitlePanel({ state, dispatch, def, model }: HudProps) {
         </button>
         {state.precisionOpen && <p className={css.preciseText}>{caption.precisely}</p>}
       </section>
+      {def.model !== null && (
+        <label className={`${css.box} ${css.prompt}`} data-crop="panel:prompt">
+          <span className={css.promptLabel}>Your text</span>
+          <input
+            className={css.promptInput}
+            type="text"
+            value={state.text ?? ""}
+            placeholder="Type a word…"
+            spellCheck={false}
+            autoComplete="off"
+            maxLength={80}
+            onChange={(e) => dispatch({ type: "setText", text: e.target.value })}
+          />
+        </label>
+      )}
     </header>
   );
 }

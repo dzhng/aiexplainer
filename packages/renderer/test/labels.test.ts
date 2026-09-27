@@ -2,7 +2,14 @@ import { expect, test } from "bun:test";
 import type { Vec3 } from "math";
 import { cameraMatrices, createCameraMatrices } from "../src/camera.ts";
 import type { Part, SceneAnchor, SceneDesc } from "../src/frame-input.ts";
-import { placeLabels, sceneAnchors, sceneOccluders, type LabelPlacement } from "../src/labels.ts";
+import type { ScreenRect } from "../src/camera.ts";
+import {
+  DEFAULT_LABEL_BOX,
+  placeLabels,
+  sceneAnchors,
+  sceneOccluders,
+  type LabelPlacement,
+} from "../src/labels.ts";
 import { testLook } from "./look.ts";
 
 const view = { mode: "whole" as const, t: 0 };
@@ -25,7 +32,11 @@ const anchor = (id: string, [x, y, z]: Vec3, priority = 0): SceneAnchor => ({
 });
 
 /** The eye sits on +Z at distance 10, looking at the origin; the viewport is 800×600. */
-function place(parts: Part[], anchors: SceneAnchor[]): Record<string, LabelPlacement> {
+function place(
+  parts: Part[],
+  anchors: SceneAnchor[],
+  obstacles: ScreenRect[] = [],
+): Record<string, LabelPlacement> {
   const scene: SceneDesc = { revision: 1, parts: [...parts, carrier], anchors, assets: {} };
   const matrices = cameraMatrices(
     { target: [0, 0, 0], yaw: 0, pitch: 0, distance: 10, fovY: 0.8 },
@@ -37,6 +48,8 @@ function place(parts: Part[], anchors: SceneAnchor[]): Record<string, LabelPlace
     sceneAnchors(scene, view),
     sceneOccluders(scene, view, testLook()),
     [],
+    DEFAULT_LABEL_BOX,
+    obstacles,
   );
   return Object.fromEntries(placements.map((p) => [p.id, p]));
 }
@@ -77,13 +90,34 @@ test("a tube's capsule hides an anchor behind it, but not one the ray passes abo
   expect(placed.clear).toMatchObject({ visible: true });
 });
 
-test("overlapping labels keep the higher priority", () => {
+test("a crowded lower-priority label takes the next free side", () => {
   const placed = place([], [anchor("minor", [0, 0, 0], 1), anchor("major", [0.05, 0, 0], 5)]);
-  expect(placed.major).toMatchObject({ visible: true });
+  expect(placed.major).toMatchObject({ visible: true, side: "up-right" });
+  expect(placed.minor).toMatchObject({ visible: true, side: "up-left" });
+  // Far enough apart, both keep the first side.
+  const apart = place([], [anchor("a", [-2, 0, 0], 1), anchor("b", [2, 0, 0], 5)]);
+  expect([apart.a!.side, apart.b!.side]).toEqual(["up-right", "up-right"]);
+});
+
+test("with every side blocked, the lower priority hides", () => {
+  // Obstacles fill every side of the centre dot except the one the major label takes.
+  const blocked: ScreenRect[] = [
+    { x: 150, y: 250, width: 230, height: 45 },
+    { x: 150, y: 305, width: 500, height: 45 },
+  ];
+  const placed = place(
+    [],
+    [anchor("minor", [0, 0, 0], 1), anchor("major", [0.02, 0, 0], 5)],
+    blocked,
+  );
+  expect(placed.major).toMatchObject({ visible: true, side: "up-right" });
   expect(placed.minor).toMatchObject({ visible: false, hiddenBy: "overlap" });
-  // Far enough apart, both stay.
-  const apart = place([], [anchor("a", [-3, 0, 0], 1), anchor("b", [3, 0, 0], 5)]);
-  expect(apart.a!.visible && apart.b!.visible).toBe(true);
+});
+
+test("a label near the screen edge flips to stay on screen", () => {
+  // The dot is 100 px from the right edge: an up-right pill (18 + 220 px) would leave the screen.
+  const placed = place([], [anchor("edge", [4.23, 0, 0])]);
+  expect(placed.edge).toMatchObject({ visible: true, side: "up-left" });
 });
 
 test("the dot sits on the projected anchor", () => {
@@ -101,8 +135,8 @@ test("translucent parts never hide a label", () => {
 
 test("a label's pill may not cover another label's dot", () => {
   // At 70.9 px/m, the second dot sits inside the first pill (60 px right, 27 px up) while
-  // the two pills themselves miss each other vertically by a pixel.
+  // the two pills themselves miss each other: no side of the second label can uncover its dot.
   const placed = place([], [anchor("low", [0, 0, 0], 5), anchor("high", [0.846, 0.381, 0], 1)]);
-  expect(placed.low).toMatchObject({ visible: true });
+  expect(placed.low).toMatchObject({ visible: true, side: "up-right" });
   expect(placed.high).toMatchObject({ visible: false, hiddenBy: "overlap" });
 });

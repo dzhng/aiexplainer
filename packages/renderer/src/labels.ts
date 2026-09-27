@@ -7,8 +7,14 @@
  */
 import { mat4, vec3, type Mat4, type Vec3 } from "math";
 import { box3, raycast3, type Box3 } from "math/shapes";
-import { createProjected, partWorld, project, type CameraMatrices } from "./camera.ts";
-import type { FrameInput, LookConfig, SceneDesc } from "./frame-input.ts";
+import {
+  createProjected,
+  partWorld,
+  project,
+  type CameraMatrices,
+  type ScreenRect,
+} from "./camera.ts";
+import type { FrameInput, LookConfig, Part, SceneAnchor, SceneDesc } from "./frame-input.ts";
 import { meshMaterial, meshNodes, partLocalBounds } from "./scene.ts";
 
 export type Occluder =
@@ -26,6 +32,10 @@ export interface WorldAnchor {
   pillWidth?: number;
 }
 
+/** Where a label's pill sits relative to its dot. */
+export type LabelSide = "up-right" | "up-left" | "down-right" | "down-left";
+const SIDES: readonly LabelSide[] = ["up-right", "up-left", "down-right", "down-left"];
+
 export interface LabelPlacement {
   id: string;
   /** The anchor's projected position (where the dot sits), CSS pixels. */
@@ -33,9 +43,11 @@ export interface LabelPlacement {
   y: number;
   visible: boolean;
   hiddenBy?: "occluded" | "offscreen" | "behind" | "overlap";
+  /** The first side (in `SIDES` order) whose pill clashes with nothing already placed. */
+  side: LabelSide;
 }
 
-/** A label's pill relative to its dot (up and to the right), and its widest size. */
+/** A label's pill relative to its dot for the up-right side (mirrored for the others), and its widest size. */
 export interface LabelBox {
   dx: number;
   dy: number;
@@ -43,7 +55,7 @@ export interface LabelBox {
   height: number;
 }
 
-export const DEFAULT_LABEL_BOX: LabelBox = { dx: 18, dy: -40, width: 150, height: 26 };
+export const DEFAULT_LABEL_BOX: LabelBox = { dx: 18, dy: -40, width: 220, height: 26 };
 
 const model: Mat4 = mat4.create();
 
@@ -105,19 +117,30 @@ export function sceneOccluders(
   return out;
 }
 
-/** Anchors resolved to world space through each part's current transform. */
-export function sceneAnchors(scene: SceneDesc, view: FrameInput["view"]): WorldAnchor[] {
-  const parts = new Map(scene.parts.map((p) => [p.id, p]));
-  return scene.anchors.map((anchor) => {
-    const part = parts.get(anchor.part);
+/**
+ * Anchors resolved to world space through each part's current transform, written into `out`
+ * (reused across frames, so per-frame placement allocates nothing once warm). `anchors`
+ * defaults to the scene's label anchors; overlays with their own anchors pass them.
+ */
+export function sceneAnchors(
+  scene: SceneDesc,
+  view: FrameInput["view"],
+  anchors: readonly SceneAnchor[] = scene.anchors,
+  out: WorldAnchor[] = [],
+): WorldAnchor[] {
+  out.length = anchors.length;
+  for (let i = 0; i < anchors.length; i++) {
+    const anchor = anchors[i]!;
+    let part: Part | undefined;
+    for (const p of scene.parts) if (p.id === anchor.part) part = p;
     if (!part) throw new Error(`labels: anchor ${anchor.id} names unknown part "${anchor.part}"`);
-    return {
-      id: anchor.id,
-      part: anchor.part,
-      position: vec3.transformMat4([0, 0, 0], anchor.local, partWorld(part, view, model)),
-      priority: anchor.priority,
-    };
-  });
+    const world = (out[i] ??= { id: "", part: "", position: [0, 0, 0], priority: 0 });
+    world.id = anchor.id;
+    world.part = anchor.part;
+    world.priority = anchor.priority;
+    vec3.transformMat4(world.position, anchor.local, partWorld(part, view, model));
+  }
+  return out;
 }
 
 /** Squared distance between segments p0→p1 and q0→q1 (Ericson, Real-Time Collision Detection 5.1.9). */
@@ -214,8 +237,10 @@ export function occludes(occluder: Occluder, origin: Vec3, dir: Vec3, length: nu
 const projected = createProjected();
 
 /**
- * Places every anchor: projects it, then hides it when behind the eye, off-screen,
- * occluded, or overlapping a higher-priority label. `out` is reused and returned.
+ * Places every anchor: projects it, then hides it when behind the eye, off-screen or
+ * occluded. Visible labels then take, by priority, the first side whose pill stays on screen
+ * and clashes with no kept label and no `obstacle` (e.g. scene text); a label with no such
+ * side hides as `overlap`. `out` is reused and returned.
  */
 export function placeLabels(
   matrices: CameraMatrices,
@@ -223,12 +248,13 @@ export function placeLabels(
   occluders: Occluder[],
   out: LabelPlacement[],
   box: LabelBox = DEFAULT_LABEL_BOX,
+  obstacles: readonly ScreenRect[] = [],
 ): LabelPlacement[] {
   out.length = anchors.length;
   const eye = matrices.eye;
   for (let i = 0; i < anchors.length; i++) {
     const anchor = anchors[i]!;
-    const placement = (out[i] ??= { id: anchor.id, x: 0, y: 0, visible: false });
+    const placement = (out[i] ??= { id: anchor.id, x: 0, y: 0, visible: false, side: "up-right" });
     placement.id = anchor.id;
     placement.hiddenBy = undefined;
     project(matrices, anchor.position, projected);
@@ -255,47 +281,54 @@ export function placeLabels(
     }
     placement.visible = placement.hiddenBy === undefined;
   }
-  hideOverlaps(anchors, out, box);
+  resolveOverlaps(anchors, out, box, obstacles, matrices);
   return out;
 }
 
 const order: number[] = [];
 const kept: number[] = [];
+const pill = { x: 0, y: 0, width: 0, height: 0 };
+const other = { x: 0, y: 0, width: 0, height: 0 };
 
 /** Radius around a dot that another label's pill may not cover, CSS pixels. */
 const DOT_CLEARANCE = 6;
 
-/** A pill's rectangle: offset from its dot by the shared box, as wide as measured. */
-function pillCoversDot(
-  pill: LabelPlacement,
-  width: number,
-  dot: LabelPlacement,
-  box: LabelBox,
-): boolean {
-  const x = pill.x + box.dx;
-  const y = pill.y + box.dy;
+/** The pill's rectangle for a placement on its side. */
+function pillRect(p: LabelPlacement, width: number, box: LabelBox, out: ScreenRect): ScreenRect {
+  const left = p.side === "up-left" || p.side === "down-left";
+  const down = p.side === "down-right" || p.side === "down-left";
+  out.x = left ? p.x - box.dx - width : p.x + box.dx;
+  out.y = down ? p.y - box.dy - box.height : p.y + box.dy;
+  out.width = width;
+  out.height = box.height;
+  return out;
+}
+
+function intersects(a: ScreenRect, b: ScreenRect): boolean {
+  return a.x < b.x + b.width && b.x < a.x + a.width && a.y < b.y + b.height && b.y < a.y + a.height;
+}
+
+function coversDot(rect: ScreenRect, dot: LabelPlacement): boolean {
   return (
-    dot.x + DOT_CLEARANCE > x &&
-    dot.x - DOT_CLEARANCE < x + width &&
-    dot.y + DOT_CLEARANCE > y &&
-    dot.y - DOT_CLEARANCE < y + box.height
+    dot.x + DOT_CLEARANCE > rect.x &&
+    dot.x - DOT_CLEARANCE < rect.x + rect.width &&
+    dot.y + DOT_CLEARANCE > rect.y &&
+    dot.y - DOT_CLEARANCE < rect.y + rect.height
   );
 }
 
-/** Two labels clash when their pills intersect or either pill covers the other's dot. */
-function labelsOverlap(
-  a: LabelPlacement,
-  aWidth: number,
-  b: LabelPlacement,
-  bWidth: number,
+/**
+ * Visits labels by priority (highest first) and gives each the first side that stays on
+ * screen and clashes with nothing kept: pills meeting, either pill covering the other's dot,
+ * or the pill meeting an obstacle.
+ */
+function resolveOverlaps(
+  anchors: WorldAnchor[],
+  out: LabelPlacement[],
   box: LabelBox,
-): boolean {
-  const pillsMeet = a.x < b.x + bWidth && b.x < a.x + aWidth && Math.abs(a.y - b.y) < box.height;
-  return pillsMeet || pillCoversDot(a, aWidth, b, box) || pillCoversDot(b, bWidth, a, box);
-}
-
-/** Visits labels by priority (highest first); one that clashes with a kept label hides. */
-function hideOverlaps(anchors: WorldAnchor[], out: LabelPlacement[], box: LabelBox): void {
+  obstacles: readonly ScreenRect[],
+  screen: { width: number; height: number },
+): void {
   order.length = 0;
   for (let i = 0; i < anchors.length; i++) order.push(i);
   order.sort((a, b) => anchors[b]!.priority - anchors[a]!.priority);
@@ -304,13 +337,31 @@ function hideOverlaps(anchors: WorldAnchor[], out: LabelPlacement[], box: LabelB
     const p = out[i]!;
     if (!p.visible) continue;
     const width = anchors[i]!.pillWidth ?? box.width;
-    let hit = false;
-    for (const k of kept) {
-      if (labelsOverlap(out[k]!, anchors[k]!.pillWidth ?? box.width, p, width, box)) hit = true;
+    let placed = false;
+    for (const side of SIDES) {
+      p.side = side;
+      pillRect(p, width, box, pill);
+      let clash =
+        pill.x < 0 ||
+        pill.y < 0 ||
+        pill.x + width > screen.width ||
+        pill.y + box.height > screen.height;
+      for (let o = 0; !clash && o < obstacles.length; o++) clash = intersects(pill, obstacles[o]!);
+      for (let k = 0; !clash && k < kept.length; k++) {
+        const q = out[kept[k]!]!;
+        pillRect(q, anchors[kept[k]!]!.pillWidth ?? box.width, box, other);
+        clash = intersects(pill, other) || coversDot(pill, q) || coversDot(other, p);
+      }
+      if (!clash) {
+        placed = true;
+        break;
+      }
     }
-    if (hit) {
+    if (placed) kept.push(i);
+    else {
+      p.side = "up-right";
       p.visible = false;
       p.hiddenBy = "overlap";
-    } else kept.push(i);
+    }
   }
 }

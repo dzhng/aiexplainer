@@ -32,7 +32,7 @@ interface PartBase {
   id: string;
   /** Index into `FrameInput.dynamics`. Several parts may share a slot. */
   slot: number;
-  /** Placement of the part's local geometry in the world. */
+  /** Placement of the part's local geometry in the world; may change every frame. */
   transform: Mat4;
 }
 
@@ -81,7 +81,10 @@ export interface SceneAnchor {
 }
 
 export interface SceneDesc {
-  /** Bump to make the renderer re-upload the scene; unchanged means reuse. */
+  /**
+   * Bump when the scene's structure changes (parts added or removed, materials, geometry);
+   * the renderer then re-uploads it. Transforms alone are re-read every frame.
+   */
   revision: number;
   parts: Part[];
   anchors: SceneAnchor[];

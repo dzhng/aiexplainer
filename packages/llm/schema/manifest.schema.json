@@ -184,11 +184,35 @@
             "vocabTensor": {
               "type": "string",
               "minLength": 1
+            },
+            "pattern": {
+              "type": "string",
+              "minLength": 1
+            },
+            "replace": {
+              "type": "array",
+              "items": {
+                "type": "array",
+                "prefixItems": [
+                  {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  {
+                    "type": "string"
+                  }
+                ],
+                "items": false,
+                "minItems": 2,
+                "maxItems": 2
+              }
             }
           },
           "required": [
             "kind",
-            "vocabTensor"
+            "vocabTensor",
+            "pattern",
+            "replace"
           ],
           "additionalProperties": false
         }

@@ -9,21 +9,6 @@
   "assets": {
     "board": "/props/counter_board.glb"
   },
-  "materials": {
-    "bar": {
-      "color": "metalDark",
-      "metallic": 0.1,
-      "roughness": 0.45,
-      "opacity": 1,
-      "emissive": "flow"
-    },
-    "card": {
-      "color": "ink",
-      "metallic": 0,
-      "roughness": 0.7,
-      "opacity": 1
-    }
-  },
   "parts": [
     {
       "kind": "mesh",

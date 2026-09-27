@@ -4,8 +4,13 @@
  * nodes through refs every frame (no React render per frame). It sits above the canvas and
  * below the HUD panels (z-index 1 in slice 04's stage order).
  */
-import { DEFAULT_LABEL_BOX, type LabelPlacement, type ScreenRect } from "@repo/renderer";
-import { forwardRef, useImperativeHandle, useRef } from "react";
+import {
+  DEFAULT_LABEL_BOX,
+  type LabelPlacement,
+  type LabelSide,
+  type ScreenRect,
+} from "@repo/renderer";
+import { forwardRef, useImperativeHandle, useLayoutEffect, useRef } from "react";
 import type { LabelDef } from "../chapters/types.ts";
 
 export type LabelReading = "analogy" | "precise";
@@ -23,6 +28,26 @@ const DOT = 8;
 const box = DEFAULT_LABEL_BOX;
 const leaderLength = Math.hypot(box.dx, box.dy + box.height / 2);
 const leaderAngle = Math.atan2(box.dy + box.height / 2, box.dx);
+
+/** Pill offset and leader angle for each side; the pill's far edge is set by `left`/`right`. */
+const SIDE_STYLE: Record<LabelSide, { pill: Partial<CSSStyleDeclaration>; leader: string }> = {
+  "up-right": {
+    pill: { left: `${box.dx}px`, right: "", top: `${box.dy}px` },
+    leader: `rotate(${leaderAngle}rad)`,
+  },
+  "up-left": {
+    pill: { left: "", right: `${box.dx}px`, top: `${box.dy}px` },
+    leader: `rotate(${Math.PI - leaderAngle}rad)`,
+  },
+  "down-right": {
+    pill: { left: `${box.dx}px`, right: "", top: `${-box.dy - box.height}px` },
+    leader: `rotate(${-leaderAngle}rad)`,
+  },
+  "down-left": {
+    pill: { left: "", right: `${box.dx}px`, top: `${-box.dy - box.height}px` },
+    leader: `rotate(${Math.PI + leaderAngle}rad)`,
+  },
+};
 
 const styles = {
   layer: { position: "fixed", inset: 0, pointerEvents: "none", zIndex: 1 },
@@ -75,6 +100,20 @@ export const Labels = forwardRef<
   { labels: readonly LabelDef[]; reading: LabelReading }
 >(function Labels({ labels, reading }, ref) {
   const nodes = useRef(new Map<string, HTMLDivElement>());
+  const sides = useRef(new Map<string, LabelSide>());
+  const widths = useRef<Record<string, number>>({});
+
+  // Pill widths change only with the text (and once the font loads): measure then, not per frame.
+  useLayoutEffect(() => {
+    const measure = () => {
+      const out: Record<string, number> = {};
+      for (const [id, node] of nodes.current)
+        out[id] = node.querySelector<HTMLElement>("[data-pill]")!.offsetWidth;
+      widths.current = out;
+    };
+    measure();
+    void document.fonts.ready.then(measure);
+  }, [labels, reading]);
 
   useImperativeHandle(
     ref,
@@ -84,14 +123,18 @@ export const Labels = forwardRef<
           const node = nodes.current.get(p.id);
           if (!node) continue;
           node.style.visibility = p.visible ? "visible" : "hidden";
-          if (p.visible) node.style.transform = `translate(${p.x}px, ${p.y}px)`;
+          if (!p.visible) continue;
+          node.style.transform = `translate(${p.x}px, ${p.y}px)`;
+          if (sides.current.get(p.id) !== p.side) {
+            const side = SIDE_STYLE[p.side];
+            Object.assign((node.querySelector("[data-pill]") as HTMLElement).style, side.pill);
+            (node.querySelector("[data-leader]") as HTMLElement).style.transform = side.leader;
+            sides.current.set(p.id, p.side);
+          }
         }
       },
       pillWidths() {
-        const out: Record<string, number> = {};
-        for (const [id, node] of nodes.current)
-          out[id] = node.querySelector<HTMLElement>("[data-pill]")!.offsetWidth;
-        return out;
+        return widths.current;
       },
       rects() {
         const out: Record<string, ScreenRect> = {};
@@ -122,7 +165,7 @@ export const Labels = forwardRef<
             else nodes.current.delete(label.anchor);
           }}
         >
-          <div style={styles.leader} />
+          <div style={styles.leader} data-leader="" />
           <div style={styles.dot} data-dot="" />
           <div style={styles.pill} data-pill="">
             {reading === "analogy" ? label.analogy : label.precise}

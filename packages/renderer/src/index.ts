@@ -22,6 +22,7 @@ export {
   sceneOccluders,
   type LabelBox,
   type LabelPlacement,
+  type LabelSide,
   type Occluder,
   type WorldAnchor,
 } from "./labels.ts";

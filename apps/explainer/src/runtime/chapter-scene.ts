@@ -1,0 +1,89 @@
+/**
+ * A chapter's scene on the stage: loads its builder's props, and gives the stage an `update`
+ * that runs the chapter loop at the caller's loop time through `evalTimeline` → `buildFrame`.
+ * The app (with its HUD and loop clock) and `/lab/scene/<slug>` (held time, fixture run)
+ * both use it, so a scene reviewed in the lab is the scene the app draws.
+ */
+import { parseGlb, type FrameInput, type SceneDesc } from "@repo/renderer";
+import { createTimelineState, evalTimeline, type TimelineState } from "../chapters/timeline.ts";
+import type { ChapterDef } from "../chapters/types.ts";
+import {
+  buildFrame,
+  createSceneFrame,
+  SCENE_BUILDERS,
+  type SceneFrame,
+  type SceneRun,
+  type SceneUi,
+} from "../scene/build-frame.ts";
+import { shotPose } from "../scene/shots.ts";
+
+export interface ChapterSceneState {
+  def: ChapterDef;
+  ui: SceneUi;
+  run: SceneRun | null;
+  /** Seconds into the chapter's loop. */
+  loopTime: number;
+}
+
+const loaded = new Map<string, Promise<SceneDesc["assets"][string]>>();
+
+/** Loads (once per URL) every prop the chapter's scene builder needs into `assets`. */
+export async function loadSceneAssets(def: ChapterDef, assets: SceneDesc["assets"]): Promise<void> {
+  const wanted = Object.entries(SCENE_BUILDERS[def.scene].assets);
+  await Promise.all(
+    wanted.map(async ([id, url]) => {
+      if (!loaded.has(url))
+        loaded.set(
+          url,
+          fetch(url).then(async (response) => {
+            if (!response.ok) throw new Error(`${url}: HTTP ${response.status}`);
+            return parseGlb(await response.arrayBuffer());
+          }),
+        );
+      assets[id] = await loaded.get(url)!;
+    }),
+  );
+}
+
+export interface ChapterScene {
+  frame: SceneFrame;
+  /** The stage's first frame input: the chapter's shot, an empty scene until the first update. */
+  input: Omit<FrameInput, "timeSec" | "viewport">;
+  update: (input: FrameInput) => void;
+}
+
+export function chapterScene(
+  first: ChapterDef,
+  assets: SceneDesc["assets"],
+  state: () => ChapterSceneState,
+): ChapterScene {
+  const input: ChapterScene["input"] = {
+    camera: shotPose(first.shot),
+    view: { mode: first.views[0] ?? "whole", t: 0 },
+    scene: { revision: 0, parts: [], anchors: [], assets },
+    dynamics: {
+      intensity: new Float32Array(1),
+      widthScale: new Float32Array(1),
+      flowPhase: new Float32Array(1),
+    },
+  };
+  const frame = createSceneFrame(input);
+  let timelineFor: ChapterDef | null = null;
+  let tl: TimelineState | null = null;
+  return {
+    frame,
+    input,
+    update(stageInput) {
+      const { def, ui, run, loopTime } = state();
+      // The builder needs its props; until they arrive the previous scene stays up.
+      if (Object.keys(SCENE_BUILDERS[def.scene].assets).some((id) => !assets[id])) return;
+      if (timelineFor !== def || !tl) {
+        tl = createTimelineState(def.loop);
+        timelineFor = def;
+      }
+      evalTimeline(def.loop, loopTime, tl);
+      frame.input = stageInput;
+      buildFrame(def, tl, ui, run, frame);
+    },
+  };
+}
