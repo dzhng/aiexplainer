@@ -15,14 +15,16 @@ and supersedes the map's open-items list, kickoff prompt and tweakable plan.
 
 ## Next Agent Prompt
 
-**Status (2026-09-27):** slices 01–11 and 14–18 are merged into `llm-explainer`, so
-every model exists. Lanes in flight:
+**Status (2026-09-27):** slices 01–11, 11b, 13 and 14–18 are merged into
+`llm-explainer`. Lanes in flight:
 
-- renderer: the lab room → vocabulary lock (11b → 13);
-- deploy: fallback, share routes and a Vercel preview (12). The recordings are re-captured
-  once 11b lands.
+- 11c: a richer room and the arrival move;
+- 04b: the game UI (the human picked holo-tactical);
+- 12: fallback, share routes and a Vercel preview;
+- chapter lanes: A (19–21), B (22–25), C (26–30), D (31–34).
 
-**Next pickup:** after 13 lands, chapter slices 19–35 fan out (see the ladder).
+**Next pickup:** 35 (the finished machine) once every chapter lands, then 12's media
+re-record and 36.
 
 You are implementing this spec with [implement-spec](../../.agents/skills/implement-spec/SKILL.md).
 Work the slices in the order of the ladder below. Each slice file is a contract:
@@ -54,7 +56,7 @@ the checklist below, and any new blockers.
 ### Global checklist
 
 - [ ] M1 — Chapter 0 through every layer (D14): slices ✅[01](slices/01-scaffold-harness.md) · ✅[02](slices/02-manifest-and-counts-model.md) · ✅[03](slices/03-chapter-contract.md) · ✅[04](slices/04-hud-shell.md) · ✅[05](slices/05-renderer-foundation.md) · ✅[06](slices/06-gltf-pipeline.md) · ✅[07](slices/07-room-lighting.md) · ✅[08](slices/08-bloom.md) · ✅[09](slices/09-labels-occlusion.md) · ✅[10](slices/10-ch0-compose-framing.md) · ✅[11](slices/11-ch0-loop-pacing.md) · ✅[11b](slices/11b-lab-room.md) · [11c](slices/11c-rich-room-arrival.md) · [04b](slices/04b-game-ui.md) · [12](slices/12-fallback-share-deploy.md)
-- [ ] M2 — Vocabulary lock: [13](slices/13-vocabulary-lock.md)
+- [x] M2 — Vocabulary lock: ✅[13](slices/13-vocabulary-lock.md)
 - [ ] M3 — Model lab: ✅[14](slices/14-tokenizer.md) · ✅[15](slices/15-transformer-core.md) · ✅[16](slices/16-model-lab-early.md) · ✅[17](slices/17-model-lab-late.md) · ✅[18](slices/18-production-arithmetic.md)
 - [ ] M4 — Chapters: [19](slices/19-ch-tokenizer.md) · [20](slices/20-ch-embeddings.md) · [21](slices/21-ch-sampling.md) · [22](slices/22-ch-attention-width.md) · [23](slices/23-ch-attention-sealed.md) · [24](slices/24-ch-attention-flow.md) · [25](slices/25-ch-positions.md) · [26](slices/26-ch-mlp.md) · [27](slices/27-ch-residual.md) · [28](slices/28-ch-stack.md) · [29](slices/29-ch-generation.md) · [30](slices/30-ch-kv-cache.md) · [31](slices/31-ch-batching.md) · [32](slices/32-ch-quantization.md) · [33](slices/33-ch-speculative.md) · [34](slices/34-ch-experts.md) · [35](slices/35-ch-finished.md)
 - [ ] M5 — Release candidate: [36](slices/36-release.md)
