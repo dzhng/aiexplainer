@@ -151,6 +151,7 @@ the human says otherwise.
 | D41 | **ffmpeg** (Homebrew) is a build-time tool for the fallback video. It is never used at runtime.                                                                                                                                                | D29 needs recordings. The map's toolchain audit (D30) missed it.                                                                      |
 
 **Human notes:**
+- **The bloom look is approved** (2026-09-27, on the slice-08 board shot: "bloom effect looks great"). The slices 07–08 checkpoint is closed, and the `look.json` bloom and emissive knobs are the baseline.
 
 - **Chapter 4 uses name recall, not pronouns (D33).** The 1-layer `attn` model does not send
   "she"/"he" attention to the character (0.58× uniform, which fails). It does attend from a
