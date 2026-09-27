@@ -321,3 +321,14 @@ standalone. Entries are appended per pass and consolidated when the spec closes.
   11c may key it to the camera-move start. Verdict: sound.
 - **Only Chakra Petch weights 600 and 700 ship.** Verdict: sound.
 - **The brand mark is not redrawn;** brand art is deferred to slice 36. Verdict: sound.
+
+## Slice 11c
+
+- **The contact shadow is a `shadow` part kind with a soft footprint.** Materials gain a
+  `specular` knob, and the shadow's is 0, so it only darkens. Verdict: sound; it is one blob,
+  not per-foot contact (polish item).
+- **The arrival move is a smoothstep from `room-wide` to the hero pose over 2.5 s
+  (`runtime/arrival.ts`).** The loop clock is paused until landing. Verdict: sound, per D42.
+- **Known polish items, accepted for now:** the shelf props are plain boxes, the floor light
+  pool reads as a stage spotlight, and the "once" card's label hides for about 1 s mid-move.
+  Verdict: provisional; revisit at the whole-spec review.
