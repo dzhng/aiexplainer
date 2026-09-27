@@ -137,3 +137,40 @@ standalone. Entries are appended per pass and consolidated when the spec closes.
   (`--press`) instead. Verdict: sound; slice 10's probe list is superseded.
 - **The HUD created `/lab/tokens` (chips section).** Slice 08 adds its emissive section
   there. Verdict: sound; the ordering in the spec was wrong.
+
+## Slice 15
+
+- **Attention sums its keys in a fixed order (highest score first).** Why: D35's "shuffling
+  earlier words changes nothing" must hold bit for bit, and floating-point addition depends
+  on order. Verdict: sound.
+- **The trace is split into attn (with its own residual record), mlp, router and
+  mlpResidual.** Why: each layer has two residual additions, so one flat record per layer
+  would blur them. Verdict: sound.
+- **Every prompt starts with the `<bos>` token (`promptTokens`).** Verdict: sound.
+- **Manifests require a matching tokenizer and an arch for transformers, and the arch adds
+  `normEps`.** Verdict: sound.
+- **The 9 random-init parity fixtures cost 2.6 MB,** because every token table must span the
+  full 4096 vocabulary. Verdict: acceptable; revisit if repo size matters.
+- **Plain JS loops for the forward pass.** The `full` size measured 2.9 ms per prompt token
+  and 3.9 ms per cached token, far under the 50 ms budget. Verdict: sound.
+
+## Slice 16
+
+- **Embeddings start from N(0, 0.02), GPT-2's init; the random-init fixtures were
+  regenerated.** Why: N(0, 1) with tied embeddings starts at a loss of about 30.
+  Verdict: sound.
+- **The chapter-4 probe added a name-recall prompt set after the pronoun set failed.** Both
+  are recorded; chapter 4 uses the passing set, and the README human note explains it.
+  Verdict: sound per D33, but post hoc. The human should know it was not planned up front.
+- **MPS training is not bit-deterministic across processes, so the MPS test checks
+  agreement within 1e-5.** CPU runs are bit-identical. Verdict: sound.
+- **The trained-model parity fixtures keep every 16th logit plus the top 8** (about 100 KB
+  each). Verdict: sound.
+- **The lab middleware no longer serves the main app for `/lab` URLs whose query has a
+  "."** (a harness bug). Verdict: sound fix.
+- **`runtime/models.ts` now delegates to `@repo/llm` `fetchModel`, which resolves the
+  tokenizer path against the manifest's directory.** Why: slice 04 had duplicated it with the
+  wrong base. Verdict: sound.
+- **`bun run verify` now takes about 2 minutes, because the training tests train on MPS.**
+  Verdict: acceptable for now; a later maintenance pass may split slow training tests into
+  their own script.
