@@ -4,7 +4,7 @@
  * pass of the shipped `attn` model.
  */
 import { describe, expect, test } from "bun:test";
-import { forward, loadModel, promptTokens, transformerModel, type TraceSpec } from "@repo/llm";
+import { forward, promptTokens, transformerModel } from "@repo/llm";
 import { compileScene, VERTEX_BYTES, type SceneDesc, type TubePart } from "@repo/renderer";
 import path from "node:path";
 import { attention, RECALL_PROMPTS } from "../src/chapters/data/attention.ts";
@@ -12,6 +12,8 @@ import { SCENE_KIT } from "../src/chapters/scenes.ts";
 import { createTimelineState, evalTimeline } from "../src/chapters/timeline.ts";
 import { lookConfig } from "../src/look/look.ts";
 import { computeRun } from "../src/runtime/scene-run.ts";
+import { directSession } from "../scripts/direct-session.ts";
+import { shippedModel } from "../scripts/shipped.ts";
 import {
   FUTURE_WORDS,
   SEALED_NOTE,
@@ -28,21 +30,10 @@ import {
 } from "../src/scene/build-frame.ts";
 
 const models = path.resolve(import.meta.dirname, "../public/models");
-async function load(id: string) {
-  const dir = path.join(models, id);
-  return loadModel(
-    await Bun.file(path.join(dir, "manifest.json")).json(),
-    await Bun.file(path.join(dir, "weights.bin")).arrayBuffer(),
-    await Bun.file(path.join(models, "tokenizer/tokenizer.json")).arrayBuffer(),
-  );
-}
-const loaded = await load("attn");
+const loaded = await shippedModel("attn");
 const model = transformerModel(loaded);
 const tokenizer = loaded.tokenizer!;
-const session = {
-  nextWords: () => Promise.reject(new Error("attn is not a counts model")),
-  run: async (tokens: number[], trace?: TraceSpec) => forward(model, tokens, { trace }),
-};
+const ctx = { model: loaded, session: directSession(loaded) };
 
 /** The shipped model's own weights from the last token of `prompt`. */
 function golden(prompt: string): Float32Array {
@@ -71,7 +62,7 @@ function frameAt(t: number, run: SceneRun, text: string | null = null) {
 const pipeOf = (scene: SceneDesc, i: number) =>
   scene.parts.find((p) => p.id === `pipe.${i}`) as TubePart;
 
-const run = (await computeRun(attention, null, session, loaded))!;
+const run = (await computeRun(attention, null, ctx))!;
 
 describe("chapter 4: pipe width is the real attention weight (slice 22)", () => {
   test("the loop's prompt and every scenario are the attn model's measured prompts (O2)", async () => {
@@ -144,7 +135,7 @@ describe("chapter 4: pipe width is the real attention weight (slice 22)", () => 
 
   test("typed text is tokenized and run the same way, settled at once", async () => {
     const text = "Tom had a red kite. Tom";
-    const typed = (await computeRun(attention, text, session, loaded))!;
+    const typed = (await computeRun(attention, text, ctx))!;
     const weights = golden(text);
     const { input } = frameAt(0, typed, text);
     for (let i = 0; i < weights.length; i++)

@@ -97,6 +97,11 @@ export interface SceneDesc {
    * the renderer then re-uploads it. Transforms alone are re-read every frame.
    */
   revision: number;
+  /**
+   * Bump when parts have moved in a way that changes what hides what (bricks laid out anew),
+   * so label occlusion is re-tested; transforms alone, re-read every frame, do not re-test it.
+   */
+  layout?: number;
   parts: Part[];
   anchors: SceneAnchor[];
   /** Parsed props (`parseGlb`), loaded by the app. */

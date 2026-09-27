@@ -4,11 +4,16 @@
  */
 import { attention } from "./data/attention.ts";
 import { autocomplete } from "./data/autocomplete.ts";
+import { tokenizer } from "./data/tokenizer.ts";
 import type { ChapterSlug } from "./ladder.ts";
 import type { ChapterDef } from "./types.ts";
 import { validateChapter } from "./validate.ts";
 
-export const CHAPTERS: Partial<Record<ChapterSlug, ChapterDef>> = { autocomplete, attention };
+export const CHAPTERS: Partial<Record<ChapterSlug, ChapterDef>> = {
+  autocomplete,
+  tokenizer,
+  attention,
+};
 
 for (const [slug, def] of Object.entries(CHAPTERS)) {
   if (def.slug !== slug)

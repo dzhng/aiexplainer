@@ -6,6 +6,8 @@
 export const SCENE_ANCHORS = {
   /** Chapter 0: the counter board, its count bars, and the word rail. */
   autocomplete: ["board", "bars", "rail"],
+  /** Chapter 1: the bricks on show, the ids on them, the box of shapes, and the text's row. */
+  tokenizer: ["bricks", "ids", "box", "text"],
   /** Chapter 4: the word blocks, the widest pipe, the focus word's mix, the sealed later words. */
   attention: ["sentence", "pipes", "mix", "sealed"],
 } as const satisfies Record<string, readonly string[]>;
@@ -16,6 +18,7 @@ export const SCENE_ANCHORS = {
  */
 export const SCENE_KIT: Record<keyof typeof SCENE_ANCHORS, readonly string[]> = {
   autocomplete: ["mesh", "bars", "block", "contactShadow"],
+  tokenizer: ["block", "brick", "contactShadow"],
   attention: ["block", "pipes", "sealed"],
 };
 

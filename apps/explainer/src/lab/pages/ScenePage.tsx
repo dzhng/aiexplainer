@@ -50,11 +50,8 @@ export function ScenePage({ slug, reading, debug, clock, probe, onReady }: Scene
     let dispose = () => {};
     let alive = true;
     const assets: SceneDesc["assets"] = {};
-    const params = new URLSearchParams(location.search);
     // `?view=cutaway|exploded` opens the scene in that view (settled), for view shots.
-    const asked = params.get("view") as ViewMode | null;
-    // `?yaw=<degrees>` turns the camera around the shot's target, for label sweeps.
-    const yaw = (Number(params.get("yaw") ?? 0) * Math.PI) / 180;
+    const asked = new URLSearchParams(location.search).get("view") as ViewMode | null;
     const ui = {
       follow: null,
       slider: def.slider.initial,
@@ -62,6 +59,8 @@ export function ScenePage({ slug, reading, debug, clock, probe, onReady }: Scene
       text: null,
     };
     const scene = chapterScene(def, assets, () => ({ def, ui, run, loopTime: clock.now() }));
+    // `?yaw=<degrees>` turns the camera around the shot's target: a label sweep's azimuths.
+    const yaw = (Number(new URLSearchParams(location.search).get("yaw") ?? 0) * Math.PI) / 180;
     void loadSceneAssets(def, assets)
       .then(() =>
         runStage({
