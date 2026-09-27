@@ -75,7 +75,7 @@ const PANEL: QuestionPanelParams = {
   pitch: 0.36,
   lampSize: 0.2,
   arrow: { y: 1.6, z: 0.42 },
-  materials: { housing: "housing", rim: "metal", lamp: "indicator", push: "bar" },
+  materials: { housing: "housing", rim: "metal", lamp: "neuron", push: "bar" },
   explode: [0, 0, -0.4],
 };
 const PANEL_SLOTS = 1 + 2 * MLP_LAMPS;
@@ -215,7 +215,32 @@ export const mlp: SceneBuilder = {
       segment(`teaser.link.${i}`, linksSlot + i, "bar"),
     );
 
+    // Soft contact shadows ground the panel and the readout on the floor.
+    const shadowSlot = linksSlot + links.length;
+    const shadows = [
+      KIT.contactShadow.build({
+        id: "shadow",
+        slot: shadowSlot,
+        bounds: panel.bounds,
+        softness: 0.3,
+      }),
+      KIT.contactShadow.build({
+        id: "readout.shadow",
+        slot: shadowSlot,
+        bounds: [
+          READOUT.x - READOUT.gap,
+          0,
+          READOUT.z - READOUT.depth,
+          READOUT.x + READOUT.gap,
+          READOUT.floor,
+          READOUT.z + READOUT.depth,
+        ],
+        softness: 0.2,
+      }),
+    ].flatMap((shadow) => shadow.parts);
+
     const parts: Part[] = [
+      ...shadows,
       ...panel.parts,
       ...arrow,
       tip,

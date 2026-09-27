@@ -5,6 +5,8 @@
  *
  *   bun scripts/verify.ts --route /lab/adapter [--t 12.5] [--out name] [--base http://…]
  *   bun scripts/verify.ts --route /lab/adapter --browser shell   # negative control: expect failure
+ *   bun scripts/verify.ts --route '/#0' --browser webkit --no-webgpu --expect fallback
+ *   bun scripts/verify.ts --route '/#0' --base https://<preview>.vercel.app   # a deployment
  *   bun scripts/verify.ts --route '/#0' --out hud --press '?' --crop panel:tl,panel:help
  *   bun scripts/verify.ts --route '/lab/renderer?fixture=boxes' --t 0 --out boxes --crop 'part:near+part:far'
  *   bun scripts/verify.ts --route /lab/kit/board --t 0,1,2,3 --out board --crop part:board
@@ -30,16 +32,28 @@
  * - `--check label-dots` (on a fixture of flat magenta markers with one anchor each) proves
  *   CPU placement and GPU raster agree: every visible label's dot, and the placement it came
  *   from, must lie within 2 px of its marker's rendered pixel centroid.
+ * - `--no-webgpu` removes `navigator.gpu` before the page runs (Playwright's WebKit has
+ *   WebGPU on, so this is how it stands in for a browser without it).
+ * - `--expect fallback` passes only if the page chose the fallback (no adapter is then fine);
+ *   by default the page must have chosen the 3D app on a hardware adapter.
+ * - `--base` opens a deployment instead of a dev server; a protected Vercel preview needs
+ *   `VERCEL_AUTOMATION_BYPASS_SECRET` (see harness.ts).
  */
 import { mkdir } from "node:fs/promises";
 import path from "node:path";
 import { parseArgs } from "node:util";
-import { chromium, type Browser, type Page } from "playwright";
-import { createServer, type ViteDevServer } from "vite";
+import type { Page } from "playwright";
 import type { CropRect } from "../src/lab/probe.ts";
-
-const appRoot = path.resolve(import.meta.dirname, "..");
-const repoRoot = path.resolve(appRoot, "../..");
+import {
+  FFMPEG,
+  launch,
+  openPage,
+  repoRoot,
+  serve,
+  settle,
+  waitReady,
+  type BrowserKind,
+} from "./harness.ts";
 
 const { values: args } = parseArgs({
   options: {
@@ -59,24 +73,12 @@ const { values: args } = parseArgs({
     ui: { type: "string" },
     strip: { type: "string" },
     outline: { type: "string" },
+    expect: { type: "string", default: "app" },
+    "no-webgpu": { type: "boolean", default: false },
     mask: { type: "string" },
     full: { type: "boolean" },
   },
 });
-
-async function serve(): Promise<{ base: string; server?: ViteDevServer }> {
-  if (args.base) return { base: args.base };
-  // Loopback on a free port: other local projects often squat on the usual dev ports.
-  const server = await createServer({
-    root: appRoot,
-    logLevel: "error",
-    server: { host: "127.0.0.1", port: 0, strictPort: true },
-  });
-  await server.listen();
-  const base = server.resolvedUrls?.local[0]?.replace(/\/$/, "");
-  if (!base) throw new Error("vite dev server did not report a local URL");
-  return { base, server };
-}
 
 /**
  * The clip for one `--crop` item, clamped to the viewport; `undefined` means the whole
@@ -285,34 +287,30 @@ async function checkLabelDots(page: Page): Promise<string[]> {
   return failures;
 }
 
-const { base, server } = await serve();
-// The default headless shell has no hardware adapter; `--browser shell` exists to prove the gate.
-const browser: Browser = await chromium.launch(
-  args.browser === "shell" ? { headless: true } : { headless: true, channel: "chrome" },
-);
+const server = await serve(args.base);
+const browser = await launch(args.browser as BrowserKind);
 const failures: string[] = [];
 try {
-  const page = await browser.newPage({
-    viewport: { width: Number(args.width), height: Number(args.height) },
-    deviceScaleFactor: 1,
+  const opened = await openPage(browser, server.base + withClock(args.route), {
+    width: Number(args.width),
+    height: Number(args.height),
+    noWebGPU: args["no-webgpu"],
   });
-  page.on("pageerror", (error) => failures.push(`pageerror: ${error.message}`));
-  page.on("console", (message) => {
-    if (message.type() === "warning" || message.type() === "error")
-      failures.push(`console.${message.type()}: ${message.text()}`);
-  });
-
-  await page.goto(base + withClock(args.route));
-  const installed = await page
-    .waitForFunction(() => window.__explainer !== undefined, undefined, { timeout: 30_000 })
-    .then(() => true)
-    .catch(() => false);
-  if (!installed) throw new Error(`probe never installed\n${failures.join("\n")}`);
-  await page.evaluate(() => window.__explainer!.ready);
-  const adapter = await page.evaluate(() => window.__explainer!.adapter);
+  const { page } = opened;
+  await waitReady(opened);
+  const { adapter, support } = await page.evaluate(() => ({
+    adapter: window.__explainer!.adapter,
+    support: window.__explainer!.support,
+  }));
   console.log("adapter", JSON.stringify(adapter));
-  if (!adapter) failures.push("no WebGPU adapter");
+  if (support) console.log("support", support);
+  if (args.expect === "fallback") {
+    const shown = await page.evaluate(() => document.querySelector("[data-fallback]") !== null);
+    if (!shown || support === "webgpu") failures.push(`expected the fallback page, got ${support}`);
+  } else if (!adapter) failures.push("no WebGPU adapter");
   else if (adapter.isFallbackAdapter) failures.push("fallback (software) adapter");
+  else if (support !== undefined && support !== "webgpu")
+    failures.push(`the page chose the fallback (${support})`);
 
   for (const key of args.press?.split(",") ?? []) await page.keyboard.press(key);
   if (args.ui) {
@@ -327,10 +325,8 @@ try {
     // eases in over `look.views.durationSec` (0.6 s) of real time.
     await page.waitForTimeout(900);
   }
-  // Two frames: React commits what the keys changed, then the browser paints it.
-  await page.evaluate(
-    () => new Promise((done) => requestAnimationFrame(() => requestAnimationFrame(done))),
-  );
+  // React commits what the keys changed, then the browser paints it.
+  await settle(page);
   const probe = await page.evaluate(() => ({
     errors: window.__explainer!.errors,
     receipt: window.__explainer!.receipt?.(),
@@ -457,7 +453,7 @@ try {
     const tile = `${times.map((_, i) => `[s${i}]`).join("")}xstack=inputs=${times.length}:layout=${layout.join("|")}:fill=gray`;
     const file = path.join(dir, `${args.out}-strip.png`);
     const ffmpeg = Bun.spawnSync([
-      "ffmpeg",
+      FFMPEG,
       "-loglevel",
       "error",
       "-y",
@@ -471,9 +467,10 @@ try {
     if (ffmpeg.exitCode !== 0) failures.push(`strip: ffmpeg failed: ${ffmpeg.stderr.toString()}`);
     else console.log("strip", path.relative(repoRoot, file));
   }
+  failures.push(...opened.failures);
 } finally {
   await browser.close();
-  await server?.close();
+  await server.close();
 }
 
 if (failures.length) {

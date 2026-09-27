@@ -190,6 +190,6 @@ export const questionPanel: KitPrimitive<QuestionPanelParams> = {
     pitch: 0.3,
     lampSize: 0.2,
     arrow: { y: 1.2, z: 0.4 },
-    materials: { housing: "housing", rim: "metal", lamp: "indicator", push: "bar" },
+    materials: { housing: "housing", rim: "metal", lamp: "neuron", push: "bar" },
   }),
 };

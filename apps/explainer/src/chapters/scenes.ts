@@ -15,8 +15,8 @@ export const SCENE_ANCHORS = {
  * primitive outside the kit; a test holds each builder to its list.
  */
 export const SCENE_KIT: Record<keyof typeof SCENE_ANCHORS, readonly string[]> = {
-  autocomplete: ["mesh", "bars", "block"],
-  mlp: ["questionPanel", "tube", "block", "bars"],
+  autocomplete: ["mesh", "bars", "block", "contactShadow"],
+  mlp: ["questionPanel", "tube", "block", "bars", "contactShadow"],
 };
 
 export type SceneBuilderId = keyof typeof SCENE_ANCHORS;

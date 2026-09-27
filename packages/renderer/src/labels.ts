@@ -112,7 +112,7 @@ export function sceneOccluders(
           radius: part.radius * crossScale(model, a, b),
         });
       }
-    } else {
+    } else if (part.kind === "mesh") {
       for (const node of meshNodes(part, scene.assets)) {
         if (!solid(meshMaterial(node, look))) continue;
         const positions = new Float32Array(node.positions.length);

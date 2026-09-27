@@ -8,8 +8,12 @@ the subject stands at the origin on the floor. The room is 18 m wide (x ±9), 16
 - a back wall of bolted panels over a darker backing, with conduit and a strip light;
 - a large window on the back wall, right of centre, showing a dim night skyline (sky card,
   distant dark buildings, lit windows) through glass;
-- a workbench with equipment under a pendant lamp (right), shelving (left);
-- wall strip lights either side of the window, and ceiling strip lights.
+- a workbench with equipment and a stool under a pendant lamp (right), a whiteboard on the
+  right wall; shelving, an equipment rack with indicator LEDs and a desk with two dim
+  monitors (left); plants, crates, a coiled cable and a floor cable run;
+- wall strip lights either side of the window, and ceiling strip lights;
+- outside, three rows of buildings at increasing distance (nearer rows darker, farther rows
+  hazier), lit windows, and a faint glow along the horizon.
 
 The renderer has no shadows and no local lights, so the bake carries them: vertex
 colours (glTF COLOR_0) hold ambient occlusion (R) and where the pendant's warm light (G)
@@ -40,6 +44,14 @@ sky = common.material("sky", (0.01, 0.015, 0.04), emission=(0.02, 0.03, 0.08), s
 city = common.material("city", (0.5, 0.35, 0.1), emission=(1.0, 0.6, 0.25), strength=1.0)
 lamp = common.material("lamp", (1.0, 0.7, 0.4), emission=(1.0, 0.7, 0.4), strength=4.0)
 practical = common.material("practical", (0.6, 0.7, 1.0), emission=(0.6, 0.7, 1.0), strength=3.0)
+screen = common.material("screen", (0.3, 0.45, 0.8), emission=(0.3, 0.45, 0.8), strength=1.0)
+indicator = common.material("indicator", (0.2, 1.0, 0.5), emission=(0.2, 1.0, 0.5), strength=2.0)
+horizon = common.material("horizon", (0.4, 0.25, 0.3), emission=(0.4, 0.25, 0.3), strength=1.0)
+haze = common.material("haze", (0.01, 0.012, 0.03), roughness=1.0)
+whiteboard = common.material("whiteboard", (0.6, 0.62, 0.66), roughness=0.35)
+ink = common.material("marker", (0.05, 0.08, 0.2), roughness=0.6)
+foliage = common.material("foliage", (0.02, 0.06, 0.03), roughness=0.8)
+rubber = common.material("rubber", (0.01, 0.01, 0.012), roughness=0.7)
 
 X0, X1 = -9.0, 9.0
 Y0, Y1 = -11.0, 5.0
@@ -118,24 +130,40 @@ common.join("room.window.frame", frame)
 common.join("room.window.glass", [common.grid("glass", (w["x1"] - w["x0"], w["z1"] - w["z0"]), ((w["x0"] + w["x1"]) / 2, Y1 + 0.02, (w["z0"] + w["z1"]) / 2), glass, 2, (1.5708, 0, 0))])
 common.join("room.sky", [common.grid("sky", (220, 90), (2.5, 95, 25), sky, 4, (1.5708, 0, 0))])
 
-# A distant skyline, 45–110 m out so it sits far behind the glass: narrow dark blocks with a
-# scattering of lit windows facing the lab. Deterministic (no random module).
+# The skyline: three rows of blocks at increasing distance, each wider and shorter-looking,
+# with lit windows on a floor grid (a hash picks the few still lit). The far rows are hazier
+# (a lighter silhouette), which gives the depth. Deterministic (no random module).
+ROWS = [
+    # (distance, count, spacing, widths, heights, material, window share)
+    (40, 18, 7.5, (3, 6), (4, 14), silhouette, 11),
+    (75, 22, 10.0, (5, 9), (8, 24), haze, 5),
+    (120, 26, 14.0, (8, 14), (14, 34), haze, 4),
+]
 buildings = []
+far = []
 lights = []
-for i in range(28):
-    bx = -72 + i * 5.6 + ((i * 37) % 5) - 2
-    by = 45 + (i * 53) % 65
-    bw = 3 + (i * 29) % 5
-    bh = 3 + (i * 71) % 12
-    buildings.append(common.box("block", (bw, 4, bh), (bx, by, bh / 2 - 2.0), silhouette))
-    # Windows on a floor grid (1.2 m bays, 1.5 m storeys); a hash picks the few still lit.
-    for col in range(int((bw - 0.6) / 1.2)):
-        for row in range(int((bh - 1.0) / 1.5)):
-            if (i * 131 + col * 71 + row * 37) % 7 != 0:
-                continue
-            lx = bx - bw / 2 + 0.9 + col * 1.2
-            lz = -1.2 + row * 1.5
-            lights.append(common.box("lit", (0.7, 0.05, 0.5), (lx, by - 2.03, lz), city))
+for r, (dist, count, pitch, (w0, w1), (h0, h1), mat, share) in enumerate(ROWS):
+    for i in range(count):
+        seed = i * 31 + r * 97
+        bw = w0 + seed % (w1 - w0 + 1)
+        bh = h0 + (seed * 7) % (h1 - h0 + 1)
+        bx = -pitch * count / 2 + i * pitch + (seed * 13) % 5 - 2 + 2.5
+        by = dist + (seed * 11) % 9
+        target = buildings if r == 0 else far
+        # Tops at bh - 2 m; bases far below the floor, so no block ends in mid-air through the
+        # window (the sill hides the ground).
+        target.append(common.box("block", (bw, 4, bh + 28), (bx, by, (bh - 2 - 30) / 2), mat))
+        # Lit windows: 1.2 m bays, 1.5 m storeys.
+        for col in range(int((bw - 0.6) / 1.2)):
+            for row in range(int((bh - 1.0) / 1.5)):
+                if (seed * 5 + col * 71 + row * 37) % share != 0:
+                    continue
+                lx = bx - bw / 2 + 0.9 + col * 1.2
+                lz = -1.2 + row * 1.5
+                lights.append(common.box("lit", (0.7, 0.05, 0.5), (lx, by - 2.03, lz), city))
+# A low glow along the horizon, behind every row.
+common.join("room.horizon", [common.grid("glow", (260, 10), (2.5, 140, 1.0), horizon, 2, (1.5708, 0, 0))])
+common.join("room.skyline.far", far)
 common.join("room.skyline", buildings)
 common.join("room.city", lights)
 
@@ -187,6 +215,93 @@ for y in (2.5, -1.5, -5.5):
 common.join("room.ceiling.fixtures", ceiling)
 common.join("room.practical.ceiling", glow)
 
+# An equipment rack against the back wall (left), with rows of indicator LEDs.
+RX, RY = -5.4, 4.5
+rack = [common.box("rack", (0.8, 0.9, 2.1), (RX, RY, 1.05), housing, bevel=0.01)]
+for k in range(7):
+    rack.append(common.box("unit", (0.72, 0.02, 0.2), (RX, RY - 0.46, 0.35 + k * 0.26), metal, bevel=0.004))
+common.join("room.rack", [common.subdivide(rack[0], 1)] + rack[1:])
+leds = []
+for k in range(7):
+    for j in range(4):
+        if (k * 5 + j * 3) % 4 == 3:
+            continue
+        leds.append(common.box("led", (0.025, 0.012, 0.018), (RX - 0.28 + j * 0.05, RY - 0.475, 0.35 + k * 0.26), indicator))
+common.join("room.leds", leds)
+
+# A desk against the back wall (far left) with two dim monitors, and a stool.
+DX, DY = -7.4, 4.55
+desk = [common.box("desk", (1.8, 0.8, 0.05), (DX, DY - 0.1, 0.76), housing, bevel=0.01)]
+for dx in (-0.8, 0.8):
+    desk.append(common.box("leg", (0.05, 0.7, 0.74), (DX + dx, DY - 0.1, 0.37), metal))
+common.join("room.desk", desk)
+monitors = []
+for dx in (-0.4, 0.4):
+    monitors.append(common.box("monitor", (0.62, 0.05, 0.38), (DX + dx, DY + 0.05, 1.12), housing, bevel=0.01))
+    monitors.append(common.box("stand", (0.05, 0.12, 0.25), (DX + dx, DY + 0.1, 0.9), metal))
+common.join("room.monitors", monitors)
+common.join("room.screens", [
+    common.box("screen", (0.56, 0.01, 0.32), (DX + dx, DY + 0.02, 1.12), screen) for dx in (-0.4, 0.4)
+])
+
+def stool(name, x, y):
+    parts = [common.cylinder("seat", 0.2, 0.05, (x, y, 0.66), housing, vertices=20)]
+    for k in range(3):
+        import math
+        a = k * 2.0944
+        parts.append(common.cylinder("leg", 0.018, 0.64, (x + 0.13 * math.cos(a), y + 0.13 * math.sin(a), 0.32), metal, vertices=6))
+    parts.append(common.cylinder("ring", 0.15, 0.02, (x, y, 0.25), metal, vertices=16))
+    return common.join(name, parts)
+
+stool("room.stool", BX - 0.9, BY - 0.9)
+stool("room.stool.desk", DX + 0.3, DY - 0.9)
+
+# A whiteboard on the right wall, with faint marker lines.
+WX, WY = 8.93, 2.6
+common.join("room.whiteboard", [common.box("board", (0.04, 2.4, 1.2), (WX, WY, 1.75), whiteboard, bevel=0.005)])
+marks = []
+for k, (dy, dz, length) in enumerate(((-0.8, 2.1, 1.1), (-0.8, 1.95, 0.8), (-0.8, 1.8, 0.95), (0.3, 1.6, 0.7), (0.3, 1.45, 0.5), (-0.5, 1.35, 0.3))):
+    marks.append(common.box("mark", (0.006, length, 0.012), (WX - 0.023, WY + dy + length / 2, dz), ink))
+marks.append(common.box("box", (0.006, 0.35, 0.22), (WX - 0.023, WY + 0.75, 2.0), ink))
+common.join("room.whiteboard.marks", marks)
+common.join("room.whiteboard.frame", [common.box("tray", (0.08, 1.2, 0.03), (WX - 0.04, WY, 1.13), metal)])
+
+# Plants in the back corners.
+def plant(name, x, y, height):
+    import math
+    parts = [common.cylinder("pot", 0.22, 0.4, (x, y, 0.2), housing, vertices=16)]
+    leaves = []
+    for k in range(9):
+        a = k * 0.698 + 0.3
+        r = 0.12 + (k % 3) * 0.07
+        bpy.ops.mesh.primitive_cone_add(vertices=5, radius1=0.09, radius2=0.0, depth=height * (0.6 + (k % 4) * 0.12),
+            location=(x + r * math.cos(a), y + r * math.sin(a), 0.4 + height * 0.35), rotation=(0.35 * math.sin(a), 0.35 * math.cos(a), 0))
+        leaf = bpy.context.active_object
+        leaf.data.materials.append(foliage)
+        leaves.append(leaf)
+    common.join(name + ".pot", parts)
+    common.join(name + ".leaves", leaves)
+
+plant("room.plant", -1.7, 4.4, 1.3)
+plant("room.plant.b", 8.3, 4.2, 1.0)
+
+# Crates by the rack, and a coiled cable with a run along the floor to the back wall.
+crates2 = []
+for i, (x, y, z, s_) in enumerate(((-6.0, 3.6, 0.0, 0.55), (-5.95, 3.62, 0.55, 0.42), (-6.55, 3.7, 0.0, 0.4))):
+    crates2.append(common.box(f"crate{i}", (s_, s_ * 0.9, s_ * 0.8), (x, y, z + s_ * 0.4), housing, bevel=0.01))
+common.join("room.crates.rack", crates2)
+bpy.ops.mesh.primitive_torus_add(major_radius=0.32, minor_radius=0.025, major_segments=32, minor_segments=6, location=(3.9, 2.6, 0.03))
+coil = bpy.context.active_object
+coil.data.materials.append(rubber)
+bpy.ops.mesh.primitive_torus_add(major_radius=0.27, minor_radius=0.025, major_segments=32, minor_segments=6, location=(3.92, 2.62, 0.08))
+coil2 = bpy.context.active_object
+coil2.data.materials.append(rubber)
+run = [common.cylinder("run", 0.02, 2.2, (3.9, 3.8, 0.022), rubber, (1.5708, 0, 0), 6)]
+run.append(common.cylinder("up", 0.02, 1.0, (3.9, Y1 - 0.06, 0.5), rubber, vertices=6))
+common.join("room.cable", [coil, coil2] + run)
+# A cable tray along the left wall at head height.
+common.join("room.cable.tray", [common.box("tray", (0.2, 12.0, 0.06), (X0 + 0.15, -1.0, 2.9), metal, bevel=0.005)])
+
 # Bake-only lights where the practicals are: warm (the pendant) and cool (strips, window).
 warm = [common.light("pendant", "POINT", (BX, BY, 2.55), 150, size=(0.08, 0.08))]
 cool = [
@@ -194,6 +309,7 @@ cool = [
     for i, (x, n) in enumerate(STRIPS)
 ]
 cool += [common.light(f"tube{i}", "AREA", (0, y, HEIGHT - 0.12), 160, size=(3.0, 0.1)) for i, y in enumerate((2.5, -1.5, -5.5))]
+cool += [common.light(f"screen{i}", "AREA", (DX + dx, DY - 0.05, 1.12), 12, (-1.5708, 0, 0), (0.56, 0.32)) for i, dx in enumerate((-0.4, 0.4))]
 cool.append(common.light("window", "AREA", ((w["x0"] + w["x1"]) / 2, Y1 - 0.15, (w["z0"] + w["z1"]) / 2), 90, (-1.5708, 0, 0), (w["x1"] - w["x0"], w["z1"] - w["z0"])))
 common.bake_room(ao_distance=0.9, channels=[warm, cool], full=[1.5, 2.5])
 common.export(args.out, draco=args.draco)

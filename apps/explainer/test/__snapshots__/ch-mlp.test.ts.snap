@@ -3,6 +3,16 @@
 exports[`the scene is built from its declared primitives, in stable slots 1`] = `
 [
   [
+    "shadow",
+    "shadow",
+    65,
+  ],
+  [
+    "readout.shadow",
+    "shadow",
+    65,
+  ],
+  [
     "panel.housing",
     "block",
     0,

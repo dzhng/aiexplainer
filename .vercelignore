@@ -1,0 +1,9 @@
+# Only apps/ and packages/ (plus the workspace root files) are needed to build the site.
+training
+specs
+throwaway
+.agents
+.claude
+**/node_modules
+**/dist
+**/.turbo
