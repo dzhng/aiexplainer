@@ -4,6 +4,7 @@
  * is `@invariant`, so the `equal` depth test in the colour pass matches bit for bit.
  */
 import type { TgpuRoot } from "typegpu";
+import { LIGHTING_WGSL } from "./lighting.ts";
 import {
   createPipeline,
   DEPTH,
@@ -36,14 +37,21 @@ fn vs(@builtin(vertex_index) vertexIndex: u32, @builtin(instance_index) instance
   return out;
 }
 
-// Flat debug shading until the lit pass lands (slice 07): a fixed key from above-front.
-const FLAT_KEY = vec3f(0.36, 0.8, 0.48);
+${LIGHTING_WGSL}
 
 @fragment
-fn fs(in: VertexOut) -> @location(0) vec4f {
+fn fs(in: VertexOut, @builtin(front_facing) frontFacing: bool) -> @location(0) vec4f {
   let material = sceneLayout.$.materials[sceneLayout.$.instances[in.instance].material];
-  let shade = 0.5 + 0.5 * dot(normalize(in.normal), normalize(FLAT_KEY));
-  return vec4f(material.baseColor * shade * material.opacity, material.opacity);
+  let v = normalize(frameLayout.$.frame.eye.xyz - in.worldPos);
+  let n = select(-1.0, 1.0, frontFacing) * normalize(in.normal);
+  let shading = shadeSurface(Surface(material.baseColor, material.metallic, material.roughness), n, v);
+  if (material.opacity >= 1.0) {
+    return vec4f(shading.diffuse + shading.specular, 1.0);
+  }
+  // Clear glass: no diffuse. It absorbs by its opacity, more toward grazing angles
+  // (Fresnel), and reflects the lights on top (premultiplied, so reflections never fade).
+  let edge = fresnelSchlick(vec3f(0.04), max(dot(n, v), 0.0)).x;
+  return vec4f(shading.specular, mix(material.opacity, 1.0, edge));
 }
 `;
 

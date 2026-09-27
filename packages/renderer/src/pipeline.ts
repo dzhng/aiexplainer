@@ -5,10 +5,12 @@
  * mirrored by hand. Every layout pins its group index, so raw encoding needs no lookup.
  */
 import { d, tgpu, type TgpuBindGroupLayout, type TgpuRoot } from "typegpu";
-import { FrameUniform, Instance, Material, Vertex } from "./pack.ts";
+import { FrameUniform, Instance, LookUniform, Material, Vertex } from "./pack.ts";
 
-/** Group 0 in every pipeline: the camera and time. */
-export const frameLayout = tgpu.bindGroupLayout({ frame: { uniform: FrameUniform } }).$idx(0);
+/** Group 0 in every pipeline: camera and time (per frame) and the look (per look change). */
+export const frameLayout = tgpu
+  .bindGroupLayout({ frame: { uniform: FrameUniform }, look: { uniform: LookUniform } })
+  .$idx(0);
 
 /** Group 1 in the geometry passes: the uploaded scene. */
 export const sceneLayout = tgpu

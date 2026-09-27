@@ -45,3 +45,24 @@ Light directions and intensities, material values, AgX vs ACES (default AgX), an
 ## Feedback that would change this slice
 
 "Too dark", "too blue" and similar. These change `look.json` only.
+
+## Record (2026-09-27)
+
+- **Mood checkpoint (human silent; implementer's call): accepted.** Shots:
+  `throwaway/shots/07/mood-3.png` (the fixture, full canvas), `mood-3-orbit-t1.png`,
+  `mood-3-orbit-t3.png`; targets `throwaway/shots/07/mock-night-lab.png` and
+  `assets/reference/airsup-whole.jpg`. A near-black navy room, a tight pool of light on the
+  floor, and a dark prop separated by rim and top-edge highlights.
+- **Evidence that moved the numbers:** the first pass had a flat, bright, all-blue lower
+  half (luminance contrast 50 vs 136–154 for the targets) and a glass pane that veiled the
+  bars. Fixes: the floor is a pool (`floorFade` is where the lit floor has fully faded),
+  lights are stronger, and translucent materials are specular-only (clear glass has no
+  diffuse). Two unprimed critiques said metal read as blue plastic and glass did not read,
+  because nothing reflected: specular now reflects the room's own gradient analytically,
+  and lights have a small apparent size (`lights.size`). No environment maps. The `metal`
+  preset is now neutral steel (`ink`, fully metallic): a navy base colour tinted every
+  highlight blue, which a second critique read as blue plastic.
+- **Known, accepted for v1:** no contact shadows (the spec has no shadow mapping); the back
+  of the board turns saturated blue under the rim light; contrast stays below the reference
+  until emission (slice 08) adds the bright end; the glass pane reads only faintly head-on
+  (a darkening and lit edges), because the dark room gives it little to reflect.

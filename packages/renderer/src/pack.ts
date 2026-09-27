@@ -6,6 +6,7 @@
 import type { Mat3, Mat4, Vec3 } from "math";
 import { d } from "typegpu";
 import type { CameraMatrices } from "./camera.ts";
+import type { LookConfig, MaterialLook } from "./frame-input.ts";
 
 export const FrameUniform = d
   .struct({
@@ -36,25 +37,57 @@ export const Material = d
   .struct({
     baseColor: d.vec3f,
     opacity: d.f32,
+    metallic: d.f32,
+    roughness: d.f32,
   })
   .$name("Material");
-export const MATERIAL_BYTES = 16;
+export const MATERIAL_BYTES = 32;
 
 /** Per part slot: intensity, width scale, flow phase, unused. */
 export const DYNAMICS_BYTES_PER_SLOT = 16;
 
-export const RoomUniform = d
+export const Light = d.struct({ direction: d.vec3f, radiance: d.vec3f }).$name("Light");
+
+/** Lights, room and post numbers from the look; rewritten only when the look changes. */
+export const LookUniform = d
   .struct({
+    lights: d.arrayOf(Light, 3),
+    ambient: d.vec3f,
+    exposure: d.f32,
     wallTop: d.vec3f,
+    roomRadius: d.f32,
     wallBottom: d.vec3f,
+    floorFade: d.f32,
+    floorColor: d.vec3f,
+    floorRoughness: d.f32,
+    vignetteStrength: d.f32,
+    vignetteRadius: d.f32,
+    lightSize: d.f32,
+    reflection: d.f32,
   })
-  .$name("RoomUniform");
-export const ROOM_UNIFORM_BYTES = 32;
+  .$name("LookUniform");
+export const LOOK_UNIFORM_BYTES = 176;
 
 export function packVec3(out: Float32Array, offset: number, v: Vec3): void {
   out[offset] = v[0];
   out[offset + 1] = v[1];
   out[offset + 2] = v[2];
+}
+
+/** Writes `positions`/`normals` (xyz each) as `Vertex` records starting at record `first`. */
+export function packVertices(
+  out: Float32Array,
+  first: number,
+  positions: Float32Array,
+  normals: Float32Array,
+): void {
+  for (let i = 0; i < positions.length / 3; i++) {
+    const o = (first + i) * (VERTEX_BYTES / 4);
+    out.set(positions.subarray(i * 3, i * 3 + 3), o);
+    out[o + 3] = 0;
+    out.set(normals.subarray(i * 3, i * 3 + 3), o + 4);
+    out[o + 7] = 0;
+  }
 }
 
 export function packMat4(out: Float32Array, offset: number, m: Mat4): void {
@@ -107,20 +140,34 @@ export function packInstance(
   u32[base + 31] = 0;
 }
 
-export function packMaterial(
-  out: Float32Array,
-  index: number,
-  baseColor: Vec3,
-  opacity: number,
-): void {
+export function packMaterial(out: Float32Array, index: number, m: MaterialLook): void {
   const base = index * (MATERIAL_BYTES / 4);
-  packVec3(out, base, baseColor);
-  out[base + 3] = opacity;
+  packVec3(out, base, m.baseColor);
+  out[base + 3] = m.opacity;
+  out[base + 4] = m.metallic;
+  out[base + 5] = m.roughness;
+  out[base + 6] = 0;
+  out[base + 7] = 0;
 }
 
-export function packRoom(out: Float32Array, wallTop: Vec3, wallBottom: Vec3): void {
-  packVec3(out, 0, wallTop);
-  out[3] = 0;
-  packVec3(out, 4, wallBottom);
-  out[7] = 0;
+export function packLook(out: Float32Array, look: LookConfig): void {
+  const { key, rim, fill } = look.lights;
+  [key, rim, fill].forEach((light, i) => {
+    packVec3(out, i * 8, light.direction);
+    out[i * 8 + 3] = 0;
+    packVec3(out, i * 8 + 4, light.radiance);
+    out[i * 8 + 7] = 0;
+  });
+  packVec3(out, 24, look.ambient);
+  out[27] = look.tonemap.exposure;
+  packVec3(out, 28, look.room.wallTop);
+  out[31] = look.room.radius;
+  packVec3(out, 32, look.room.wallBottom);
+  out[35] = look.room.floorFade;
+  packVec3(out, 36, look.materials.floor.baseColor);
+  out[39] = look.materials.floor.roughness;
+  out[40] = look.room.vignette.strength;
+  out[41] = look.room.vignette.radius;
+  out[42] = look.lights.size;
+  out[43] = look.room.reflection;
 }

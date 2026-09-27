@@ -1,8 +1,10 @@
 /**
  * Look tokens → the renderer's `LookConfig`. Colours in `look.json` are sRGB tokens (what a
- * designer picks); the renderer only ever receives linear light.
+ * designer picks); the renderer only ever receives linear light. Every number is checked
+ * here, where it is loaded.
  */
-import type { LinearRgb, LookConfig, MaterialLook } from "@repo/renderer";
+import type { LightLook, LinearRgb, LookConfig, MaterialLook } from "@repo/renderer";
+import type { Vec3 } from "math";
 import lookJson from "./look.json";
 
 export type LookJson = typeof lookJson;
@@ -10,7 +12,15 @@ export type ColourToken = keyof LookJson["palette"];
 
 export interface MaterialToken {
   color: string;
+  metallic?: number;
+  roughness?: number;
   opacity: number;
+}
+
+interface LightToken {
+  direction: number[];
+  color: string;
+  intensity: number;
 }
 
 function srgbToLinear(c: number): number {
@@ -36,10 +46,38 @@ export function linear(token: string, look: LookJson = lookJson): LinearRgb {
   return hexToLinear(hex);
 }
 
-function material(m: MaterialToken, look: LookJson): MaterialLook {
+function unit(name: string, value: number): number {
+  if (!(value >= 0 && value <= 1)) throw new Error(`look: ${name} ${value} is not in [0, 1]`);
+  return value;
+}
+
+function positive(name: string, value: number): number {
+  if (!(value > 0)) throw new Error(`look: ${name} ${value} must be positive`);
+  return value;
+}
+
+function material(name: string, m: MaterialToken, look: LookJson): MaterialLook {
   if (!(m.opacity > 0 && m.opacity <= 1))
-    throw new Error(`look: opacity ${m.opacity} is not in (0, 1]`);
-  return { baseColor: linear(m.color, look), opacity: m.opacity };
+    throw new Error(`look: ${name}.opacity ${m.opacity} is not in (0, 1]`);
+  return {
+    baseColor: linear(m.color, look),
+    metallic: unit(`${name}.metallic`, m.metallic ?? 0),
+    roughness: unit(`${name}.roughness`, m.roughness ?? 0.6),
+    opacity: m.opacity,
+  };
+}
+
+function light(name: string, l: LightToken, look: LookJson): LightLook {
+  const [x = 0, y = 0, z = 0] = l.direction;
+  const length = Math.hypot(x, y, z);
+  if (l.direction.length !== 3 || !(length > 0))
+    throw new Error(`look: lights.${name}.direction must be a non-zero [x, y, z]`);
+  const colour = linear(l.color, look);
+  const intensity = positive(`lights.${name}.intensity`, l.intensity);
+  return {
+    direction: [x / length, y / length, z / length] as Vec3,
+    radiance: colour.map((c) => c * intensity) as LinearRgb,
+  };
 }
 
 /**
@@ -52,12 +90,28 @@ export function lookConfig(
 ): LookConfig {
   const materials: Record<string, MaterialLook> = {};
   for (const [name, m] of Object.entries({ ...look.materials, ...extraMaterials }))
-    materials[name] = material(m, look);
+    materials[name] = material(name, m, look);
+  const { room, lights, ambient, tonemap } = look;
   return {
     room: {
-      wallTop: linear(look.room.wallTop, look),
-      wallBottom: linear(look.room.wallBottom, look),
+      wallTop: linear(room.wallTop, look),
+      wallBottom: linear(room.wallBottom, look),
+      radius: positive("room.radius", room.radius),
+      floorFade: unit("room.floorFade", room.floorFade),
+      reflection: unit("room.reflection", room.reflection),
+      vignette: {
+        strength: unit("room.vignette.strength", room.vignette.strength),
+        radius: unit("room.vignette.radius", room.vignette.radius),
+      },
     },
-    materials,
+    lights: {
+      key: light("key", lights.key, look),
+      rim: light("rim", lights.rim, look),
+      fill: light("fill", lights.fill, look),
+      size: unit("lights.size", lights.size),
+    },
+    ambient: linear(ambient.color, look).map((c) => c * ambient.intensity) as LinearRgb,
+    materials: { ...materials, floor: materials.floor! },
+    tonemap: { exposure: positive("tonemap.exposure", tonemap.exposure) },
   };
 }

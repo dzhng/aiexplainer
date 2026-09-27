@@ -12,12 +12,13 @@ import {
   packFrame,
   packInstance,
   packMaterial,
-  packRoom,
-  ROOM_UNIFORM_BYTES,
-  RoomUniform,
+  LOOK_UNIFORM_BYTES,
+  LookUniform,
+  packLook,
   Vertex,
   VERTEX_BYTES,
 } from "../src/pack.ts";
+import { testLook } from "./look.ts";
 
 test("every schema matches its byte-size constant and is 16-byte padded", () => {
   const pairs = [
@@ -25,7 +26,7 @@ test("every schema matches its byte-size constant and is 16-byte padded", () => 
     [Vertex, VERTEX_BYTES],
     [Instance, INSTANCE_BYTES],
     [Material, MATERIAL_BYTES],
-    [RoomUniform, ROOM_UNIFORM_BYTES],
+    [LookUniform, LOOK_UNIFORM_BYTES],
   ] as const;
   for (const [schema, bytes] of pairs) {
     expect(d.sizeOf(schema)).toBe(bytes);
@@ -70,13 +71,14 @@ test("packInstance fills exactly INSTANCE_BYTES, with mat3 columns padded", () =
   expect([...f32.subarray(32)].every(Number.isNaN)).toBe(true);
 });
 
-test("packMaterial and packRoom fill exactly their records", () => {
+test("packMaterial and packLook fill exactly their records", () => {
+  const look = testLook();
   expectFillsExactly(
-    packed(MATERIAL_BYTES, (o) => packMaterial(o, 0, [0.1, 0.2, 0.3], 0.5)),
+    packed(MATERIAL_BYTES, (o) => packMaterial(o, 0, look.materials.metal!)),
     MATERIAL_BYTES,
   );
   expectFillsExactly(
-    packed(ROOM_UNIFORM_BYTES, (o) => packRoom(o, [0, 0, 0.1], [0.1, 0.1, 0.2])),
-    ROOM_UNIFORM_BYTES,
+    packed(LOOK_UNIFORM_BYTES, (o) => packLook(o, look)),
+    LOOK_UNIFORM_BYTES,
   );
 });

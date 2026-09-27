@@ -11,7 +11,7 @@ import type { MeshAsset, MeshNode } from "./gltf.ts";
 import { blockGeometry } from "./kit/block.ts";
 import type { Geometry } from "./kit/geometry.ts";
 import { tubeGeometry } from "./kit/tube.ts";
-import { packInstance, VERTEX_BYTES } from "./pack.ts";
+import { packInstance, packVertices, VERTEX_BYTES } from "./pack.ts";
 
 export interface Draw {
   firstIndex: number;
@@ -137,11 +137,7 @@ export function compileScene(scene: SceneDesc, look: LookConfig): CompiledScene 
   let indexCursor = 0;
   for (const g of unique) {
     placed.set(g, { baseVertex: vertexCursor, firstIndex: indexCursor });
-    for (let i = 0; i < g.positions.length / 3; i++) {
-      const o = (vertexCursor + i) * (VERTEX_BYTES / 4);
-      vertices.set(g.positions.subarray(i * 3, i * 3 + 3), o);
-      vertices.set(g.normals.subarray(i * 3, i * 3 + 3), o + 4);
-    }
+    packVertices(vertices, vertexCursor, g.positions, g.normals);
     indices.set(g.indices, indexCursor);
     vertexCursor += g.positions.length / 3;
     indexCursor += g.indices.length;

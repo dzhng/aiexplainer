@@ -108,14 +108,45 @@ export interface FrameReceipt {
 
 export interface MaterialLook {
   baseColor: LinearRgb;
+  metallic: number;
+  roughness: number;
   /** 1 is opaque; anything lower draws in the translucent pass. */
   opacity: number;
 }
 
+export interface LightLook {
+  /** Unit vector from the scene toward the light. */
+  direction: Vec3;
+  /** Colour × intensity, linear. */
+  radiance: LinearRgb;
+}
+
 /** The renderer's slice of the app's look tokens, already resolved to linear numbers. */
 export interface LookConfig {
-  room: { wallTop: LinearRgb; wallBottom: LinearRgb };
-  materials: Record<string, MaterialLook>;
+  room: {
+    /** The back wall's gradient, top to bottom. */
+    wallTop: LinearRgb;
+    wallBottom: LinearRgb;
+    /** The room is a floor disc inside a wall cylinder of this radius, in metres. */
+    radius: number;
+    /** Fraction of the radius by which the lit floor has faded into the wall colour: a pool of light. */
+    floorFade: number;
+    /** How strongly specular surfaces reflect the room's gradient (0 = not at all). */
+    reflection: number;
+    /** Darkening at the frame corners (0 = none) and where it starts (0 = centre, 1 = corner). */
+    vignette: { strength: number; radius: number };
+  };
+  lights: {
+    key: LightLook;
+    rim: LightLook;
+    fill: LightLook;
+    /** Apparent light size, as a floor on GGX alpha: larger means broader, softer highlights. */
+    size: number;
+  };
+  ambient: LinearRgb;
+  /** Presets bound by name; `floor` also shades the room floor. */
+  materials: Record<string, MaterialLook> & { floor: MaterialLook };
+  tonemap: { exposure: number };
 }
 
 export interface Renderer {

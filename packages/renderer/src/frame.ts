@@ -1,8 +1,9 @@
 /**
  * The one frame function. Every pass is encoded here, in this order:
  *   1. depth prepass: opaque geometry, no fragment stage;
- *   2. colour pass into 4× MSAA rgba16float — background, then opaque (depth `equal`),
- *      then translucent (depth read-only); the pass end resolves into the HDR target;
+ *   2. colour pass into 4× MSAA rgba16float — backdrop, room (depth read-only), opaque
+ *      (depth `equal`), then translucent (depth read-only); the pass end resolves into
+ *      the HDR target;
  *   3. tonemap from the resolved HDR target to the swapchain.
  * Nothing here allocates except the encoder objects WebGPU itself hands out.
  */
@@ -14,6 +15,7 @@ import type { Draw } from "./scene.ts";
 export interface FramePipelines {
   geometry: GeometryPipelines;
   background: GPURenderPipeline;
+  room: GPURenderPipeline;
   tonemap: GPURenderPipeline;
 }
 
@@ -33,9 +35,10 @@ export interface FrameScene {
   draws: Draw[];
 }
 
-export interface FrameBindings {
+/** Look-dependent bindings: group 0 (camera + look) and the room's geometry. */
+export interface FrameLook {
   frame: GPUBindGroup;
-  room: GPUBindGroup;
+  room: { bindGroup: GPUBindGroup; indexBuffer: GPUBuffer; indexCount: number };
 }
 
 function drawGeometry(
@@ -70,7 +73,7 @@ export function encodeFrame(
   pipelines: FramePipelines,
   targets: FrameTargets,
   scene: FrameScene,
-  bindings: FrameBindings,
+  look: FrameLook,
   receipt: FrameReceipt,
 ): void {
   receipt.drawCalls = 0;
@@ -78,7 +81,7 @@ export function encodeFrame(
   const encoder = device.createCommandEncoder();
 
   const prepass = encoder.beginRenderPass(targets.prepass);
-  prepass.setBindGroup(0, bindings.frame);
+  prepass.setBindGroup(0, look.frame);
   prepass.setBindGroup(1, scene.bindGroup);
   prepass.setIndexBuffer(scene.indexBuffer, "uint32");
   prepass.setPipeline(pipelines.geometry.prepass);
@@ -86,10 +89,15 @@ export function encodeFrame(
   prepass.end();
 
   const colour = encoder.beginRenderPass(targets.colour);
-  colour.setBindGroup(0, bindings.frame);
+  colour.setBindGroup(0, look.frame);
   colour.setPipeline(pipelines.background);
-  colour.setBindGroup(1, bindings.room);
   fullscreen(colour, receipt);
+  colour.setPipeline(pipelines.room);
+  colour.setBindGroup(1, look.room.bindGroup);
+  colour.setIndexBuffer(look.room.indexBuffer, "uint32");
+  colour.drawIndexed(look.room.indexCount);
+  receipt.drawCalls += 1;
+  receipt.triangles += look.room.indexCount / 3;
   colour.setBindGroup(1, scene.bindGroup);
   colour.setIndexBuffer(scene.indexBuffer, "uint32");
   colour.setPipeline(pipelines.geometry.opaque);
@@ -100,7 +108,7 @@ export function encodeFrame(
 
   targets.tonemap.colorAttachments[0].view = swapchain;
   const tonemap = encoder.beginRenderPass(targets.tonemap);
-  tonemap.setBindGroup(0, bindings.frame);
+  tonemap.setBindGroup(0, look.frame);
   tonemap.setBindGroup(1, targets.postBindGroup);
   tonemap.setPipeline(pipelines.tonemap);
   fullscreen(tonemap, receipt);

@@ -1,5 +1,14 @@
 /** JSON `FrameInput` fixtures for the lab (`src/lab/fixtures/<name>.json`). */
-import type { FrameInput, LookConfig, OrbitPose, Part, SceneDesc, ViewMode } from "@repo/renderer";
+import {
+  parseGlb,
+  type FrameInput,
+  type LookConfig,
+  type MeshAsset,
+  type OrbitPose,
+  type Part,
+  type SceneDesc,
+  type ViewMode,
+} from "@repo/renderer";
 import { lookConfig, type MaterialToken } from "../look/look.ts";
 
 export interface FixtureJson {
@@ -7,8 +16,12 @@ export interface FixtureJson {
   view?: { mode: ViewMode; t: number };
   /** Lab-only swatch materials, added to the product presets. */
   materials?: Record<string, MaterialToken>;
+  /** Prop URLs by asset id, e.g. `{ "board": "/props/counter_board.glb" }`. */
+  assets?: Record<string, string>;
   parts: Part[];
 }
+
+export type LabScene = { look: LookConfig; input: Omit<FrameInput, "timeSec" | "viewport"> };
 
 const fixtures = import.meta.glob<FixtureJson>("./fixtures/*.json", {
   eager: true,
@@ -19,12 +32,18 @@ export function fixtureNames(): string[] {
   return Object.keys(fixtures).map((path) => path.replace(/^.*\/(.*)\.json$/, "$1"));
 }
 
+export async function loadAsset(url: string): Promise<MeshAsset> {
+  const response = await fetch(url);
+  if (!response.ok) throw new Error(`${url}: HTTP ${response.status}`);
+  return parseGlb(await response.arrayBuffer());
+}
+
 export function frameFromParts(
   camera: OrbitPose,
   parts: Part[],
   view: FrameInput["view"] = { mode: "whole", t: 0 },
   assets: SceneDesc["assets"] = {},
-): Omit<FrameInput, "timeSec" | "viewport"> {
+): LabScene["input"] {
   const slots = parts.reduce((n, p) => Math.max(n, p.slot + 1), 1);
   return {
     camera,
@@ -38,14 +57,13 @@ export function frameFromParts(
   };
 }
 
-export function loadFixture(name: string): {
-  look: LookConfig;
-  input: Omit<FrameInput, "timeSec" | "viewport">;
-} {
+export async function loadFixture(name: string): Promise<LabScene> {
   const fixture = fixtures[`./fixtures/${name}.json`];
   if (!fixture) throw new Error(`unknown fixture "${name}"; have ${fixtureNames().join(", ")}`);
+  const assets: SceneDesc["assets"] = {};
+  for (const [id, url] of Object.entries(fixture.assets ?? {})) assets[id] = await loadAsset(url);
   return {
     look: lookConfig(fixture.materials),
-    input: frameFromParts(structuredClone(fixture.camera), fixture.parts, fixture.view),
+    input: frameFromParts(structuredClone(fixture.camera), fixture.parts, fixture.view, assets),
   };
 }

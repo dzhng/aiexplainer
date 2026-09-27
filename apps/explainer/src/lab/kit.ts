@@ -2,9 +2,9 @@
  * `/lab/kit/<prop>`: one prop on a turntable. The camera turns 45° per second, so a held
  * clock at t = 0…7 gives the eight review azimuths.
  */
-import { parseGlb, type OrbitPose, type Part } from "@repo/renderer";
+import type { OrbitPose, Part } from "@repo/renderer";
 import { lookConfig } from "../look/look.ts";
-import { frameFromParts } from "./fixtures.ts";
+import { frameFromParts, loadAsset } from "./fixtures.ts";
 import type { StageScene } from "./pages/StagePage.tsx";
 
 const PROPS: Record<string, { file: string; camera: OrbitPose }> = {
@@ -23,9 +23,7 @@ export const TURNTABLE_RAD_PER_SEC = Math.PI / 4;
 export async function kitScene(name: string): Promise<StageScene> {
   const prop = PROPS[name];
   if (!prop) throw new Error(`unknown kit prop "${name}"; have ${Object.keys(PROPS).join(", ")}`);
-  const response = await fetch(prop.file);
-  if (!response.ok) throw new Error(`${prop.file}: HTTP ${response.status}`);
-  const asset = parseGlb(await response.arrayBuffer());
+  const asset = await loadAsset(prop.file);
   const part: Part = {
     kind: "mesh",
     id: name,

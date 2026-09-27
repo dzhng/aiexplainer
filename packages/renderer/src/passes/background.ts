@@ -1,13 +1,11 @@
 /**
  * The backdrop: a full-screen triangle on the far plane (reverse-Z depth 0), drawn with the
- * `equal` test so it only shades where no geometry landed. It opens the colour pass, which
- * guarantees every tile is drawn into and therefore resolved (the Apple tile quirk).
+ * `equal` test so it only shades where nothing else will. It opens the colour pass, which
+ * guarantees every tile is drawn into and therefore resolved (the Apple tile quirk). With
+ * the room drawn, it only shows beyond the room's wall.
  */
-import { tgpu, type TgpuRoot } from "typegpu";
-import { RoomUniform } from "../pack.ts";
+import type { TgpuRoot } from "typegpu";
 import { createPipeline, DEPTH, frameLayout, HDR_FORMAT, SAMPLE_COUNT } from "../pipeline.ts";
-
-export const roomLayout = tgpu.bindGroupLayout({ room: { uniform: RoomUniform } }).$idx(1);
 
 const template = /* wgsl */ `
 struct BackgroundOut {
@@ -26,17 +24,17 @@ fn vs(@builtin(vertex_index) index: u32) -> BackgroundOut {
 
 @fragment
 fn fs(in: BackgroundOut) -> @location(0) vec4f {
-  let room = roomLayout.$.room;
-  return vec4f(mix(room.wallTop, room.wallBottom, in.uv.y), 1.0);
+  let look = frameLayout.$.look;
+  return vec4f(mix(look.wallTop, look.wallBottom, in.uv.y), 1.0);
 }
 `;
 
 export function createBackgroundPipeline(root: TgpuRoot): Promise<GPURenderPipeline> {
   return createPipeline(root, {
     label: "background",
-    layouts: [frameLayout, roomLayout],
+    layouts: [frameLayout],
     template,
-    externals: { roomLayout },
+    externals: { frameLayout },
     depthStencil: DEPTH.prepassed,
     sampleCount: SAMPLE_COUNT,
     cullMode: "none",

@@ -33,7 +33,7 @@ async function rootDestroyFreesBuffers(): Promise<boolean> {
 }
 
 export async function registryBaseline(canvas: HTMLCanvasElement, probe: ProbeApi): Promise<void> {
-  const { look, input } = loadFixture("boxes");
+  const { look, input } = await loadFixture("board-room");
   const renderer = await createRenderer(canvas, look);
   if ("unsupported" in renderer) throw new Error(renderer.unsupported);
   const frameInput: FrameInput = {

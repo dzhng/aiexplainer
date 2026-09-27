@@ -1,15 +1,10 @@
 import { expect, test } from "bun:test";
-import type { LookConfig, Part } from "../src/frame-input.ts";
+import type { Part } from "../src/frame-input.ts";
 import type { MeshAsset, MeshNode } from "../src/gltf.ts";
 import { compileScene, partWorldBounds } from "../src/scene.ts";
+import { testLook } from "./look.ts";
 
-const look: LookConfig = {
-  room: { wallTop: [0, 0, 0], wallBottom: [0, 0, 0] },
-  materials: {
-    metal: { baseColor: [0.2, 0.2, 0.3], opacity: 1 },
-    glass: { baseColor: [0.2, 0.4, 0.9], opacity: 0.3 },
-  },
-};
+const look = testLook();
 
 const identity = [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1] as Part["transform"];
 const block = (id: string, material: string, slot = 0): Part => ({
