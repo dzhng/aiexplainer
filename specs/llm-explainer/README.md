@@ -18,7 +18,7 @@ and supersedes the map's open-items list, kickoff prompt and tweakable plan.
 **Status (2026-09-27):** slices 01–09, 14, 15, 16 and 18 are merged into
 `llm-explainer`. Lanes in flight:
 
-- chapter 0 compose → pacing → fallback/deploy → vocabulary lock (10 → 11 → 12 → 13);
+- chapter 0: pacing → the lab room → fallback/deploy → vocabulary lock (11 → 11b → 12 → 13);
 - model lab, slice 17.
 
 **Next pickup:** after 13 and 17 land, chapter slices 19–35 fan out (see the ladder).
@@ -52,7 +52,7 @@ the checklist below, and any new blockers.
 
 ### Global checklist
 
-- [ ] M1 — Chapter 0 through every layer (D14): slices ✅[01](slices/01-scaffold-harness.md) · ✅[02](slices/02-manifest-and-counts-model.md) · ✅[03](slices/03-chapter-contract.md) · ✅[04](slices/04-hud-shell.md) · ✅[05](slices/05-renderer-foundation.md) · ✅[06](slices/06-gltf-pipeline.md) · ✅[07](slices/07-room-lighting.md) · ✅[08](slices/08-bloom.md) · ✅[09](slices/09-labels-occlusion.md) · [10](slices/10-ch0-compose-framing.md) · [11](slices/11-ch0-loop-pacing.md) · [12](slices/12-fallback-share-deploy.md)
+- [ ] M1 — Chapter 0 through every layer (D14): slices ✅[01](slices/01-scaffold-harness.md) · ✅[02](slices/02-manifest-and-counts-model.md) · ✅[03](slices/03-chapter-contract.md) · ✅[04](slices/04-hud-shell.md) · ✅[05](slices/05-renderer-foundation.md) · ✅[06](slices/06-gltf-pipeline.md) · ✅[07](slices/07-room-lighting.md) · ✅[08](slices/08-bloom.md) · ✅[09](slices/09-labels-occlusion.md) · ✅[10](slices/10-ch0-compose-framing.md) · [11](slices/11-ch0-loop-pacing.md) · [11b](slices/11b-lab-room.md) · [12](slices/12-fallback-share-deploy.md)
 - [ ] M2 — Vocabulary lock: [13](slices/13-vocabulary-lock.md)
 - [ ] M3 — Model lab: ✅[14](slices/14-tokenizer.md) · ✅[15](slices/15-transformer-core.md) · ✅[16](slices/16-model-lab-early.md) · [17](slices/17-model-lab-late.md) · ✅[18](slices/18-production-arithmetic.md)
 - [ ] M4 — Chapters: [19](slices/19-ch-tokenizer.md) · [20](slices/20-ch-embeddings.md) · [21](slices/21-ch-sampling.md) · [22](slices/22-ch-attention-width.md) · [23](slices/23-ch-attention-sealed.md) · [24](slices/24-ch-attention-flow.md) · [25](slices/25-ch-positions.md) · [26](slices/26-ch-mlp.md) · [27](slices/27-ch-residual.md) · [28](slices/28-ch-stack.md) · [29](slices/29-ch-generation.md) · [30](slices/30-ch-kv-cache.md) · [31](slices/31-ch-batching.md) · [32](slices/32-ch-quantization.md) · [33](slices/33-ch-speculative.md) · [34](slices/34-ch-experts.md) · [35](slices/35-ch-finished.md)
@@ -109,7 +109,7 @@ qualify the precise claims.
 ```
 M1  01 → 02 → 03 → 04        (data, contract, HUD on a stub canvas)
          01 → 05 → 06 → 07 → 08 → 09   (renderer, one visual variable each)
-    04 + 09 → 10 → 11 → 12   (ch0 compose, pacing, fallback + deploy)
+    04 + 09 → 10 → 11 → 11b → 12   (ch0 compose, pacing, the lab room, fallback + deploy)
 M2  12 → 13                  (vocabulary lock: kit, tokens, views)
 M3  02 → 14 → 15 → 16 → 17   (model lab: every model trained and probed before any chapter art)
     03 → 18                  (production arithmetic; independent)
@@ -148,6 +148,8 @@ the human says otherwise.
 | D41 | **ffmpeg** (Homebrew) is a build-time tool for the fallback video. It is never used at runtime.                                                                                                                                                | D29 needs recordings. The map's toolchain audit (D30) missed it.                                                                      |
 
 **Human notes:**
+
+- **Put the machines in a nice room, not a blue gradient** (2026-09-27, on the slice-10 hero shot). This added [slice 11b, the lab room](slices/11b-lab-room.md), a shared environment for every chapter, placed before the video, link-preview images and vocabulary lock capture the look.
 
 - **The bloom look is approved** (2026-09-27, on the slice-08 board shot: "bloom effect looks great"). The slices 07–08 checkpoint is closed, and the `look.json` bloom and emissive knobs are the baseline.
 
@@ -193,7 +195,6 @@ exactly one owner. A second copy is a bug.
 
 **Short-lived seams:**
 
-- **Slice 10 → removed in slice 15.** Chapter 0 calls `nextWords` synchronously on the main thread. Slice 15 moves every inference call into the `session.ts` worker and deletes the synchronous path.
 - **Slice 05 → removed in slice 05.** The `/lab/typegpu-smoke` reproduction of an official example is deleted once `frame.ts` passes.
 
 If a slice needs any other seam, name it here together with the slice that removes it.

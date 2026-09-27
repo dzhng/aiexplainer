@@ -217,3 +217,24 @@ standalone. Entries are appended per pass and consolidated when the spec closes.
   slice text.
 - **Research: `root.destroy()` does NOT free buffers the root created** (measured with a
   control buffer). This confirms the renderer skill; the registry is required.
+
+## Slice 10
+
+- **Part transforms are per-frame data.** The renderer repacks instances every frame
+  (allocation-free), and `revision` only signals a change in structure. Verdict: sound.
+- **Labels take the first side (up-right, up-left, down-right, down-left) that avoids other
+  labels, scene text and the screen edge.** Verdict: sound.
+- **Bar words and the card word are "scene text", a separate overlay using the same
+  placement code.** They are not labels, so D18's five-label cap still holds. Verdict: sound.
+- **Chapter 0's loop words live in chapter data as `loop.inputs` (once, upon, onse); typed
+  text or a scenario replaces them.** Verdict: sound.
+- **The word-splitting regex lives in the counts manifest (`tokenizer.pattern`/`replace`),
+  pinned by a Python/TS fixture.** Verdict: sound; this closes the slice-02 provisional entry.
+- **No synchronous inference seam was ever built:** chapter 0 used slice 15's worker from
+  the start. Verdict: sound; the README's short-lived seam is removed.
+- **`buildFrame` returns `SceneFrame` (frame input plus scene-text tags).** Verdict: sound;
+  a small deviation from the slice's signature.
+- **Occluders are rebuilt only on a revision or view change, not when parts move.** Moving
+  bars can therefore be slightly stale as occluders. Verdict: acceptable, because labels
+  anchor to static parts; revisit if a chapter labels a moving part.
+- **The prompt box sits inside the title panel.** Verdict: sound (delegated).
