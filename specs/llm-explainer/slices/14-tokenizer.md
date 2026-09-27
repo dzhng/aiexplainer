@@ -38,31 +38,39 @@ One BPE tokenizer is trained once and frozen, then used by every neural model
 
 ## Delegated
 
-**Vocabulary size within 2–4k.** Measure it: pick the smallest size where at least 90% of the 500 most common TinyStories words are a single piece, and record the choice here. After this slice the tokenizer is **frozen**. Changing it means retraining every model.
+**Vocabulary size within 2–4k.** Measure it: pick the smallest size in 2–4k where at least 99% of the 2000 most common TinyStories words are a single piece, and record the choice here. After this slice the tokenizer is **frozen**. Changing it means retraining every model.
+
+The rule was first "90% of the 500 most common words". That rule never binds in 2–4k
+(100% at every size from 1536 up), so it picked 2048. The orchestrator raised it,
+because chapters 4–8 draw one pipe or clock per token, and the pictures only read if
+tokens are mostly whole words. llama2.c also uses 4096 for TinyStories.
 
 ## Result (measured 2026-09-27)
 
-**Chosen vocabulary size: 2048** (2 special tokens + 256 bytes + 1790 merges).
-sha256 `2ce41742d62977488c2304f2b44cc9a297e24ab24b3fc2b3ffd59284391c81a2`, frozen
-as `TOKENIZER_SHA256` in `training/tokenizer.py`. Training twice gave the same file.
+**Chosen vocabulary size: 4096** (2 special tokens + 256 bytes + 3838 merges).
+sha256 `37c465794d44d16554106eb9d2972c123e05fb76c300bb4bf1cc321fcb363f7b`, frozen
+as `TOKENIZER_SHA256` in `training/tokenizer.py`. Training is deterministic (two full
+runs at the earlier rule gave byte-identical files).
 
 "Word" means a pre-tokenizer piece of ASCII letters with its leading space, as it
-appears mid-sentence (" the"), counted on the validation split. The rule does not
-bind inside 2–4k: every candidate already makes 100% of the 500 most common words
-one piece, so it reduces to the lower bound.
+appears mid-sentence (" the"), counted on the validation split.
 
-| Vocab | Top 500 one piece | Top 2000 one piece | Word occurrences one piece | Chars per token |
-| ----- | ----------------- | ------------------ | -------------------------- | --------------- |
-| 1024  | 0.668             | 0.173              | 0.789                      | 3.20            |
-| 1536  | 1.000             | 0.336              | 0.870                      | 3.54            |
-| 2048  | 1.000             | 0.485              | 0.907                      | 3.72            |
-| 3072  | 1.000             | 0.796              | 0.947                      | 3.92            |
-| 4096  | 1.000             | 0.993              | 0.969                      | 4.03            |
+| Vocab | Top 2000 one piece | Word occurrences one piece | Chars per token |
+| ----- | ------------------ | -------------------------- | --------------- |
+| 2048  | 0.485              | 0.907                      | 3.72            |
+| 2304  | 0.561              |                            |                 |
+| 2560  | 0.640              | 0.931                      | 3.83            |
+| 2816  | 0.718              |                            |                 |
+| 3072  | 0.796              | 0.947                      | 3.92            |
+| 3328  | 0.867              |                            |                 |
+| 3584  | 0.930              |                            |                 |
+| 3840  | 0.972              |                            |                 |
+| 4096  | **0.993**          | 0.969                      | 4.03            |
 
-Chapter-1 probes (`apps/explainer/public/models/tokenizer/evidence.json`): 90.7% of
-held-out word occurrences are one piece; " ugly" is the most frequent lowercase word
-that takes 3 pieces; 3.72 characters per token. Prompts (O2): "Once upon a time,
-there was a little boy named Tim." and "It was so ugly."
+Chapter-1 probes (`apps/explainer/public/models/tokenizer/evidence.json`): 96.9% of
+held-out word occurrences are one piece; " birdcage" is the most frequent lowercase
+word that still takes 3 pieces; 4.03 characters per token. Prompts (O2): "Once upon
+a time, there was a little boy named Tim." and "It was a birdcage!"
 
 ## Stays green
 
