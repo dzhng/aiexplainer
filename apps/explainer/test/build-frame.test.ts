@@ -4,6 +4,7 @@ import { parseGlb, type SceneDesc } from "@repo/renderer";
 import path from "node:path";
 import { autocomplete } from "../src/chapters/data/autocomplete.ts";
 import { createTimelineState, evalTimeline } from "../src/chapters/timeline.ts";
+import { SCENE_KIT } from "../src/chapters/scenes.ts";
 import { buildFrame, createSceneFrame, type SceneUi } from "../src/scene/build-frame.ts";
 import { share } from "../src/scene/builders/autocomplete.ts";
 import { computeRun } from "../src/runtime/scene-run.ts";
@@ -46,7 +47,7 @@ test("the scene is the board, ten bars and a card, in stable slots", async () =>
   const input = buildFrame(autocomplete, tl, ui, run, frame);
   expect(input.scene.parts.map((p) => [p.id, p.kind, p.slot])).toMatchSnapshot();
   expect(input.scene.anchors.map((a) => [a.id, a.part])).toEqual([
-    ["board", "board"],
+    ["board", "board.housing"],
     ["bars", "bar.0"],
     ["rail", "card"],
   ]);
@@ -137,4 +138,12 @@ test("shares never round to a false 0% or 100%", () => {
     ">99%",
     "100%",
   ]);
+});
+
+test("the scene builds only from the primitives its scene declares", async () => {
+  const run = await computeRun(autocomplete, null, session, model.split);
+  const { frame, tl, ui } = frameAt(5);
+  const input = buildFrame(autocomplete, tl, ui, run, frame);
+  const declared = SCENE_KIT[autocomplete.scene];
+  for (const part of input.scene.parts) expect(declared).toContain(part.primitive!);
 });

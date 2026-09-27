@@ -1,4 +1,7 @@
+import type { Vec3 } from "math";
+import type { BlockPart } from "../frame-input.ts";
 import type { Geometry } from "./geometry.ts";
+import type { KitCommon, KitPrimitive } from "./primitive.ts";
 
 /** Face normal n, then in-plane axes u and v with u × v = n, so faces wind CCW from outside. */
 const FACES: [number[], number[], number[]][] = [
@@ -54,3 +57,40 @@ export function blockGeometry(): Geometry {
   });
   return { positions, normals, indices, bounds: [-0.5, -0.5, -0.5, 0.5, 0.5, 0.5] };
 }
+
+export interface BlockParams extends KitCommon {
+  material: string;
+  center: Vec3;
+  size: Vec3;
+}
+
+/** The `block` primitive: one box. Its anchor is the centre of its top face. */
+export const block: KitPrimitive<BlockParams> = {
+  build(p) {
+    const [x, y, z] = p.center;
+    const [sx, sy, sz] = p.size;
+    const part: BlockPart = {
+      kind: "block",
+      id: p.id,
+      slot: p.slot,
+      material: p.material,
+      transform: [sx, 0, 0, 0, 0, sy, 0, 0, 0, 0, sz, 0, x, y, z, 1],
+      explode: p.explode,
+      cutaway: p.cutaway,
+      primitive: "block",
+    };
+    return {
+      parts: [part],
+      bounds: [x - sx / 2, y - sy / 2, z - sz / 2, x + sx / 2, y + sy / 2, z + sz / 2],
+      anchors: [{ id: p.id, part: p.id, local: [0, 0.5, 0], priority: 1 }],
+      explode: p.explode ?? [0, 0, 0],
+    };
+  },
+  example: () => ({
+    id: "block",
+    slot: 0,
+    material: "housing",
+    center: [0, 0.5, 0],
+    size: [1.2, 1, 0.8],
+  }),
+};

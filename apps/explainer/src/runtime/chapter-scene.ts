@@ -15,7 +15,11 @@ import {
   type SceneRun,
   type SceneUi,
 } from "../scene/build-frame.ts";
+import { ENVIRONMENT } from "../scene/environment.ts";
 import { shotPose } from "../scene/shots.ts";
+import { ViewTransition } from "../scene/views.ts";
+import { motionClock } from "./clock.ts";
+import { cutPlane, look } from "../look/look.ts";
 
 export interface ChapterSceneState {
   def: ChapterDef;
@@ -27,9 +31,12 @@ export interface ChapterSceneState {
 
 const loaded = new Map<string, Promise<SceneDesc["assets"][string]>>();
 
-/** Loads (once per URL) every prop the chapter's scene builder needs into `assets`. */
+/** Loads (once per URL) the room and every prop the chapter's scene builder needs into `assets`. */
 export async function loadSceneAssets(def: ChapterDef, assets: SceneDesc["assets"]): Promise<void> {
-  const wanted = Object.entries(SCENE_BUILDERS[def.scene].assets);
+  const wanted = Object.entries({
+    ...SCENE_BUILDERS[def.scene].assets,
+    [ENVIRONMENT.id]: ENVIRONMENT.url,
+  });
   await Promise.all(
     wanted.map(async ([id, url]) => {
       if (!loaded.has(url))
@@ -62,7 +69,8 @@ export function chapterScene(
   const input: ChapterScene["input"] = {
     camera: shotPose(first.shot),
     view: { mode: first.views[0] ?? "whole", t: 0 },
-    scene: { revision: 0, parts: [], anchors: [], assets },
+    // The room shows from the first frame (the stage starts once `loadSceneAssets` is done).
+    scene: { revision: 0, parts: [], anchors: [], assets, environment: ENVIRONMENT.id },
     dynamics: {
       intensity: new Float32Array(1),
       widthScale: new Float32Array(1),
@@ -72,6 +80,10 @@ export function chapterScene(
   const frame = createSceneFrame(input);
   let timelineFor: ChapterDef | null = null;
   let tl: TimelineState | null = null;
+  // View changes are UI motion on the wall clock, not loop time: they ease in even while a
+  // lab page holds the loop clock, and a page that opens in a view starts settled in it.
+  let views: ViewTransition | null = null;
+  let lastSec = motionClock.now();
   return {
     frame,
     input,
@@ -86,10 +98,15 @@ export function chapterScene(
       if (timelineFor !== def || !tl) {
         tl = createTimelineState(def.loop);
         timelineFor = def;
+        views = new ViewTransition(ui.view);
       }
       evalTimeline(def.loop, loopTime, tl);
       frame.input = stageInput;
       buildFrame(def, tl, ui, run, frame);
+      const now = motionClock.now();
+      views!.step(ui.view, now - lastSec, look.views.durationSec, stageInput.view);
+      lastSec = now;
+      stageInput.view.cut = cutPlane(def.scene);
     },
   };
 }

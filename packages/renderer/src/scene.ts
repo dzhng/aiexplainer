@@ -5,7 +5,7 @@
  */
 import { mat3, mat4, type Mat3, type Mat4 } from "math";
 import { box3, type Box3 } from "math/shapes";
-import { partWorld } from "./camera.ts";
+import { partCut, partWorld } from "./camera.ts";
 import type { FrameInput, LookConfig, MeshPart, Part, SceneDesc } from "./frame-input.ts";
 import type { MeshAsset, MeshNode } from "./gltf.ts";
 import { blockGeometry } from "./kit/block.ts";
@@ -23,7 +23,7 @@ export interface Draw {
 }
 
 export interface CompiledScene {
-  /** `Vertex` records: position, pad, normal, pad. */
+  /** `Vertex` records: position, ambient occlusion, normal, baked light. */
   vertices: Float32Array<ArrayBuffer>;
   indices: Uint32Array<ArrayBuffer>;
   /** The part each instance draws, in instance order (opaque draws first). */
@@ -31,6 +31,8 @@ export interface CompiledScene {
   materialIndex: Uint32Array;
   draws: Draw[];
   slotCount: number;
+  /** The dynamics slot the environment's instances use (intensity pinned to 1), if any. */
+  environmentSlot?: number;
 }
 
 type Assets = SceneDesc["assets"];
@@ -103,15 +105,38 @@ export function partWorldBounds(
   return box3.transformMat4(out, partLocalBounds(part, assets), partWorld(part, view, model));
 }
 
+const identity: Mat4 = mat4.create();
+
+/**
+ * The scene's drawn parts: its own, then the environment room (if any) as one mesh part at
+ * the origin in a slot of its own. Labels, crops and occluders read `scene.parts` directly,
+ * so the room never occludes or gets a crop.
+ */
+function drawnParts(scene: SceneDesc): { parts: Part[]; environmentSlot?: number } {
+  if (scene.environment === undefined) return { parts: scene.parts };
+  const environmentSlot = scene.parts.reduce((n, p) => Math.max(n, p.slot + 1), 0);
+  const room: MeshPart = {
+    id: "environment",
+    kind: "mesh",
+    asset: scene.environment,
+    slot: environmentSlot,
+    transform: identity,
+    explode: [0, 0, 0],
+    cutaway: "keep",
+  };
+  return { parts: [...scene.parts, room], environmentSlot };
+}
+
 export function compileScene(scene: SceneDesc, look: LookConfig): CompiledScene {
   const materials = Object.keys(look.materials);
+  const { parts, environmentSlot } = drawnParts(scene);
   // Every piece that shares a geometry and a pass becomes one instanced draw.
   const groups = new Map<
     string,
     { geometry: Geometry; instances: { part: Part; material: string }[] }
   >();
   const geometryIds = new Map<Geometry, number>();
-  for (const part of scene.parts) {
+  for (const part of parts) {
     for (const piece of pieces(part, scene.assets, look)) {
       const preset = look.materials[piece.material];
       if (!preset)
@@ -137,7 +162,7 @@ export function compileScene(scene: SceneDesc, look: LookConfig): CompiledScene 
   let indexCursor = 0;
   for (const g of unique) {
     placed.set(g, { baseVertex: vertexCursor, firstIndex: indexCursor });
-    packVertices(vertices, vertexCursor, g.positions, g.normals);
+    packVertices(vertices, vertexCursor, g);
     indices.set(g.indices, indexCursor);
     vertexCursor += g.positions.length / 3;
     indexCursor += g.indices.length;
@@ -168,7 +193,8 @@ export function compileScene(scene: SceneDesc, look: LookConfig): CompiledScene 
     instanceParts,
     materialIndex: new Uint32Array(materialIndex),
     draws,
-    slotCount: scene.parts.reduce((n, p) => Math.max(n, p.slot + 1), 1),
+    slotCount: parts.reduce((n, p) => Math.max(n, p.slot + 1), 1),
+    environmentSlot,
   };
 }
 
@@ -185,6 +211,7 @@ export function packInstances(
     const part = compiled.instanceParts[i]!;
     partWorld(part, view, model);
     mat3.normalFromMat4(normalMatrix, model);
-    packInstance(f32, u32, i, model, normalMatrix, compiled.materialIndex[i]!, part.slot);
+    const material = compiled.materialIndex[i]!;
+    packInstance(f32, u32, i, model, normalMatrix, material, part.slot, partCut(part, view));
   }
 }

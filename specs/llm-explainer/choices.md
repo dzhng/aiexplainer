@@ -279,3 +279,45 @@ standalone. Entries are appended per pass and consolidated when the spec closes.
   TypeScript runtime.** Verdict: sound; the probes measure what ships.
 - **`noresidual` never learns (val loss 8.3 = ln 4096).** That is chapter 7's visible
   failure, as intended. Verdict: sound.
+
+## Slice 11b
+
+- **The environment's vertex colours carry more than AO:** R = ambient occlusion, G/B = baked
+  warm and cool practical light, tinted by `look.room.practicals.*.spill`. Why: AO alone left
+  the room black, because the renderer has no local lights. Verdict: sound; the slice's
+  `COLOR_0` seam was widened.
+- **`SceneDesc.environment` is drawn in its own slot, never in `scene.parts`,** so the room
+  never occludes labels or gets a crop. Verdict: sound.
+- **Direct lights fall off outside `look.lights.pool`, and `OrbitLimits.bounds` keeps the
+  camera inside the room.** Verdict: sound.
+- **The floor light pool reads as a stage spotlight; this is kept deliberately.** Verdict:
+  provisional; the human asked for a richer room (11c).
+
+## Slice 13
+
+- **A mesh prop can be split per node, with explode and clip set per node.** Verdict: sound.
+- **Cutaway is a fragment-stage plane from `look.views.cutaway.planes`.** Back faces seen
+  through the cut are capped in a flat cap colour. Discard/no-cull pipeline variants run only
+  while cutting. Verdict: sound; the flat, bright cap is a known polish item.
+- **View changes ease in over 0.6 s.** Verdict: sound.
+- **The counter board's bezel and ticks are lifted 2 mm off the panel face,** because coplanar
+  faces z-fought in the cut. Verdict: sound.
+- **From the hero angle, Exploded reads mostly as a depth shift.** Verdict: accepted for
+  chapter 0; later chapters with more parts should explode sideways.
+
+## Slice 04b
+
+- **Direction: holo-tactical, taken whole (the human's pick).** Verdict: sound.
+- **The HUD cyan is a HUD-only `hud.accent`, not the palette's `active`,** so restyling the
+  HUD can never change the scene. Verdict: sound.
+- **Body copy stays in Inter.** Chakra Petch (caps) is for headings, controls, chips and
+  labels only, for legibility. Verdict: sound.
+- **Labels are sentence case, not the mock's caps,** because caps overflow the renderer's
+  220 px label box. Verdict: sound.
+- **The help panel's plate is opaque.** Verdict: sound.
+- **Stat chips count up over 400 ms and then show the exact settled text; a held clock or
+  reduced motion skips it.** Verdict: sound; tested.
+- **Panels slide in over 360 ms on arrival via `useArrivalIntro`, keyed on `loopEpoch`.**
+  11c may key it to the camera-move start. Verdict: sound.
+- **Only Chakra Petch weights 600 and 700 ship.** Verdict: sound.
+- **The brand mark is not redrawn;** brand art is deferred to slice 36. Verdict: sound.

@@ -1,0 +1,80 @@
+/*
+ * Pinned labels in the HUD's language (slice 04b): a reticle on the part, a thin glowing
+ * leader, and a cut-corner tag with an accent bar. Geometry (the pill's offset and size, the
+ * leader's length and angle) comes from the renderer's label box, inline in `Labels.tsx`.
+ */
+
+.layer {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.label {
+  position: absolute;
+  left: 0;
+  top: 0;
+  will-change: transform;
+}
+
+/* A 12px ring with a lit centre, centred on the anchor. */
+.dot {
+  position: absolute;
+  left: -6px;
+  top: -6px;
+  width: 12px;
+  height: 12px;
+  box-sizing: border-box;
+  border: 1.5px solid var(--hud-accent);
+  border-radius: 50%;
+  background: radial-gradient(circle, var(--hud-accent) 0 1.5px, var(--hud-panel) 2px);
+  box-shadow: 0 0 8px var(--hud-glow);
+}
+
+.leader {
+  position: absolute;
+  left: 0;
+  top: 0;
+  height: 1px;
+  background: var(--hud-accent);
+  box-shadow: 0 0 6px var(--hud-glow);
+  transform-origin: 0 0;
+}
+
+.pill {
+  position: absolute;
+  isolation: isolate;
+  box-sizing: border-box;
+  padding: 0 12px 0 15px;
+  display: flex;
+  align-items: center;
+  background: var(--hud-accent);
+  clip-path: polygon(
+    var(--hud-cut-small) 0,
+    100% 0,
+    100% calc(100% - var(--hud-cut-small)),
+    calc(100% - var(--hud-cut-small)) 100%,
+    0 100%,
+    0 var(--hud-cut-small)
+  );
+  color: var(--ink);
+  font: 700 var(--text-sm) / 1 var(--font-display);
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* The fill inside the 1px stroke, and the accent bar at the tag's start. */
+.pill::before {
+  content: "";
+  position: absolute;
+  inset: 1px;
+  z-index: -1;
+  clip-path: inherit;
+  background:
+    linear-gradient(var(--hud-accent), var(--hud-accent)) left 6px center / 3px 12px no-repeat,
+    linear-gradient(180deg, var(--hud-panel-top), var(--hud-panel));
+  backdrop-filter: blur(6px);
+}

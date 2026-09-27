@@ -12,6 +12,7 @@ import {
 } from "@repo/renderer";
 import type { LabelDef } from "../chapters/types.ts";
 import { lookConfig, type MaterialToken } from "../look/look.ts";
+import { ENVIRONMENT, withEnvironment } from "../scene/environment.ts";
 
 export interface FixtureJson {
   camera: OrbitPose;
@@ -24,6 +25,8 @@ export interface FixtureJson {
   anchors?: SceneAnchor[];
   /** Fixture label text, one per anchor (the product's comes from `ChapterDef.labels`). */
   labels?: LabelDef[];
+  /** Stands the fixture in the product's lab room, as every chapter scene is. */
+  environment?: boolean;
 }
 
 export interface LabScene {
@@ -71,16 +74,18 @@ export async function loadFixture(name: string): Promise<LabScene> {
   const fixture = fixtures[`./fixtures/${name}.json`];
   if (!fixture) throw new Error(`unknown fixture "${name}"; have ${fixtureNames().join(", ")}`);
   const assets: SceneDesc["assets"] = {};
-  for (const [id, url] of Object.entries(fixture.assets ?? {})) assets[id] = await loadAsset(url);
-  return {
-    look: lookConfig(fixture.materials),
-    input: frameFromParts(
-      structuredClone(fixture.camera),
-      fixture.parts,
-      fixture.view,
-      assets,
-      fixture.anchors,
-    ),
-    labels: fixture.labels,
+  const urls = {
+    ...fixture.assets,
+    ...(fixture.environment && { [ENVIRONMENT.id]: ENVIRONMENT.url }),
   };
+  for (const [id, url] of Object.entries(urls)) assets[id] = await loadAsset(url);
+  const input = frameFromParts(
+    structuredClone(fixture.camera),
+    fixture.parts,
+    fixture.view,
+    assets,
+    fixture.anchors,
+  );
+  if (fixture.environment) withEnvironment(input.scene);
+  return { look: lookConfig(fixture.materials), input, labels: fixture.labels };
 }

@@ -10,6 +10,7 @@ import type { ChapterDef, FollowId, SceneBuilderId, ViewMode } from "../chapters
 import type { TimelineState } from "../chapters/timeline.ts";
 import type { SceneTags } from "../hud/SceneTags.tsx";
 import { autocomplete } from "./builders/autocomplete.ts";
+import { withEnvironment } from "./environment.ts";
 
 /** The HUD controls a scene reads. */
 export interface SceneUi {
@@ -72,7 +73,7 @@ export function buildFrame(
   const builder = SCENE_BUILDERS[def.scene];
   if (out.builder !== def.scene) {
     const created = builder.create(out.input.scene.assets, ++revisions);
-    out.input.scene = created.scene;
+    out.input.scene = withEnvironment(created.scene);
     out.tags = created.tags;
     const slots = created.scene.parts.reduce((n, p) => Math.max(n, p.slot + 1), 1);
     out.input.dynamics = {
@@ -82,7 +83,6 @@ export function buildFrame(
     };
     out.builder = def.scene;
   }
-  out.input.view.mode = ui.view;
   builder.update(out, def, tl, ui, run);
   return out.input;
 }

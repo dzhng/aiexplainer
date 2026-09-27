@@ -51,3 +51,35 @@ test("the counter board has its named parts, unit normals and fits the triangle 
   // Standing on the floor, facing +Z.
   expect(asset.bounds[1]).toBeCloseTo(0, 3);
 });
+
+test("the lab room carries its bake in COLOR_0, its named nodes, and fits the budget", async () => {
+  const asset = await load("apps/explainer/public/props/lab_room.glb");
+  // Multi-material nodes split into `<name>#<primitive>`.
+  const names = asset.nodes.map((n) => n.name.replace(/#\d+$/, ""));
+  for (const name of ["room.floor", "room.wall", "room.window.glass", "room.bench"])
+    expect(names).toContain(name);
+  expect(names.some((n) => n.startsWith("room.practical."))).toBe(true);
+  const triangles = asset.nodes.reduce((n, node) => n + node.indices.length / 3, 0);
+  expect(triangles).toBeLessThanOrEqual(150_000);
+  for (const node of asset.nodes) {
+    expect(node.ao?.length).toBe(node.positions.length / 3);
+    expect(node.light?.length).toBe((node.positions.length / 3) * 2);
+    for (const ao of node.ao!) expect(ao >= 0 && ao <= 1).toBe(true);
+  }
+  // The pendant's warm light falls on the bench; the strips' cool light on the back wall.
+  const most = (name: string, channel: 0 | 1) => {
+    const light = asset.nodes.find((n) => n.name.startsWith(name))!.light!;
+    return Math.max(...light.filter((_, i) => i % 2 === channel));
+  };
+  expect(most("room.bench", 0)).toBeGreaterThan(0.5);
+  expect(most("room.wall", 1)).toBeGreaterThan(0.5);
+  // The bake actually occludes: the floor darkens where it meets the walls and furniture.
+  const floor = asset.nodes.find((n) => n.name === "room.floor")!.ao!;
+  expect(Math.min(...floor)).toBeLessThan(0.7);
+  expect(Math.max(...floor)).toBeGreaterThan(0.95);
+});
+
+test("props without a bake have no AO or baked light", async () => {
+  const asset = await load("apps/explainer/public/props/counter_board.glb");
+  for (const node of asset.nodes) expect([node.ao, node.light]).toEqual([undefined, undefined]);
+});

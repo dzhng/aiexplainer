@@ -1,7 +1,7 @@
 /**
  * `createRenderer`: owns the device, the registry and the resources, and updates each at its
- * own frequency — targets on resize, the scene on `revision` change, look numbers and the
- * room on `setLook`, and instances (part transforms), camera and dynamics every frame. Drawing
+ * own frequency — targets on resize, the scene (the environment room included) on `revision`
+ * change, look numbers on `setLook`, and instances (part transforms), camera and dynamics every frame. Drawing
  * itself is `encodeFrame`.
  */
 import { d, type TgpuBuffer, type TgpuRoot, type TgpuSampler, type TgpuTextureView } from "typegpu";
@@ -35,7 +35,6 @@ import {
   packFrame,
   packLook,
   packMaterial,
-  packVertices,
   Vertex,
   VERTEX_BYTES,
 } from "./pack.ts";
@@ -47,7 +46,6 @@ import {
   describeBloomChain,
 } from "./passes/bloom.ts";
 import { createGeometryPipelines } from "./passes/geometry.ts";
-import { createRoomPipeline, roomGeometry, roomLayout } from "./passes/room.ts";
 import { createTonemapPipeline, postLayout } from "./passes/tonemap.ts";
 import { DEPTH_FORMAT, frameLayout, HDR_FORMAT, SAMPLE_COUNT, sceneLayout } from "./pipeline.ts";
 import { Registry, type Scope } from "./registry.ts";
@@ -147,23 +145,9 @@ function buildLook(
   const data = new Float32Array(LOOK_UNIFORM_BYTES / 4);
   packLook(data, look);
   upload(root, lookBuffer, data);
-  const room = roomGeometry(look.room.radius);
-  const roomVertices = new Float32Array(((room.positions.length / 3) * VERTEX_BYTES) / 4);
-  packVertices(roomVertices, 0, room.positions, room.normals);
-  const { vertexBuffer, indexBuffer } = uploadGeometry(
-    root,
-    scope,
-    roomVertices,
-    room.indices as Uint32Array<ArrayBuffer>,
-  );
   const value: LookResources = {
     look,
     frame: root.unwrap(root.createBindGroup(frameLayout, { frame, look: lookBuffer })),
-    room: {
-      bindGroup: root.unwrap(root.createBindGroup(roomLayout, { vertices: vertexBuffer })),
-      indexBuffer: root.unwrap(indexBuffer),
-      indexCount: room.indices.length,
-    },
   };
   return { scope, value };
 }
@@ -225,14 +209,13 @@ export async function createRenderer(
   if ("unsupported" in gpu) return gpu;
   const { root, device, caps } = gpu;
   const context = root.configureContext({ canvas, format: caps.canvasFormat, alphaMode: "opaque" });
-  const [geometry, background, room, bloom, tonemap] = await Promise.all([
+  const [geometry, background, bloom, tonemap] = await Promise.all([
     createGeometryPipelines(root),
     createBackgroundPipeline(root),
-    createRoomPipeline(root),
     createBloomPipelines(root),
     createTonemapPipeline(root, caps.canvasFormat),
   ]);
-  const pipelines = { geometry, background, room, bloom, tonemap };
+  const pipelines = { geometry, background, bloom, tonemap };
   const linear = root.createSampler({
     magFilter: "linear",
     minFilter: "linear",
@@ -298,7 +281,9 @@ export async function createRenderer(
       device.queue.writeBuffer(s.instances, 0, s.instanceF32);
       const dyn = input.dynamics;
       for (let slot = 0; slot < s.compiled.slotCount; slot++) {
-        s.dynamicsData[slot * 4] = dyn.intensity[slot] ?? 0;
+        // The environment's own slot glows at its look intensity, whatever the chapter animates.
+        s.dynamicsData[slot * 4] =
+          slot === s.compiled.environmentSlot ? 1 : (dyn.intensity[slot] ?? 0);
         s.dynamicsData[slot * 4 + 1] = dyn.widthScale[slot] ?? 1;
         s.dynamicsData[slot * 4 + 2] = dyn.flowPhase[slot] ?? 0;
       }
@@ -309,11 +294,22 @@ export async function createRenderer(
       const layers = input.debug?.layers ?? ~0;
       const bloomOn = input.debug?.bloom !== false;
       const emissive = layers & Layer.emissive ? 1 : 0;
-      packFrame(frameData, camera, input.timeSec, t.width, t.height, emissive, bloomOn ? 1 : 0);
+      const cut = input.view.cut ?? look.look.cutaway.plane;
+      packFrame(
+        frameData,
+        camera,
+        input.timeSec,
+        t.width,
+        t.height,
+        emissive,
+        bloomOn ? 1 : 0,
+        cut,
+      );
       device.queue.writeBuffer(gpuFrameUniform, 0, frameData);
 
       const swapchain = context.getCurrentTexture().createView();
-      encodeFrame(device, swapchain, pipelines, t, s, look, bloomOn, receipt, timer);
+      const cutting = input.view.mode === "cutaway" && input.view.t > 0;
+      encodeFrame(device, swapchain, pipelines, t, s, look, bloomOn, cutting, receipt, timer);
       receipt.gpuMs = timer?.lastMs ?? null;
       registry.stats(receipt.registry);
       return receipt;

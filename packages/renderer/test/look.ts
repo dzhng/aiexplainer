@@ -7,12 +7,18 @@ export function testLook(): LookConfig {
     room: {
       wallTop: [0, 0, 0.01],
       wallBottom: [0.01, 0.01, 0.02],
-      radius: 10,
-      floorFade: 0.4,
+      ao: 1,
+      bake: { warm: [1, 0.8, 0.6], cool: [0.5, 0.6, 1] },
       reflection: 1,
       vignette: { strength: 0.3, radius: 0.5 },
     },
-    lights: { key: light, rim: light, fill: light, size: 0.05 },
+    lights: {
+      key: light,
+      rim: light,
+      fill: light,
+      size: 0.05,
+      pool: { center: [0, 0, 0], radius: 4, falloff: 4, spill: 0.2 },
+    },
     ambient: [0.02, 0.02, 0.03],
     materials: {
       metal: {
@@ -37,6 +43,7 @@ export function testLook(): LookConfig {
         emissive: [0, 0, 0],
       },
     },
+    cutaway: { plane: { normal: [0, 0, 1], offset: 0 }, cap: [0.8, 0.3, 0.1] },
     tonemap: { exposure: 1, saturation: 1 },
     bloom: { threshold: 1, knee: 0.5, intensity: 0.1, radius: 1 },
   };

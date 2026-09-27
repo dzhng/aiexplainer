@@ -13,13 +13,22 @@
     "active": "#6ea8ff"
   },
   "hud": {
-    "panel": "rgba(20,24,44,.72)",
-    "line": "rgba(255,255,255,.12)",
-    "muted": "#9aa5d6",
-    "activeInk": "#0b1020"
+    "panel": "rgba(6,14,28,.8)",
+    "panelTop": "rgba(12,26,46,.88)",
+    "line": "rgba(94,230,255,.22)",
+    "frame": "rgba(94,230,255,.4)",
+    "scan": "rgba(94,230,255,.035)",
+    "muted": "#8fb3c9",
+    "accent": "#5ee6ff",
+    "accentSoft": "rgba(94,230,255,.1)",
+    "glow": "rgba(94,230,255,.55)",
+    "activeInk": "#04121c",
+    "cut": "12px",
+    "cutSmall": "7px"
   },
   "type": {
     "ui": "Inter, system-ui, sans-serif",
+    "display": "'Chakra Petch', Inter, system-ui, sans-serif",
     "mono": "'JetBrains Mono', ui-monospace, monospace",
     "sizePx": {
       "xs": 11,
@@ -57,9 +66,9 @@
         "opacity": 0.12
       },
       "floor": {
-        "color": "floor",
+        "color": "#07090f",
         "metallic": 0,
-        "roughness": 0.9,
+        "roughness": 0.95,
         "opacity": 1
       },
       "bar": {
@@ -74,6 +83,36 @@
         "metallic": 0,
         "roughness": 0.7,
         "opacity": 1
+      },
+      "wall": {
+        "color": "#2e323c",
+        "metallic": 0.2,
+        "roughness": 0.55,
+        "opacity": 1
+      },
+      "trim": {
+        "color": "#4a4e58",
+        "metallic": 0.8,
+        "roughness": 0.45,
+        "opacity": 1
+      },
+      "steel": {
+        "color": "#2a2d33",
+        "metallic": 0.3,
+        "roughness": 0.55,
+        "opacity": 1
+      },
+      "seam": {
+        "color": "#05070c",
+        "metallic": 0,
+        "roughness": 0.95,
+        "opacity": 1
+      },
+      "silhouette": {
+        "color": "#05070d",
+        "metallic": 0,
+        "roughness": 1,
+        "opacity": 1
       }
     }
   },
@@ -87,12 +126,52 @@
     "cyclesPerSec": 0.6,
     "spacing": 0.25
   },
+  "views": {
+    "durationSec": 0.6,
+    "cutaway": {
+      "cap": "focus",
+      "capGain": 1.2,
+      "planes": {
+        "default": {
+          "normal": [0, 0, 1],
+          "offset": 0
+        },
+        "autocomplete": {
+          "normal": [0, 0, 1],
+          "offset": 0.08
+        }
+      }
+    }
+  },
   "room": {
     "wallTop": "bgDeep",
     "wallBottom": "bgHigh",
-    "radius": 18,
-    "floorFade": 0.22,
+    "ao": 0.9,
     "reflection": 1,
+    "window": {
+      "sky": "#243258",
+      "skyGlow": 0.3,
+      "city": "focus",
+      "cityGlow": 2.2
+    },
+    "camera": {
+      "bounds": [-8.3, 0.35, -4.3, 8.3, 4.6, 10.3],
+      "minPitch": -0.05,
+      "maxPitch": 0.9,
+      "maxDistance": 12
+    },
+    "practicals": {
+      "lamp": {
+        "color": "focus",
+        "glow": 3,
+        "spill": 6
+      },
+      "practical": {
+        "color": "#dfe6f5",
+        "glow": 1.2,
+        "spill": 3.5
+      }
+    },
     "vignette": {
       "strength": 0.55,
       "radius": 0.45
@@ -114,7 +193,13 @@
       "color": "#8088a8",
       "intensity": 2
     },
-    "size": 0.06
+    "size": 0.06,
+    "pool": {
+      "center": [0, 0, 0],
+      "radius": 2.4,
+      "falloff": 2.2,
+      "spill": 0.18
+    }
   },
   "ambient": {
     "color": "floorEdge",

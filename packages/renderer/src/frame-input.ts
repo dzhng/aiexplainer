@@ -34,6 +34,12 @@ interface PartBase {
   slot: number;
   /** Placement of the part's local geometry in the world; may change every frame. */
   transform: Mat4;
+  /** World offset in the Exploded view, scaled by `view.t` (default: stays put). */
+  explode?: Vec3;
+  /** Whether the Cutaway view clips this part against the cut plane (default: keep). */
+  cutaway?: "keep" | "clip";
+  /** The kit primitive that built the part (`kit/`), for the chapter vocabulary checks. */
+  primitive?: string;
 }
 
 /** A unit cube centred on the origin, placed by `transform`. */
@@ -62,10 +68,6 @@ export interface MeshPart extends PartBase {
   kind: "mesh";
   asset: AssetId;
   node?: string;
-  /** Offset applied in the Exploded view, scaled by `view.t`. */
-  explode: Vec3;
-  /** Whether the Cutaway view clips this part. */
-  cutaway: "keep" | "clip";
 }
 
 export type Part = BlockPart | TubePart | MeshPart;
@@ -90,6 +92,11 @@ export interface SceneDesc {
   anchors: SceneAnchor[];
   /** Parsed props (`parseGlb`), loaded by the app. */
   assets: Record<AssetId, MeshAsset>;
+  /**
+   * The room the scene stands in: a prop drawn around every chapter's parts at the origin.
+   * It never occludes labels or gets crops, and its emission is not scaled by `dynamics`.
+   */
+  environment?: AssetId;
 }
 
 export interface FrameDynamics {
@@ -102,11 +109,30 @@ export interface FrameDynamics {
 /** Bits of `FrameInput.debug.layers`; a cleared bit hides that layer. */
 export const Layer = { emissive: 1 } as const;
 
+/** A plane: `normal · p = offset`. The Cutaway view removes the side `normal` points to. */
+export interface CutPlane {
+  normal: Vec3;
+  offset: number;
+}
+
+/**
+ * The view vocabulary (slice 13), applied only by `partWorld` and `partCut`: Whole places
+ * parts as authored; Exploded moves each by its `explode` × `t`; Cutaway sweeps the cut
+ * plane in by `t`, clipping `cutaway: "clip"` parts, whose cut faces show the look's cap.
+ */
+export interface FrameView {
+  mode: ViewMode;
+  /** 0 → 1 as the view comes in (the app eases it over `look.views` duration). */
+  t: number;
+  /** The Cutaway plane for this scene; defaults to `look.cutaway.plane`. */
+  cut?: CutPlane;
+}
+
 export interface FrameInput {
   timeSec: number;
   viewport: Viewport;
   camera: OrbitPose;
-  view: { mode: ViewMode; t: number };
+  view: FrameView;
   scene: SceneDesc;
   dynamics: FrameDynamics;
   /** `layers` defaults to every `Layer`; `bloom: false` skips the bloom passes. */
@@ -146,14 +172,17 @@ export interface LightLook {
 /** The renderer's slice of the app's look tokens, already resolved to linear numbers. */
 export interface LookConfig {
   room: {
-    /** The back wall's gradient, top to bottom. */
+    /** The void beyond the room, top to bottom; specular surfaces reflect this gradient too. */
     wallTop: LinearRgb;
     wallBottom: LinearRgb;
-    /** The room is a floor disc inside a wall cylinder of this radius, in metres. */
-    radius: number;
-    /** Fraction of the radius by which the lit floor has faded into the wall colour: a pool of light. */
-    floorFade: number;
-    /** How strongly specular surfaces reflect the room's gradient (0 = not at all). */
+    /** How much baked ambient occlusion darkens (0 = ignored, 1 = fully). */
+    ao: number;
+    /**
+     * Irradiance at a baked light value of 1, for a prop's warm and cool bake channels (the
+     * room's practicals: where their light falls is baked, its colour and strength are here).
+     */
+    bake: { warm: LinearRgb; cool: LinearRgb };
+    /** How strongly specular surfaces reflect the gradient (0 = not at all). */
     reflection: number;
     /** Darkening at the frame corners (0 = none) and where it starts (0 = centre, 1 = corner). */
     vignette: { strength: number; radius: number };
@@ -164,11 +193,19 @@ export interface LookConfig {
     fill: LightLook;
     /** Apparent light size, as a floor on GGX alpha: larger means broader, softer highlights. */
     size: number;
+    /**
+     * The direct lights fall off outside a pool around the subject (horizontal distance from
+     * `center`) to `spill` of their strength, so the room around it stays dim and the subject
+     * reads first.
+     */
+    pool: { center: Vec3; radius: number; falloff: number; spill: number };
   };
   ambient: LinearRgb;
-  /** Presets bound by name; `floor` also shades the room floor. */
-  materials: Record<string, MaterialLook> & { floor: MaterialLook };
+  /** Presets bound by name: kit parts name one, prop nodes by their name's segments. */
+  materials: Record<string, MaterialLook>;
   /** `saturation` is AgX's look saturation: 1 is the base look, higher keeps glows coloured. */
+  /** The Cutaway view's default plane and the colour its cut faces are capped with. */
+  cutaway: { plane: CutPlane; cap: LinearRgb };
   tonemap: { exposure: number; saturation: number };
   bloom: {
     /** Brightest-channel radiance where bloom starts, and the width of its soft knee. */

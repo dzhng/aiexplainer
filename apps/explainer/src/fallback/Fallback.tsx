@@ -40,8 +40,8 @@ export function Fallback({ def, reason }: { def: ChapterDef; reason: Exclude<Sup
           <BrandMark />
           {BRAND_NAME}
         </div>
-        <p className={css.series}>{SERIES_TITLE}</p>
-        <h1 className={css.title}>
+        <p className={hud.series}>{SERIES_TITLE}</p>
+        <h1 className={`${hud.title} ${css.title}`}>
           <span className={hud.titleNum}>{displayNumber(def.slug)}</span>
           {def.title}
         </h1>
@@ -64,7 +64,7 @@ export function Fallback({ def, reason }: { def: ChapterDef; reason: Exclude<Sup
           <ShareIcon />
           {copied ? "Link copied" : "Copy link"}
         </button>
-        <a className={`${hud.box} ${hud.pill}`} href={X_PROFILE} target="_blank" rel="noreferrer">
+        <a className={css.secondary} href={X_PROFILE} target="_blank" rel="noreferrer">
           <XIcon />
           Follow on X
         </a>

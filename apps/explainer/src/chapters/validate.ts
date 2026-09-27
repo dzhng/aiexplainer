@@ -2,12 +2,13 @@
  * `validateChapter(def)` returns every way a chapter breaks the contract (empty when valid).
  * Chapters are TypeScript data, so the compiler checks shapes; this checks what types can't:
  * the copy budget (README Copy rules), the loop budget (D24), the caps (D18), and that every
- * anchor, shot and colour token exists.
+ * anchor, shot, colour token and kit primitive exists (the frozen vocabulary, slice 13).
  */
 import { ARITH, arithProblems, type ArithUnit } from "@repo/llm";
+import { isKitPrimitive } from "@repo/renderer";
 import shots from "../look/shots.json";
 import { isPaletteToken } from "../look/look.ts";
-import { isSceneAnchor } from "./scenes.ts";
+import { isSceneAnchor, SCENE_KIT } from "./scenes.ts";
 import {
   STAT_FORMATS,
   STAT_SCALES,
@@ -76,8 +77,16 @@ function checkLoop(def: ChapterDef, loop: Timeline, problems: string[]) {
   if (!inLoop(def.ogTimeSec)) problems.push(`ogTimeSec ${def.ogTimeSec} is outside the loop`);
 }
 
-export function validateChapter(def: ChapterDef): string[] {
+/** `kitOf` names the primitives a scene builds from (a parameter only so tests can vary it). */
+export function validateChapter(
+  def: ChapterDef,
+  kitOf: (scene: ChapterDef["scene"]) => readonly string[] | undefined = (s) => SCENE_KIT[s],
+): string[] {
   const problems: string[] = [];
+  const kit = kitOf(def.scene);
+  if (!kit) problems.push(`unknown scene ${def.scene}`);
+  for (const primitive of kit ?? [])
+    if (!isKitPrimitive(primitive)) problems.push(`unknown kit primitive ${primitive}`);
   if (!def.title?.trim()) problems.push("missing title");
   if (!def.why?.trim()) problems.push("missing why-line");
 

@@ -4,7 +4,7 @@
  * help panel. Every control dispatches an `Action`; the keyboard (`state/keys.ts`) sends the same.
  */
 import type { LoadedModel } from "@repo/llm";
-import { useState, type CSSProperties, type Dispatch } from "react";
+import { useRef, useState, type CSSProperties, type Dispatch } from "react";
 import { LADDER, displayNumber } from "../chapters/ladder.ts";
 import type { ChapterDef, ViewMode } from "../chapters/types.ts";
 import { BRAND_NAME, SERIES_TITLE, X_PROFILE } from "../look/brand.ts";
@@ -20,6 +20,7 @@ import {
   ShareIcon,
   XIcon,
 } from "./icons.tsx";
+import { prefersReducedMotion, useArrivalIntro } from "./motion.ts";
 import { StatChip } from "./StatChip.tsx";
 
 const VIEW_NAMES: Record<ViewMode, string> = {
@@ -35,24 +36,32 @@ export interface HudProps {
   chapters: Chapters;
   /** The chapter's model, once loaded; `null` before then or for a chapter without one. */
   model: LoadedModel | null;
+  /** Decorative motion is allowed (a live clock); reduced-motion readers still get none. */
+  motion: boolean;
 }
 
 export function Hud(props: HudProps) {
+  const root = useRef<HTMLDivElement>(null);
+  const [reduced] = useState(prefersReducedMotion);
+  const motion = props.motion && !reduced;
+  // Arrival is the chapter's loop epoch (it bumps on every arrival, D32).
+  useArrivalIntro(root, props.state.loopEpoch, motion);
+  const hudProps = { ...props, motion };
   return (
-    <div className={css.hud} data-hud>
-      <TitlePanel {...props} />
-      <Controls {...props} />
-      <Ladder {...props} />
-      <Corner {...props} />
-      {props.state.helpOpen && <Help {...props} />}
+    <div className={css.hud} ref={root} data-hud>
+      <TitlePanel {...hudProps} />
+      <Controls {...hudProps} />
+      <Ladder {...hudProps} />
+      <Corner {...hudProps} />
+      {props.state.helpOpen && <Help {...hudProps} />}
     </div>
   );
 }
 
-function TitlePanel({ state, dispatch, def, model }: HudProps) {
+function TitlePanel({ state, dispatch, def, model, motion }: HudProps) {
   const caption = (state.follow && def.caption.byFollow[state.follow]) || def.caption.default;
   return (
-    <header className={css.tl} data-crop="panel:tl">
+    <header className={css.tl} data-crop="panel:tl" data-intro="left">
       <div className={css.brand}>
         <BrandMark />
         {BRAND_NAME}
@@ -65,7 +74,12 @@ function TitlePanel({ state, dispatch, def, model }: HudProps) {
       <p className={css.why}>{def.why}</p>
       <div className={css.stats}>
         {def.stats.map((stat) => (
-          <StatChip key={stat.id} stat={stat} model={model} />
+          <StatChip
+            key={stat.id}
+            stat={stat}
+            model={model}
+            countKey={motion ? state.loopEpoch : null}
+          />
         ))}
       </div>
       <section className={`${css.box} ${css.caption}`} aria-live="polite">
@@ -104,11 +118,13 @@ interface SegmentedProps<T> {
   options: { value: T; label: string }[];
   selected: T;
   onSelect: (value: T) => void;
+  /** Extra classes: `css.box` frames a free-standing group, `css.quoted` keeps prompt case. */
+  className?: string;
 }
 
-function Segmented<T>({ label, options, selected, onSelect }: SegmentedProps<T>) {
+function Segmented<T>({ label, options, selected, onSelect, className }: SegmentedProps<T>) {
   return (
-    <div className={css.seg} role="group" aria-label={label}>
+    <div className={`${css.seg} ${className ?? ""}`} role="group" aria-label={label}>
       {options.map((o) => (
         <button key={o.label} aria-pressed={o.value === selected} onClick={() => onSelect(o.value)}>
           {o.label}
@@ -123,7 +139,12 @@ function Controls({ state, dispatch, def }: HudProps) {
   const fill = ((state.slider - slider.min) / (slider.max - slider.min || 1)) * 100;
   const followKeys = def.follow.length > 0 ? `keys 1–${def.follow.length + 1}` : "";
   return (
-    <nav className={`${css.box} ${css.tr}`} data-crop="panel:tr" aria-label="Controls">
+    <nav
+      className={`${css.box} ${css.tr}`}
+      data-crop="panel:tr"
+      data-intro="right"
+      aria-label="Controls"
+    >
       <div className={css.group}>
         <div className={css.groupHead}>
           Follow <span className={css.keys}>{followKeys}</span>
@@ -172,6 +193,7 @@ function Controls({ state, dispatch, def }: HudProps) {
             onSelect={(id) =>
               dispatch({ type: "setScenario", scenario: id === state.scenario ? null : id })
             }
+            className={css.quoted}
           />
         </div>
       )}
@@ -209,7 +231,12 @@ function Controls({ state, dispatch, def }: HudProps) {
 
 function Ladder({ state, dispatch, chapters }: HudProps) {
   return (
-    <nav className={`${css.box} ${css.ladder}`} data-crop="panel:ladder" aria-label="Chapters">
+    <nav
+      className={`${css.box} ${css.ladder}`}
+      data-crop="panel:ladder"
+      data-intro="below"
+      aria-label="Chapters"
+    >
       {LADDER.map((slug, n) => {
         const def = chapters[slug];
         if (slug === state.chapter && def)
@@ -252,7 +279,7 @@ function Corner({ state, dispatch, def }: HudProps) {
     );
   };
   return (
-    <div className={css.corner} data-crop="panel:corner">
+    <div className={css.corner} data-crop="panel:corner" data-intro="below">
       <Segmented
         label="Label reading"
         options={[
@@ -261,6 +288,7 @@ function Corner({ state, dispatch, def }: HudProps) {
         ]}
         selected={state.labelMode}
         onSelect={(mode) => mode !== state.labelMode && dispatch({ type: "toggleLabelMode" })}
+        className={css.box}
       />
       <button
         className={`${css.box} ${css.pill} ${copied ? "" : css.pillSquare}`}

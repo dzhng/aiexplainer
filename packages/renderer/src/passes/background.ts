@@ -2,7 +2,7 @@
  * The backdrop: a full-screen triangle on the far plane (reverse-Z depth 0), drawn with the
  * `equal` test so it only shades where nothing else will. It opens the colour pass, which
  * guarantees every tile is drawn into and therefore resolved (the Apple tile quirk). With
- * the room drawn, it only shows beyond the room's wall.
+ * an environment room it only shows through gaps (and nowhere from inside the room).
  */
 import type { TgpuRoot } from "typegpu";
 import { createPipeline, DEPTH, frameLayout, HDR_FORMAT, SAMPLE_COUNT } from "../pipeline.ts";

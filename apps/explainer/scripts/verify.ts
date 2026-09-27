@@ -21,8 +21,14 @@
  *   `rect:x,y,w,h` is a literal rectangle. `--size N` shoots an N×N square centred on it.
  * - `--ui '{"text":"happy"}'` sets app controls through the probe (`setUi`) once ready.
  * - `--outline safe` draws that crop's rectangle on the page before shooting (framing review).
+ * - `--full` shoots the whole scrolling page (uncropped shots only), e.g. `/lab/tokens`.
+ * - `--mask 'part:board*'` fills that crop (same syntax as one `--crop` item) flat grey before
+ *   shooting, so a shot judges what is around the subject (the environment) on its own.
  * - `--strip 0:22:1` shoots held times start…end by step with the loop's beat burned in under
  *   each frame, then tiles them into `<out>-strip.png` (ffmpeg, a build-time tool, D41).
+ * - `--check subject-first` (with `?emissive=0`) hides every overlay and checks the scene's
+ *   parts outshine the room: the brightest lit pixel (p99.9 luminance) and the mean luminance
+ *   inside the parts' crop both beat the rest of the frame.
  * - `--check label-dots` (on a fixture of flat magenta markers with one anchor each) proves
  *   CPU placement and GPU raster agree: every visible label's dot, and the placement it came
  *   from, must lie within 2 px of its marker's rendered pixel centroid.
@@ -69,6 +75,8 @@ const { values: args } = parseArgs({
     outline: { type: "string" },
     expect: { type: "string", default: "app" },
     "no-webgpu": { type: "boolean", default: false },
+    mask: { type: "string" },
+    full: { type: "boolean" },
   },
 });
 
@@ -132,6 +140,71 @@ function withClock(route: string): string {
   url.searchParams.set("clock", "held");
   url.searchParams.set("t", times[0]!);
   return url.pathname + url.search + url.hash;
+}
+
+/**
+ * Luminance inside the union of the scene's `part:*` crops vs outside it, from a screenshot
+ * with every DOM overlay hidden; decoded in the page (no image library here). Returns failures.
+ */
+async function checkSubjectFirst(page: Page): Promise<string[]> {
+  const crops = await page.evaluate(() => window.__explainer!.crops());
+  const subject = resolveCrop(crops, "part:*");
+  if (!subject) return ["subject-first: no part:* crops"];
+  await page.evaluate(async () => {
+    const canvas = document.querySelector("canvas");
+    for (const el of document.querySelectorAll<HTMLElement>("body *"))
+      if (el !== canvas && !el.contains(canvas)) el.style.visibility = "hidden";
+    for (let i = 0; i < 3; i++) await new Promise(requestAnimationFrame);
+  });
+  const png = (await page.screenshot()).toString("base64");
+  const stats = await page.evaluate(
+    async ({ png, rect }) => {
+      const img = new Image();
+      img.src = `data:image/png;base64,${png}`;
+      await img.decode();
+      const c = document.createElement("canvas");
+      c.width = img.width;
+      c.height = img.height;
+      const ctx = c.getContext("2d")!;
+      ctx.drawImage(img, 0, 0);
+      const { data } = ctx.getImageData(0, 0, c.width, c.height);
+      // Screenshot pixels are CSS pixels × dpr; the crop is in CSS pixels.
+      const k = img.width / window.innerWidth;
+      const inside: number[] = [];
+      const outside: number[] = [];
+      for (let y = 0; y < c.height; y++)
+        for (let x = 0; x < c.width; x++) {
+          const i = (y * c.width + x) * 4;
+          const lum = 0.2126 * data[i]! + 0.7152 * data[i + 1]! + 0.0722 * data[i + 2]!;
+          const inRect =
+            x >= rect.x * k &&
+            x < (rect.x + rect.width) * k &&
+            y >= rect.y * k &&
+            y < (rect.y + rect.height) * k;
+          (inRect ? inside : outside).push(lum);
+        }
+      const summary = (v: number[]) => {
+        v.sort((a, b) => a - b);
+        return {
+          mean: v.reduce((n, x) => n + x, 0) / v.length,
+          p999: v[Math.floor(v.length * 0.999)]!,
+        };
+      };
+      return { subject: summary(inside), room: summary(outside) };
+    },
+    { png, rect: subject },
+  );
+  const f = (n: number) => n.toFixed(1);
+  console.log(
+    `subject-first: subject mean ${f(stats.subject.mean)} p99.9 ${f(stats.subject.p999)}; ` +
+      `room mean ${f(stats.room.mean)} p99.9 ${f(stats.room.p999)}`,
+  );
+  const failures: string[] = [];
+  if (!(stats.subject.p999 > stats.room.p999))
+    failures.push("subject-first: the room's brightest lit pixels outshine the subject's");
+  if (!(stats.subject.mean > stats.room.mean))
+    failures.push("subject-first: the room is brighter on average than the subject");
+  return failures;
 }
 
 /** Label dots vs rendered markers; returns failures. */
@@ -248,8 +321,9 @@ try {
       return true;
     }, ui);
     if (!set) failures.push("--ui: this page has no setUi");
-    // The scene's model output comes back from the worker asynchronously.
-    await page.waitForTimeout(500);
+    // The scene's model output comes back from the worker asynchronously, and a view change
+    // eases in over `look.views.durationSec` (0.6 s) of real time.
+    await page.waitForTimeout(900);
   }
   // React commits what the keys changed, then the browser paints it.
   await settle(page);
@@ -263,6 +337,7 @@ try {
   failures.push(...probe.errors.map((e) => `probe: ${e}`));
 
   if (args.check === "label-dots") failures.push(...(await checkLabelDots(page)));
+  else if (args.check === "subject-first") failures.push(...(await checkSubjectFirst(page)));
   else if (args.check) failures.push(`unknown check "${args.check}"`);
 
   if (args.out) {
@@ -270,7 +345,7 @@ try {
     await mkdir(dir, { recursive: true });
     const save = async (name: string, clip?: CropRect) => {
       const file = path.join(dir, `${name}.png`);
-      await page.screenshot({ path: file, clip });
+      await page.screenshot({ path: file, clip, fullPage: !clip && args.full });
       console.log("shot", path.relative(repoRoot, file));
     };
     for (const t of times.length > 1 ? times : [undefined]) {
@@ -306,6 +381,26 @@ try {
               height: `${height}px`,
               border: "2px dashed #ff3bd4",
               boxSizing: "border-box",
+              pointerEvents: "none",
+              zIndex: "10",
+            });
+            document.body.append(box);
+          }, rect);
+      }
+      if (args.mask) {
+        const rect = resolveCrop(crops, args.mask);
+        if (!rect) failures.push(`--mask: no crop ${args.mask}`);
+        else
+          await page.evaluate(({ x, y, width, height }) => {
+            const box = document.getElementById("harness-mask") ?? document.createElement("div");
+            box.id = "harness-mask";
+            Object.assign(box.style, {
+              position: "fixed",
+              left: `${x}px`,
+              top: `${y}px`,
+              width: `${width}px`,
+              height: `${height}px`,
+              background: "#3a3a3a",
               pointerEvents: "none",
               zIndex: "10",
             });

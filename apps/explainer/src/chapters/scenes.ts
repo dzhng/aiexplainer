@@ -8,6 +8,14 @@ export const SCENE_ANCHORS = {
   autocomplete: ["board", "bars", "rail"],
 } as const satisfies Record<string, readonly string[]>;
 
+/**
+ * The kit primitives each scene builds from (`@repo/renderer` `KIT`). The validator rejects a
+ * primitive outside the kit; a test holds each builder to its list.
+ */
+export const SCENE_KIT: Record<keyof typeof SCENE_ANCHORS, readonly string[]> = {
+  autocomplete: ["mesh", "bars", "block"],
+};
+
 export type SceneBuilderId = keyof typeof SCENE_ANCHORS;
 export type AnchorId = (typeof SCENE_ANCHORS)[SceneBuilderId][number];
 

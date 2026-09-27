@@ -6,7 +6,7 @@ import { installProbe } from "./lab/probe.ts";
 import "./look/global.css";
 import { applyCssVars } from "./look/look.ts";
 import { App } from "./runtime/app.tsx";
-import { clockFromSearch } from "./runtime/clock.ts";
+import { clockFromSearch, clockIsDriven } from "./runtime/clock.ts";
 import { browserSupportEnv, detectSupport } from "./runtime/support.ts";
 import { chapterAt } from "./state/app-state.ts";
 
@@ -29,6 +29,7 @@ if (probe.support === "webgpu") {
   root.render(
     <App
       hud={params.get("hud") !== "0"}
+      hudMotion={!clockIsDriven(location.search)}
       clock={clock}
       probe={probe}
       debug={debug}

@@ -1,5 +1,7 @@
 import { vec3, type Vec3 } from "math";
+import type { TubePart } from "../frame-input.ts";
 import { boundsOf, type Geometry } from "./geometry.ts";
+import type { KitCommon, KitPrimitive } from "./primitive.ts";
 
 export const TUBE_SIDES = 24;
 
@@ -96,3 +98,49 @@ export function tubeGeometry(path: Vec3[], radius: number, sides = TUBE_SIDES): 
 
   return { positions, normals, indices, bounds: boundsOf(positions) };
 }
+
+export interface TubeParams extends KitCommon {
+  material: string;
+  /** World-space centreline (the part's transform is the identity). */
+  path: Vec3[];
+  radius: number;
+}
+
+/** The `tube` primitive: a pipe along a path. Its anchor sits on the path's middle. */
+export const tube: KitPrimitive<TubeParams> = {
+  build(p) {
+    const part: TubePart = {
+      kind: "tube",
+      id: p.id,
+      slot: p.slot,
+      material: p.material,
+      path: p.path,
+      radius: p.radius,
+      transform: [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1],
+      explode: p.explode,
+      cutaway: p.cutaway,
+      primitive: "tube",
+    };
+    // The middle of the path by vertex count: a vertex, or the midpoint of the middle segment.
+    const a = p.path[Math.floor((p.path.length - 1) / 2)]!;
+    const b = p.path[Math.ceil((p.path.length - 1) / 2)]!;
+    return {
+      parts: [part],
+      bounds: tubeGeometry(p.path, p.radius).bounds,
+      anchors: [{ id: p.id, part: p.id, local: vec3.lerp([0, 0, 0], a, b, 0.5), priority: 1 }],
+      explode: p.explode ?? [0, 0, 0],
+    };
+  },
+  example: () => ({
+    id: "tube",
+    slot: 0,
+    material: "metal",
+    path: [
+      [-1, 0.2, 0],
+      [-0.4, 1.2, 0],
+      [0.6, 1.2, 0],
+      [1, 0.2, 0],
+    ],
+    radius: 0.08,
+  }),
+};

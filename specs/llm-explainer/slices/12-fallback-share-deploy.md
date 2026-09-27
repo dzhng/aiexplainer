@@ -92,7 +92,7 @@ it copies `/c/N/`), then **Follow on X**. Its only line differs by reason:
 
 Chapter 0 measurements:
 
-- 600 frames, 20.000 s (the loop is 20 s), CRF 18, 452,700 bytes.
+- 600 frames, 20.000 s (the loop is 20 s), CRF 18, 532,697 bytes after the 11b room and 04b HUD merged.
 - A repeat recording differs in **0 of 600 frames**.
 - Re-encoding gives a byte-identical MP4 and poster.
 
@@ -139,7 +139,7 @@ Chapter 0 measurements:
 - Deployment protection is **on**: Vercel Authentication, `all_except_custom_domains`. An
   unauthenticated request to the preview gets a 302 to the login page.
 - An automation bypass secret was created for the harness. Protection was not changed.
-- Preview: `https://aiexplainer-qlxirhvnr-david-zhangs-projects-6456877a.vercel.app`.
+- Preview: `https://aiexplainer-j4uz4ymmj-david-zhangs-projects-6456877a.vercel.app`.
   It passes:
   - `verify.ts --route /#0 --base <preview>` (hardware Metal, no console errors);
   - the 390×844 fallback;
@@ -156,8 +156,12 @@ Chapter 0 measurements:
 - a weak and centred device line;
 - the button widths.
 
-Accepted: the grey "0" chapter number (the HUD's convention), and space below the buttons
-on tall phones.
+After slice 04b merged, the page was restyled on the HUD's own classes and tokens (series,
+title, number badge, accent fill, cut corners). "Follow on X" became a quiet text link, and
+the desktop column widened to 960 px so the video leads. A third critique ran last.
+
+Accepted: the chapter-number badge (the HUD's convention), and space below the buttons on
+tall phones.
 
 ## Stays green
 

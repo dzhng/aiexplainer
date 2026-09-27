@@ -1,7 +1,8 @@
 /**
  * The one frame function. Every pass is encoded here, in this order:
- *   1. depth prepass: opaque geometry, no fragment stage;
- *   2. colour pass into 4× MSAA rgba16float — backdrop, room (depth read-only), opaque
+ *   1. depth prepass: opaque geometry, no fragment stage (while the Cutaway view cuts, a
+ *      discard-only one);
+ *   2. colour pass into 4× MSAA rgba16float — backdrop, opaque
  *      (depth `equal`), then translucent (depth read-only); the pass end resolves into
  *      the HDR target;
  *   3. bloom: prefilter, downsample and upsample through the mip chain (skippable);
@@ -18,7 +19,6 @@ import type { Draw } from "./scene.ts";
 export interface FramePipelines {
   geometry: GeometryPipelines;
   background: GPURenderPipeline;
-  room: GPURenderPipeline;
   bloom: BloomPipelines;
   tonemap: GPURenderPipeline;
 }
@@ -40,10 +40,9 @@ export interface FrameScene {
   draws: Draw[];
 }
 
-/** Look-dependent bindings: group 0 (camera + look) and the room's geometry. */
+/** Look-dependent bindings: group 0 (camera + look). */
 export interface FrameLook {
   frame: GPUBindGroup;
-  room: { bindGroup: GPUBindGroup; indexBuffer: GPUBuffer; indexCount: number };
 }
 
 function drawGeometry(
@@ -80,6 +79,8 @@ export function encodeFrame(
   scene: FrameScene,
   look: FrameLook,
   bloom: boolean,
+  /** The Cutaway view is cutting: the prepass discards and nothing is culled. */
+  cutting: boolean,
   receipt: FrameReceipt,
   timer?: FrameTimer,
 ): void {
@@ -91,7 +92,7 @@ export function encodeFrame(
   prepass.setBindGroup(0, look.frame);
   prepass.setBindGroup(1, scene.bindGroup);
   prepass.setIndexBuffer(scene.indexBuffer, "uint32");
-  prepass.setPipeline(pipelines.geometry.prepass);
+  prepass.setPipeline(cutting ? pipelines.geometry.prepassCut : pipelines.geometry.prepass);
   drawGeometry(prepass, scene.draws, false, receipt);
   prepass.end();
 
@@ -99,15 +100,9 @@ export function encodeFrame(
   colour.setBindGroup(0, look.frame);
   colour.setPipeline(pipelines.background);
   fullscreen(colour, receipt);
-  colour.setPipeline(pipelines.room);
-  colour.setBindGroup(1, look.room.bindGroup);
-  colour.setIndexBuffer(look.room.indexBuffer, "uint32");
-  colour.drawIndexed(look.room.indexCount);
-  receipt.drawCalls += 1;
-  receipt.triangles += look.room.indexCount / 3;
   colour.setBindGroup(1, scene.bindGroup);
   colour.setIndexBuffer(scene.indexBuffer, "uint32");
-  colour.setPipeline(pipelines.geometry.opaque);
+  colour.setPipeline(cutting ? pipelines.geometry.opaqueCut : pipelines.geometry.opaque);
   drawGeometry(colour, scene.draws, false, receipt);
   colour.setPipeline(pipelines.geometry.translucent);
   drawGeometry(colour, scene.draws, true, receipt);

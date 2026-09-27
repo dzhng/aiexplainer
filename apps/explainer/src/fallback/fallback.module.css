@@ -1,9 +1,12 @@
-/* The fallback page: the video first, then one call to action. Same tokens as the HUD. */
+/*
+ * The fallback page: the video first, then one call to action. It borrows the HUD's own
+ * classes (brand, series, title, titleNum) and tokens, and only sizes them for a phone.
+ */
 
 .page {
   box-sizing: border-box;
   min-height: 100%;
-  max-width: 720px;
+  max-width: 960px;
   margin: 0 auto;
   padding: 20px 16px 32px;
   display: flex;
@@ -16,22 +19,11 @@
 .header {
   display: flex;
   flex-direction: column;
-  gap: 2px;
 }
 
-.series {
-  margin: 12px 0 0;
-  font-size: var(--text-md);
-  color: var(--hud-muted);
-}
-
+/* The HUD title is sized for a 1440 px screen; a phone gets the next size down. */
 .title {
-  margin: 0;
   font-size: var(--text-xl);
-  font-weight: 700;
-  line-height: 1.15;
-  letter-spacing: -0.02em;
-  color: var(--active);
 }
 
 .video {
@@ -39,9 +31,16 @@
   width: 100%;
   aspect-ratio: 16 / 9;
   object-fit: cover;
-  border-radius: 10px;
   border: 1px solid var(--hud-line);
   background: var(--bg-high);
+  clip-path: polygon(
+    var(--hud-cut) 0,
+    100% 0,
+    100% calc(100% - var(--hud-cut)),
+    calc(100% - var(--hud-cut)) 100%,
+    0 100%,
+    0 var(--hud-cut)
+  );
 }
 
 .why {
@@ -65,6 +64,7 @@
   color: var(--ink);
 }
 
+/* The one call to action, in the HUD's selected-control colours. */
 .primary {
   height: 44px;
   display: inline-flex;
@@ -72,16 +72,36 @@
   justify-content: center;
   gap: 8px;
   border: 0;
-  border-radius: 10px;
-  background: var(--active);
+  background: var(--hud-accent);
   color: var(--hud-active-ink);
-  font: inherit;
+  font-family: var(--font-display);
+  font-size: var(--text-md);
   font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
   cursor: pointer;
+  clip-path: polygon(
+    var(--hud-cut-small) 0,
+    100% 0,
+    100% calc(100% - var(--hud-cut-small)),
+    calc(100% - var(--hud-cut-small)) 100%,
+    0 100%,
+    0 var(--hud-cut-small)
+  );
 }
 
-.actions a {
-  justify-content: center;
-  height: 40px;
+/* Secondary, so it stays a quiet link beside the one filled button. */
+.secondary {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 0;
+  color: var(--hud-muted);
+  font-size: var(--text-sm);
+  text-decoration: none;
+}
+
+.secondary:hover {
   color: var(--ink);
 }

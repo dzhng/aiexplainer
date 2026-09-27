@@ -52,3 +52,76 @@ The cut-plane direction per chapter (within `look.json`), the explode animation 
 ## Feedback that would change this slice
 
 Any token change. After this slice it propagates to every chapter automatically, which is the point of locking the vocabulary.
+
+## Record (2026-09-27)
+
+- **Kit:** `packages/renderer/src/kit/` holds `block`, `tube`, `mesh` and `bars`.
+  - Each primitive's `build(params)` returns `{ parts, bounds, anchors, explode }`, plus an
+    `example` build. The contract lives in `primitive.ts` and the catalogue in `catalog.ts`.
+  - Parts carry `primitive`, and every part now has optional `explode` and `cutaway`.
+  - `mesh` can split a prop into one part per node, with per-node explode vectors and
+    clipping by name prefix.
+  - Chapter 0's builder is rebuilt from the kit: the board is split into its nodes, and
+    `bars` and `block` are used for the bars and card.
+- **Views:**
+  - `partWorld` applies Exploded (`explode × t`); `partCut` decides Cutaway. They are the only
+    places either is applied.
+  - The cut is a fragment-stage discard against `FrameView.cut`, which defaults to
+    `look.views.cutaway.planes`. The cut plane sweeps in by `t`.
+  - While cutting, the frame swaps to a discard prepass and no-cull pipelines. Back faces
+    seen through the cut are shaded flat in the cap colour (`views.cutaway.cap` × gain).
+  - Cut parts stop occluding labels.
+  - `scene/views.ts` eases a view in over `views.durationSec` (0.6 s, smoothstep), and eases
+    the old view out first. It runs on a real-time `motionClock`, so held-clock lab pages
+    still settle.
+  - `/lab/scene/<slug>?view=` opens a scene settled in a view.
+  - Chapter 0's cut is a front section (plane z = 0.08) through the housing, slot channels
+    and rail. Exploded pulls the housing back, the slots and bars forward together, and the
+    rail and card forward and down.
+  - The board's bezel, header and ticks now stand 2 mm proud of the panel face, so no back
+    face is coplanar with it. The coplanar faces z-fought in the cap.
+- **Validator:** `validateChapter` rejects an unknown shot, colour token, scene or kit
+  primitive. `SCENE_KIT` names each scene's primitives, and a test holds the builder to it.
+- **`/lab/tokens`:** one page with these sections:
+  - palette: DOM swatches, plus the emissive × bloom frame;
+  - type scale;
+  - HUD panels, using the live classes;
+  - stat chips;
+  - labels in both readings, using the real label layer;
+  - flow rhythm;
+  - the three views as scaled full-size frames.
+
+  `/lab/kit/<primitive>` turntables each primitive's example. `bun run sheet --variable
+<crop> --chapters all` joins one crop across the written chapters. `verify.ts` gains
+  `--full`.
+
+- **Shots:** all in `throwaway/shots/13/`.
+  - The app in each view: `app-whole.png`, `app-cutaway.png`, `app-exploded.png`.
+  - The token page: `tokens.png`, with `crop-tokens-views.png` for its Views section.
+  - The kit: `kit-sheet.png`.
+  - Against the references: `vs-cutaway.png` and `vs-exploded.png`.
+  - The sheet is at `throwaway/shots/sheet/part-board.png`.
+- **compare-screenshots:** against airsup's cutaway, ours reads as a section (cap-coloured
+  faces on every cut wall), but a thin board has little interior to reveal. Against airsup's
+  exploded view, ours separates in depth only, so from the hero angle it reads mostly as
+  parallax. Page metrics show the token page as dark and sparse (dominant colour share 0.66),
+  which is expected for a style sheet on bgDeep.
+- **screenshot-critique, round 1:** the vertical cut left bars floating and the cap as a
+  hairline; slots and bars exploded out of register; the view thumbnails clipped their text.
+  All three were fixed: a front section, bars moving with their slots, and frames scaled from
+  1440×900.
+- **screenshot-critique, round 2:**
+  - Confirmed fixed: the cut reads as a section, and the bars and slots line up.
+  - Still open:
+    - the flat, bright cap reads a little like a painted frame, with hairline cap specks at
+      the slot edges (the next step is a shaded cap with a subtle hatch);
+    - from the hero angle the Exploded view reads mostly as a depth shift, and the right slot
+      column crosses the right post (an angled exploded shot, or a sideways spread, would fix
+      it);
+    - the scaled view thumbnails on the token page have unreadable 5 px scene text (by
+      design, since they are scaled frames);
+    - the 16× swatches blow out to white;
+    - section widths on the token page are uneven.
+- **Performance** (board-room, 1440×900): 1.6–2.2 ms with bloom (≤ 8 ms).
+- **Registry:** the baseline holds.
+- **Human checkpoint (implementer's call): token page accepted as the style guide.**
