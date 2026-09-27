@@ -4,4 +4,7 @@ export * from "./load.ts";
 export * from "./counts.ts";
 export * from "./tokenizer.ts";
 export * from "./rng.ts";
+export * from "./transformer.ts";
+export * from "./forward.ts";
+export * from "./sample.ts";
 export * from "./scale/index.ts";

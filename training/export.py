@@ -10,12 +10,15 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 import subprocess
 from pathlib import Path
 from typing import Any
 
 import numpy as np
 import torch
+
+import tokenizer
 
 REPO_DIR = Path(__file__).resolve().parent.parent
 FORMAT_VERSION = 1
@@ -82,6 +85,15 @@ def pack_tensors(tensors: dict[str, np.ndarray]) -> tuple[bytes, list[dict[str, 
     return bytes(blob), table
 
 
+def bpe_tokenizer_ref(out_dir: Path) -> dict[str, Any]:
+    """The manifest entry pinning the frozen shared tokenizer, relative to `out_dir`."""
+    sha256 = hashlib.sha256(tokenizer.TOKENIZER_FILE.read_bytes()).hexdigest()
+    if sha256 != tokenizer.TOKENIZER_SHA256:
+        raise ValueError("tokenizer.json is not the frozen tokenizer")
+    file = os.path.relpath(tokenizer.TOKENIZER_FILE, out_dir.resolve())
+    return {"kind": "bpe", "file": file, "sha256": sha256}
+
+
 def export_model(
     out_dir: Path,
     *,
@@ -89,23 +101,47 @@ def export_model(
     kind: str,
     tokenizer: dict[str, Any],
     tensors: dict[str, np.ndarray],
-    training: dict[str, Any],
+    training: dict[str, Any] | None,
     evidence: list[dict[str, Any]],
+    arch: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
-    """Write `out_dir/{manifest.json, weights.bin}` and return the manifest."""
+    """Write `out_dir/{manifest.json, weights.bin}` and return the manifest.
+
+    `training` is None only for random-init parity fixtures; `arch` is set for transformers.
+    """
     out_dir.mkdir(parents=True, exist_ok=True)
     weights, table = pack_tensors(tensors)
     (out_dir / WEIGHTS_FILE).write_bytes(weights)
-    manifest = {
+    manifest: dict[str, Any] = {
         "formatVersion": FORMAT_VERSION,
         "id": model_id,
         "kind": kind,
         "tokenizer": tokenizer,
+        **({"arch": arch} if arch is not None else {}),
         "weightsFile": WEIGHTS_FILE,
         "weightsSha256": hashlib.sha256(weights).hexdigest(),
         "tensors": table,
-        "training": training,
+        **({"training": training} if training is not None else {}),
         "evidence": evidence,
     }
     (out_dir / MANIFEST_FILE).write_text(json.dumps(manifest, indent=2) + "\n")
     return manifest
+
+
+def read_model(model_dir: Path) -> tuple[dict[str, Any], dict[str, np.ndarray]]:
+    """The inverse of `export_model`: the manifest and its tensors (views into the file)."""
+    manifest = json.loads((model_dir / MANIFEST_FILE).read_text())
+    weights = (model_dir / manifest["weightsFile"]).read_bytes()
+    if hashlib.sha256(weights).hexdigest() != manifest["weightsSha256"]:
+        raise ValueError(f"{model_dir}: weights do not match the manifest's sha256")
+    by_name = {name: np.dtype(dtype).newbyteorder("<") for dtype, name in DTYPES.items()}
+    tensors = {
+        entry["name"]: np.frombuffer(
+            weights,
+            dtype=by_name[entry["dtype"]],
+            count=int(np.prod(entry["shape"], dtype=np.int64)),
+            offset=entry["byteOffset"],
+        ).reshape(entry["shape"])
+        for entry in manifest["tensors"]
+    }
+    return manifest, tensors

@@ -63,6 +63,24 @@ export async function loadModel(
   return { manifest: parsed, tensors, tokenizer };
 }
 
+/** Fetches a manifest, its weights and (for BPE models) its tokenizer, then loads them. */
+export async function fetchModel(manifestUrl: URL): Promise<LoadedModel> {
+  const bytes = async (url: URL) => {
+    const response = await fetch(url);
+    if (!response.ok) throw new Error(`${url}: HTTP ${response.status}`);
+    return response.arrayBuffer();
+  };
+  const manifest = JSON.parse(new TextDecoder().decode(await bytes(manifestUrl)));
+  const parsed = ModelManifest.parse(manifest);
+  const [weights, tokenizerFile] = await Promise.all([
+    bytes(new URL(parsed.weightsFile, manifestUrl)),
+    parsed.tokenizer.kind === "bpe"
+      ? bytes(new URL(parsed.tokenizer.file, manifestUrl))
+      : undefined,
+  ]);
+  return loadModel(parsed, weights, tokenizerFile);
+}
+
 /** The named tensor, which must exist with the given dtype. */
 export function tensor<D extends Dtype>(model: LoadedModel, name: string, dtype: D): Tensor<D> {
   const found = model.tensors.get(name);
