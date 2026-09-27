@@ -1,5 +1,12 @@
 import { afterAll, describe, expect, test } from "bun:test";
-import { fetchModel, forward, transformerModel, type ModelId } from "@repo/llm";
+import {
+  fetchModel,
+  forward,
+  generate,
+  seededRng,
+  transformerModel,
+  type ModelId,
+} from "@repo/llm";
 import { CancelledError, createSession } from "../src/runtime/session.ts";
 
 const repo = new URL("../../../", import.meta.url);
@@ -58,6 +65,25 @@ describe("inference session (worker)", () => {
     expect((await rejection(session.run(promptC)))?.message).toContain(
       "needs a loaded transformer",
     );
+  });
+
+  test("generates the seeded tokens the llm package does, and cancel stops a generation", async () => {
+    await session.load(fixture);
+    const direct = [
+      ...generate(transformerModel(await fetchModel(fixture)), promptC, {
+        maxNewTokens: 6,
+        temperature: 0.8,
+        rng: seededRng(3),
+      }),
+    ];
+    const steps = await session.generate(promptC, { seed: 3, temperature: 0.8, maxNewTokens: 6 });
+    expect(steps).toEqual(direct);
+    const long = session.generate(promptC, { seed: 3, temperature: 0.8, maxNewTokens: 200 });
+    session.cancel();
+    expect(await rejection(long)).toBeInstanceOf(CancelledError);
+    // The worker stopped part-way, so the next request is answered at once.
+    const after = await session.generate(promptC, { seed: 3, temperature: 0.8, maxNewTokens: 6 });
+    expect(after).toEqual(direct);
   });
 
   test("errors come back as rejections", async () => {

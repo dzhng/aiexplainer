@@ -6,6 +6,7 @@
 import type {
   ForwardOptions,
   ForwardResult,
+  GenerateStep,
   ModelId,
   ModelManifest,
   Neighbour,
@@ -28,8 +29,21 @@ export interface ModelInfo {
  */
 export type RunOptions = Pick<ForwardOptions, "trace" | "window" | "mlpOff"> & { model?: ModelId };
 
+/** A seeded generation (`generate` in @repo/llm) on the latest model loaded, or on `model`. */
+export interface GenerateRequest {
+  model?: ModelId;
+  seed: number;
+  temperature: number;
+  maxNewTokens: number;
+  /** Without a cache every step rereads the whole text (chapter 9); default true. */
+  cache?: boolean;
+  window?: number;
+}
+
 export type WorkerRequest = { id: number } & (
   | { type: "load"; manifestUrl: string }
+  | { type: "generate"; tokens: number[]; options: GenerateRequest }
+  | { type: "cancel"; target: number }
   | { type: "run"; tokens: number[]; options?: RunOptions }
   | { type: "nextWords"; word: string; k: number }
   | { type: "neighbours"; token: number; k: number }
@@ -51,6 +65,11 @@ export interface Session {
   /** Loads a shipped model by id, or any manifest by URL (lab fixtures), and makes it current. */
   load(model: ModelId | URL): Promise<ModelInfo>;
   run(tokens: number[], options?: RunOptions): Promise<ForwardResult>;
+  /**
+   * Writes up to `maxNewTokens` after `tokens`. The worker pauses between tokens, so `cancel()`
+   * (or a newer request) stops a long generation part-way, not just its reply.
+   */
+  generate(tokens: number[], options: GenerateRequest): Promise<GenerateStep[]>;
   nextWords(word: string, k: number): Promise<NextWord[]>;
   /** The loaded transformer's nearest tokens in its input embedding table. */
   neighbours(token: number, k: number): Promise<Neighbour[]>;
@@ -93,6 +112,8 @@ export function createSession(options: SessionOptions = {}): Session {
 
   const cancel = () => {
     if (live === undefined) return;
+    // A generation still running stops at its next token; anything else just loses its reply.
+    worker.postMessage({ id: nextId++, type: "cancel", target: live } satisfies WorkerRequest);
     pending.get(live)?.reject(new CancelledError());
     pending.delete(live);
     live = undefined;
@@ -113,6 +134,14 @@ export function createSession(options: SessionOptions = {}): Session {
     },
     run(tokens, options) {
       return exclusive<ForwardResult>({ id: nextId++, type: "run", tokens, options });
+    },
+    generate(tokens, generation) {
+      return exclusive<GenerateStep[]>({
+        id: nextId++,
+        type: "generate",
+        tokens,
+        options: generation,
+      });
     },
     nextWords(word, k) {
       return exclusive<NextWord[]>({ id: nextId++, type: "nextWords", word, k });

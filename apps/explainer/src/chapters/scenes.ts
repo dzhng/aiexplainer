@@ -12,6 +12,8 @@ export const SCENE_ANCHORS = {
   mlp: ["panel", "arrow", "readout", "teaser"],
   /** Chapter 7: the stations, the river under them, their volume knobs, the best guess. */
   residual: ["stations", "river", "knob", "readout"],
+  /** Chapter 8: block 1's readers, its word rail, its frame, and the line of blocks. */
+  stack: ["readers", "words", "block", "line"],
 } as const satisfies Record<string, readonly string[]>;
 
 /**
@@ -23,6 +25,7 @@ export const SCENE_KIT: Record<keyof typeof SCENE_ANCHORS, readonly string[]> = 
   tokenizer: ["block", "brick", "contactShadow"],
   mlp: ["questionPanel", "tube", "block", "bars", "contactShadow"],
   residual: ["block", "tube", "river", "volumeKnob", "contactShadow"],
+  stack: ["block", "tube", "contactShadow"],
 };
 
 export type SceneBuilderId = keyof typeof SCENE_ANCHORS;

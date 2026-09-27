@@ -18,6 +18,18 @@ export const MODEL_METRICS = {
     describe: "entries in the model's vocabulary",
     read: vocabSize,
   },
+  context: {
+    describe: "the longest text the model reads at once, in tokens, from its shape",
+    read: (model) => transformerArch(model).ctx,
+  },
+  heads: {
+    describe: "attention heads (readers) in each block, from the model's shape",
+    read: (model) => transformerArch(model).nHeads,
+  },
+  kvHeads: {
+    describe: "sets of keys and values (notes) each block keeps, shared by its heads",
+    read: (model) => transformerArch(model).nKvHeads,
+  },
   mlpNeurons: {
     describe: "MLP neurons in each block, from the model's shape",
     read: (model) => {
@@ -59,6 +71,12 @@ function vocabSize(model: ModelSource): number {
   const vocab = model.tensors.get(ref.vocabTensor);
   if (!vocab?.shape[0]) throw new Error(`${model.manifest.id}: vocab tensor has no rows`);
   return vocab.shape[0];
+}
+
+function transformerArch(model: ModelSource) {
+  const manifest = "manifest" in model ? model.manifest : null;
+  if (manifest?.kind !== "transformer") throw new Error(`${sourceId(model)} is not a transformer`);
+  return manifest.arch;
 }
 
 /** Shipped models always carry a training record; test fixtures and the tokenizer lack one. */

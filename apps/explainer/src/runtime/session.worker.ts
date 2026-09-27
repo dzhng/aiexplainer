@@ -7,8 +7,16 @@ import type { WorkerReply, WorkerRequest } from "./session.ts";
 declare const self: Worker;
 
 const inference = createInference();
+/** Generations told to stop (by request id); checked between tokens. */
+const cancelled = new Set<number>();
+/** A macrotask break, so a `cancel` message can arrive between tokens. */
+const breather = () => new Promise<void>((resolve) => setTimeout(resolve, 0));
 
 self.onmessage = async ({ data }: MessageEvent<WorkerRequest>) => {
+  if (data.type === "cancel") {
+    cancelled.add(data.target);
+    return;
+  }
   try {
     const [result, transfer] = await handle(data);
     self.postMessage({ id: data.id, ok: true, result } satisfies WorkerReply, { transfer });
@@ -18,13 +26,22 @@ self.onmessage = async ({ data }: MessageEvent<WorkerRequest>) => {
   }
 };
 
-async function handle(request: WorkerRequest): Promise<[unknown, Transferable[]]> {
+async function handle(
+  request: Exclude<WorkerRequest, { type: "cancel" }>,
+): Promise<[unknown, Transferable[]]> {
   switch (request.type) {
     case "load":
       return [await inference.load(new URL(request.manifestUrl)), []];
     case "run": {
       const result = inference.run(request.tokens, request.options);
       return [result, [result.logits.buffer, ...traceBuffers(result.trace)]];
+    }
+    case "generate": {
+      const steps = await inference.generate(request.tokens, request.options, breather, () =>
+        cancelled.has(request.id),
+      );
+      cancelled.delete(request.id);
+      return [steps, []];
     }
     case "neighbours":
       return [inference.neighbours(request.token, request.k), []];

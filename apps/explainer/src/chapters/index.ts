@@ -6,6 +6,7 @@ import { autocomplete } from "./data/autocomplete.ts";
 import { tokenizer } from "./data/tokenizer.ts";
 import { mlp } from "./data/mlp.ts";
 import { residual } from "./data/residual.ts";
+import { stack } from "./data/stack.ts";
 import type { ChapterSlug } from "./ladder.ts";
 import type { ChapterDef } from "./types.ts";
 import { validateChapter } from "./validate.ts";
@@ -15,6 +16,7 @@ export const CHAPTERS: Partial<Record<ChapterSlug, ChapterDef>> = {
   tokenizer,
   mlp,
   residual,
+  stack,
 };
 
 for (const [slug, def] of Object.entries(CHAPTERS)) {

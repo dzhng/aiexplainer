@@ -11,4 +11,5 @@ export * from "./sample.ts";
 export * from "./embeddings.ts";
 export * from "./quantize.ts";
 export * from "./speculative.ts";
+export * from "./generate.ts";
 export * from "./scale/index.ts";

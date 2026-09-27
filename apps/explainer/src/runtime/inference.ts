@@ -8,6 +8,9 @@ import {
   countsModel,
   fetchModel,
   forward,
+  generate,
+  seededRng,
+  type GenerateStep,
   nearestTokens,
   nextWords,
   transformerModel,
@@ -17,7 +20,7 @@ import {
   type NextWord,
   type Transformer,
 } from "@repo/llm";
-import type { ModelInfo, RunOptions } from "./session.ts";
+import type { GenerateRequest, ModelInfo, RunOptions } from "./session.ts";
 
 type Held =
   | { kind: "transformer"; transformer: Transformer }
@@ -26,6 +29,16 @@ type Held =
 export interface Inference {
   load(manifestUrl: URL): Promise<ModelInfo>;
   run(tokens: number[], options?: RunOptions): ForwardResult;
+  /**
+   * Runs a seeded generation, awaiting `pause()` between tokens; it stops early (returning what
+   * it has) once `stopped()` says so.
+   */
+  generate(
+    tokens: number[],
+    options: GenerateRequest,
+    pause?: () => Promise<void>,
+    stopped?: () => boolean,
+  ): Promise<GenerateStep[]>;
   nextWords(word: string, k: number): NextWord[];
   neighbours(token: number, k: number): Neighbour[];
 }
@@ -66,6 +79,19 @@ export function createInference(): Inference {
     run(tokens, options = {}) {
       const { model, ...forwardOptions } = options;
       return forward(transformer(model ?? current, "run"), tokens, forwardOptions);
+    },
+    async generate(tokens, options, pause, stopped) {
+      const { model, seed, ...rest } = options;
+      const steps: GenerateStep[] = [];
+      for (const step of generate(transformer(model ?? current, "generate"), tokens, {
+        ...rest,
+        rng: seededRng(seed),
+      })) {
+        steps.push(step);
+        await pause?.();
+        if (stopped?.()) break;
+      }
+      return steps;
     },
     neighbours(token, k) {
       return nearestTokens(transformer(current, "neighbours"), token, k);

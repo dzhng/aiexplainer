@@ -48,6 +48,11 @@ export interface ChapterDef {
   labels: LabelDef[];
   loop: Timeline;
   shot: ShotId;
+  /**
+   * The one zoom-out (D5): while loop channel `channel` rises from 0 to 1 the camera eases from
+   * wherever the reader has it to `shot`, and back as it falls. Only the stack chapter has one.
+   */
+  pullBack?: { shot: ShotId; channel: ChannelId };
   help: { sources: SourceRef[] };
   /** Loop time captured for the chapter's link-preview image. */
   ogTimeSec: number;

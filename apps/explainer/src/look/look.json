@@ -85,6 +85,13 @@
         "roughness": 0.05,
         "opacity": 0.35
       },
+      "barAlt": {
+        "color": "metalDark",
+        "emissive": "active",
+        "metallic": 0.1,
+        "roughness": 0.45,
+        "opacity": 1
+      },
       "neuron": {
         "color": "bgDeep",
         "emissive": "flow",

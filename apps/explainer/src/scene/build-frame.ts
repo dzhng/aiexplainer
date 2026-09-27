@@ -11,6 +11,7 @@ import type { SceneTags } from "../hud/SceneTags.tsx";
 import { autocomplete, type CountsRun } from "./builders/autocomplete.ts";
 import { mlp, type MlpRun } from "./builders/mlp.ts";
 import { residual, type ResidualRun } from "./builders/residual.ts";
+import { stack, type StackRun } from "./builders/stack.ts";
 import { tokenizer } from "./builders/tokenizer.ts";
 import { withEnvironment } from "./environment.ts";
 
@@ -27,7 +28,7 @@ export interface SceneUi {
  * The chapter's model output for what the scene shows (`runtime/scene-run.ts`). Each scene's
  * builder reads its own kind.
  */
-export type SceneRun = CountsRun | PiecesRun | MlpRun | ResidualRun;
+export type SceneRun = CountsRun | PiecesRun | MlpRun | ResidualRun | StackRun;
 
 /** Chapter 1's run (`runtime/runs/tokenizer.ts`). */
 export interface PiecesRun {
@@ -61,6 +62,7 @@ export const SCENE_BUILDERS: Record<SceneBuilderId, SceneBuilder> = {
   tokenizer,
   mlp,
   residual,
+  stack,
 };
 
 /** What one frame of a chapter's scene is: the renderer's input and the overlay's text. */
