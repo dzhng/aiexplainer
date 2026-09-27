@@ -30,6 +30,7 @@ import type { Box3 } from "math/shapes";
 import type { LabelsHandle } from "../hud/Labels.tsx";
 import type { SceneTags, SceneTagsHandle } from "../hud/SceneTags.tsx";
 import type { ProbeApi } from "../lab/probe.ts";
+import { roomOrbitLimits } from "../scene/environment.ts";
 import type { Clock } from "./clock.ts";
 import { bindOrbit } from "./orbit-input.ts";
 
@@ -81,7 +82,11 @@ export async function runStage(o: StageOptions): Promise<Stage | null> {
     viewport: { width: 1, height: 1, dpr: 1 },
     debug: o.debug,
   };
-  const orbit = new OrbitController(input.camera);
+  // Inside a room the camera stays inside it; a bare fixture keeps the open-stage limits.
+  const orbit = new OrbitController(
+    input.camera,
+    input.scene.environment ? roomOrbitLimits() : undefined,
+  );
   const pose: OrbitPose = { ...orbit.pose, target: [...orbit.pose.target] };
   input.camera = pose;
 

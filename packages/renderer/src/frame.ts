@@ -1,7 +1,7 @@
 /**
  * The one frame function. Every pass is encoded here, in this order:
  *   1. depth prepass: opaque geometry, no fragment stage;
- *   2. colour pass into 4× MSAA rgba16float — backdrop, room (depth read-only), opaque
+ *   2. colour pass into 4× MSAA rgba16float — backdrop, opaque
  *      (depth `equal`), then translucent (depth read-only); the pass end resolves into
  *      the HDR target;
  *   3. bloom: prefilter, downsample and upsample through the mip chain (skippable);
@@ -18,7 +18,6 @@ import type { Draw } from "./scene.ts";
 export interface FramePipelines {
   geometry: GeometryPipelines;
   background: GPURenderPipeline;
-  room: GPURenderPipeline;
   bloom: BloomPipelines;
   tonemap: GPURenderPipeline;
 }
@@ -40,10 +39,9 @@ export interface FrameScene {
   draws: Draw[];
 }
 
-/** Look-dependent bindings: group 0 (camera + look) and the room's geometry. */
+/** Look-dependent bindings: group 0 (camera + look). */
 export interface FrameLook {
   frame: GPUBindGroup;
-  room: { bindGroup: GPUBindGroup; indexBuffer: GPUBuffer; indexCount: number };
 }
 
 function drawGeometry(
@@ -99,12 +97,6 @@ export function encodeFrame(
   colour.setBindGroup(0, look.frame);
   colour.setPipeline(pipelines.background);
   fullscreen(colour, receipt);
-  colour.setPipeline(pipelines.room);
-  colour.setBindGroup(1, look.room.bindGroup);
-  colour.setIndexBuffer(look.room.indexBuffer, "uint32");
-  colour.drawIndexed(look.room.indexCount);
-  receipt.drawCalls += 1;
-  receipt.triangles += look.room.indexCount / 3;
   colour.setBindGroup(1, scene.bindGroup);
   colour.setIndexBuffer(scene.indexBuffer, "uint32");
   colour.setPipeline(pipelines.geometry.opaque);

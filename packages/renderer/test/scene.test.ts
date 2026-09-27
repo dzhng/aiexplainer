@@ -124,3 +124,25 @@ test("mesh nodes bind presets by name and instance across parts", () => {
     ),
   ).toThrow(/board.rail/);
 });
+
+test("the environment is drawn as mesh instances in a slot of its own, never as a part", () => {
+  const room: MeshAsset = {
+    nodes: [node("room.floor", "metal"), node("room.window.glass", "glass")],
+    bounds: [-1, 0, -1, 1, 1, 1],
+  };
+  const scene = {
+    revision: 1,
+    assets: { room },
+    anchors: [],
+    parts: [block("a", "metal", 0), block("b", "metal", 2)],
+    environment: "room",
+  };
+  const compiled = compileScene(scene, look);
+  expect(compiled.environmentSlot).toBe(3);
+  expect(compiled.slotCount).toBe(4);
+  const env = compiled.instanceParts.filter((p) => p.id === "environment");
+  expect(env.map((p) => p.slot)).toEqual([3, 3]);
+  // The scene's own parts are untouched, so labels, crops and occluders never see the room.
+  expect(scene.parts.map((p) => p.id)).toEqual(["a", "b"]);
+  expect(compileScene({ ...scene, environment: undefined }, look).environmentSlot).toBeUndefined();
+});

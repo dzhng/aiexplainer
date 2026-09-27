@@ -7,12 +7,18 @@ export function testLook(): LookConfig {
     room: {
       wallTop: [0, 0, 0.01],
       wallBottom: [0.01, 0.01, 0.02],
-      radius: 10,
-      floorFade: 0.4,
+      ao: 1,
+      bake: { warm: [1, 0.8, 0.6], cool: [0.5, 0.6, 1] },
       reflection: 1,
       vignette: { strength: 0.3, radius: 0.5 },
     },
-    lights: { key: light, rim: light, fill: light, size: 0.05 },
+    lights: {
+      key: light,
+      rim: light,
+      fill: light,
+      size: 0.05,
+      pool: { center: [0, 0, 0], radius: 4, falloff: 4, spill: 0.2 },
+    },
     ambient: [0.02, 0.02, 0.03],
     materials: {
       metal: {

@@ -15,6 +15,7 @@ import {
   LOOK_UNIFORM_BYTES,
   LookUniform,
   packLook,
+  packVertices,
   Vertex,
   VERTEX_BYTES,
 } from "../src/pack.ts";
@@ -81,4 +82,24 @@ test("packMaterial and packLook fill exactly their records", () => {
     packed(LOOK_UNIFORM_BYTES, (o) => packLook(o, look)),
     LOOK_UNIFORM_BYTES,
   );
+});
+
+test("packVertices packs AO and baked light; unbaked geometry is open and unlit", () => {
+  const positions = new Float32Array([1, 2, 3, 4, 5, 6]);
+  const normals = new Float32Array([0, 1, 0, 0, 0, 1]);
+  const ao = new Float32Array([0.25, 0.75]);
+  const light = new Float32Array([1, 0, 0.5, 1]);
+  const baked = packed(2 * VERTEX_BYTES, (out) =>
+    packVertices(out, 0, { positions, normals, ao, light }),
+  );
+  expect(Number.isNaN(baked[16]!)).toBe(true); // the next record is untouched
+  expect([...baked.subarray(0, 7)]).toEqual([1, 2, 3, 0.25, 0, 1, 0]);
+  expect(baked[11]).toBe(0.75);
+  // unpack2x16unorm order: warm in the low 16 bits, cool in the high.
+  const u32 = new Uint32Array(baked.buffer);
+  expect(u32[7]).toBe(0x0000ffff);
+  expect(u32[15]).toBe(0xffff8000);
+  const open = packed(2 * VERTEX_BYTES, (out) => packVertices(out, 0, { positions, normals }));
+  const openU32 = new Uint32Array(open.buffer);
+  expect([open[3], open[11], openU32[7], openU32[15]]).toEqual([1, 1, 0, 0]);
 });

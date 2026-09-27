@@ -1,6 +1,7 @@
 /**
  * A deliberately small GLB reader for the repo's own Blender props: uncompressed triangle
- * meshes, metallic-roughness factors, `emissiveFactor` and `KHR_materials_emissive_strength`.
+ * meshes, an optional `COLOR_0` bake (R ambient occlusion, G and B baked warm and cool light),
+ * metallic-roughness factors, `emissiveFactor` and `KHR_materials_emissive_strength`.
  * Everything else throws `GltfUnsupportedError`, so an asset never half-loads.
  * Node transforms are baked into the positions, so every node is ready to draw in asset space.
  */
@@ -27,6 +28,10 @@ export interface MeshNode {
   name: string;
   positions: Float32Array;
   normals: Float32Array;
+  /** Baked ambient occlusion per vertex (1 = open), COLOR_0's red; absent when not baked. */
+  ao?: Float32Array;
+  /** Baked practical light per vertex, (warm, cool) pairs in 0–1: COLOR_0's green and blue. */
+  light?: Float32Array;
   indices: Uint32Array;
   material: MeshMaterial;
   bounds: Box3;
@@ -173,6 +178,41 @@ function readFloat3(
   return out;
 }
 
+/** Unsigned normalized or float scalars in [0, 1], by component type. */
+const COLOR_COMPONENTS: Record<
+  number,
+  { bytes: number; read: (v: DataView, at: number) => number }
+> = {
+  5121: { bytes: 1, read: (v, at) => v.getUint8(at) / 255 },
+  5123: { bytes: 2, read: (v, at) => v.getUint16(at, true) / 65535 },
+  [FLOAT]: { bytes: 4, read: (v, at) => v.getFloat32(at, true) },
+};
+
+/** COLOR_0 per vertex, split into the bake's AO (red) and light (green, blue) channels. */
+function readBake(
+  json: GltfJson,
+  bin: DataView<ArrayBuffer>,
+  index: number,
+): { ao: Float32Array; light: Float32Array } {
+  const accessor = json.accessors?.[index];
+  const component = accessor ? COLOR_COMPONENTS[accessor.componentType] : undefined;
+  if (!accessor || accessor.sparse || !component || !["VEC3", "VEC4"].includes(accessor.type))
+    unsupported("this COLOR_0 layout");
+  const bufferView = json.bufferViews?.[accessor.bufferView ?? -1];
+  if (!bufferView) unsupported("an accessor without a buffer view (COLOR_0)");
+  const base = (bufferView.byteOffset ?? 0) + (accessor.byteOffset ?? 0);
+  const stride = bufferView.byteStride ?? component.bytes * (accessor.type === "VEC4" ? 4 : 3);
+  const ao = new Float32Array(accessor.count);
+  const light = new Float32Array(accessor.count * 2);
+  for (let i = 0; i < accessor.count; i++) {
+    const at = base + i * stride;
+    ao[i] = component.read(bin, at);
+    light[i * 2] = component.read(bin, at + component.bytes);
+    light[i * 2 + 1] = component.read(bin, at + component.bytes * 2);
+  }
+  return { ao, light };
+}
+
 function readIndices(
   json: GltfJson,
   bin: DataView<ArrayBuffer>,
@@ -214,7 +254,10 @@ export function parseGlb(data: ArrayBuffer): MeshAsset {
       primitives.forEach((primitive, p) => {
         if ((primitive.mode ?? TRIANGLES) !== TRIANGLES)
           unsupported(`primitive mode ${primitive.mode}`);
-        const { POSITION, NORMAL } = primitive.attributes;
+        const { POSITION, NORMAL, COLOR_0 } = primitive.attributes;
+        for (const attribute of Object.keys(primitive.attributes))
+          if (!["POSITION", "NORMAL", "COLOR_0"].includes(attribute))
+            unsupported(`attribute ${attribute}`);
         if (POSITION === undefined || NORMAL === undefined)
           unsupported("a primitive without positions and normals");
         const positions = readFloat3(json, bin, POSITION, "POSITION");
@@ -234,6 +277,7 @@ export function parseGlb(data: ArrayBuffer): MeshAsset {
           name: primitives.length === 1 ? name : `${name}#${p}`,
           positions,
           normals,
+          ...(COLOR_0 !== undefined && readBake(json, bin, COLOR_0)),
           indices: readIndices(json, bin, primitive.indices, positions.length / 3),
           material: readMaterial(json, primitive.material),
           bounds: boundsOf(positions),

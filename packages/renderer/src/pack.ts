@@ -7,6 +7,7 @@ import type { Mat3, Mat4, Vec3 } from "math";
 import { d } from "typegpu";
 import type { CameraMatrices } from "./camera.ts";
 import type { LookConfig, MaterialLook } from "./frame-input.ts";
+import type { Geometry } from "./kit/geometry.ts";
 
 export const FrameUniform = d
   .struct({
@@ -22,7 +23,10 @@ export const FrameUniform = d
   .$name("FrameUniform");
 export const FRAME_UNIFORM_BYTES = 176;
 
-export const Vertex = d.struct({ position: d.vec3f, normal: d.vec3f }).$name("Vertex");
+/** One vertex: position, baked AO, normal, and baked (warm, cool) light as two unorm16s. */
+export const Vertex = d
+  .struct({ position: d.vec3f, ao: d.f32, normal: d.vec3f, light: d.u32 })
+  .$name("Vertex");
 export const VERTEX_BYTES = 32;
 
 export const Instance = d
@@ -58,11 +62,11 @@ export const LookUniform = d
     ambient: d.vec3f,
     exposure: d.f32,
     wallTop: d.vec3f,
-    roomRadius: d.f32,
+    aoStrength: d.f32,
     wallBottom: d.vec3f,
-    floorFade: d.f32,
-    floorColor: d.vec3f,
-    floorRoughness: d.f32,
+    poolRadius: d.f32,
+    poolCenter: d.vec3f,
+    poolFalloff: d.f32,
     vignetteStrength: d.f32,
     vignetteRadius: d.f32,
     lightSize: d.f32,
@@ -72,9 +76,12 @@ export const LookUniform = d
     bloomIntensity: d.f32,
     bloomRadius: d.f32,
     saturation: d.f32,
+    poolSpill: d.f32,
+    bakeWarm: d.vec3f,
+    bakeCool: d.vec3f,
   })
   .$name("LookUniform");
-export const LOOK_UNIFORM_BYTES = 208;
+export const LOOK_UNIFORM_BYTES = 240;
 
 export function packVec3(out: Float32Array, offset: number, v: Vec3): void {
   out[offset] = v[0];
@@ -82,19 +89,27 @@ export function packVec3(out: Float32Array, offset: number, v: Vec3): void {
   out[offset + 2] = v[2];
 }
 
-/** Writes `positions`/`normals` (xyz each) as `Vertex` records starting at record `first`. */
+const unorm16 = (v: number) => Math.round(Math.min(1, Math.max(0, v)) * 65535);
+
+/**
+ * Writes a geometry's vertices as `Vertex` records from record `first`: AO defaults to open
+ * (1) and baked light to none.
+ */
 export function packVertices(
   out: Float32Array,
   first: number,
-  positions: Float32Array,
-  normals: Float32Array,
+  g: Pick<Geometry, "positions" | "normals" | "ao" | "light">,
 ): void {
-  for (let i = 0; i < positions.length / 3; i++) {
+  const u32 = new Uint32Array(out.buffer, out.byteOffset, out.length);
+  for (let i = 0; i < g.positions.length / 3; i++) {
     const o = (first + i) * (VERTEX_BYTES / 4);
-    out.set(positions.subarray(i * 3, i * 3 + 3), o);
-    out[o + 3] = 0;
-    out.set(normals.subarray(i * 3, i * 3 + 3), o + 4);
-    out[o + 7] = 0;
+    out.set(g.positions.subarray(i * 3, i * 3 + 3), o);
+    out[o + 3] = g.ao?.[i] ?? 1;
+    out.set(g.normals.subarray(i * 3, i * 3 + 3), o + 4);
+    // WGSL `unpack2x16unorm`: warm in the low half, cool in the high half.
+    u32[o + 7] = g.light
+      ? (unorm16(g.light[i * 2]!) | (unorm16(g.light[i * 2 + 1]!) << 16)) >>> 0
+      : 0;
   }
 }
 
@@ -177,11 +192,11 @@ export function packLook(out: Float32Array, look: LookConfig): void {
   packVec3(out, 24, look.ambient);
   out[27] = look.tonemap.exposure;
   packVec3(out, 28, look.room.wallTop);
-  out[31] = look.room.radius;
+  out[31] = look.room.ao;
   packVec3(out, 32, look.room.wallBottom);
-  out[35] = look.room.floorFade;
-  packVec3(out, 36, look.materials.floor.baseColor);
-  out[39] = look.materials.floor.roughness;
+  out[35] = look.lights.pool.radius;
+  packVec3(out, 36, look.lights.pool.center);
+  out[39] = look.lights.pool.falloff;
   out[40] = look.room.vignette.strength;
   out[41] = look.room.vignette.radius;
   out[42] = look.lights.size;
@@ -191,7 +206,11 @@ export function packLook(out: Float32Array, look: LookConfig): void {
   out[46] = look.bloom.intensity;
   out[47] = look.bloom.radius;
   out[48] = look.tonemap.saturation;
-  out[49] = 0;
+  out[49] = look.lights.pool.spill;
   out[50] = 0;
   out[51] = 0;
+  packVec3(out, 52, look.room.bake.warm);
+  out[55] = 0;
+  packVec3(out, 56, look.room.bake.cool);
+  out[59] = 0;
 }

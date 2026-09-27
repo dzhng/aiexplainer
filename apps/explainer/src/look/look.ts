@@ -45,15 +45,34 @@ export interface LookTokens {
   bloom: { threshold: number; knee: number; intensity: number; radius: number };
   /** Flow rhythm on pipes: pulses per second and world-space gap between pulses. */
   flow: { cyclesPerSec: number; spacing: number };
+  /** The environment: the lab room prop's own glows and AO, and the reflected gradient. */
   room: {
+    /** Specular surfaces reflect this vertical gradient (and it fills any gap in the room). */
     wallTop: ColourValue;
     wallBottom: ColourValue;
-    radius: number;
-    floorFade: number;
+    /** How strongly the prop's baked ambient occlusion darkens, 0–1. */
+    ao: number;
     reflection: number;
     vignette: { strength: number; radius: number };
+    /** The night outside the window: the sky card's glow and the distant lit windows. */
+    window: { sky: ColourValue; skyGlow: number; city: ColourValue; cityGlow: number };
+    /** The orbit stays inside the room: a world box for target and eye, pitch and distance. */
+    camera: { bounds: number[]; minPitch: number; maxPitch: number; maxDistance: number };
+    /**
+     * The room's own lights, by the preset their nodes bind (`room.practical.*`, the lamp):
+     * `glow` is the emitter's own radiance, `spill` the light it casts on the room (the
+     * prop's baked warm and cool channels at 1).
+     */
+    practicals: Record<"lamp" | "practical", { color: ColourValue; glow: number; spill: number }>;
   };
-  lights: { key: LightToken; rim: LightToken; fill: LightToken; size: number };
+  lights: {
+    key: LightToken;
+    rim: LightToken;
+    fill: LightToken;
+    size: number;
+    /** Direct light falls off outside this pool (metres, horizontal) so the room stays dim. */
+    pool: { center: number[]; radius: number; falloff: number; spill: number };
+  };
   ambient: { color: ColourValue; intensity: number };
   tonemap: { exposure: number; saturation: number };
 }
@@ -140,6 +159,38 @@ function material(name: string, m: MaterialToken): MaterialLook {
   };
 }
 
+/** A room glow: an unlit surface (black base) that emits `color × glow`. */
+function glow(name: string, color: ColourValue, gain: number): MaterialLook {
+  return {
+    baseColor: [0, 0, 0],
+    emissive: colour(color).map((c) => c * positive(name, gain)) as Rgb,
+    metallic: 0,
+    roughness: 1,
+    opacity: 1,
+  };
+}
+
+/** The light a room practical casts, at a baked light value of 1. */
+function spill(name: string, p: { color: ColourValue; spill: number }): LinearRgb {
+  const gain = positive(`room.practicals.${name}.spill`, p.spill);
+  return colour(p.color).map((c) => c * gain) as LinearRgb;
+}
+
+/** Presets the room prop binds whose numbers live in `room` (its window and practicals). */
+function roomMaterials(room: LookTokens["room"]): Record<string, MaterialLook> {
+  const { window: w, practicals } = room;
+  return {
+    sky: glow("room.window.skyGlow", w.sky, w.skyGlow),
+    city: glow("room.window.cityGlow", w.city, w.cityGlow),
+    lamp: glow("room.practicals.lamp.glow", practicals.lamp.color, practicals.lamp.glow),
+    practical: glow(
+      "room.practicals.practical.glow",
+      practicals.practical.color,
+      practicals.practical.glow,
+    ),
+  };
+}
+
 function light(name: string, l: LightToken): LightLook {
   const [x = 0, y = 0, z = 0] = l.direction;
   const length = Math.hypot(x, y, z);
@@ -157,17 +208,24 @@ function light(name: string, l: LightToken): LightLook {
  * materials without touching the product's presets.
  */
 export function lookConfig(extraMaterials: Record<string, MaterialToken> = {}): LookConfig {
-  const materials: Record<string, MaterialLook> = {};
-  for (const [name, m] of Object.entries({ ...look.materials.presets, ...extraMaterials }))
-    materials[name] = material(name, m);
-  if (!materials.floor) throw new Error("look: materials.presets.floor is required");
   const { room, lights, ambient, tonemap, bloom } = look;
+  const materials: Record<string, MaterialLook> = roomMaterials(room);
+  for (const [name, m] of Object.entries({ ...look.materials.presets, ...extraMaterials })) {
+    if (name in materials) throw new Error(`look: preset "${name}" is owned by room`);
+    materials[name] = material(name, m);
+  }
+  const [cx = 0, cy = 0, cz = 0] = lights.pool.center;
+  if (lights.pool.center.length !== 3)
+    throw new Error("look: lights.pool.center must be [x, y, z]");
   return {
     room: {
       wallTop: colour(room.wallTop),
       wallBottom: colour(room.wallBottom),
-      radius: positive("room.radius", room.radius),
-      floorFade: unit("room.floorFade", room.floorFade),
+      ao: unit("room.ao", room.ao),
+      bake: {
+        warm: spill("lamp", room.practicals.lamp),
+        cool: spill("practical", room.practicals.practical),
+      },
       reflection: unit("room.reflection", room.reflection),
       vignette: {
         strength: unit("room.vignette.strength", room.vignette.strength),
@@ -179,9 +237,15 @@ export function lookConfig(extraMaterials: Record<string, MaterialToken> = {}): 
       rim: light("rim", lights.rim),
       fill: light("fill", lights.fill),
       size: unit("lights.size", lights.size),
+      pool: {
+        center: [cx, cy, cz],
+        radius: positive("lights.pool.radius", lights.pool.radius),
+        falloff: positive("lights.pool.falloff", lights.pool.falloff),
+        spill: unit("lights.pool.spill", lights.pool.spill),
+      },
     },
     ambient: colour(ambient.color).map((c) => c * ambient.intensity) as LinearRgb,
-    materials: { ...materials, floor: materials.floor },
+    materials,
     tonemap: {
       exposure: positive("tonemap.exposure", tonemap.exposure),
       saturation: positive("tonemap.saturation", tonemap.saturation),
