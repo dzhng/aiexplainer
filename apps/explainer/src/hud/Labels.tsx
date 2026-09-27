@@ -2,17 +2,11 @@
  * Pinned labels: a dot on the part, a short leader and a pill with the label text. The
  * renderer's `placeLabels` decides where and whether each shows; this layer only moves DOM
  * nodes through refs every frame (no React render per frame). It sits above the canvas and
- * below the HUD panels.
+ * below the HUD panels (z-index 1 in slice 04's stage order).
  */
 import { DEFAULT_LABEL_BOX, type LabelPlacement, type ScreenRect } from "@repo/renderer";
 import { forwardRef, useImperativeHandle, useRef } from "react";
-
-/** One label's two readings (D16). Mirrors `ChapterDef.labels` (`LabelDef`) from slice 03. */
-export interface LabelText {
-  anchor: string;
-  analogy: string;
-  precise: string;
-}
+import type { LabelDef } from "../chapters/types.ts";
 
 export type LabelReading = "analogy" | "precise";
 
@@ -40,8 +34,8 @@ const styles = {
     width: DOT,
     height: DOT,
     borderRadius: "50%",
-    background: "#e8ecff",
-    boxShadow: "0 0 0 2px rgba(20,24,44,.72)",
+    background: "var(--ink)",
+    boxShadow: "0 0 0 2px var(--hud-panel)",
   },
   leader: {
     position: "absolute",
@@ -49,7 +43,8 @@ const styles = {
     top: 0,
     width: leaderLength,
     height: 1,
-    background: "rgba(232,236,255,.55)",
+    background: "var(--ink)",
+    opacity: 0.55,
     transformOrigin: "0 0",
     transform: `rotate(${leaderAngle}rad)`,
   },
@@ -64,10 +59,10 @@ const styles = {
     display: "flex",
     alignItems: "center",
     borderRadius: box.height / 2,
-    background: "rgba(20,24,44,.72)",
-    border: "1px solid rgba(255,255,255,.12)",
-    color: "#e8ecff",
-    font: "500 12px/1 Inter, ui-sans-serif, system-ui, sans-serif",
+    background: "var(--hud-panel)",
+    border: "1px solid var(--hud-line)",
+    color: "var(--ink)",
+    font: "500 var(--text-sm)/1 var(--font-ui)",
     whiteSpace: "nowrap",
     overflow: "hidden",
     textOverflow: "ellipsis",
@@ -75,64 +70,65 @@ const styles = {
   },
 } satisfies Record<string, React.CSSProperties>;
 
-export const Labels = forwardRef<LabelsHandle, { labels: LabelText[]; reading: LabelReading }>(
-  function Labels({ labels, reading }, ref) {
-    const nodes = useRef(new Map<string, HTMLDivElement>());
+export const Labels = forwardRef<
+  LabelsHandle,
+  { labels: readonly LabelDef[]; reading: LabelReading }
+>(function Labels({ labels, reading }, ref) {
+  const nodes = useRef(new Map<string, HTMLDivElement>());
 
-    useImperativeHandle(
-      ref,
-      () => ({
-        update(placements) {
-          for (const p of placements) {
-            const node = nodes.current.get(p.id);
-            if (!node) continue;
-            node.style.visibility = p.visible ? "visible" : "hidden";
-            if (p.visible) node.style.transform = `translate(${p.x}px, ${p.y}px)`;
-          }
-        },
-        pillWidths() {
-          const out: Record<string, number> = {};
-          for (const [id, node] of nodes.current)
-            out[id] = node.querySelector<HTMLElement>("[data-pill]")!.offsetWidth;
-          return out;
-        },
-        rects() {
-          const out: Record<string, ScreenRect> = {};
-          for (const [id, node] of nodes.current) {
-            if (node.style.visibility === "hidden") continue;
-            const parts = [...node.children].map((child) => child.getBoundingClientRect());
-            const x0 = Math.min(...parts.map((r) => r.left));
-            const y0 = Math.min(...parts.map((r) => r.top));
-            const x1 = Math.max(...parts.map((r) => r.right));
-            const y1 = Math.max(...parts.map((r) => r.bottom));
-            out[`label:${id}`] = { x: x0, y: y0, width: x1 - x0, height: y1 - y0 };
-          }
-          return out;
-        },
-      }),
-      [],
-    );
+  useImperativeHandle(
+    ref,
+    () => ({
+      update(placements) {
+        for (const p of placements) {
+          const node = nodes.current.get(p.id);
+          if (!node) continue;
+          node.style.visibility = p.visible ? "visible" : "hidden";
+          if (p.visible) node.style.transform = `translate(${p.x}px, ${p.y}px)`;
+        }
+      },
+      pillWidths() {
+        const out: Record<string, number> = {};
+        for (const [id, node] of nodes.current)
+          out[id] = node.querySelector<HTMLElement>("[data-pill]")!.offsetWidth;
+        return out;
+      },
+      rects() {
+        const out: Record<string, ScreenRect> = {};
+        for (const [id, node] of nodes.current) {
+          if (node.style.visibility === "hidden") continue;
+          const parts = [...node.children].map((child) => child.getBoundingClientRect());
+          const x0 = Math.min(...parts.map((r) => r.left));
+          const y0 = Math.min(...parts.map((r) => r.top));
+          const x1 = Math.max(...parts.map((r) => r.right));
+          const y1 = Math.max(...parts.map((r) => r.bottom));
+          out[`label:${id}`] = { x: x0, y: y0, width: x1 - x0, height: y1 - y0 };
+        }
+        return out;
+      },
+    }),
+    [],
+  );
 
-    return (
-      <div style={styles.layer} data-labels="">
-        {labels.map((label) => (
-          <div
-            key={label.anchor}
-            data-label={label.anchor}
-            style={{ ...styles.label, visibility: "hidden" }}
-            ref={(node) => {
-              if (node) nodes.current.set(label.anchor, node);
-              else nodes.current.delete(label.anchor);
-            }}
-          >
-            <div style={styles.leader} />
-            <div style={styles.dot} data-dot="" />
-            <div style={styles.pill} data-pill="">
-              {reading === "analogy" ? label.analogy : label.precise}
-            </div>
+  return (
+    <div style={styles.layer} data-labels="">
+      {labels.map((label) => (
+        <div
+          key={label.anchor}
+          data-label={label.anchor}
+          style={{ ...styles.label, visibility: "hidden" }}
+          ref={(node) => {
+            if (node) nodes.current.set(label.anchor, node);
+            else nodes.current.delete(label.anchor);
+          }}
+        >
+          <div style={styles.leader} />
+          <div style={styles.dot} data-dot="" />
+          <div style={styles.pill} data-pill="">
+            {reading === "analogy" ? label.analogy : label.precise}
           </div>
-        ))}
-      </div>
-    );
-  },
-);
+        </div>
+      ))}
+    </div>
+  );
+});

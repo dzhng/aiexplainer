@@ -1,0 +1,564 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "oneOf": [
+    {
+      "type": "object",
+      "properties": {
+        "formatVersion": {
+          "type": "number",
+          "const": 1
+        },
+        "id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "enum": [
+                "counts",
+                "embed",
+                "attn",
+                "rope"
+              ]
+            },
+            {
+              "type": "string",
+              "pattern": "^fixture-[a-z0-9-]+$"
+            }
+          ]
+        },
+        "weightsFile": {
+          "type": "string",
+          "minLength": 1
+        },
+        "weightsSha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "tensors": {
+          "minItems": 1,
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string",
+                "minLength": 1
+              },
+              "dtype": {
+                "type": "string",
+                "enum": [
+                  "f16",
+                  "f32",
+                  "u32"
+                ]
+              },
+              "shape": {
+                "type": "array",
+                "items": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 9007199254740991
+                }
+              },
+              "byteOffset": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              "byteLength": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              }
+            },
+            "required": [
+              "name",
+              "dtype",
+              "shape",
+              "byteOffset",
+              "byteLength"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "training": {
+          "type": "object",
+          "properties": {
+            "dataset": {
+              "type": "string",
+              "const": "TinyStoriesV2-GPT4"
+            },
+            "license": {
+              "type": "string",
+              "const": "CDLA-Sharing-1.0"
+            },
+            "seed": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            },
+            "steps": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            },
+            "tokensSeen": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            },
+            "valLoss": {
+              "type": "number"
+            },
+            "wallSeconds": {
+              "type": "number",
+              "minimum": 0
+            },
+            "torch": {
+              "type": "string"
+            },
+            "gitSha": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{40}(-dirty)?$"
+            }
+          },
+          "required": [
+            "dataset",
+            "license",
+            "seed",
+            "steps",
+            "tokensSeen",
+            "wallSeconds",
+            "torch",
+            "gitSha"
+          ],
+          "additionalProperties": false
+        },
+        "evidence": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "probe": {
+                "type": "string",
+                "minLength": 1
+              },
+              "prompt": {
+                "type": "string"
+              },
+              "metric": {
+                "type": "string",
+                "minLength": 1
+              },
+              "value": {
+                "type": "number"
+              },
+              "threshold": {
+                "type": "number"
+              },
+              "pass": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "probe",
+              "prompt",
+              "metric",
+              "value",
+              "threshold",
+              "pass"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "kind": {
+          "type": "string",
+          "const": "word-counts"
+        },
+        "tokenizer": {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "type": "string",
+              "const": "words"
+            },
+            "vocabTensor": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "required": [
+            "kind",
+            "vocabTensor"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "formatVersion",
+        "id",
+        "weightsFile",
+        "weightsSha256",
+        "tensors",
+        "evidence",
+        "kind",
+        "tokenizer"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "properties": {
+        "formatVersion": {
+          "type": "number",
+          "const": 1
+        },
+        "id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "enum": [
+                "counts",
+                "embed",
+                "attn",
+                "rope"
+              ]
+            },
+            {
+              "type": "string",
+              "pattern": "^fixture-[a-z0-9-]+$"
+            }
+          ]
+        },
+        "weightsFile": {
+          "type": "string",
+          "minLength": 1
+        },
+        "weightsSha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "tensors": {
+          "minItems": 1,
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string",
+                "minLength": 1
+              },
+              "dtype": {
+                "type": "string",
+                "enum": [
+                  "f16",
+                  "f32",
+                  "u32"
+                ]
+              },
+              "shape": {
+                "type": "array",
+                "items": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 9007199254740991
+                }
+              },
+              "byteOffset": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              "byteLength": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              }
+            },
+            "required": [
+              "name",
+              "dtype",
+              "shape",
+              "byteOffset",
+              "byteLength"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "training": {
+          "type": "object",
+          "properties": {
+            "dataset": {
+              "type": "string",
+              "const": "TinyStoriesV2-GPT4"
+            },
+            "license": {
+              "type": "string",
+              "const": "CDLA-Sharing-1.0"
+            },
+            "seed": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            },
+            "steps": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            },
+            "tokensSeen": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            },
+            "valLoss": {
+              "type": "number"
+            },
+            "wallSeconds": {
+              "type": "number",
+              "minimum": 0
+            },
+            "torch": {
+              "type": "string"
+            },
+            "gitSha": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{40}(-dirty)?$"
+            }
+          },
+          "required": [
+            "dataset",
+            "license",
+            "seed",
+            "steps",
+            "tokensSeen",
+            "wallSeconds",
+            "torch",
+            "gitSha"
+          ],
+          "additionalProperties": false
+        },
+        "evidence": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "probe": {
+                "type": "string",
+                "minLength": 1
+              },
+              "prompt": {
+                "type": "string"
+              },
+              "metric": {
+                "type": "string",
+                "minLength": 1
+              },
+              "value": {
+                "type": "number"
+              },
+              "threshold": {
+                "type": "number"
+              },
+              "pass": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "probe",
+              "prompt",
+              "metric",
+              "value",
+              "threshold",
+              "pass"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "kind": {
+          "type": "string",
+          "const": "transformer"
+        },
+        "tokenizer": {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "type": "string",
+              "const": "bpe"
+            },
+            "file": {
+              "type": "string",
+              "minLength": 1
+            },
+            "sha256": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            }
+          },
+          "required": [
+            "kind",
+            "file",
+            "sha256"
+          ],
+          "additionalProperties": false
+        },
+        "arch": {
+          "type": "object",
+          "properties": {
+            "dModel": {
+              "type": "integer",
+              "exclusiveMinimum": 0,
+              "maximum": 9007199254740991
+            },
+            "nLayers": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            },
+            "nHeads": {
+              "type": "integer",
+              "exclusiveMinimum": 0,
+              "maximum": 9007199254740991
+            },
+            "nKvHeads": {
+              "type": "integer",
+              "exclusiveMinimum": 0,
+              "maximum": 9007199254740991
+            },
+            "ctx": {
+              "type": "integer",
+              "exclusiveMinimum": 0,
+              "maximum": 9007199254740991
+            },
+            "vocab": {
+              "type": "integer",
+              "exclusiveMinimum": 0,
+              "maximum": 9007199254740991
+            },
+            "attention": {
+              "type": "string",
+              "enum": [
+                "none",
+                "causal"
+              ]
+            },
+            "positions": {
+              "type": "string",
+              "enum": [
+                "none",
+                "rope"
+              ]
+            },
+            "ropeTheta": {
+              "type": "number",
+              "exclusiveMinimum": 0
+            },
+            "mlp": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "const": "none"
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "kind": {
+                      "type": "string",
+                      "const": "swiglu"
+                    },
+                    "hidden": {
+                      "type": "integer",
+                      "exclusiveMinimum": 0,
+                      "maximum": 9007199254740991
+                    }
+                  },
+                  "required": [
+                    "kind",
+                    "hidden"
+                  ],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "kind": {
+                      "type": "string",
+                      "const": "moe"
+                    },
+                    "experts": {
+                      "type": "integer",
+                      "exclusiveMinimum": 0,
+                      "maximum": 9007199254740991
+                    },
+                    "topK": {
+                      "type": "integer",
+                      "exclusiveMinimum": 0,
+                      "maximum": 9007199254740991
+                    },
+                    "hidden": {
+                      "type": "integer",
+                      "exclusiveMinimum": 0,
+                      "maximum": 9007199254740991
+                    }
+                  },
+                  "required": [
+                    "kind",
+                    "experts",
+                    "topK",
+                    "hidden"
+                  ],
+                  "additionalProperties": false
+                }
+              ]
+            },
+            "norm": {
+              "type": "string",
+              "enum": [
+                "none",
+                "rmsnorm"
+              ]
+            },
+            "normEps": {
+              "type": "number",
+              "exclusiveMinimum": 0
+            },
+            "residual": {
+              "type": "boolean"
+            },
+            "tiedEmbeddings": {
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "dModel",
+            "nLayers",
+            "nHeads",
+            "nKvHeads",
+            "ctx",
+            "vocab",
+            "attention",
+            "positions",
+            "ropeTheta",
+            "mlp",
+            "norm",
+            "normEps",
+            "residual",
+            "tiedEmbeddings"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "formatVersion",
+        "id",
+        "weightsFile",
+        "weightsSha256",
+        "tensors",
+        "evidence",
+        "kind",
+        "tokenizer",
+        "arch"
+      ],
+      "additionalProperties": false
+    }
+  ]
+}

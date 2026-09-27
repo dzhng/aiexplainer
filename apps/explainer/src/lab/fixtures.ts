@@ -10,7 +10,7 @@ import {
   type SceneDesc,
   type ViewMode,
 } from "@repo/renderer";
-import type { LabelText } from "../hud/Labels.tsx";
+import type { LabelDef } from "../chapters/types.ts";
 import { lookConfig, type MaterialToken } from "../look/look.ts";
 
 export interface FixtureJson {
@@ -23,13 +23,13 @@ export interface FixtureJson {
   parts: Part[];
   anchors?: SceneAnchor[];
   /** Fixture label text, one per anchor (the product's comes from `ChapterDef.labels`). */
-  labels?: LabelText[];
+  labels?: LabelDef[];
 }
 
 export interface LabScene {
   look: LookConfig;
   input: Omit<FrameInput, "timeSec" | "viewport">;
-  labels?: LabelText[];
+  labels?: LabelDef[];
 }
 
 const fixtures = import.meta.glob<FixtureJson>("./fixtures/*.json", {

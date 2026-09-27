@@ -1,90 +1,62 @@
 {
   "palette": {
-    "bgTop": "#0b1020",
-    "bgBottom": "#1a1f3a",
+    "bgDeep": "#0b1020",
+    "bgHigh": "#1a1f3a",
     "floor": "#161b30",
     "floorEdge": "#2a3155",
     "metal": "#3a4370",
-    "metalDeep": "#26304f",
+    "metalDark": "#26304f",
     "flow": "#b58cff",
     "focus": "#ffb86b",
     "sealed": "#3a3f58",
     "ink": "#e8ecff",
     "active": "#6ea8ff"
   },
-  "room": {
-    "wallTop": "bgTop",
-    "wallBottom": "bgBottom",
-    "radius": 18,
-    "floorFade": 0.22,
-    "vignette": {
-      "strength": 0.55,
-      "radius": 0.45
-    },
-    "reflection": 1
+  "hud": {
+    "panel": "rgba(20,24,44,.72)",
+    "line": "rgba(255,255,255,.12)",
+    "muted": "#9aa5d6",
+    "activeInk": "#0b1020"
   },
-  "lights": {
-    "key": {
-      "direction": [0.45, 0.8, 0.55],
-      "color": "#fff1e0",
-      "intensity": 9
-    },
-    "rim": {
-      "direction": [-0.3, 0.75, -0.6],
-      "color": "#c0ccff",
-      "intensity": 14
-    },
-    "fill": {
-      "direction": [-0.7, 0.25, 0.6],
-      "color": "#8088a8",
-      "intensity": 2
-    },
-    "size": 0.06
-  },
-  "ambient": {
-    "color": "floorEdge",
-    "intensity": 0.25
+  "type": {
+    "ui": "Inter, system-ui, sans-serif",
+    "mono": "'JetBrains Mono', ui-monospace, monospace",
+    "sizePx": { "xs": 11, "sm": 12, "md": 14, "lg": 18, "xl": 24, "xxl": 34 },
+    "lineHeight": 1.4
   },
   "materials": {
-    "metal": {
-      "color": "ink",
-      "metallic": 1,
-      "roughness": 0.28,
-      "opacity": 1
-    },
-    "housing": {
-      "color": "metalDeep",
-      "metallic": 0.3,
-      "roughness": 0.35,
-      "opacity": 1
-    },
-    "glass": {
-      "color": "active",
-      "metallic": 0,
-      "roughness": 0.05,
-      "opacity": 0.12
-    },
-    "floor": {
-      "color": "floor",
-      "metallic": 0,
-      "roughness": 0.9,
-      "opacity": 1
+    "emissive": { "flow": 3, "focus": 6, "active": 3 },
+    "presets": {
+      "metal": { "color": "ink", "metallic": 1, "roughness": 0.28, "opacity": 1 },
+      "housing": { "color": "metalDark", "metallic": 0.3, "roughness": 0.35, "opacity": 1 },
+      "glass": { "color": "active", "metallic": 0, "roughness": 0.05, "opacity": 0.12 },
+      "floor": { "color": "floor", "metallic": 0, "roughness": 0.9, "opacity": 1 }
     }
-  },
-  "tonemap": {
-    "exposure": 0.7,
-    "saturation": 1.25
   },
   "bloom": {
     "threshold": 1.6,
     "knee": 0.6,
     "intensity": 0.45,
-    "radius": 1.0,
-    "emissive": {
-      "flow": 3,
-      "focus": 6,
-      "active": 4,
-      "ink": 3
-    }
-  }
+    "radius": 1.0
+  },
+  "flow": {
+    "cyclesPerSec": 0.6,
+    "spacing": 0.25
+  },
+  "room": {
+    "wallTop": "bgDeep",
+    "wallBottom": "bgHigh",
+    "radius": 18,
+    "floorFade": 0.22,
+    "reflection": 1,
+    "vignette": { "strength": 0.55, "radius": 0.45 }
+  },
+  "lights": {
+    "key": { "direction": [0.45, 0.8, 0.55], "color": "#fff1e0", "intensity": 9 },
+    "rim": { "direction": [-0.3, 0.75, -0.6], "color": "#c0ccff", "intensity": 14 },
+    "fill": { "direction": [-0.7, 0.25, 0.6], "color": "#8088a8", "intensity": 2 },
+    "size": 0.06
+  },
+  "ambient": { "color": "floorEdge", "intensity": 0.25 },
+  "tonemap": { "exposure": 0.7, "saturation": 1.25 }
 }

@@ -5,22 +5,28 @@
  *
  *   bun scripts/verify.ts --route /lab/adapter [--t 12.5] [--out name] [--base http://…]
  *   bun scripts/verify.ts --route /lab/adapter --browser shell   # negative control: expect failure
- *   bun scripts/verify.ts --route '/lab/renderer?fixture=boxes' --t 0 --out boxes --crop 'part:*'
+ *   bun scripts/verify.ts --route '/#0' --out hud --press '?' --crop panel:tl,panel:help
+ *   bun scripts/verify.ts --route '/lab/renderer?fixture=boxes' --t 0 --out boxes --crop 'part:near+part:far'
  *   bun scripts/verify.ts --route /lab/kit/board --t 0,1,2,3 --out board --crop part:board
  *
- * `--crop` takes comma-separated probe crop names (a trailing `*` matches a prefix, and
- * `rect:x,y,w,h` is a literal rectangle) and screenshots their union, padded, instead of
- * the whole viewport. `--size N` instead shoots an N×N square centred on that union.
- *
- * `--check label-dots` (on a fixture of flat magenta markers with one anchor each) proves
- * CPU placement and GPU raster agree: every visible label's dot, and the placement it came
- * from, must lie within 2 px of its marker's rendered pixel centroid.
+ * - `--t` holds the clock; a comma list (`0,1,2`) shoots each time in one session as
+ *   `<out>-t<time>`.
+ * - `--press` sends keys (comma-separated) once the page is ready.
+ * - `--crop` names crops from the probe's `crops()` (DOM `data-crop` tags plus the scene's
+ *   `part:*` / `label:*`), comma-separated; each is saved as `<out>-<crop>.png`, padded by
+ *   `--pad` px. Within one crop, `a+b` shoots the union, a trailing `*` matches a prefix (a
+ *   wildcard that matches nothing, e.g. every label hidden, shoots the whole viewport), and
+ *   `rect:x,y,w,h` is a literal rectangle. `--size N` shoots an N×N square centred on it.
+ * - `--check label-dots` (on a fixture of flat magenta markers with one anchor each) proves
+ *   CPU placement and GPU raster agree: every visible label's dot, and the placement it came
+ *   from, must lie within 2 px of its marker's rendered pixel centroid.
  */
 import { mkdir } from "node:fs/promises";
 import path from "node:path";
 import { parseArgs } from "node:util";
 import { chromium, type Browser, type Page } from "playwright";
 import { createServer, type ViteDevServer } from "vite";
+import type { CropRect } from "../src/lab/probe.ts";
 
 const appRoot = path.resolve(import.meta.dirname, "..");
 const repoRoot = path.resolve(appRoot, "../..");
@@ -35,8 +41,9 @@ const { values: args } = parseArgs({
     browser: { type: "string", default: "chrome" },
     width: { type: "string", default: "1440" },
     height: { type: "string", default: "900" },
+    press: { type: "string" },
     crop: { type: "string" },
-    pad: { type: "string", default: "16" },
+    pad: { type: "string", default: "12" },
     size: { type: "string" },
     check: { type: "string" },
   },
@@ -56,62 +63,48 @@ async function serve(): Promise<{ base: string; server?: ViteDevServer }> {
   return { base, server };
 }
 
-interface Rect {
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-}
-
 /**
- * The padded union of the named crops, clamped to the viewport; `undefined` (the whole
- * viewport) when only wildcards were named and none matched, e.g. every label hidden.
+ * The clip for one `--crop` item, clamped to the viewport; `undefined` means the whole
+ * viewport, `null` a named crop that does not exist.
  */
-function unionCrop(crops: Record<string, Rect>, spec: string): Rect | undefined {
+function resolveCrop(crops: Record<string, CropRect>, spec: string): CropRect | undefined | null {
   const literal = /^rect:(\d+),(\d+),(\d+),(\d+)$/.exec(spec);
   if (literal) {
     const [x, y, width, height] = literal.slice(1).map(Number) as [number, number, number, number];
     return { x, y, width, height };
   }
-  const names = spec.split(",").flatMap((name) => {
-    const matches = name.endsWith("*")
-      ? Object.keys(crops).filter((key) => key.startsWith(name.slice(0, -1)))
-      : name in crops
-        ? [name]
-        : [];
-    if (!matches.length && !name.endsWith("*"))
-      throw new Error(`crop "${name}" matched nothing; have ${Object.keys(crops).join(", ")}`);
-    return matches;
-  });
+  const names: string[] = [];
+  for (const name of spec.split("+")) {
+    if (name.endsWith("*"))
+      names.push(...Object.keys(crops).filter((key) => key.startsWith(name.slice(0, -1))));
+    else if (name in crops) names.push(name);
+    else return null;
+  }
   if (!names.length) {
     console.log(`crop "${spec}" matched nothing visible; shooting the whole viewport`);
     return undefined;
   }
   const rects = names.map((name) => crops[name]!);
+  const x0 = Math.min(...rects.map((r) => r.x));
+  const y0 = Math.min(...rects.map((r) => r.y));
+  const x1 = Math.max(...rects.map((r) => r.x + r.width));
+  const y1 = Math.max(...rects.map((r) => r.y + r.height));
+  const width = Number(args.width);
+  const height = Number(args.height);
   if (args.size) {
     const size = Number(args.size);
-    const cx =
-      (Math.min(...rects.map((r) => r.x)) + Math.max(...rects.map((r) => r.x + r.width))) / 2;
-    const cy =
-      (Math.min(...rects.map((r) => r.y)) + Math.max(...rects.map((r) => r.y + r.height))) / 2;
-    const x = Math.min(Math.max(0, Math.round(cx - size / 2)), Number(args.width) - size);
-    const y = Math.min(Math.max(0, Math.round(cy - size / 2)), Number(args.height) - size);
+    const x = Math.min(Math.max(0, Math.round((x0 + x1 - size) / 2)), width - size);
+    const y = Math.min(Math.max(0, Math.round((y0 + y1 - size) / 2)), height - size);
     return { x, y, width: size, height: size };
   }
   const pad = Number(args.pad);
-  const x0 = Math.max(0, Math.min(...rects.map((r) => r.x)) - pad);
-  const y0 = Math.max(0, Math.min(...rects.map((r) => r.y)) - pad);
-  const x1 = Math.min(Number(args.width), Math.max(...rects.map((r) => r.x + r.width)) + pad);
-  const y1 = Math.min(Number(args.height), Math.max(...rects.map((r) => r.y + r.height)) + pad);
-  return {
-    x: Math.floor(x0),
-    y: Math.floor(y0),
-    width: Math.ceil(x1 - x0),
-    height: Math.ceil(y1 - y0),
-  };
+  const left = Math.max(0, Math.floor(x0 - pad));
+  const top = Math.max(0, Math.floor(y0 - pad));
+  const right = Math.min(width, Math.ceil(x1 + pad));
+  const bottom = Math.min(height, Math.ceil(y1 + pad));
+  return { x: left, y: top, width: right - left, height: bottom - top };
 }
 
-/** `--t 0,1,2` shoots each held time in one session, as `<out>-t<time>.png`. */
 const times = args.t?.split(",") ?? [];
 
 function withClock(route: string): string {
@@ -119,7 +112,7 @@ function withClock(route: string): string {
   const url = new URL(route, "http://x");
   url.searchParams.set("clock", "held");
   url.searchParams.set("t", times[0]!);
-  return url.pathname + url.search;
+  return url.pathname + url.search + url.hash;
 }
 
 /** Label dots vs rendered markers; returns failures. */
@@ -226,18 +219,23 @@ try {
     .catch(() => false);
   if (!installed) throw new Error(`probe never installed\n${failures.join("\n")}`);
   await page.evaluate(() => window.__explainer!.ready);
+  const adapter = await page.evaluate(() => window.__explainer!.adapter);
+  console.log("adapter", JSON.stringify(adapter));
+  if (!adapter) failures.push("no WebGPU adapter");
+  else if (adapter.isFallbackAdapter) failures.push("fallback (software) adapter");
+
+  for (const key of args.press?.split(",") ?? []) await page.keyboard.press(key);
+  // Two frames: React commits what the keys changed, then the browser paints it.
+  await page.evaluate(
+    () => new Promise((done) => requestAnimationFrame(() => requestAnimationFrame(done))),
+  );
   const probe = await page.evaluate(() => ({
-    adapter: window.__explainer!.adapter,
     errors: window.__explainer!.errors,
     receipt: window.__explainer!.receipt?.(),
     results: window.__explainer!.results,
   }));
-
-  console.log("adapter", JSON.stringify(probe.adapter));
   if (probe.receipt) console.log("receipt", JSON.stringify(probe.receipt));
   if (probe.results !== undefined) console.log("results", JSON.stringify(probe.results));
-  if (!probe.adapter) failures.push("no WebGPU adapter");
-  else if (probe.adapter.isFallbackAdapter) failures.push("fallback (software) adapter");
   failures.push(...probe.errors.map((e) => `probe: ${e}`));
 
   if (args.check === "label-dots") failures.push(...(await checkLabelDots(page)));
@@ -246,6 +244,11 @@ try {
   if (args.out) {
     const dir = path.join(repoRoot, "throwaway/shots", args.slice);
     await mkdir(dir, { recursive: true });
+    const save = async (name: string, clip?: CropRect) => {
+      const file = path.join(dir, `${name}.png`);
+      await page.screenshot({ path: file, clip });
+      console.log("shot", path.relative(repoRoot, file));
+    };
     for (const t of times.length > 1 ? times : [undefined]) {
       if (t !== undefined) {
         await page.evaluate(async (time) => {
@@ -254,7 +257,7 @@ try {
         }, Number(t));
       }
       const [crops, labels] = await page.evaluate(() => [
-        window.__explainer!.crops?.(),
+        window.__explainer!.crops(),
         window.__explainer!.labels?.(),
       ]);
       if (labels?.length)
@@ -264,11 +267,17 @@ try {
             .map((l) => `${l.id}:${l.hiddenBy ?? "shown"}@${Math.round(l.x)},${Math.round(l.y)}`)
             .join(" "),
         );
-      const file = path.join(dir, `${args.out}${t === undefined ? "" : `-t${t}`}.png`);
-      const clip = args.crop ? unionCrop(crops ?? {}, args.crop) : undefined;
-      if (clip) console.log("crop", JSON.stringify(clip));
-      await page.screenshot({ path: file, clip });
-      console.log("shot", path.relative(repoRoot, file));
+      const name = t === undefined ? args.out : `${args.out}-t${t}`;
+      const cropIds = args.crop?.split(",") ?? [];
+      if (cropIds.length === 0) await save(name);
+      for (const id of cropIds) {
+        const clip = resolveCrop(crops, id);
+        if (clip === null) {
+          failures.push(`no crop ${id} (have: ${Object.keys(crops).join(", ") || "none"})`);
+          continue;
+        }
+        await save(`${name}-${id.replace(/\W+/g, "-").replace(/^-|-$/g, "")}`, clip);
+      }
     }
   }
 } finally {

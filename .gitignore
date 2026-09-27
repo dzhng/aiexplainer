@@ -6,3 +6,4 @@ dist/
 .DS_Store
 throwaway/
 __pycache__/
+.claude/worktrees/

@@ -11,7 +11,7 @@
   },
   "materials": {
     "bar": {
-      "color": "metalDeep",
+      "color": "metalDark",
       "metallic": 0.1,
       "roughness": 0.45,
       "opacity": 1,

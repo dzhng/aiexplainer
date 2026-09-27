@@ -1,0 +1,111 @@
+{
+  "formatVersion": 1,
+  "id": "embed",
+  "kind": "transformer",
+  "tokenizer": {
+    "kind": "bpe",
+    "file": "../tokenizer/tokenizer.json",
+    "sha256": "37c465794d44d16554106eb9d2972c123e05fb76c300bb4bf1cc321fcb363f7b"
+  },
+  "arch": {
+    "dModel": 64,
+    "nLayers": 0,
+    "nHeads": 1,
+    "nKvHeads": 1,
+    "ctx": 256,
+    "vocab": 4096,
+    "attention": "none",
+    "positions": "none",
+    "ropeTheta": 10000.0,
+    "mlp": "none",
+    "norm": "none",
+    "normEps": 1e-05,
+    "residual": true,
+    "tiedEmbeddings": false
+  },
+  "weightsFile": "weights.bin",
+  "weightsSha256": "0d59ff7e4434b43df1162a758185c8006d014817adbe2bbc8372d93e2af302b1",
+  "tensors": [
+    {
+      "name": "tok_emb",
+      "dtype": "f16",
+      "shape": [
+        4096,
+        64
+      ],
+      "byteOffset": 0,
+      "byteLength": 524288
+    },
+    {
+      "name": "lm_head",
+      "dtype": "f16",
+      "shape": [
+        4096,
+        64
+      ],
+      "byteOffset": 524288,
+      "byteLength": 524288
+    }
+  ],
+  "training": {
+    "dataset": "TinyStoriesV2-GPT4",
+    "license": "CDLA-Sharing-1.0",
+    "seed": 0,
+    "steps": 6000,
+    "tokensSeen": 98304000,
+    "wallSeconds": 213.624,
+    "torch": "2.14.0",
+    "gitSha": "8840411c08c0cbe946ff7bdf4879304cc70a63e2-dirty",
+    "valLoss": 3.569
+  },
+  "evidence": [
+    {
+      "probe": "neighbours",
+      "prompt": "",
+      "metric": "share of random words further than the paired word (36 pairs)",
+      "value": 0.9674762854580199,
+      "threshold": 0.9,
+      "pass": true
+    },
+    {
+      "probe": "neighbours",
+      "prompt": "sun moon",
+      "metric": "share of random words further",
+      "value": 1.0,
+      "threshold": 0.9,
+      "pass": true
+    },
+    {
+      "probe": "sampling-peaked",
+      "prompt": "",
+      "metric": "mean top-1 probability after common contexts",
+      "value": 0.28191678086670036,
+      "threshold": 0.2,
+      "pass": true
+    },
+    {
+      "probe": "sampling-peaked",
+      "prompt": "Once upon a time, there was a big room with lots",
+      "metric": "top-1 probability",
+      "value": 0.9983942014784757,
+      "threshold": 0.2,
+      "pass": true
+    },
+    {
+      "probe": "temperature-entropy",
+      "prompt": "",
+      "metric": "share of prompts whose entropy rises with temperature 0.5\u21921\u21921.5",
+      "value": 1.0,
+      "threshold": 1.0,
+      "pass": true
+    },
+    {
+      "probe": "temperature-entropy",
+      "prompt": "Once upon a time, there was a big room with lots",
+      "metric": "entropy at temperature 1.5 minus 0.5 (bits)",
+      "value": 1.2018210966622689,
+      "threshold": 0.0,
+      "pass": true
+    }
+  ]
+}

@@ -154,7 +154,7 @@ export async function runStage(o: StageOptions): Promise<Stage | null> {
   const box: Box3 = [0, 0, 0, 0, 0, 0];
   o.probe.receipt = () => receipt!;
   o.probe.labels = () => placements.map((p) => ({ ...p }));
-  o.probe.crops = () => {
+  o.probe.sceneCrops = () => {
     cameraMatrices(input.camera, input.viewport, matrices);
     const crops: Record<string, ScreenRect> = { ...o.labels?.rects() };
     for (const part of input.scene.parts) {

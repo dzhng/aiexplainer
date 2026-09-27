@@ -1,10 +1,11 @@
 import { useEffect, useRef, useState } from "react";
-import { Labels, type LabelReading, type LabelsHandle, type LabelText } from "../../hud/Labels.tsx";
+import type { LabelDef } from "../../chapters/types.ts";
+import { Labels, type LabelReading, type LabelsHandle } from "../../hud/Labels.tsx";
 import type { Clock } from "../../runtime/clock.ts";
 import type { ProbeApi } from "../probe.ts";
 import { runStage, type StageOptions } from "../stage.ts";
 
-export type StageScene = Pick<StageOptions, "look" | "input" | "pose"> & { labels?: LabelText[] };
+export type StageScene = Pick<StageOptions, "look" | "input" | "pose"> & { labels?: LabelDef[] };
 
 export interface StagePageProps {
   scene: () => StageScene | Promise<StageScene>;

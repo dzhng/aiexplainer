@@ -1,0 +1,33 @@
+{
+  "tokenizerSha256": "37c465794d44d16554106eb9d2972c123e05fb76c300bb4bf1cc321fcb363f7b",
+  "evidence": [
+    {
+      "probe": "single-piece-words",
+      "prompt": "",
+      "metric": "held-out word occurrences that are one piece",
+      "value": 0.9688433563389351,
+      "threshold": 0.9,
+      "pass": true
+    },
+    {
+      "probe": "rare-word-split",
+      "prompt": "birdcage",
+      "metric": "pieces",
+      "value": 3,
+      "threshold": 3,
+      "pass": true
+    },
+    {
+      "probe": "chars-per-token",
+      "prompt": "",
+      "metric": "held-out characters per token",
+      "value": 4.026339564219658,
+      "threshold": 3.0,
+      "pass": true
+    }
+  ],
+  "prompts": [
+    "Once upon a time, there was a little boy named Tim.",
+    "It was a birdcage!"
+  ]
+}

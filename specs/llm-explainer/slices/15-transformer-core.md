@@ -77,6 +77,30 @@ The risk that PyTorch and TypeScript disagree numerically (RoPE pairing conventi
 
 The matmul implementation (plain loops vs blocked; no WASM or SIMD unless the performance budget fails, in which case record it in the choices ledger), and the worker message encoding (transferable buffers).
 
+## Result (measured 2026-09-27)
+
+- **Parity:** 9 random-init fixtures in `training/fixtures/parity/` (`embed`, `attn`,
+  `rope`, `mlp`, `mlp-only`, `noresidual`, `residual`, `gqa`, `moe`; d=16, 0–2 layers,
+  f16 weights, the shared 4096 tokenizer). TypeScript logits and every traced value
+  match torch within 1e-3 on the first run; pytest checks that `model.py` still
+  reproduces each committed reference within 1e-5.
+- **D35 property:** with `attn` (1 layer, no positions), 20 random shuffles of the
+  earlier tokens give bit-identical last-position logits. This holds because attention
+  sums keys in a canonical order (highest score first). With `rope` the same
+  shuffle changes the logits.
+- **Performance** (`bun packages/llm/scripts/bench-forward.ts`, dev Mac, Bun 1.3.14,
+  plain loops, random weights at the largest `full` size: d=256, 4 layers, GQA 4/2,
+  SwiGLU hidden 1024, vocab 4096):
+  - a 128-token prompt without a cache takes 376 ms (2.9 ms per token);
+  - one token after 127 cached positions takes 3.9 ms;
+  - a 128-token prompt with a full trace takes 441 ms.
+
+  Every figure is well inside the 50 ms-per-token budget, so there is no WASM or SIMD.
+
+- **Worker:** transferable buffers for logits and trace arrays. A cancelled or
+  superseded request rejects with `CancelledError`, and its late reply is dropped.
+  The worker also answers chapter 0's `nextWords`, so slice 10 can use it directly.
+
 ## Stays green
 
 01–14.

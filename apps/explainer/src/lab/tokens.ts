@@ -4,8 +4,7 @@
  * bottom). Slice 13 completes this page with the other sections.
  */
 import type { MaterialLook, Part } from "@repo/renderer";
-import lookJson from "../look/look.json";
-import { linear, lookConfig } from "../look/look.ts";
+import { linear, look as tokens, lookConfig, type PaletteToken } from "../look/look.ts";
 import { frameFromParts, type LabScene } from "./fixtures.ts";
 
 export const EMISSIVE_LEVELS = [1, 4, 16];
@@ -15,10 +14,10 @@ const SIZE = 0.6;
 export function tokensScene(section: string): LabScene {
   if (section !== "emissive") throw new Error(`unknown tokens section "${section}"`);
   const look = lookConfig();
-  const tokens = Object.keys(lookJson.palette);
+  const palette = Object.keys(tokens.palette) as PaletteToken[];
   const parts: Part[] = [];
   const intensity: number[] = [];
-  tokens.forEach((token, column) => {
+  palette.forEach((token, column) => {
     const swatch: MaterialLook = {
       baseColor: [0, 0, 0],
       emissive: linear(token),
@@ -28,7 +27,7 @@ export function tokensScene(section: string): LabScene {
     };
     look.materials[`swatch.${token}`] = swatch;
     EMISSIVE_LEVELS.forEach((level, row) => {
-      const x = (column - (tokens.length - 1) / 2) * PITCH;
+      const x = (column - (palette.length - 1) / 2) * PITCH;
       const y = 0.6 + row * PITCH;
       parts.push({
         kind: "block",

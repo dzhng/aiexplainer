@@ -12,7 +12,8 @@
       "typegpu": "0.12.6",
       "math": "0.1.0",
       "@webgpu/types": "0.1.74",
-      "@types/node": "26.6.3"
+      "@types/node": "26.6.3",
+      "zod": "4.6.5"
     }
   },
   "type": "module",
@@ -25,7 +26,8 @@
     "format:check": "oxfmt --check .",
     "verify": "bun run format:check && bun run check-types && bun run lint && bun run test && bun run training:test",
     "training:test": "cd training && uv run pytest -q",
-    "props:build": "bun assets/blender/build.ts"
+    "props:build": "bun assets/blender/build.ts",
+    "training:train": "cd training && uv run python train.py"
   },
   "devDependencies": {
     "oxfmt": "0.57.0",

@@ -51,6 +51,90 @@ probes are recorded, whether they pass or are honestly failed (D25, D33).
 
 Optimiser hyperparameters, the curated probe prompt sets (committed, ≥ 30 prompts each, drawn from the validation split), and the data subset size.
 
+## Result (measured 2026-09-27)
+
+**Harness.**
+
+- `data.py` tokenizes both splits once, as `<bos> story <eos>` in uint16:
+  555,183,966 train tokens and 5,605,337 validation tokens. It takes 4 min 47 s and
+  the files are gitignored.
+- The optimiser is AdamW (betas 0.9/0.95, weight decay 0.1 on matrices only), lr
+  3e-3, 100 warmup steps, cosine decay to 10%, gradient clip 1.0, batch 64 × 256
+  tokens.
+- The data subset is the first 50M training tokens, and val loss is taken on 20
+  fixed validation batches.
+- Probes measure the exported f16 weights. The chapter-5 probe runs on the shipped
+  TypeScript runtime (`packages/llm/scripts/next-token-probs.ts`).
+- `train.py --probe-only` re-probes a model without retraining it.
+- **Determinism:** on CPU, the first 100 losses are bit-identical across processes.
+  On MPS they are not: two fresh processes differ in the last float32 bit after
+  roughly 30–90 steps. The MPS test therefore checks agreement within 1e-5.
+
+**MPS benchmark** (dev Mac, MPS idle; the time includes evals):
+
+| Model | s per 1k steps | Steps | Total wall | Tokens seen | Val loss | weights.bin |
+| ----- | -------------- | ----- | ---------- | ----------- | -------- | ----------- |
+| embed | 35.6           | 6000  | 214 s      | 98.3M       | 3.569    | 1,048,576 B |
+| attn  | 50.9           | 4000  | 204 s      | 65.5M       | 3.292    | 1,646,592 B |
+| rope  | 49.6           | 4000  | 199 s      | 65.5M       | 2.767    | 1,646,592 B |
+
+Every model is well under the 4 MB budget.
+
+**Attempts (bounded retries).**
+
+- `embed`:
+  - Attempt 1 used 3000 steps. The neighbours probe measured 0.899 against the 0.9 threshold and failed.
+  - Attempt 2 raised the steps to 6000 and measured 0.955, a pass.
+  - Both attempts used N(0,1) embedding init. Before the final run, `model.py`
+    switched to GPT-2's N(0, 0.02) embedding init; with N(0,1), tied-embedding
+    models start at a loss of about 30. The committed model is the 6000-step
+    config under the final code, and it measures 0.967.
+- `attn`: 1 run.
+- `rope`: 1 run.
+
+**Probes** (`evidence` in each manifest; prompts in `scenarios.json`):
+
+- `embed`, chapter 2:
+  - On 36 pairs, a mean 0.967 of random words are further from `a` than `b` is. **Pass** (threshold 0.9).
+  - Best pairs: sun/moon, said/asked, sad/upset.
+- `embed`, chapter 3:
+  - The mean top-1 probability after 40 common contexts is 0.282. **Pass** (0.2).
+  - Entropy rises with temperature (0.5→1→1.5) on 40 of 40 prompts. **Pass**.
+- `attn`, chapter 4. The contract allows "a later pronoun **or word** refers back",
+  so two sets were measured:
+  - **recall** (the next word is a named character again): the mean attention on the referent is 2.98× uniform. **Pass** (2).
+  - **pronoun** ("She"/"He" referring to the named character): 0.58× uniform. **Fail**.
+
+  The pronoun set was measured first; the recall set was added after it failed. Both
+  are recorded. The chapter uses the recall prompts, and the pronoun result stands as
+  a measured fail (D33 applies to any pronoun claim). A single attention layer with
+  no MLP is not rewarded for linking a pronoun back to its name when predicting the
+  word after "She". It is rewarded for copying a name that is about to recur.
+
+- `attn`, chapter 5: the largest total variation over 40 swapped pairs is **exactly 0**. **Pass** (D35).
+- `rope`, chapter 5: the mean total variation over the same 40 pairs is 0.165. **Pass**
+  (0.05). On "The dog chased the cat. Then the" against its swap, it is 0.075.
+
+**Shot.**
+
+- `bun apps/explainer/scripts/verify.ts --route "/lab/models?model=attn&prompt=…Bobby…One day," --out models-attn --slice 16 --height 1600`
+  passes (hardware Metal, no console errors).
+- An unprimed critique found:
+  - white numbers on light cells;
+  - JSON-escaped labels and "�" for byte tokens;
+  - ragged rotated headers;
+  - mixed number precision;
+  - an unlabelled result column.
+
+  All of these were fixed: a square-root colour ramp with a white-text switch at
+  0.3, "·" for spaces and "‹byte›" for partial characters, bottom-aligned headers,
+  3-decimal values, and a "result" header. Accepted as is: no row or column index
+  numbers, and white space to the right of the heatmap.
+
+- Fixing the harness route also fixed a bug: the lab dev middleware rejected any
+  `/lab/*` URL with a "." anywhere, so a query prompt containing a full stop served
+  the main app.
+
 ## Stays green
 
 01–15.

@@ -1,0 +1,81 @@
+{
+  "formatVersion": 1,
+  "id": "fixture-attn",
+  "kind": "transformer",
+  "tokenizer": {
+    "kind": "bpe",
+    "file": "../../../../apps/explainer/public/models/tokenizer/tokenizer.json",
+    "sha256": "37c465794d44d16554106eb9d2972c123e05fb76c300bb4bf1cc321fcb363f7b"
+  },
+  "arch": {
+    "dModel": 16,
+    "nLayers": 1,
+    "nHeads": 2,
+    "nKvHeads": 2,
+    "ctx": 32,
+    "vocab": 4096,
+    "attention": "causal",
+    "positions": "none",
+    "ropeTheta": 10000.0,
+    "mlp": "none",
+    "norm": "none",
+    "normEps": 1e-05,
+    "residual": true,
+    "tiedEmbeddings": true
+  },
+  "weightsFile": "weights.bin",
+  "weightsSha256": "1f126811353cee67966796d6e6ab975e5d30e39043735a0b9439102aa4e39b71",
+  "tensors": [
+    {
+      "name": "tok_emb",
+      "dtype": "f16",
+      "shape": [
+        4096,
+        16
+      ],
+      "byteOffset": 0,
+      "byteLength": 131072
+    },
+    {
+      "name": "layers.0.attn.wq",
+      "dtype": "f16",
+      "shape": [
+        16,
+        16
+      ],
+      "byteOffset": 131072,
+      "byteLength": 512
+    },
+    {
+      "name": "layers.0.attn.wk",
+      "dtype": "f16",
+      "shape": [
+        16,
+        16
+      ],
+      "byteOffset": 131584,
+      "byteLength": 512
+    },
+    {
+      "name": "layers.0.attn.wv",
+      "dtype": "f16",
+      "shape": [
+        16,
+        16
+      ],
+      "byteOffset": 132096,
+      "byteLength": 512
+    },
+    {
+      "name": "layers.0.attn.wo",
+      "dtype": "f16",
+      "shape": [
+        16,
+        16
+      ],
+      "byteOffset": 132608,
+      "byteLength": 512
+    }
+  ],
+  "evidence": []
+}

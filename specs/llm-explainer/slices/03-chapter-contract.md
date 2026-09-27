@@ -109,3 +109,22 @@ The file layout under `chapters/`, the zod-vs-hand-written validator, and draft 
 ## Feedback that would change this slice
 
 Changes to the caption budget or the label cap. Those are D17, D18 and D24 matters and would go back to the human.
+
+## Results (implementation)
+
+- **Validator: hand-written, no zod.** Chapters are TypeScript data, so the compiler already checks
+  shapes; `validateChapter()` only checks what types can't (copy and loop budgets, caps, and that
+  anchors, shots and colour tokens exist) and returns every problem as a string.
+- **Anchors are per scene:** `chapters/scenes.ts` lists each scene builder's anchors
+  (`autocomplete`: `board`, `bars`, `rail`). `SceneBuilderId` is its key set. Slice 10's builder
+  places a part at each.
+- **`shots.json` is seeded with a provisional `bench-close`**, not empty: chapter 0 must name a
+  shot and the validator rejects unknown ones. Slice 10 owns the pose values.
+- **Loops are cyclic:** the segment after the last keyframe interpolates into the first keyframe of
+  the next pass (using the first keyframe's ease), so t→duration meets t=0. `ease` on a keyframe
+  shapes the segment that ends at it; `step` holds the previous value until the keyframe.
+- **`look.json` sections:** `palette` (sRGB hex, shared), `hud` (CSS-only colours), `type`,
+  `materials.emissive` (HDR multiplier per palette token), `bloom`, `flow`, and empty `room` and
+  `lights` for slice 07. `lookConfig()` hands the renderer linear colours.
+- **`ModelId` is declared in `chapters/types.ts`** until slice 02's `manifest.ts` exports it; then
+  import it from `@repo/llm` and delete the local union.

@@ -1,0 +1,92 @@
+{
+  "formatVersion": 1,
+  "id": "fixture-mlp-only",
+  "kind": "transformer",
+  "tokenizer": {
+    "kind": "bpe",
+    "file": "../../../../apps/explainer/public/models/tokenizer/tokenizer.json",
+    "sha256": "37c465794d44d16554106eb9d2972c123e05fb76c300bb4bf1cc321fcb363f7b"
+  },
+  "arch": {
+    "dModel": 16,
+    "nLayers": 1,
+    "nHeads": 2,
+    "nKvHeads": 2,
+    "ctx": 32,
+    "vocab": 4096,
+    "attention": "none",
+    "positions": "none",
+    "ropeTheta": 10000.0,
+    "mlp": {
+      "kind": "swiglu",
+      "hidden": 32
+    },
+    "norm": "rmsnorm",
+    "normEps": 1e-05,
+    "residual": true,
+    "tiedEmbeddings": true
+  },
+  "weightsFile": "weights.bin",
+  "weightsSha256": "7985edc28243c4ac9257f33136d96d7c3d4e3fb4fd0a893f3b94c8fd59078e50",
+  "tensors": [
+    {
+      "name": "tok_emb",
+      "dtype": "f16",
+      "shape": [
+        4096,
+        16
+      ],
+      "byteOffset": 0,
+      "byteLength": 131072
+    },
+    {
+      "name": "layers.0.mlp.w1",
+      "dtype": "f16",
+      "shape": [
+        32,
+        16
+      ],
+      "byteOffset": 131072,
+      "byteLength": 1024
+    },
+    {
+      "name": "layers.0.mlp.w2",
+      "dtype": "f16",
+      "shape": [
+        16,
+        32
+      ],
+      "byteOffset": 132096,
+      "byteLength": 1024
+    },
+    {
+      "name": "layers.0.mlp.w3",
+      "dtype": "f16",
+      "shape": [
+        32,
+        16
+      ],
+      "byteOffset": 133120,
+      "byteLength": 1024
+    },
+    {
+      "name": "layers.0.mlp_norm",
+      "dtype": "f16",
+      "shape": [
+        16
+      ],
+      "byteOffset": 134144,
+      "byteLength": 32
+    },
+    {
+      "name": "norm",
+      "dtype": "f16",
+      "shape": [
+        16
+      ],
+      "byteOffset": 134208,
+      "byteLength": 32
+    }
+  ],
+  "evidence": []
+}

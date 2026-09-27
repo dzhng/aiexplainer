@@ -38,7 +38,7 @@ timing is never shown as speed.
 - `weightBytes` at bf16 ≈ 16.06e9.
 - The batch-1 decode ceiling is ≈ 208 tok/s at short context.
 - `ridge(h100) ≈ 295`.
-- `specExpectedTokens` checked against Leviathan et al. 2023 (https://arxiv.org/abs/2211.17192), Theorem 3.8, **read from the PDF** (confirm-list item). Record the equation number here.
+- `specExpectedTokens` checked against Leviathan et al. 2023 (https://arxiv.org/abs/2211.17192), Equation (1) in §3.1, read from the PDF (see Results).
 - Dimensional tests: bytes and seconds never mix, and throughput rises with batch until the ridge, then flattens.
 - **Shot:** the stat-chip specimen on `/lab/tokens`, for each scale label.
   - **Variable:** scale-label prominence. The scale must be legible and must not be mistaken for the value.
@@ -60,3 +60,24 @@ Number formatting and units display.
 ## Feedback that would change this slice
 
 Wanting a different reference GPU (e.g. B200). That is a data-file swap.
+
+## Results (implementation)
+
+- **Config recomputed** from the fetched `config.json` (2026-09-27): all eight spec values match;
+  `tie_word_embeddings` is false. `paramsFromShapes()` = **8,030,261,248** (stored).
+- **H100 SXM** (spec sheet, 2026-09-27): 3.35 TB/s, 80 GB, BF16 1,979 TFLOPS footnoted "with
+  sparsity"; dense stored as 989e12 (half). **O4 confirmed.**
+- **Verified numbers:** KV = 131,072 B/token (bf16); weights = 16,060,522,496 B (bf16); batch-1
+  decode ceiling = 208.4 tok/s at 128 context (208.6 at 1); ridge = 295.2 FLOP/B; max batch at
+  8192 context = 59 (bf16).
+- **Speculative decoding: the formula is Equation (1), not Theorem 3.8.** Read from the v2 PDF
+  (§3.1): E(# generated tokens) = (1 − α^(γ+1)) / (1 − α), γ = drafted tokens. Theorem 3.8 is the
+  walltime improvement factor (1 − α^(γ+1)) / ((1 − α)(γc + 1)), which uses Equation (1).
+- **Model:** a roofline. A step costs max(bytes ÷ bandwidth, FLOPs ÷ dense FLOP/s). FLOPs per token
+  = 2 × matmul params (all but the input-embedding lookup) + 4 × layers × heads × head size ×
+  context. Every speed is a ceiling.
+- **Scale-label shot deferred to slice 04** (the stat chip doesn't exist yet); it is on 04's Verify list.
+- **The `performance.now` lint** is slice 01's `only clock.ts reads the wall clock` test. It
+  already scans `apps/explainer/src` and `packages`, which includes `scale/` and `chapters/`.
+- **`StatChip.format` gains `"s"`** (shown as ms below 1 s) so `prefillSeconds` can reach a chip. `validateChapter` now checks an arith stat: the function exists, its arguments match exactly, and its declared scale and unit fit the chip. Pure-math results (`specExpectedTokens`, `ridge`) have no fixed scale.
+- **Formatting (delegated):** three significant figures, en-US grouping, SI decimal bytes ("131 kB", "16.1 GB") to match the spec sheet's "80 GB". So the precise copy says 128 KiB, and the chip says 131 kB.

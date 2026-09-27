@@ -1,4 +1,11 @@
 {
   "$schema": "./node_modules/oxfmt/configuration_schema.json",
-  "ignorePatterns": [".agents/**", ".claude/**", "specs/**/explore/**"]
+  "ignorePatterns": [
+    ".agents/**",
+    ".claude/**",
+    "specs/**/explore/**",
+    "apps/explainer/public/models/**",
+    "packages/llm/schema/**",
+    "training/fixtures/**"
+  ]
 }

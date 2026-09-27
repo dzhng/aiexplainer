@@ -1,0 +1,17 @@
+{
+  "name": "H100 SXM",
+  "source": "https://www.nvidia.com/en-us/data-center/h100/",
+  "retrieved": "2026-09-27",
+  "bandwidth": { "value": 3.35e12, "unit": "B/s", "sheet": "GPU Memory Bandwidth: 3.35TB/s" },
+  "flopsDense": {
+    "value": 989e12,
+    "unit": "FLOP/s",
+    "sheet": "BFLOAT16 Tensor Core: 1,979 teraFLOPS is footnoted \"with sparsity\"; dense is half"
+  },
+  "flopsSparse": {
+    "value": 1979e12,
+    "unit": "FLOP/s",
+    "sheet": "BFLOAT16 Tensor Core: 1,979 teraFLOPS (with sparsity)"
+  },
+  "memory": { "value": 80e9, "unit": "B", "sheet": "GPU Memory: 80GB" }
+}

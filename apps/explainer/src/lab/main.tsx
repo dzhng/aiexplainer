@@ -1,5 +1,7 @@
 import { Layer, probeAdapter } from "@repo/renderer";
 import { createRoot } from "react-dom/client";
+import "../look/global.css";
+import { applyCssVars } from "../look/look.ts";
 import { clockFromSearch, type HeldClock } from "../runtime/clock.ts";
 import { calibScene } from "./calib.ts";
 import { loadFixture } from "./fixtures.ts";
@@ -10,6 +12,9 @@ import { registryBaseline } from "./registry-baseline.ts";
 import { tokensScene } from "./tokens.ts";
 import { AdapterPage } from "./pages/AdapterPage.tsx";
 import { StagePage } from "./pages/StagePage.tsx";
+import { ArithPage } from "./pages/ArithPage.tsx";
+import { ModelsPage } from "./pages/ModelsPage.tsx";
+import { TokensPage } from "./pages/TokensPage.tsx";
 
 const clock = clockFromSearch(location.search);
 const { probe, markReady } = installProbe((t) => (clock as Partial<HeldClock>).set?.(t));
@@ -17,6 +22,7 @@ const params = new URLSearchParams(location.search);
 const [first, sub = ""] = location.pathname.replace(/^\/lab\/?/, "").split("/");
 const route = first || "adapter";
 const root = createRoot(document.getElementById("root")!);
+applyCssVars(document.documentElement);
 
 probe.adapter = await probeAdapter(navigator.gpu);
 const debug = {
@@ -46,6 +52,14 @@ switch (route) {
     root.render(<AdapterPage adapter={probe.adapter} />);
     markReady();
     break;
+  case "arith":
+    root.render(<ArithPage />);
+    markReady();
+    break;
+  case "models":
+    // Waits for the inference worker's answers before it reports ready.
+    root.render(<ModelsPage onReady={markReady} />);
+    break;
   case "renderer":
     stage(async () => ({
       ...(await loadFixture(params.get("fixture") ?? "boxes")),
@@ -60,9 +74,14 @@ switch (route) {
   case "kit":
     stage(() => kitScene(sub));
     break;
-  case "tokens":
-    stage(() => tokensScene(params.get("section") ?? "emissive"));
+  case "tokens": {
+    // `emissive` swatches go through the real renderer; every other section is DOM.
+    const section = params.get("section");
+    if (section === "emissive") stage(() => tokensScene(section));
+    // Waits for its model and fonts before it reports ready.
+    else root.render(<TokensPage section={section} onReady={markReady} />);
     break;
+  }
   case "perf": {
     const canvas = document.createElement("canvas");
     canvas.style.cssText = "position:fixed;inset:0;width:100vw;height:100vh";
