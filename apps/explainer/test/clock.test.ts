@@ -1,7 +1,13 @@
 import { expect, test } from "bun:test";
 import { readdir, readFile } from "node:fs/promises";
 import path from "node:path";
-import { arrivalFromSearch, clockFromSearch, heldClock, stepClock } from "../src/runtime/clock.ts";
+import {
+  arrivalFromSearch,
+  clockFromSearch,
+  heldClock,
+  stepClock,
+  type StepClock,
+} from "../src/runtime/clock.ts";
 
 test("heldClock returns what set gave it", () => {
   const clock = heldClock(2.5);
@@ -19,6 +25,13 @@ test("stepClock advances exactly one frame per step", () => {
 
 test("?clock=held&t= selects a held clock", () => {
   expect(clockFromSearch("?clock=held&t=12.5").now()).toBe(12.5);
+});
+
+test("?clock=step&fps= selects a step clock (the recorder)", () => {
+  const clock = clockFromSearch("?clock=step&fps=30") as StepClock;
+  expect(clock.now()).toBe(0);
+  clock.step();
+  expect(clock.now()).toBe(1 / 30);
 });
 
 test("only clock.ts reads the wall clock", async () => {

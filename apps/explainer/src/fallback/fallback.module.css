@@ -1,0 +1,107 @@
+/*
+ * The fallback page: the video first, then one call to action. It borrows the HUD's own
+ * classes (brand, series, title, titleNum) and tokens, and only sizes them for a phone.
+ */
+
+.page {
+  box-sizing: border-box;
+  min-height: 100%;
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 20px 16px 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  font-size: var(--text-md);
+  line-height: var(--line-height);
+}
+
+.header {
+  display: flex;
+  flex-direction: column;
+}
+
+/* The HUD title is sized for a 1440 px screen; a phone gets the next size down. */
+.title {
+  font-size: var(--text-xl);
+}
+
+.video {
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+  border: 1px solid var(--hud-line);
+  background: var(--bg-high);
+  clip-path: polygon(
+    var(--hud-cut) 0,
+    100% 0,
+    100% calc(100% - var(--hud-cut)),
+    calc(100% - var(--hud-cut)) 100%,
+    0 100%,
+    0 var(--hud-cut)
+  );
+}
+
+.why {
+  margin: 0;
+  opacity: 0.86;
+}
+
+.actions {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 10px;
+  max-width: 360px;
+  margin-top: 4px;
+}
+
+/* Why this visitor sees a video: the page's reason for being, so it reads as a statement. */
+.best {
+  margin: 0 0 2px;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+/* The one call to action, in the HUD's selected-control colours. */
+.primary {
+  height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: 0;
+  background: var(--hud-accent);
+  color: var(--hud-active-ink);
+  font-family: var(--font-display);
+  font-size: var(--text-md);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  cursor: pointer;
+  clip-path: polygon(
+    var(--hud-cut-small) 0,
+    100% 0,
+    100% calc(100% - var(--hud-cut-small)),
+    calc(100% - var(--hud-cut-small)) 100%,
+    0 100%,
+    0 var(--hud-cut-small)
+  );
+}
+
+/* Secondary, so it stays a quiet link beside the one filled button. */
+.secondary {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 0;
+  color: var(--hud-muted);
+  font-size: var(--text-sm);
+  text-decoration: none;
+}
+
+.secondary:hover {
+  color: var(--ink);
+}

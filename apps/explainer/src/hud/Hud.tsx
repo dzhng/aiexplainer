@@ -7,7 +7,8 @@ import type { LoadedModel } from "@repo/llm";
 import { useRef, useState, type CSSProperties, type Dispatch } from "react";
 import { LADDER, displayNumber } from "../chapters/ladder.ts";
 import type { ChapterDef, ViewMode } from "../chapters/types.ts";
-import { hashFor, type Action, type AppState, type Chapters } from "../state/app-state.ts";
+import { BRAND_NAME, SERIES_TITLE, X_PROFILE } from "../look/brand.ts";
+import { sharePathFor, type Action, type AppState, type Chapters } from "../state/app-state.ts";
 import { Help } from "./Help.tsx";
 import css from "./hud.module.css";
 import {
@@ -22,8 +23,6 @@ import {
 import { prefersReducedMotion, useArrivalIntro } from "./motion.ts";
 import { StatChip } from "./StatChip.tsx";
 
-const SERIES_TITLE = "How LLMs work, from first principles";
-const X_PROFILE = "https://x.com/dzhng";
 const VIEW_NAMES: Record<ViewMode, string> = {
   whole: "Whole",
   cutaway: "Cutaway",
@@ -49,7 +48,7 @@ export function Hud(props: HudProps) {
   useArrivalIntro(root, props.state.loopEpoch, motion);
   const hudProps = { ...props, motion };
   return (
-    <div className={css.hud} ref={root}>
+    <div className={css.hud} ref={root} data-hud>
       <TitlePanel {...hudProps} />
       <Controls {...hudProps} />
       <Ladder {...hudProps} />
@@ -65,7 +64,7 @@ function TitlePanel({ state, dispatch, def, model, motion }: HudProps) {
     <header className={css.tl} data-crop="panel:tl" data-intro="left">
       <div className={css.brand}>
         <BrandMark />
-        dzhng
+        {BRAND_NAME}
       </div>
       <p className={css.series}>{SERIES_TITLE}</p>
       <h1 className={css.title}>
@@ -268,7 +267,8 @@ function Ladder({ state, dispatch, chapters }: HudProps) {
 function Corner({ state, dispatch, def }: HudProps) {
   const [copied, setCopied] = useState(false);
   const share = () => {
-    const url = `${location.origin}/${hashFor(def.slug)}`;
+    // The share route carries the chapter's own link-preview card, then opens `/#N` (D34).
+    const url = `${location.origin}${sharePathFor(def.slug)}`;
     navigator.clipboard.writeText(url).then(
       () => {
         setCopied(true);

@@ -3,7 +3,8 @@
   "tasks": {
     "build": {
       "dependsOn": ["^build"],
-      "outputs": ["dist/**"]
+      "outputs": ["dist/**"],
+      "env": ["SITE_URL", "VERCEL_ENV", "VERCEL_URL"]
     },
     "check-types": {
       "dependsOn": ["^check-types"]

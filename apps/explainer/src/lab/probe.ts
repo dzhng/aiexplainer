@@ -1,4 +1,6 @@
 import type { AdapterReport, FrameReceipt, LabelPlacement, ScreenRect } from "@repo/renderer";
+import type { Clock, HeldClock, StepClock } from "../runtime/clock.ts";
+import type { Support } from "../runtime/support.ts";
 
 /** A crop in CSS pixels of the viewport. */
 export type CropRect = ScreenRect;
@@ -8,7 +10,12 @@ export interface ProbeApi {
   ready: Promise<void>;
   adapter: AdapterReport | null;
   errors: string[];
+  /** With `?clock=held`: hold time at `t` seconds. */
   setTime(t: number): void;
+  /** With `?clock=step`: advance exactly one frame (the recorder, D29). */
+  step(): void;
+  /** The app only: whether this visitor got the 3D app or the fallback page. */
+  support?: Support;
   /**
    * Named crops for screenshots: HUD crops (`panel:*`, `chip:*`, `specimen:*`) are the DOM
    * rects of elements tagged `data-crop="<id>"`; scene crops (`part:*` from the app's own
@@ -47,8 +54,8 @@ function domCrops(): Record<string, CropRect> {
   return crops;
 }
 
-/** Installs the probe; returns a function that marks it ready. */
-export function installProbe(setTime: (t: number) => void): {
+/** Installs the probe over the page's clock; returns a function that marks it ready. */
+export function installProbe(clock: Clock): {
   probe: ProbeApi;
   markReady: () => void;
 } {
@@ -59,7 +66,8 @@ export function installProbe(setTime: (t: number) => void): {
     }),
     adapter: null,
     errors: [],
-    setTime,
+    setTime: (t) => (clock as Partial<HeldClock>).set?.(t),
+    step: () => (clock as Partial<StepClock>).step?.(),
     crops: () => ({ ...domCrops(), ...probe.sceneCrops?.() }),
   };
   window.addEventListener("error", (event) => probe.errors.push(event.message));
