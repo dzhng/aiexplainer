@@ -8,11 +8,13 @@
   },
   "scripts": {
     "check-types": "tsc --noEmit",
-    "lint": "oxlint src",
-    "test": "bun test test"
+    "lint": "oxlint src test scripts cli.ts",
+    "test": "bun test test",
+    "schema": "bun scripts/emit-schema.ts"
   },
   "dependencies": {
-    "math": "catalog:"
+    "math": "catalog:",
+    "zod": "catalog:"
   },
   "devDependencies": {
     "@repo/typescript-config": "workspace:*",

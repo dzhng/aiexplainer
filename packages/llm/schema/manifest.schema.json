@@ -1,0 +1,226 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "formatVersion": {
+      "type": "number",
+      "const": 1
+    },
+    "id": {
+      "type": "string",
+      "enum": [
+        "counts"
+      ]
+    },
+    "kind": {
+      "type": "string",
+      "enum": [
+        "word-counts",
+        "transformer"
+      ]
+    },
+    "tokenizer": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "type": "string",
+              "const": "words"
+            },
+            "vocabTensor": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "required": [
+            "kind",
+            "vocabTensor"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "type": "string",
+              "const": "bpe"
+            },
+            "file": {
+              "type": "string",
+              "minLength": 1
+            },
+            "sha256": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            }
+          },
+          "required": [
+            "kind",
+            "file",
+            "sha256"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "weightsFile": {
+      "type": "string",
+      "minLength": 1
+    },
+    "weightsSha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "tensors": {
+      "minItems": 1,
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1
+          },
+          "dtype": {
+            "type": "string",
+            "enum": [
+              "f16",
+              "f32",
+              "u32"
+            ]
+          },
+          "shape": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            }
+          },
+          "byteOffset": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "byteLength": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": [
+          "name",
+          "dtype",
+          "shape",
+          "byteOffset",
+          "byteLength"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "training": {
+      "type": "object",
+      "properties": {
+        "dataset": {
+          "type": "string",
+          "const": "TinyStoriesV2-GPT4"
+        },
+        "license": {
+          "type": "string",
+          "const": "CDLA-Sharing-1.0"
+        },
+        "seed": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "steps": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "tokensSeen": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "valLoss": {
+          "type": "number"
+        },
+        "wallSeconds": {
+          "type": "number",
+          "minimum": 0
+        },
+        "torch": {
+          "type": "string"
+        },
+        "gitSha": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{40}(-dirty)?$"
+        }
+      },
+      "required": [
+        "dataset",
+        "license",
+        "seed",
+        "steps",
+        "tokensSeen",
+        "wallSeconds",
+        "torch",
+        "gitSha"
+      ],
+      "additionalProperties": false
+    },
+    "evidence": {
+      "minItems": 1,
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "probe": {
+            "type": "string",
+            "minLength": 1
+          },
+          "prompt": {
+            "type": "string"
+          },
+          "metric": {
+            "type": "string",
+            "minLength": 1
+          },
+          "value": {
+            "type": "number"
+          },
+          "threshold": {
+            "type": "number"
+          },
+          "pass": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "probe",
+          "prompt",
+          "metric",
+          "value",
+          "threshold",
+          "pass"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": [
+    "formatVersion",
+    "id",
+    "kind",
+    "tokenizer",
+    "weightsFile",
+    "weightsSha256",
+    "tensors",
+    "training",
+    "evidence"
+  ],
+  "additionalProperties": false
+}

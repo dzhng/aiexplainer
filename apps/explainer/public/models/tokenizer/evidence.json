@@ -1,0 +1,33 @@
+{
+  "tokenizerSha256": "2ce41742d62977488c2304f2b44cc9a297e24ab24b3fc2b3ffd59284391c81a2",
+  "evidence": [
+    {
+      "probe": "single-piece-words",
+      "prompt": "",
+      "metric": "held-out word occurrences that are one piece",
+      "value": 0.9073614902551174,
+      "threshold": 0.9,
+      "pass": true
+    },
+    {
+      "probe": "rare-word-split",
+      "prompt": "ugly",
+      "metric": "pieces",
+      "value": 3,
+      "threshold": 3,
+      "pass": true
+    },
+    {
+      "probe": "chars-per-token",
+      "prompt": "",
+      "metric": "held-out characters per token",
+      "value": 3.7189806449669485,
+      "threshold": 3.0,
+      "pass": true
+    }
+  ],
+  "prompts": [
+    "Once upon a time, there was a little boy named Tim.",
+    "It was so ugly."
+  ]
+}

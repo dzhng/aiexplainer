@@ -1,0 +1,79 @@
+{
+  "formatVersion": 1,
+  "id": "counts",
+  "kind": "word-counts",
+  "tokenizer": {
+    "kind": "words",
+    "vocabTensor": "vocab"
+  },
+  "weightsFile": "weights.bin",
+  "weightsSha256": "739aaaee069946bdcaddd226dd133a993806bf9d45ee6e3e81e4e773313ae510",
+  "tensors": [
+    {
+      "name": "vocab",
+      "dtype": "u32",
+      "shape": [
+        24,
+        6
+      ],
+      "byteOffset": 0,
+      "byteLength": 576
+    },
+    {
+      "name": "successors",
+      "dtype": "u32",
+      "shape": [
+        24,
+        3
+      ],
+      "byteOffset": 576,
+      "byteLength": 288
+    },
+    {
+      "name": "counts",
+      "dtype": "u32",
+      "shape": [
+        24,
+        3
+      ],
+      "byteOffset": 896,
+      "byteLength": 288
+    }
+  ],
+  "training": {
+    "dataset": "TinyStoriesV2-GPT4",
+    "license": "CDLA-Sharing-1.0",
+    "seed": 0,
+    "steps": 0,
+    "tokensSeen": 180,
+    "wallSeconds": 1.121,
+    "torch": "2.14.0",
+    "gitSha": "1df9c6946a0a56ccd90283e6aa95285f2cb7cdbd-dirty"
+  },
+  "evidence": [
+    {
+      "probe": "top-successor",
+      "prompt": "once",
+      "metric": "p(upon)",
+      "value": 1.0,
+      "threshold": 0.5,
+      "pass": true
+    },
+    {
+      "probe": "vocab-coverage",
+      "prompt": "",
+      "metric": "held-out words in vocab",
+      "value": 0.7111111111111111,
+      "threshold": 0.98,
+      "pass": false
+    },
+    {
+      "probe": "held-out-next-word",
+      "prompt": "",
+      "metric": "held-out next words in the successor table",
+      "value": 0.6370967741935484,
+      "threshold": 0.5,
+      "pass": true
+    }
+  ]
+}

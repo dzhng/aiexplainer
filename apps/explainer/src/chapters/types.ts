@@ -2,26 +2,13 @@
  * A chapter is pure data (slice 03). The HUD, the loop, the stats and the scene are all
  * driven by a `ChapterDef`; `validateChapter()` enforces the copy rules and references.
  */
-import type { ArithFnName } from "@repo/llm";
+import type { ArithFnName, ModelId } from "@repo/llm";
 import type shots from "../look/shots.json";
 import type { PaletteToken } from "../look/look.ts";
 import type { ChapterSlug } from "./ladder.ts";
 import type { AnchorId, SceneBuilderId } from "./scenes.ts";
 
-export type { AnchorId, ChapterSlug, SceneBuilderId };
-
-/** Trained model ids (README Chapters table). */
-export type ModelId =
-  | "counts"
-  | "embed"
-  | "attn"
-  | "rope"
-  | "mlp"
-  | "residual"
-  | "full"
-  | "full-q8"
-  | "drafter"
-  | "moe";
+export type { AnchorId, ChapterSlug, ModelId, SceneBuilderId };
 
 export type ShotId = keyof typeof shots;
 export type FollowId = string;
