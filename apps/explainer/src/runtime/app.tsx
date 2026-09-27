@@ -87,6 +87,8 @@ function safeRect(): ScreenRect {
 export interface AppProps {
   /** `?hud=0` hides the HUD for scene-only shots. */
   hud: boolean;
+  /** The HUD's decorative motion (arrival intro, chip count-up); off under a held clock. */
+  hudMotion: boolean;
   clock: Clock;
   probe: ProbeApi;
   /** `?emissive=0&bloom=0` and friends. */
@@ -95,7 +97,7 @@ export interface AppProps {
   onReady: () => void;
 }
 
-export function App({ hud, clock, probe, debug, onReady }: AppProps) {
+export function App({ hud, hudMotion, clock, probe, debug, onReady }: AppProps) {
   const [state, dispatch] = useReducer(reducer, undefined, startState);
   const def = CHAPTERS[state.chapter]!;
   const models = useRef(new Map<ModelId, LoadedModel>());
@@ -287,7 +289,16 @@ export function App({ hud, clock, probe, debug, onReady }: AppProps) {
       <canvas ref={canvas} className={css.canvas} data-layer="canvas" />
       <Labels ref={labels} labels={def.labels} reading={state.labelMode} />
       <SceneTagsLayer ref={tags} count={SCENE_BUILDERS[def.scene].tagCount} />
-      {hud && <Hud state={state} dispatch={dispatch} def={def} chapters={CHAPTERS} model={model} />}
+      {hud && (
+        <Hud
+          state={state}
+          dispatch={dispatch}
+          def={def}
+          chapters={CHAPTERS}
+          model={model}
+          motion={hudMotion}
+        />
+      )}
     </main>
   );
 }

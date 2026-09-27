@@ -32,9 +32,32 @@ interface LightToken {
 export interface LookTokens {
   /** sRGB `#rrggbb` swatches shared by the HUD and the scene. */
   palette: Record<PaletteToken, string>;
-  /** HUD-only CSS colours (any CSS colour syntax). */
-  hud: { panel: string; line: string; muted: string; activeInk: string };
-  type: { ui: string; mono: string; sizePx: Record<TypeSize, number>; lineHeight: number };
+  /**
+   * HUD-only CSS values (any CSS colour syntax, or a length for the corner cuts): the game-UI
+   * frame (holo-tactical, slice 04b) is a cut-corner panel with a thin accent stroke and a faint
+   * scanline fill; `accent` is the HUD's own cyan (the scene's `active` stays the scene's).
+   */
+  hud: {
+    panel: string;
+    panelTop: string;
+    line: string;
+    frame: string;
+    scan: string;
+    muted: string;
+    accent: string;
+    accentSoft: string;
+    glow: string;
+    activeInk: string;
+    cut: string;
+    cutSmall: string;
+  };
+  type: {
+    ui: string;
+    display: string;
+    mono: string;
+    sizePx: Record<TypeSize, number>;
+    lineHeight: number;
+  };
   materials: {
     /** HDR emissive multiplier per palette token; a token without one does not glow. */
     emissive: Partial<Record<PaletteToken, number>>;
@@ -132,12 +155,13 @@ export function emissive(token: PaletteToken): Rgb {
 
 const kebab = (name: string) => name.replace(/[A-Z]/g, (c) => `-${c.toLowerCase()}`);
 
-/** Every HUD CSS variable, e.g. `--bg-deep`, `--hud-panel`, `--font-ui`, `--text-md`. */
+/** Every HUD CSS variable, e.g. `--bg-deep`, `--hud-panel`, `--font-display`, `--text-md`. */
 export function cssVars(): Record<`--${string}`, string> {
   const vars: Record<`--${string}`, string> = {};
   for (const [name, value] of Object.entries(look.palette)) vars[`--${kebab(name)}`] = value;
   for (const [name, value] of Object.entries(look.hud)) vars[`--hud-${kebab(name)}`] = value;
   vars["--font-ui"] = look.type.ui;
+  vars["--font-display"] = look.type.display;
   vars["--font-mono"] = look.type.mono;
   for (const [name, px] of Object.entries(look.type.sizePx)) vars[`--text-${name}`] = `${px}px`;
   vars["--line-height"] = String(look.type.lineHeight);

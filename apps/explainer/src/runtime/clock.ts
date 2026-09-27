@@ -48,9 +48,13 @@ export function stepClock(fps: number): StepClock {
   };
 }
 
+/** Whether `search` holds the clock (`?clock=held`); decorative motion is skipped then. */
+export function clockIsHeld(search: string): boolean {
+  return new URLSearchParams(search).get("clock") === "held";
+}
+
 /** `?clock=held&t=12.5` holds time; anything else runs in real time. */
 export function clockFromSearch(search: string): Clock {
-  const params = new URLSearchParams(search);
-  if (params.get("clock") !== "held") return rafClock();
-  return heldClock(Number(params.get("t") ?? 0));
+  if (!clockIsHeld(search)) return rafClock();
+  return heldClock(Number(new URLSearchParams(search).get("t") ?? 0));
 }

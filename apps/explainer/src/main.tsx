@@ -4,7 +4,7 @@ import { installProbe } from "./lab/probe.ts";
 import "./look/global.css";
 import { applyCssVars } from "./look/look.ts";
 import { App } from "./runtime/app.tsx";
-import { clockFromSearch, type HeldClock } from "./runtime/clock.ts";
+import { clockFromSearch, clockIsHeld, type HeldClock } from "./runtime/clock.ts";
 
 const params = new URLSearchParams(location.search);
 const clock = clockFromSearch(location.search);
@@ -20,6 +20,7 @@ const debug = {
 createRoot(document.getElementById("root")!).render(
   <App
     hud={params.get("hud") !== "0"}
+    hudMotion={!clockIsHeld(location.search)}
     clock={clock}
     probe={probe}
     debug={debug}

@@ -12,6 +12,7 @@ import {
 } from "@repo/renderer";
 import { forwardRef, useImperativeHandle, useLayoutEffect, useRef } from "react";
 import type { LabelDef } from "../chapters/types.ts";
+import css from "./labels.module.css";
 
 export type LabelReading = "analogy" | "precise";
 
@@ -24,7 +25,6 @@ export interface LabelsHandle {
   pillWidths(): Record<string, number>;
 }
 
-const DOT = 8;
 const box = DEFAULT_LABEL_BOX;
 const leaderLength = Math.hypot(box.dx, box.dy + box.height / 2);
 const leaderAngle = Math.atan2(box.dy + box.height / 2, box.dx);
@@ -49,50 +49,10 @@ const SIDE_STYLE: Record<LabelSide, { pill: Partial<CSSStyleDeclaration>; leader
   },
 };
 
-const styles = {
-  layer: { position: "fixed", inset: 0, pointerEvents: "none", zIndex: 1 },
-  label: { position: "absolute", left: 0, top: 0, willChange: "transform" },
-  dot: {
-    position: "absolute",
-    left: -DOT / 2,
-    top: -DOT / 2,
-    width: DOT,
-    height: DOT,
-    borderRadius: "50%",
-    background: "var(--ink)",
-    boxShadow: "0 0 0 2px var(--hud-panel)",
-  },
-  leader: {
-    position: "absolute",
-    left: 0,
-    top: 0,
-    width: leaderLength,
-    height: 1,
-    background: "var(--ink)",
-    opacity: 0.55,
-    transformOrigin: "0 0",
-    transform: `rotate(${leaderAngle}rad)`,
-  },
-  pill: {
-    position: "absolute",
-    left: box.dx,
-    top: box.dy,
-    height: box.height,
-    maxWidth: box.width,
-    boxSizing: "border-box",
-    padding: "0 10px",
-    display: "flex",
-    alignItems: "center",
-    borderRadius: box.height / 2,
-    background: "var(--hud-panel)",
-    border: "1px solid var(--hud-line)",
-    color: "var(--ink)",
-    font: "500 var(--text-sm)/1 var(--font-ui)",
-    whiteSpace: "nowrap",
-    overflow: "hidden",
-    textOverflow: "ellipsis",
-    backdropFilter: "blur(6px)",
-  },
+/** The renderer's label box as layout: where the pill sits and how long the leader runs. */
+const geometry = {
+  leader: { width: leaderLength, transform: `rotate(${leaderAngle}rad)` },
+  pill: { left: box.dx, top: box.dy, height: box.height, maxWidth: box.width },
 } satisfies Record<string, React.CSSProperties>;
 
 export const Labels = forwardRef<
@@ -154,20 +114,21 @@ export const Labels = forwardRef<
   );
 
   return (
-    <div style={styles.layer} data-labels="">
+    <div className={css.layer} data-labels="">
       {labels.map((label) => (
         <div
           key={label.anchor}
           data-label={label.anchor}
-          style={{ ...styles.label, visibility: "hidden" }}
+          className={css.label}
+          style={{ visibility: "hidden" }}
           ref={(node) => {
             if (node) nodes.current.set(label.anchor, node);
             else nodes.current.delete(label.anchor);
           }}
         >
-          <div style={styles.leader} data-leader="" />
-          <div style={styles.dot} data-dot="" />
-          <div style={styles.pill} data-pill="">
+          <div className={css.leader} style={geometry.leader} data-leader="" />
+          <div className={css.dot} data-dot="" />
+          <div className={css.pill} style={geometry.pill} data-pill="">
             {reading === "analogy" ? label.analogy : label.precise}
           </div>
         </div>
