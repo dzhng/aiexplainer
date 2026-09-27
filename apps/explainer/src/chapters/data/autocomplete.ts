@@ -1,6 +1,8 @@
 /**
- * Chapter 0: next-word guessing from word-pair counts. Draft copy and loop; slice 11
- * finalises both, and picks the example words from the `counts` probe (O2).
+ * Chapter 0: next-word guessing from word-pair counts. Final copy (slice 11); the example
+ * words come from the `counts` model itself: "upon" is its top next word after "once", its
+ * top-successor probe measures "a" after "upon", and "onse" is a misspelling it never kept.
+ * The loop shows the rule twice (once → upon → a), then the failure that chapter 1 fixes.
  */
 import type { ChapterDef } from "../types.ts";
 
@@ -13,36 +15,36 @@ export const autocomplete: ChapterDef = {
   caption: {
     default: {
       story: [
-        "Your phone's autocomplete guesses your next word, and the simplest way to do that is to remember which words usually come next.",
-        "This machine read a big pile of children's stories and kept a tally for every pair of words that sat side by side.",
+        "Your phone's keyboard guesses your next word, and the simplest way to guess is to remember which word usually came next.",
+        "This machine read millions of children's stories and kept a tally for every pair of words that sat side by side.",
       ],
       precisely:
-        "For each word, the model counts how often every other word came right after it in TinyStories, then divides by the row total to get next-word probabilities.",
+        "For each word it knows, this tiny model keeps the 20 words that most often came right after it in TinyStories; each bar is one word's share of those kept counts.",
     },
     byFollow: {
       counts: {
         story: [
-          "Each row of the board belongs to one word, and each mark on the row records one time another word followed it.",
-          "Nothing here understands the words; it only remembers what came next.",
+          "Each word gets its own row of tallies, one mark for every time another word came right after it.",
+          "Nothing here understands the words; it only remembers what came next, and how often.",
         ],
         precisely:
-          "Row w holds count(w, x) for the most frequent successors x of w, stored as whole numbers.",
+          "The table stores count(w, x), how many times word x followed word w, as whole numbers, keeping only the most frequent x for each w.",
       },
       next: {
         story: [
-          "The bars are the tallies for the word on the rail, turned into chances that add up to one.",
-          "The machine picks the tallest bar, puts that word on the rail, and does it all again.",
+          "The bars are the tallies for the word on the card, turned into shares that add up to all of it.",
+          "The machine takes the tallest bar, puts that word on the card, and does the same thing again.",
         ],
         precisely:
-          "p(x | w) = count(w, x) / Σ count(w, ·); the loop takes the most likely x each step (greedy).",
+          "Each bar is count(w, x) divided by the sum of the kept counts for w; the loop picks the largest (greedy decoding).",
       },
       text: {
         story: [
-          "The machine only ever looks at the last word on the rail, however long your sentence is.",
-          "Type a word it has never seen, and there is no row to read, so no bars appear.",
+          "The machine only ever looks at the last word on the card, however long your sentence is.",
+          "Give it a word it never saw, like the misspelt “onse”, and there is no row to read, so no bars appear.",
         ],
         precisely:
-          "The context is exactly one word; a word with no counts has no prediction at all.",
+          "The context is exactly one word; a word outside this tiny model's vocabulary has no counts, so it predicts nothing at all.",
       },
     },
   },
@@ -56,14 +58,14 @@ export const autocomplete: ChapterDef = {
     },
     {
       id: "distinct-words",
-      label: "distinct words",
+      label: "distinct words kept",
       format: "int",
       scale: "this tiny model",
       value: { kind: "model", metric: "vocabSize" },
     },
     {
       id: "top-chance",
-      label: "chance of the top next word",
+      label: "“a” after “upon”",
       format: "pct",
       scale: "this tiny model",
       value: { kind: "probe", probe: "top-successor" },
@@ -78,70 +80,118 @@ export const autocomplete: ChapterDef = {
   scenarios: [{ id: "once", label: "Once upon a", prompt: "once upon a", probe: "top-successor" }],
   views: ["whole", "cutaway", "exploded"],
   labels: [
-    { anchor: "board", analogy: "The tally book", precise: "Word-pair count table" },
+    { anchor: "board", analogy: "The tally board", precise: "Word-pair count table" },
     {
       anchor: "bars",
       analogy: "How often each word came next",
-      precise: "p(next word | this word)",
+      precise: "Share of the kept next-word counts",
     },
-    { anchor: "rail", analogy: "What you've typed", precise: "Context: the last word only" },
+    { anchor: "rail", analogy: "The last word so far", precise: "Context: one word" },
   ],
   loop: {
-    durationSec: 24,
-    // "upon" is the model's own top successor of "once"; "onse" is a misspelling it never saw.
-    inputs: ["once", "upon", "onse"],
+    durationSec: 20,
+    inputs: ["once", "upon", "a", "onse"],
     channels: {
-      /** Which word is on the rail: 0 the first word, 1 the chosen next word, 2 an unseen word. */
+      /** Which input is written on the card; it changes only while the card is off the rail. */
       railWord: [
         { t: 0, v: 0, ease: "step" },
-        { t: 7, v: 1, ease: "step" },
-        { t: 13, v: 2, ease: "step" },
+        { t: 5, v: 1, ease: "step" },
+        { t: 9.8, v: 2, ease: "step" },
+        { t: 14.2, v: 3, ease: "step" },
       ],
-      /** 0 → 1 as the newest word slides onto the rail. */
+      /** The card: 0 off the rail's right end, 1 resting on it. It leaves before each change. */
       railSlide: [
-        { t: 0, v: 0, ease: "step" },
-        { t: 1.2, v: 1, ease: "inOut" },
-        { t: 7, v: 0, ease: "step" },
-        { t: 8.2, v: 1, ease: "inOut" },
-        { t: 13, v: 0, ease: "step" },
-        { t: 14.2, v: 1, ease: "inOut" },
+        { t: 0, v: 0 },
+        { t: 0.8, v: 1, ease: "inOut" },
+        { t: 4.6, v: 1 },
+        { t: 5, v: 0, ease: "inOut" },
+        { t: 5.8, v: 1, ease: "inOut" },
+        { t: 9.4, v: 1 },
+        { t: 9.8, v: 0, ease: "inOut" },
+        { t: 10.6, v: 1, ease: "inOut" },
+        { t: 13.8, v: 1 },
+        { t: 14.2, v: 0, ease: "inOut" },
+        { t: 14.9, v: 1, ease: "inOut" },
+        { t: 18, v: 1 },
+        { t: 18.9, v: 0, ease: "inOut" },
       ],
-      /** Bar height as a fraction of each bar's real probability. */
+      /** Which input's counts the bars show; it lags the card, so the pick stays lit as it moves. */
+      barsWord: [
+        { t: 0, v: 0, ease: "step" },
+        { t: 7.4, v: 1, ease: "step" },
+        { t: 11.6, v: 2, ease: "step" },
+        { t: 14.3, v: 3, ease: "step" },
+      ],
+      /** Bar growth: 0 flat, 1 at the word's real shares. */
       bars: [
-        { t: 0, v: 0, ease: "step" },
-        { t: 2.5, v: 0 },
-        { t: 4.5, v: 1, ease: "inOut" },
+        { t: 0, v: 0 },
+        { t: 0.9, v: 0 },
+        { t: 2.3, v: 1, ease: "inOut" },
         { t: 7, v: 1 },
-        { t: 7.5, v: 0, ease: "inOut" },
-        { t: 9.5, v: 0 },
-        { t: 11.5, v: 1, ease: "inOut" },
-        { t: 13, v: 1 },
-        { t: 13.5, v: 0, ease: "inOut" },
+        { t: 7.4, v: 0, ease: "inOut" },
+        { t: 7.5, v: 0 },
+        { t: 8.7, v: 1, ease: "inOut" },
+        { t: 11.2, v: 1 },
+        { t: 11.6, v: 0, ease: "inOut" },
+        { t: 11.7, v: 0 },
+        { t: 12.9, v: 1, ease: "inOut" },
+        { t: 13.8, v: 1 },
+        { t: 14.2, v: 0, ease: "inOut" },
+        { t: 14.7, v: 0 },
+        { t: 15, v: 1, ease: "inOut" },
+        { t: 17.8, v: 1 },
+        { t: 18.2, v: 0, ease: "inOut" },
       ],
-      /** Glow on the tallest bar. */
+      /** Glow on the tallest bar: the machine's pick, held until its word is on the card. */
       topFlash: [
         { t: 0, v: 0 },
-        { t: 5, v: 0 },
-        { t: 5.4, v: 1, ease: "inOut" },
-        { t: 6.4, v: 0, ease: "inOut" },
+        { t: 2.5, v: 0 },
+        { t: 3, v: 1, ease: "inOut" },
+        { t: 7, v: 1 },
+        { t: 7.4, v: 0, ease: "inOut" },
+        { t: 8.7, v: 0 },
+        { t: 9.1, v: 1, ease: "inOut" },
+        { t: 11.2, v: 1 },
+        { t: 11.6, v: 0, ease: "inOut" },
       ],
     },
     beats: [
-      { t: 0, id: "word-lands", note: "the first word lands on the rail", focus: "rail" },
+      { t: 0, id: "word-lands", note: "“once” slides onto the rail", focus: "rail" },
+      { t: 0.9, id: "bars-rise", note: "bars rise to the real counts after “once”", focus: "bars" },
       {
         t: 2.5,
-        id: "bars-rise",
-        note: "count bars rise to the real successor counts",
+        id: "top-flash",
+        note: "the tallest bar, “upon”, lights up: the pick",
+        focus: "bars",
+        tint: "focus",
+      },
+      {
+        t: 4.6,
+        id: "next-word",
+        note: "“upon” replaces “once” on the rail; its bar stays lit",
+        focus: "rail",
+      },
+      {
+        t: 7.4,
+        id: "bars-rise-again",
+        note: "bars rise for “upon”: “a” is nearly all of it",
         focus: "bars",
       },
-      { t: 5, id: "top-flash", note: "the tallest bar flashes", focus: "bars", tint: "focus" },
-      { t: 7, id: "next-word", note: "the chosen word slides onto the rail", focus: "rail" },
-      { t: 9.5, id: "bars-rise-again", note: "bars rise for the new word", focus: "bars" },
-      { t: 13, id: "unseen-word", note: "an unseen word lands: no bars appear", focus: "rail" },
+      {
+        t: 8.7,
+        id: "pick-again",
+        note: "“a” lights up and takes the rail: the same rule again",
+        focus: "bars",
+        tint: "focus",
+      },
+      { t: 11.6, id: "bars-for-a", note: "bars for “a”: many words, none certain", focus: "bars" },
+      { t: 13.8, id: "unseen-word", note: "a misspelt “onse” lands", focus: "rail" },
+      { t: 14.7, id: "no-bars", note: "no bars rise: the machine never saw “onse”", focus: "bars" },
+      { t: 17.8, id: "reset", note: "the card leaves; the loop starts again", focus: "rail" },
     ],
   },
   shot: "bench-close",
   // TinyStories is credited once, by the help panel itself, for every chapter.
   help: { sources: [] },
-  ogTimeSec: 5.4,
+  ogTimeSec: 4,
 };

@@ -3,8 +3,9 @@
  * its rail. Bar heights are the real `nextWords` shares for the word on the card; the slot and
  * rail positions come from the prop's own nodes, so the Blender script stays their only owner.
  *
- * Loop channels read: `railWord` (which step's word is on the card), `railSlide` (0 → 1 as
- * the card slides in), `bars` (0 → 1 bar growth), `topFlash` (glow on the tallest bar).
+ * Loop channels read: `railWord` (which step's word is on the card), `barsWord` (which step's
+ * counts the bars show; it may lag the card), `railSlide` (0 → 1 as the card slides in),
+ * `bars` (0 → 1 bar growth), `topFlash` (glow on the tallest bar).
  * Typed text shows its word's bars at full height, without the loop's motion.
  */
 import type { MeshAsset, Part, SceneAnchor, SceneDesc } from "@repo/renderer";
@@ -44,6 +45,8 @@ function nodeBox(asset: MeshAsset, name: string): Box {
 interface Layout {
   slots: { x: number; z: number; floor: number; maxHeight: number; width: number; depth: number }[];
   card: { x: number; y: number; z: number };
+  /** The middle of the slot row, on its front face: where "no counts" is written. */
+  middle: [number, number, number];
 }
 
 const layouts = new WeakMap<SceneDesc, Layout>();
@@ -62,8 +65,11 @@ function layoutOf(asset: MeshAsset): Layout {
   });
   // The card stands on the rail's shelf at its right end, clear of the bars that are shown.
   const rail = nodeBox(asset, "board.rail");
+  const first = slots[0]!;
+  const last = slots[SLOTS - 1]!;
   return {
     slots,
+    middle: [(first.x + last.x) / 2, first.floor + first.maxHeight / 2, first.z + first.depth],
     card: {
       x: rail.max[0] - CARD.width / 2 - 0.08,
       y: rail.min[1] + CARD.height / 2 + 0.035,
@@ -93,15 +99,18 @@ function block(id: string, slot: number, material: string): Part {
   return { kind: "block", id, slot, material, transform: [...IDENTITY] as Mat4 };
 }
 
-/** "37%", "<1%": a share of the kept successors, readable at a glance. */
-function share(p: number): string {
+/** "37%", "<1%", ">99%": a share of the kept successors, never rounded to a false 0 or 100. */
+export function share(p: number): string {
   const percent = Math.round(p * 100);
-  return percent < 1 ? "<1%" : `${percent}%`;
+  if (percent < 1) return "<1%";
+  if (percent > 99 && p < 1) return ">99%";
+  return `${percent}%`;
 }
 
 export const autocomplete: SceneBuilder = {
   assets: { board: "/props/counter_board.glb" },
-  tagCount: SLOTS + 1,
+  // A word per bar, the card's word, and the note for a word with no counts.
+  tagCount: SLOTS + 2,
 
   create(assets, revision) {
     const board = assets.board;
@@ -134,7 +143,8 @@ export const autocomplete: SceneBuilder = {
       { id: "rail", part: "card", local: [0.5, 0, 0.5], priority: 2 },
     ];
     const scene: SceneDesc = { revision, parts, anchors, assets };
-    layouts.set(scene, layoutOf(board));
+    const layout = layoutOf(board);
+    layouts.set(scene, layout);
     const tags: SceneTags = {
       anchors: [
         ...Array.from({ length: SLOTS }, (_, i) => ({
@@ -144,9 +154,10 @@ export const autocomplete: SceneBuilder = {
           priority: 0,
         })),
         { id: "card", part: "card", local: [0, 0, 0.5], priority: 0 },
+        { id: "no-counts", part: "board", local: layout.middle, priority: 0 },
       ],
-      text: Array.from({ length: SLOTS + 1 }, () => ""),
-      emphasis: [...Array.from({ length: SLOTS }, () => false), true],
+      text: Array.from({ length: SLOTS + 2 }, () => ""),
+      emphasis: [...Array.from({ length: SLOTS }, () => false), true, false],
     };
     return { scene, tags };
   },
@@ -156,10 +167,10 @@ export const autocomplete: SceneBuilder = {
     const layout = layouts.get(scene)!;
     const steps = run?.steps ?? [];
     const typed = ui.text !== null;
-    const index = typed
-      ? 0
-      : Math.min(steps.length - 1, Math.max(0, Math.round(tl.channels.railWord ?? 0)));
-    const step = steps[index];
+    const pick = (channel: number | undefined) =>
+      typed ? steps[0] : steps[Math.min(steps.length - 1, Math.max(0, Math.round(channel ?? 0)))];
+    const step = pick(tl.channels.barsWord ?? tl.channels.railWord);
+    const onCard = pick(tl.channels.railWord);
     const growth = typed ? 1 : (tl.channels.bars ?? 1);
     const slide = typed ? 1 : (tl.channels.railSlide ?? 1);
     const flash = typed ? 0 : (tl.channels.topFlash ?? 0);
@@ -193,6 +204,9 @@ export const autocomplete: SceneBuilder = {
       CARD.height,
       CARD.depth,
     );
-    frame.tags.text[SLOTS] = step?.word ?? "";
+    frame.tags.text[SLOTS] = onCard?.word ?? "";
+    // A word the model never kept has no row: say so once the bars would have risen.
+    const empty = step !== undefined && step.next.length === 0 && growth > 0.5;
+    frame.tags.text[SLOTS + 1] = empty ? `never seen “${step.word}”: no counts` : "";
   },
 };

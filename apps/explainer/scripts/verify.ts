@@ -19,6 +19,8 @@
  *   `rect:x,y,w,h` is a literal rectangle. `--size N` shoots an N×N square centred on it.
  * - `--ui '{"text":"happy"}'` sets app controls through the probe (`setUi`) once ready.
  * - `--outline safe` draws that crop's rectangle on the page before shooting (framing review).
+ * - `--strip 0:22:1` shoots held times start…end by step with the loop's beat burned in under
+ *   each frame, then tiles them into `<out>-strip.png` (ffmpeg, a build-time tool, D41).
  * - `--check label-dots` (on a fixture of flat magenta markers with one anchor each) proves
  *   CPU placement and GPU raster agree: every visible label's dot, and the placement it came
  *   from, must lie within 2 px of its marker's rendered pixel centroid.
@@ -49,6 +51,7 @@ const { values: args } = parseArgs({
     size: { type: "string" },
     check: { type: "string" },
     ui: { type: "string" },
+    strip: { type: "string" },
     outline: { type: "string" },
   },
 });
@@ -109,7 +112,17 @@ function resolveCrop(crops: Record<string, CropRect>, spec: string): CropRect | 
   return { x: left, y: top, width: right - left, height: bottom - top };
 }
 
-const times = args.t?.split(",") ?? [];
+/** `--strip a:b:s` is shorthand for the held times a, a+s, …, b. */
+function stripTimes(spec: string): string[] {
+  const [start, end, step] = spec.split(":").map(Number) as [number, number, number];
+  if (!(step > 0) || !(end >= start)) throw new Error(`--strip ${spec}: want start:end:step`);
+  const out: string[] = [];
+  for (let t = start; t <= end + 1e-9; t += step) out.push(String(Math.round(t * 1000) / 1000));
+  return out;
+}
+
+const times = args.strip ? stripTimes(args.strip) : (args.t?.split(",") ?? []);
+if (args.strip) args.t = times[0];
 
 function withClock(route: string): string {
   if (args.t === undefined) return route;
@@ -303,6 +316,29 @@ try {
             document.body.append(box);
           }, rect);
       }
+      if (args.strip) {
+        const beat = await page.evaluate(() => window.__explainer!.beat?.() ?? null);
+        await page.evaluate(
+          (text) => {
+            const bar = document.getElementById("harness-beat") ?? document.createElement("div");
+            bar.id = "harness-beat";
+            bar.textContent = text;
+            Object.assign(bar.style, {
+              position: "fixed",
+              left: "0",
+              right: "0",
+              bottom: "0",
+              padding: "10px 16px",
+              background: "#000",
+              color: "#fff",
+              font: "600 22px/1.2 ui-monospace, monospace",
+              zIndex: "20",
+            });
+            document.body.append(bar);
+          },
+          `t=${t}s  ${beat ? `[${beat.id}] ${beat.note}` : "(no beat)"}`,
+        );
+      }
       const name = t === undefined ? args.out : `${args.out}-t${t}`;
       const cropIds = args.crop?.split(",") ?? [];
       if (cropIds.length === 0) await save(name);
@@ -315,6 +351,30 @@ try {
         await save(`${name}-${id.replace(/\W+/g, "-").replace(/^-|-$/g, "")}`, clip);
       }
     }
+  }
+  if (args.strip && args.out) {
+    const dir = path.join(repoRoot, "throwaway/shots", args.slice);
+    const inputs = times.flatMap((t) => ["-i", path.join(dir, `${args.out}-t${t}.png`)]);
+    const columns = 4;
+    const [w, h] = [480, Math.round((480 * Number(args.height)) / Number(args.width))];
+    const scaled = times.map((_, i) => `[${i}]scale=${w}:${h}[s${i}]`).join(";");
+    const layout = times.map((_, i) => `${(i % columns) * w}_${Math.floor(i / columns) * h}`);
+    const tile = `${times.map((_, i) => `[s${i}]`).join("")}xstack=inputs=${times.length}:layout=${layout.join("|")}:fill=gray`;
+    const file = path.join(dir, `${args.out}-strip.png`);
+    const ffmpeg = Bun.spawnSync([
+      "ffmpeg",
+      "-loglevel",
+      "error",
+      "-y",
+      ...inputs,
+      "-filter_complex",
+      `${scaled};${tile}`,
+      "-frames:v",
+      "1",
+      file,
+    ]);
+    if (ffmpeg.exitCode !== 0) failures.push(`strip: ffmpeg failed: ${ffmpeg.stderr.toString()}`);
+    else console.log("strip", path.relative(repoRoot, file));
   }
 } finally {
   await browser.close();

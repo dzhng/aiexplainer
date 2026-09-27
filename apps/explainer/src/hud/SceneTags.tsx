@@ -1,7 +1,8 @@
 /**
  * Scene text: small words drawn at points in the scene (the word on each count bar, the word
  * on the rail card). They are data, not labels: no pill or leader, centred above their point,
- * and they hide exactly like labels (behind the eye, off-screen, occluded). Positioned through
+ * and they hide exactly like labels (behind the eye, off-screen, occluded); a tag that would
+ * overlap an earlier one (builders list the most important first) hides too. Positioned through
  * refs every frame; text only changes the DOM when it changes. Same layer as the labels.
  */
 import type { LabelPlacement, SceneAnchor, ScreenRect } from "@repo/renderer";
@@ -41,6 +42,16 @@ const styles = {
   },
 } satisfies Record<string, React.CSSProperties>;
 
+/** A 2 px gap counts as touching: tags need air between them to read. */
+function overlaps(a: ScreenRect, b: ScreenRect): boolean {
+  return (
+    a.x < b.x + b.width + 2 &&
+    b.x < a.x + a.width + 2 &&
+    a.y < b.y + b.height &&
+    b.y < a.y + a.height
+  );
+}
+
 export const SceneTagsLayer = forwardRef<SceneTagsHandle, { count: number }>(
   function SceneTagsLayer({ count }, ref) {
     const nodes = useRef<(HTMLDivElement | null)[]>([]);
@@ -73,13 +84,21 @@ export const SceneTagsLayer = forwardRef<SceneTagsHandle, { count: number }>(
               sizes.current[i] = { width: node.offsetWidth, height: node.offsetHeight };
             }
             const lift = tags.emphasis[i] ? 0.5 : 1.45;
-            node.style.transform = `translate(${p!.x}px, ${p!.y}px) translate(-50%, -${lift * 100}%)`;
             const size = sizes.current[i]!;
             const rect = (rects.current[i] ??= { x: 0, y: 0, width: 0, height: 0 });
             rect.x = p!.x - size.width / 2;
             rect.y = p!.y - size.height * lift;
             rect.width = size.width;
             rect.height = size.height;
+            for (let j = 0; j < i && visible.current[i]; j++) {
+              const other = rects.current[j];
+              if (visible.current[j] && other && overlaps(rect, other)) visible.current[i] = false;
+            }
+            if (!visible.current[i]) {
+              node.style.visibility = "hidden";
+              continue;
+            }
+            node.style.transform = `translate(${p!.x}px, ${p!.y}px) translate(-50%, -${lift * 100}%)`;
           }
         },
         obstacles(out) {

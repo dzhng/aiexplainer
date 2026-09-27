@@ -6,7 +6,7 @@
  */
 import { countsModel, type LoadedModel, type ModelId } from "@repo/llm";
 import type { FrameInput, SceneDesc, ScreenRect } from "@repo/renderer";
-import { useEffect, useReducer, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useReducer, useRef, useState } from "react";
 import { CHAPTERS } from "../chapters/index.ts";
 import type { ChapterDef } from "../chapters/types.ts";
 import { Hud } from "../hud/Hud.tsx";
@@ -107,6 +107,19 @@ export function App({ hud, clock, probe, debug, onReady }: AppProps) {
   const labels = useRef<LabelsHandle>(null);
   const tags = useRef<SceneTagsHandle>(null);
   const stage = useRef<Stage | null>(null);
+  // The HUD panels' rects, re-measured after each render and on resize: labels steer clear.
+  const panelRects = useRef<ScreenRect[]>([]);
+  useLayoutEffect(() => {
+    const measure = () => {
+      panelRects.current = [...document.querySelectorAll("[data-crop^='panel:']")].map((el) => {
+        const { x, y, width, height } = el.getBoundingClientRect();
+        return { x, y, width, height };
+      });
+    };
+    measure();
+    window.addEventListener("resize", measure);
+    return () => window.removeEventListener("resize", measure);
+  });
   // The frame loop reads these every frame; React state lands here after each render.
   const live = useRef({ state, def, run });
   live.current = { state, def, run };
@@ -197,6 +210,7 @@ export function App({ hud, clock, probe, debug, onReady }: AppProps) {
           update: scene.update,
           labels: labels.current,
           tags: { layer: tags.current, current: () => scene.frame.tags },
+          obstacles: () => panelRects.current,
           onReady: () => {
             // Ready once the scene shows real model output (or has none to wait for).
             const wait = () =>
@@ -211,6 +225,7 @@ export function App({ hud, clock, probe, debug, onReady }: AppProps) {
         if (!alive) return created?.dispose();
         stage.current = created;
         if (!created) return;
+        probe.beat = scene.beat;
         const sceneCrops = probe.sceneCrops;
         probe.sceneCrops = () => ({ ...sceneCrops?.(), ...(hud ? { safe: safeRect() } : {}) });
       });

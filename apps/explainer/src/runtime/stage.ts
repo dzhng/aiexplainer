@@ -50,6 +50,8 @@ export interface StageOptions {
   pose?: (pose: OrbitPose, timeSec: number) => void;
   /** The label layer to drive, for the scene's anchors. */
   labels?: LabelsHandle | null;
+  /** Screen rects labels must keep clear of besides scene text (the HUD panels). */
+  obstacles?: () => readonly ScreenRect[];
   /** Scene text: the overlay and the builder's current tags. */
   tags?: { layer: SceneTagsHandle | null; current: () => SceneTags };
 }
@@ -117,7 +119,8 @@ export async function runStage(o: StageOptions): Promise<Stage | null> {
       placeLabels(matrices, tagAnchors, occluders, tagPlacements, TAG_BOX);
       o.tags.layer?.update(tagPlacements, tags);
       o.tags.layer?.obstacles(obstacles);
-    }
+    } else obstacles.length = 0;
+    if (o.obstacles) for (const rect of o.obstacles()) obstacles.push(rect);
     sceneAnchors(scene, view, scene.anchors, labelAnchors);
     const widths = o.labels?.pillWidths();
     for (const anchor of labelAnchors) anchor.pillWidth = widths?.[anchor.id];

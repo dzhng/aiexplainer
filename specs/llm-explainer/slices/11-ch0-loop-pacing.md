@@ -46,3 +46,21 @@ Beat timings within the budget, and the exact example words, which must come fro
 ## Feedback that would change this slice
 
 Voice or tone notes. These propagate to the copy rules in the README.
+
+## Record (2026-09-27)
+
+- **Loop:** 20 s. The rule plays twice before the failure: "once" → bars → the tallest,
+  "upon", lights and stays lit while "upon" takes the card (by 7 s) → bars for "upon" → "a"
+  lights and takes the card (by 11 s) → the spread for "a" → the misspelt "onse" lands, no
+  bars rise, and "never seen “onse”: no counts" appears → the card leaves and the rail is
+  empty at the seam. A `barsWord` channel lets the bars lag the card so the pick stays lit
+  while its word moves. Every example word is the model's own (a test checks each input is
+  the previous one's top successor and that "onse" is not in the vocabulary).
+- **Filmstrip:** `throwaway/shots/11/loop-strip.png` (frames `loop-t0.png` … `loop-t19.png`),
+  shot with `verify.ts --strip 0:19:1`. Two rounds of unprimed critique drove the retiming:
+  the first hand-off happened off-camera, the failure hold was 6 s of identical frames, and
+  the seam showed the card bouncing back with a new spelling; a third pass moved the failure
+  note to the moment "onse" lands and made labels keep clear of the HUD panels too.
+- **Copy read (human checkpoint; implementer's call): accepted.** Captions are within the
+  budget; `p` is described as a share of the kept counts everywhere ("each bar is one word's
+  share of those kept counts"); shares never round to a false 0 % or 100 % (`<1%`, `>99%`).

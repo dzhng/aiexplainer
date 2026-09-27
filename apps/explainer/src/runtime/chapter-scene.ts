@@ -47,6 +47,8 @@ export async function loadSceneAssets(def: ChapterDef, assets: SceneDesc["assets
 
 export interface ChapterScene {
   frame: SceneFrame;
+  /** The loop's time and beat as of the last update. */
+  beat(): { t: number; id: string; note: string } | null;
   /** The stage's first frame input: the chapter's shot, an empty scene until the first update. */
   input: Omit<FrameInput, "timeSec" | "viewport">;
   update: (input: FrameInput) => void;
@@ -73,6 +75,10 @@ export function chapterScene(
   return {
     frame,
     input,
+    beat() {
+      const beat = tl && timelineFor ? timelineFor.loop.beats[tl.beat] : undefined;
+      return beat && tl ? { t: tl.t, id: beat.id, note: beat.note } : null;
+    },
     update(stageInput) {
       const { def, ui, run, loopTime } = state();
       // The builder needs its props; until they arrive the previous scene stays up.

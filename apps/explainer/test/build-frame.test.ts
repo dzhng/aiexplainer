@@ -1,10 +1,11 @@
-import { expect, test } from "bun:test";
+import { describe, expect, test } from "bun:test";
 import { countsModel, loadModel, nextWords } from "@repo/llm";
 import { parseGlb, type SceneDesc } from "@repo/renderer";
 import path from "node:path";
 import { autocomplete } from "../src/chapters/data/autocomplete.ts";
 import { createTimelineState, evalTimeline } from "../src/chapters/timeline.ts";
 import { buildFrame, createSceneFrame, type SceneUi } from "../src/scene/build-frame.ts";
+import { share } from "../src/scene/builders/autocomplete.ts";
 import { computeRun } from "../src/runtime/scene-run.ts";
 
 const publicDir = path.resolve(import.meta.dirname, "../public");
@@ -53,8 +54,8 @@ test("the scene is the board, ten bars and a card, in stable slots", async () =>
 
 test("at full growth, bar heights are the real nextWords shares of the word on the rail", async () => {
   const run = (await computeRun(autocomplete, null, session, model.split))!;
-  // t = 5: the first loop input is on the rail and its bars have fully risen.
-  const { frame, tl, ui } = frameAt(5);
+  // t = 4: the first loop input is on the rail and its bars have fully risen.
+  const { frame, tl, ui } = frameAt(4);
   expect(tl.channels.bars).toBe(1);
   const input = buildFrame(autocomplete, tl, ui, run, frame);
   const golden = nextWords(model, autocomplete.loop.inputs![0]!, 10);
@@ -84,4 +85,56 @@ test("typed text shows its last word's bars at full height; an unseen word shows
   const hb = heights(buildFrame(autocomplete, blank.tl, blank.ui, unseen, blank.frame).scene);
   expect(Math.max(...hb)).toBeLessThan(0.01);
   expect(blank.frame.tags.text.slice(0, 10).every((t) => t === "")).toBe(true);
+});
+
+describe("chapter 0's loop (slice 11)", () => {
+  const inputs = autocomplete.loop.inputs!;
+  const unseen = inputs.at(-1)!;
+
+  test("its example words are the model's own (O2): each is the last one's top pick", () => {
+    for (let i = 1; i < inputs.length - 1; i++)
+      expect(nextWords(model, inputs[i - 1]!, 1)[0]!.word).toBe(inputs[i]!);
+    expect(inputs.slice(0, 3)).toEqual(["once", "upon", "a"]);
+    expect(model.index.has(unseen)).toBe(false);
+  });
+
+  test("the point lands by 10 s: two picks light up before then", () => {
+    const lit = autocomplete.loop.channels.topFlash!.filter((k) => k.v === 1).map((k) => k.t);
+    expect(lit.filter((t) => t <= 10).length).toBeGreaterThanOrEqual(2);
+    const beat = (id: string) => autocomplete.loop.beats.find((b) => b.id === id)!.t;
+    expect(beat("top-flash")).toBeLessThan(10);
+    expect(beat("next-word")).toBeLessThan(10);
+  });
+
+  test("the failure beat shows the unseen word and no bars; the seam matches", async () => {
+    const run = (await computeRun(autocomplete, null, session, model.split))!;
+    const at = (t: number) => {
+      const { frame, tl, ui } = frameAt(t);
+      const input = buildFrame(autocomplete, tl, ui, run, frame);
+      return { h: heights(input.scene), text: frame.tags.text, card: input.scene.parts.at(-1)! };
+    };
+    const failure = at(17);
+    expect(failure.text[10]).toBe(unseen);
+    expect(Math.max(...failure.h)).toBeLessThan(0.01);
+    expect(failure.text[11]).toContain(unseen);
+    // While "upon" rides onto the card, the bars still show (and light) "once"'s counts.
+    const handoff = at(6);
+    expect(handoff.text[10]).toBe("upon");
+    expect(handoff.text[0]).toStartWith("upon");
+    // The loop's last instant and its first draw the same frame (card off the rail, bars flat).
+    const end = at(autocomplete.loop.durationSec - 1e-6);
+    const start = at(0);
+    expect(end.card.transform[12]).toBeCloseTo(start.card.transform[12]!, 3);
+    expect(Math.max(...end.h, ...start.h)).toBeLessThan(0.01);
+  });
+});
+
+test("shares never round to a false 0% or 100%", () => {
+  expect([share(0.004), share(0.049), share(0.94), share(0.999), share(1)]).toEqual([
+    "<1%",
+    "5%",
+    "94%",
+    ">99%",
+    "100%",
+  ]);
 });
