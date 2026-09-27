@@ -15,7 +15,7 @@ export const SCENE_ANCHORS = {
  * primitive outside the kit; a test holds each builder to its list.
  */
 export const SCENE_KIT: Record<keyof typeof SCENE_ANCHORS, readonly string[]> = {
-  autocomplete: ["mesh", "bars", "block"],
+  autocomplete: ["mesh", "bars", "block", "contactShadow"],
   attention: ["block", "pipes"],
 };
 

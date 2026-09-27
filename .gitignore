@@ -7,3 +7,5 @@ dist/
 throwaway/
 __pycache__/
 .claude/worktrees/
+.vercel/
+.vercel

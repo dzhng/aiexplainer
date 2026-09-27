@@ -5,6 +5,7 @@ import { partWorld } from "../src/camera.ts";
 import { parseGlb } from "../src/gltf.ts";
 import { blockGeometry } from "../src/kit/block.ts";
 import { KIT, KIT_ENTRIES } from "../src/kit/catalog.ts";
+import { shadowGeometry } from "../src/kit/contact-shadow.ts";
 import type { Geometry } from "../src/kit/geometry.ts";
 import { PIPE_SAMPLES, pipeEntries, pipePath } from "../src/kit/pipes.ts";
 import { tubeGeometry } from "../src/kit/tube.ts";
@@ -168,4 +169,36 @@ test("the mesh primitive splits a prop into one part per node, with per-node vie
   expect(byId["board.stand"]!.explode).toEqual([0, 0, -1]);
   expect(byId["board.housing"]!.cutaway).toBe("clip");
   expect(byId["board.rail"]!.cutaway).toBe("keep");
+});
+
+test("contact shadow: faces up, solid at the centre, fading to nothing at the edge", () => {
+  const g = shadowGeometry();
+  expectOutwardWinding(g);
+  const coverage = (x: number, z: number) => {
+    let best = 0;
+    let dist = Infinity;
+    for (let i = 0; i < g.ao!.length; i++) {
+      const d = Math.hypot(g.positions[i * 3]! - x, g.positions[i * 3 + 2]! - z);
+      if (d < dist) [dist, best] = [d, g.ao![i]!];
+    }
+    return best;
+  };
+  expect(coverage(0, 0)).toBe(1);
+  expect(coverage(0.5, 0)).toBe(0);
+  expect(coverage(0.5, 0.5)).toBe(0);
+  expect(coverage(0.3, 0)).toBeGreaterThan(0);
+  expect(coverage(0.3, 0)).toBeLessThan(1);
+});
+
+test("contact shadow sits just above the floor under the subject's footprint, with a soft margin", () => {
+  const built = KIT.contactShadow.build({
+    id: "s",
+    slot: 0,
+    bounds: [-1, 0, -0.4, 1, 2, 0.3],
+    softness: 0.3,
+  });
+  const [x0, y0, z0, x1, , z1] = built.bounds;
+  expect([x0, z0, x1, z1].map((v) => Math.round(v * 100) / 100)).toEqual([-1.3, -0.7, 1.3, 0.6]);
+  expect(y0).toBeGreaterThan(0);
+  expect(y0).toBeLessThan(0.01);
 });

@@ -53,6 +53,7 @@ export const Material = d
     emissive: d.vec3f,
     metallic: d.f32,
     roughness: d.f32,
+    specular: d.f32,
   })
   .$name("Material");
 export const MATERIAL_BYTES = 48;
@@ -190,7 +191,7 @@ export function packMaterial(out: Float32Array, index: number, m: MaterialLook):
   packVec3(out, base + 4, m.emissive);
   out[base + 7] = m.metallic;
   out[base + 8] = m.roughness;
-  out[base + 9] = 0;
+  out[base + 9] = m.specular ?? 1;
   out[base + 10] = 0;
   out[base + 11] = 0;
 }

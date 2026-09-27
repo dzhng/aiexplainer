@@ -48,9 +48,35 @@ export function stepClock(fps: number): StepClock {
   };
 }
 
-/** `?clock=held&t=12.5` holds time; anything else runs in real time. */
+/**
+ * Whether the harness drives time (`?clock=held` or `?clock=step`): decorative motion on the
+ * wall clock is skipped then, so captures are deterministic.
+ */
+export function clockIsDriven(search: string): boolean {
+  const clock = new URLSearchParams(search).get("clock");
+  return clock === "held" || clock === "step";
+}
+
+/**
+ * Whether chapters open with the arrival move (D42): in real time yes; under a driven clock
+ * (held captures, the step recorder) only with `?arrival=1`, so hero shots stay deterministic.
+ */
+export function arrivalFromSearch(search: string): boolean {
+  return new URLSearchParams(search).get("arrival") === "1" || !clockIsDriven(search);
+}
+
+/**
+ * `?clock=held&t=12.5` holds time; `?clock=step&fps=30` advances one frame per probe `step()`
+ * (the recorder); anything else runs in real time.
+ */
 export function clockFromSearch(search: string): Clock {
   const params = new URLSearchParams(search);
-  if (params.get("clock") !== "held") return rafClock();
-  return heldClock(Number(params.get("t") ?? 0));
+  switch (params.get("clock")) {
+    case "held":
+      return heldClock(Number(params.get("t") ?? 0));
+    case "step":
+      return stepClock(Number(params.get("fps") ?? 30));
+    default:
+      return rafClock();
+  }
 }

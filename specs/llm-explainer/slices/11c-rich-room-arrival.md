@@ -69,3 +69,52 @@ to, t)` with ease-in-out. `shots.json` gains `room-wide`.
 
 Prop choice and placement within the list above, the skyline design, shadow softness, and
 the move's duration (2–3 s) and ease.
+
+## Record (2026-09-27)
+
+- **Room** (`lab_room.py`, ~31k triangles; the budget test is now ≤ 250k):
+  - New props: an equipment rack with green indicator LEDs; a desk against the back wall
+    with two dim monitors; two stools; a whiteboard with marker lines; two plants; crates by
+    the rack; a coiled cable with a floor run; a cable tray.
+  - Skyline: three rows of blocks at 40, 75 and 120 m, the far rows hazier, with lit windows
+    on a floor grid and a horizon glow. The blocks' bases sit far below the sill, so nothing
+    floats.
+  - Screens and LEDs are glow-only practicals (`look.room.practicals.screen` and
+    `indicator`); the screens also cast into the cool bake.
+- **Contact shadow:** `kit/contact-shadow.ts` is a kit primitive (`contactShadow`).
+  - It is a new `shadow` part kind: a unit footprint whose per-vertex coverage fades
+    (superellipse) to its edge.
+  - It is sized from the subject's bounds plus a soft margin, and drawn in the translucent
+    phase with the `shadow` preset (opacity 0.7).
+  - Materials gain `specular`; the shadow's is 0, so it only darkens.
+  - Chapter 0's scene now builds on it, and `SCENE_KIT` lists it.
+- **Arrival (D42):**
+  - `runtime/arrival.ts` holds the pure `arrivalPose` (smoothstep, shortest yaw, distance
+    eased in log space) and an `Arrival` object. `stage.arrive(pose, from, 2.5)` drives it.
+  - Any orbit press or wheel cancels the move.
+  - The loop clock is paused while the move runs, so the loop's 0 is the landing.
+  - `arrivalFromSearch`: a held clock skips the move unless `?arrival=1`.
+  - `shots.json` gains `room-wide`, and the `room` lab fixture uses it.
+- **Shots:** all in `throwaway/shots/11c/`.
+  - Room: `room-before.png` → `room-after.png` (side by side in `room-pair.png`), plus
+    `vs-airsup.png`.
+  - The arrival filmstrip: `arrival-strip.png` (0.25 s steps).
+  - Feet: `feet-pair.png` (11b hero on top, 11c hero below).
+  - Also `env-subject.png`, `hero-after.png`, and the crops `crop-*.png`.
+- **Checks:**
+  - Subject-first: subject mean 53.7 / p99.9 224.4 against room 34.6 / 88.2. It passes.
+  - GPU 2.3 ms (≤ 8 ms). The registry baseline holds.
+  - compare-screenshots, room before → after: edge energy ×1.12, same luminance.
+- **Critique:** one unprimed round, then fixes.
+  - Fixed: floating skyline blocks (bases lowered), and a slow start in the move
+    (smootherstep → smoothstep).
+  - Shadow: tightened, but it is still a blob, not per-foot contact.
+  - Accepted and still open:
+    - the shelf props are plain boxes;
+    - the floor pool reads as a stage spotlight;
+    - there is warm pendant spill low on the right wall;
+    - the ceiling tubes have no hangers;
+    - the "once" card tag is hidden for about 1 s mid-move (the card is off-frame until the
+      loop starts at landing).
+- **Human checkpoint (implementer's call): accepted.** The before/after room shots and the
+  arrival strip are listed above.
