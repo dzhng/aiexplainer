@@ -362,3 +362,32 @@ standalone. Entries are appended per pass and consolidated when the spec closes.
   desktop Chrome or Edge"). Verdict: sound.
 - **The Vercel project was created via the CLI plus the REST API**, because the CLI has no
   root-directory flag. Verdict: sound.
+
+## Slice 19 (chapter 1)
+
+- **The tokenizer is a chapter "model" (`model: "tokenizer"`, a `LoadedTokenizer` as a
+  `ModelSource`),** so stats, the HUD text box and the run treat it like any model.
+  Verdict: sound.
+- **`computeRun` takes `{ model, session }` and switches on the scene.** Verdict: sound.
+- **Brick colour encodes merge order:** pale = a single byte, yellow = id < 1024, coral =
+  later merges. A test proves ids follow merge order. Verdict: sound.
+- **`SceneDesc.layout` was added: a builder bumps it, and the stage re-tests label occlusion.**
+  Why: moving parts left stale occluders (the slice-10 caveat). Verdict: sound; it closes that
+  provisional entry.
+- **Identical tubes share one geometry (a content-keyed cache), so brick studs instance.**
+  Verdict: sound.
+- **The app hands the HUD only the model that matches the current chapter.** Why: a page error
+  on ←/→ otherwise. Verdict: sound fix.
+- **A new `ARITH.vocab` entry supplies Llama-3-8B's 128,256.** Verdict: sound.
+
+## GitHub and Vercel Git link (human request, 2026-09-27)
+
+- **Public repo `github.com/dzhng/aiexplainer`; the working branch `llm-explainer` is the GitHub
+  default branch.** The human asked for a public repo linked to the Vercel project. Verdict:
+  sound. Note: the 5 airsup reference frames in `specs/llm-explainer/assets/reference/` are
+  public with it (small design references, credited to their source); remove them if unwanted.
+- **Vercel's production branch is `main`, created at the bootstrap commit, which has no app, so
+  its builds fail and nothing ships.** Every push to `llm-explainer` (and other branches) builds
+  a protected preview. Releasing to production is the deliberate act of merging into `main`,
+  which is the human's call (O5, slice 36). Why: linking defaulted production to
+  `llm-explainer`, which would have made every push a production deploy. Verdict: sound.
