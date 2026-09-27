@@ -43,6 +43,7 @@ export function testLook(): LookConfig {
         emissive: [0, 0, 0],
       },
     },
+    cutaway: { plane: { normal: [0, 0, 1], offset: 0 }, cap: [0.8, 0.3, 0.1] },
     tonemap: { exposure: 1, saturation: 1 },
     bloom: { threshold: 1, knee: 0.5, intensity: 0.1, radius: 1 },
   };

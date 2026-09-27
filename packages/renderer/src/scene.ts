@@ -5,7 +5,7 @@
  */
 import { mat3, mat4, type Mat3, type Mat4 } from "math";
 import { box3, type Box3 } from "math/shapes";
-import { partWorld } from "./camera.ts";
+import { partCut, partWorld } from "./camera.ts";
 import type { FrameInput, LookConfig, MeshPart, Part, SceneDesc } from "./frame-input.ts";
 import type { MeshAsset, MeshNode } from "./gltf.ts";
 import { blockGeometry } from "./kit/block.ts";
@@ -211,6 +211,7 @@ export function packInstances(
     const part = compiled.instanceParts[i]!;
     partWorld(part, view, model);
     mat3.normalFromMat4(normalMatrix, model);
-    packInstance(f32, u32, i, model, normalMatrix, compiled.materialIndex[i]!, part.slot);
+    const material = compiled.materialIndex[i]!;
+    packInstance(f32, u32, i, model, normalMatrix, material, part.slot, partCut(part, view));
   }
 }

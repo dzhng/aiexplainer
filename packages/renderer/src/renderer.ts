@@ -294,11 +294,22 @@ export async function createRenderer(
       const layers = input.debug?.layers ?? ~0;
       const bloomOn = input.debug?.bloom !== false;
       const emissive = layers & Layer.emissive ? 1 : 0;
-      packFrame(frameData, camera, input.timeSec, t.width, t.height, emissive, bloomOn ? 1 : 0);
+      const cut = input.view.cut ?? look.look.cutaway.plane;
+      packFrame(
+        frameData,
+        camera,
+        input.timeSec,
+        t.width,
+        t.height,
+        emissive,
+        bloomOn ? 1 : 0,
+        cut,
+      );
       device.queue.writeBuffer(gpuFrameUniform, 0, frameData);
 
       const swapchain = context.getCurrentTexture().createView();
-      encodeFrame(device, swapchain, pipelines, t, s, look, bloomOn, receipt, timer);
+      const cutting = input.view.mode === "cutaway" && input.view.t > 0;
+      encodeFrame(device, swapchain, pipelines, t, s, look, bloomOn, cutting, receipt, timer);
       receipt.gpuMs = timer?.lastMs ?? null;
       registry.stats(receipt.registry);
       return receipt;

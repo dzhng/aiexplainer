@@ -9,6 +9,7 @@ import { mat4, vec3, type Mat4, type Vec3 } from "math";
 import { box3, raycast3, type Box3 } from "math/shapes";
 import {
   createProjected,
+  partCut,
   partWorld,
   project,
   type CameraMatrices,
@@ -71,6 +72,8 @@ export function sceneOccluders(
   const solid = (material: string) => (look.materials[material]?.opacity ?? 1) >= 1;
   const out: Occluder[] = [];
   for (const part of scene.parts) {
+    // A part the Cutaway view is cutting no longer hides what is behind it.
+    if (partCut(part, view) > 0) continue;
     partWorld(part, view, model);
     if (part.kind !== "mesh" && !solid(part.material)) continue;
     if (part.kind === "block") {

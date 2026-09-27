@@ -32,16 +32,17 @@ WALL = 0.018
 TICKS = 5
 
 # Housing: the panel, a raised bezel, a header plate for the board's title, and tick marks
-# beside every slot so each channel reads as a gauge.
+# beside every slot so each channel reads as a gauge. Each stands 2 mm proud of the panel
+# face, so no back face is coplanar with it (the Cutaway view shows back faces).
 housing_parts = [
     common.box("panel", (PANEL_W, PANEL_D, PANEL_H), (0, 0, PANEL_Z), housing, bevel=0.03, segments=3)
 ]
 for name, size, loc in [
-    ("top", (PANEL_W, 0.04, 0.07), (0, FRONT - 0.02, PANEL_BOTTOM + PANEL_H - 0.035)),
-    ("bottom", (PANEL_W, 0.04, 0.07), (0, FRONT - 0.02, PANEL_BOTTOM + 0.035)),
-    ("left", (0.07, 0.04, PANEL_H), (-PANEL_W / 2 + 0.035, FRONT - 0.02, PANEL_Z)),
-    ("right", (0.07, 0.04, PANEL_H), (PANEL_W / 2 - 0.035, FRONT - 0.02, PANEL_Z)),
-    ("header", (PANEL_W * 0.62, 0.035, 0.2), (0, FRONT - 0.0175, SLOT_BOTTOM + SLOT_H + 0.2)),
+    ("top", (PANEL_W, 0.04, 0.07), (0, FRONT - 0.022, PANEL_BOTTOM + PANEL_H - 0.035)),
+    ("bottom", (PANEL_W, 0.04, 0.07), (0, FRONT - 0.022, PANEL_BOTTOM + 0.035)),
+    ("left", (0.07, 0.04, PANEL_H), (-PANEL_W / 2 + 0.035, FRONT - 0.022, PANEL_Z)),
+    ("right", (0.07, 0.04, PANEL_H), (PANEL_W / 2 - 0.035, FRONT - 0.022, PANEL_Z)),
+    ("header", (PANEL_W * 0.62, 0.035, 0.2), (0, FRONT - 0.0195, SLOT_BOTTOM + SLOT_H + 0.2)),
 ]:
     housing_parts.append(common.box(f"bezel.{name}", size, loc, housing, bevel=0.01))
 for i in range(SLOTS):
@@ -49,7 +50,7 @@ for i in range(SLOTS):
     for k in range(TICKS + 1):
         z = SLOT_BOTTOM + WALL + k * (SLOT_H - WALL) / TICKS
         width = 0.035 if k % TICKS == 0 else 0.022
-        housing_parts.append(common.box(f"tick.{i}.{k}", (width, 0.012, 0.01), (x, FRONT - 0.006, z), housing))
+        housing_parts.append(common.box(f"tick.{i}.{k}", (width, 0.012, 0.01), (x, FRONT - 0.008, z), housing))
 common.join("board.housing", housing_parts)
 
 # Stand: two posts with feet, tied by a low crossbar behind the panel.

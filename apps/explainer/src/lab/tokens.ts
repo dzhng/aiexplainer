@@ -1,7 +1,7 @@
 /**
  * `/lab/tokens?section=emissive`: every palette colour as an emissive swatch at 1×, 4× and
  * 16× through the real renderer and bloom. Columns are tokens, rows are levels (1× at the
- * bottom). Slice 13 completes this page with the other sections.
+ * bottom). `/lab/tokens` frames it as its palette section (`pages/TokensPage.tsx`).
  */
 import type { MaterialLook, Part } from "@repo/renderer";
 import { linear, look as tokens, lookConfig, type PaletteToken } from "../look/look.ts";

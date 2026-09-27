@@ -1,8 +1,10 @@
 /**
- * `/lab/kit/<prop>`: one prop on a turntable. The camera turns 45° per second, so a held
- * clock at t = 0…7 gives the eight review azimuths.
+ * `/lab/kit/<name>`: a Blender prop (`board`, `axis`) or a kit primitive (`block`, `tube`,
+ * `mesh`, `bars`: its `example` build) on a turntable. The camera turns 45° per second, so a
+ * held clock at t = 0…7 gives the eight review azimuths.
  */
-import type { OrbitPose, Part } from "@repo/renderer";
+import { isKitPrimitive, KIT_ENTRIES, type OrbitPose, type Part } from "@repo/renderer";
+import { box3 } from "math/shapes";
 import { lookConfig } from "../look/look.ts";
 import { frameFromParts, loadAsset } from "./fixtures.ts";
 import type { StageScene } from "./pages/StagePage.tsx";
@@ -20,9 +22,34 @@ const PROPS: Record<string, { file: string; camera: OrbitPose }> = {
 
 export const TURNTABLE_RAD_PER_SEC = Math.PI / 4;
 
+const turntable: StageScene["pose"] = (pose, t) => {
+  pose.yaw += t * TURNTABLE_RAD_PER_SEC;
+};
+
+/** A primitive's example build (the `mesh` example is the board prop), framed on its bounds. */
+async function primitiveScene(name: string): Promise<StageScene> {
+  const board = await loadAsset(PROPS.board!.file);
+  const primitive = KIT_ENTRIES.find(([id]) => id === name)![1];
+  const built = primitive.build(primitive.example({ board }));
+  const size = Math.max(...box3.size([0, 0, 0], built.bounds));
+  const camera: OrbitPose = {
+    target: box3.center([0, 0, 0], built.bounds),
+    yaw: 0.5,
+    pitch: 0.25,
+    distance: 1.6 + size * 1.8,
+    fovY: 0.75,
+  };
+  const input = frameFromParts(camera, built.parts, undefined, { board }, built.anchors);
+  return { look: lookConfig(), input, pose: turntable };
+}
+
 export async function kitScene(name: string): Promise<StageScene> {
+  if (isKitPrimitive(name)) return primitiveScene(name);
   const prop = PROPS[name];
-  if (!prop) throw new Error(`unknown kit prop "${name}"; have ${Object.keys(PROPS).join(", ")}`);
+  if (!prop) {
+    const names = [...Object.keys(PROPS), ...KIT_ENTRIES.map(([id]) => id)];
+    throw new Error(`unknown kit entry "${name}"; have ${names.join(", ")}`);
+  }
   const asset = await loadAsset(prop.file);
   const part: Part = {
     kind: "mesh",
@@ -30,8 +57,6 @@ export async function kitScene(name: string): Promise<StageScene> {
     slot: 0,
     asset: name,
     transform: [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1],
-    explode: [0, 0, 0],
-    cutaway: "keep",
   };
   return {
     // The axis probe's markers use its own glTF material names.
@@ -41,8 +66,6 @@ export async function kitScene(name: string): Promise<StageScene> {
       axisZ: { color: "#3e63dd", opacity: 1 },
     }),
     input: frameFromParts(structuredClone(prop.camera), [part], undefined, { [name]: asset }),
-    pose: (pose, t) => {
-      pose.yaw += t * TURNTABLE_RAD_PER_SEC;
-    },
+    pose: turntable,
   };
 }

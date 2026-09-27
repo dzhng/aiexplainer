@@ -3,7 +3,67 @@
 exports[`the scene is the board, ten bars and a card, in stable slots 1`] = `
 [
   [
-    "board",
+    "board.housing",
+    "mesh",
+    0,
+  ],
+  [
+    "board.rail",
+    "mesh",
+    0,
+  ],
+  [
+    "board.slot.0",
+    "mesh",
+    0,
+  ],
+  [
+    "board.slot.1",
+    "mesh",
+    0,
+  ],
+  [
+    "board.slot.2",
+    "mesh",
+    0,
+  ],
+  [
+    "board.slot.3",
+    "mesh",
+    0,
+  ],
+  [
+    "board.slot.4",
+    "mesh",
+    0,
+  ],
+  [
+    "board.slot.5",
+    "mesh",
+    0,
+  ],
+  [
+    "board.slot.6",
+    "mesh",
+    0,
+  ],
+  [
+    "board.slot.7",
+    "mesh",
+    0,
+  ],
+  [
+    "board.slot.8",
+    "mesh",
+    0,
+  ],
+  [
+    "board.slot.9",
+    "mesh",
+    0,
+  ],
+  [
+    "board.stand",
     "mesh",
     0,
   ],
