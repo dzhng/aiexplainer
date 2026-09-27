@@ -6,8 +6,12 @@ import { z } from "zod";
 
 export const FORMAT_VERSION = 1;
 
+/** The models the explainer ships (apps/explainer/public/models/<id>). */
 export const ModelId = z.enum(["counts"]);
 export type ModelId = z.infer<typeof ModelId>;
+
+/** Random-init parity fixtures (training/fixtures/parity/<name>); never shipped. */
+export const FixtureId = z.string().regex(/^fixture-[a-z0-9-]+$/);
 
 export const Sha256 = z.string().regex(/^[0-9a-f]{64}$/, "lowercase hex sha256");
 const Count = z.int().nonnegative();
@@ -62,16 +66,70 @@ export const ProbeResult = z.strictObject({
 });
 export type ProbeResult = z.infer<typeof ProbeResult>;
 
-export const ModelManifest = z.strictObject({
+export const MlpArch = z.union([
+  z.literal("none"),
+  /** `w2(silu(w1 x) * w3 x)`. */
+  z.strictObject({ kind: z.literal("swiglu"), hidden: z.int().positive() }),
+  /** Each token goes to its `topK` highest-probability experts, weighted by their renormalised probabilities. */
+  z.strictObject({
+    kind: z.literal("moe"),
+    experts: z.int().positive(),
+    topK: z.int().positive(),
+    hidden: z.int().positive(),
+  }),
+]);
+export type MlpArch = z.infer<typeof MlpArch>;
+
+/**
+ * The flags that cover every transformer in the ladder. training/model.py implements
+ * the same flags; see forward.ts for the exact computation and tensor names.
+ */
+export const TransformerArch = z.strictObject({
+  dModel: z.int().positive(),
+  nLayers: Count,
+  nHeads: z.int().positive(),
+  /** Key/value heads; query head `h` reads kv head `floor(h / (nHeads / nKvHeads))`. */
+  nKvHeads: z.int().positive(),
+  ctx: z.int().positive(),
+  vocab: z.int().positive(),
+  attention: z.enum(["none", "causal"]),
+  /** RoPE rotates interleaved pairs `(2i, 2i + 1)` by `pos · ropeTheta^(-2i / headDim)`. */
+  positions: z.enum(["none", "rope"]),
+  ropeTheta: z.number().positive(),
+  mlp: MlpArch,
+  norm: z.enum(["none", "rmsnorm"]),
+  /** RMSNorm: `x / sqrt(mean(x²) + normEps) · gain`. */
+  normEps: z.number().positive(),
+  residual: z.boolean(),
+  /** The unembedding reuses `tok_emb` instead of a separate `lm_head`. */
+  tiedEmbeddings: z.boolean(),
+});
+export type TransformerArch = z.infer<typeof TransformerArch>;
+
+const ManifestBase = {
   formatVersion: z.literal(FORMAT_VERSION),
-  id: ModelId,
-  kind: z.enum(["word-counts", "transformer"]),
-  tokenizer: TokenizerRef,
+  id: z.union([ModelId, FixtureId]),
   weightsFile: z.string().min(1),
   weightsSha256: Sha256,
   tensors: z.array(TensorEntry).min(1),
-  training: TrainingRecord,
-  /** Every model ships with at least one measured probe (D25). */
-  evidence: z.array(ProbeResult).min(1),
-});
+  /** Absent only for random-init parity fixtures, which are never trained. */
+  training: TrainingRecord.optional(),
+  /** Measured probes (D25). Every shipped model has at least one; a test enforces it. */
+  evidence: z.array(ProbeResult),
+};
+
+export const ModelManifest = z.discriminatedUnion("kind", [
+  z.strictObject({
+    ...ManifestBase,
+    kind: z.literal("word-counts"),
+    tokenizer: TokenizerRef.options[0],
+  }),
+  z.strictObject({
+    ...ManifestBase,
+    kind: z.literal("transformer"),
+    /** The file path is relative to the manifest's directory. */
+    tokenizer: TokenizerRef.options[1],
+    arch: TransformerArch,
+  }),
+]);
 export type ModelManifest = z.infer<typeof ModelManifest>;

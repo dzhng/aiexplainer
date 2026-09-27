@@ -11,11 +11,7 @@ const tokenizerUrl = new URL(
 );
 
 // A minimal valid model around `weights`, with tensors laid out back to back unless placed.
-async function manifestFor(
-  weights: ArrayBuffer,
-  layouts: TensorLayout[],
-  tokenizer: ModelManifest["tokenizer"] = { kind: "words", vocabTensor: layouts[0]!.name },
-): Promise<unknown> {
+async function manifestFor(weights: ArrayBuffer, layouts: TensorLayout[]): Promise<unknown> {
   let offset = 0;
   const tensors = layouts.map((layout) => {
     const elements = layout.shape.reduce((a, b) => a * b, 1);
@@ -28,7 +24,7 @@ async function manifestFor(
     formatVersion: 1,
     id: "counts",
     kind: "word-counts",
-    tokenizer,
+    tokenizer: { kind: "words", vocabTensor: layouts[0]!.name },
     weightsFile: "weights.bin",
     weightsSha256: await sha256Hex(weights),
     tensors,
@@ -106,13 +102,10 @@ describe("loadModel", () => {
   });
 
   test("loads the BPE tokenizer a manifest pins, and rejects any other file", async () => {
-    const weights = new Float32Array([1]).buffer;
+    const dir = new URL("../../../training/fixtures/parity/attn/", import.meta.url);
+    const manifest: ModelManifest = await Bun.file(new URL("manifest.json", dir)).json();
+    const weights = await Bun.file(new URL("weights.bin", dir)).arrayBuffer();
     const tokenizerFile = await Bun.file(tokenizerUrl).arrayBuffer();
-    const manifest = await manifestFor(weights, [{ name: "w", dtype: "f32", shape: [1] }], {
-      kind: "bpe",
-      file: "../tokenizer/tokenizer.json",
-      sha256: await sha256Hex(tokenizerFile),
-    });
     const model = await loadModel(manifest, weights, tokenizerFile);
     expect(model.tokenizer?.decode(model.tokenizer.encode("Once upon a time"))).toBe(
       "Once upon a time",

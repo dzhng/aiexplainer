@@ -141,6 +141,11 @@ export function loadTokenizer(json: unknown): Tokenizer {
   };
 }
 
+/** A model reads a story as `<bos>` then its tokens, so a prompt starts the same way. */
+export function promptTokens(tokenizer: Tokenizer, text: string): number[] {
+  return [tokenizer.special.bos, ...tokenizer.encode(text)];
+}
+
 function byteOf(char: string): number {
   const byte = CHAR_TO_BYTE.get(char);
   if (byte === undefined) throw new Error(`"${char}" is not a byte-level character`);

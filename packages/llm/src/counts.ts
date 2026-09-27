@@ -22,7 +22,7 @@ export interface NextWord {
 
 export function countsModel(model: LoadedModel): CountsModel {
   const { manifest } = model;
-  if (manifest.kind !== "word-counts" || manifest.tokenizer.kind !== "words") {
+  if (manifest.kind !== "word-counts") {
     throw new Error(`${manifest.id} is not a word-counts model`);
   }
   const vocabTensor = tensor(model, manifest.tokenizer.vocabTensor, "u32");

@@ -1,0 +1,431 @@
+{
+  "formatVersion": 1,
+  "id": "fixture-moe",
+  "kind": "transformer",
+  "tokenizer": {
+    "kind": "bpe",
+    "file": "../../../../apps/explainer/public/models/tokenizer/tokenizer.json",
+    "sha256": "37c465794d44d16554106eb9d2972c123e05fb76c300bb4bf1cc321fcb363f7b"
+  },
+  "arch": {
+    "dModel": 16,
+    "nLayers": 2,
+    "nHeads": 4,
+    "nKvHeads": 2,
+    "ctx": 32,
+    "vocab": 4096,
+    "attention": "causal",
+    "positions": "rope",
+    "ropeTheta": 10000.0,
+    "mlp": {
+      "kind": "moe",
+      "experts": 4,
+      "topK": 2,
+      "hidden": 16
+    },
+    "norm": "rmsnorm",
+    "normEps": 1e-05,
+    "residual": true,
+    "tiedEmbeddings": true
+  },
+  "weightsFile": "weights.bin",
+  "weightsSha256": "5bbf2d7fcd3da68766162d1ba1fd531ba5ecc5802c0e5e8dfca32537eab3796b",
+  "tensors": [
+    {
+      "name": "tok_emb",
+      "dtype": "f16",
+      "shape": [
+        4096,
+        16
+      ],
+      "byteOffset": 0,
+      "byteLength": 131072
+    },
+    {
+      "name": "layers.0.attn.wq",
+      "dtype": "f16",
+      "shape": [
+        16,
+        16
+      ],
+      "byteOffset": 131072,
+      "byteLength": 512
+    },
+    {
+      "name": "layers.0.attn.wk",
+      "dtype": "f16",
+      "shape": [
+        8,
+        16
+      ],
+      "byteOffset": 131584,
+      "byteLength": 256
+    },
+    {
+      "name": "layers.0.attn.wv",
+      "dtype": "f16",
+      "shape": [
+        8,
+        16
+      ],
+      "byteOffset": 131840,
+      "byteLength": 256
+    },
+    {
+      "name": "layers.0.attn.wo",
+      "dtype": "f16",
+      "shape": [
+        16,
+        16
+      ],
+      "byteOffset": 132096,
+      "byteLength": 512
+    },
+    {
+      "name": "layers.0.attn_norm",
+      "dtype": "f16",
+      "shape": [
+        16
+      ],
+      "byteOffset": 132608,
+      "byteLength": 32
+    },
+    {
+      "name": "layers.0.moe.router",
+      "dtype": "f16",
+      "shape": [
+        4,
+        16
+      ],
+      "byteOffset": 132672,
+      "byteLength": 128
+    },
+    {
+      "name": "layers.0.moe.experts.0.w1",
+      "dtype": "f16",
+      "shape": [
+        16,
+        16
+      ],
+      "byteOffset": 132800,
+      "byteLength": 512
+    },
+    {
+      "name": "layers.0.moe.experts.0.w2",
+      "dtype": "f16",
+      "shape": [
+        16,
+        16
+      ],
+      "byteOffset": 133312,
+      "byteLength": 512
+    },
+    {
+      "name": "layers.0.moe.experts.0.w3",
+      "dtype": "f16",
+      "shape": [
+        16,
+        16
+      ],
+      "byteOffset": 133824,
+      "byteLength": 512
+    },
+    {
+      "name": "layers.0.moe.experts.1.w1",
+      "dtype": "f16",
+      "shape": [
+        16,
+        16
+      ],
+      "byteOffset": 134336,
+      "byteLength": 512
+    },
+    {
+      "name": "layers.0.moe.experts.1.w2",
+      "dtype": "f16",
+      "shape": [
+        16,
+        16
+      ],
+      "byteOffset": 134848,
+      "byteLength": 512
+    },
+    {
+      "name": "layers.0.moe.experts.1.w3",
+      "dtype": "f16",
+      "shape": [
+        16,
+        16
+      ],
+      "byteOffset": 135360,
+      "byteLength": 512
+    },
+    {
+      "name": "layers.0.moe.experts.2.w1",
+      "dtype": "f16",
+      "shape": [
+        16,
+        16
+      ],
+      "byteOffset": 135872,
+      "byteLength": 512
+    },
+    {
+      "name": "layers.0.moe.experts.2.w2",
+      "dtype": "f16",
+      "shape": [
+        16,
+        16
+      ],
+      "byteOffset": 136384,
+      "byteLength": 512
+    },
+    {
+      "name": "layers.0.moe.experts.2.w3",
+      "dtype": "f16",
+      "shape": [
+        16,
+        16
+      ],
+      "byteOffset": 136896,
+      "byteLength": 512
+    },
+    {
+      "name": "layers.0.moe.experts.3.w1",
+      "dtype": "f16",
+      "shape": [
+        16,
+        16
+      ],
+      "byteOffset": 137408,
+      "byteLength": 512
+    },
+    {
+      "name": "layers.0.moe.experts.3.w2",
+      "dtype": "f16",
+      "shape": [
+        16,
+        16
+      ],
+      "byteOffset": 137920,
+      "byteLength": 512
+    },
+    {
+      "name": "layers.0.moe.experts.3.w3",
+      "dtype": "f16",
+      "shape": [
+        16,
+        16
+      ],
+      "byteOffset": 138432,
+      "byteLength": 512
+    },
+    {
+      "name": "layers.0.mlp_norm",
+      "dtype": "f16",
+      "shape": [
+        16
+      ],
+      "byteOffset": 138944,
+      "byteLength": 32
+    },
+    {
+      "name": "layers.1.attn.wq",
+      "dtype": "f16",
+      "shape": [
+        16,
+        16
+      ],
+      "byteOffset": 139008,
+      "byteLength": 512
+    },
+    {
+      "name": "layers.1.attn.wk",
+      "dtype": "f16",
+      "shape": [
+        8,
+        16
+      ],
+      "byteOffset": 139520,
+      "byteLength": 256
+    },
+    {
+      "name": "layers.1.attn.wv",
+      "dtype": "f16",
+      "shape": [
+        8,
+        16
+      ],
+      "byteOffset": 139776,
+      "byteLength": 256
+    },
+    {
+      "name": "layers.1.attn.wo",
+      "dtype": "f16",
+      "shape": [
+        16,
+        16
+      ],
+      "byteOffset": 140032,
+      "byteLength": 512
+    },
+    {
+      "name": "layers.1.attn_norm",
+      "dtype": "f16",
+      "shape": [
+        16
+      ],
+      "byteOffset": 140544,
+      "byteLength": 32
+    },
+    {
+      "name": "layers.1.moe.router",
+      "dtype": "f16",
+      "shape": [
+        4,
+        16
+      ],
+      "byteOffset": 140608,
+      "byteLength": 128
+    },
+    {
+      "name": "layers.1.moe.experts.0.w1",
+      "dtype": "f16",
+      "shape": [
+        16,
+        16
+      ],
+      "byteOffset": 140736,
+      "byteLength": 512
+    },
+    {
+      "name": "layers.1.moe.experts.0.w2",
+      "dtype": "f16",
+      "shape": [
+        16,
+        16
+      ],
+      "byteOffset": 141248,
+      "byteLength": 512
+    },
+    {
+      "name": "layers.1.moe.experts.0.w3",
+      "dtype": "f16",
+      "shape": [
+        16,
+        16
+      ],
+      "byteOffset": 141760,
+      "byteLength": 512
+    },
+    {
+      "name": "layers.1.moe.experts.1.w1",
+      "dtype": "f16",
+      "shape": [
+        16,
+        16
+      ],
+      "byteOffset": 142272,
+      "byteLength": 512
+    },
+    {
+      "name": "layers.1.moe.experts.1.w2",
+      "dtype": "f16",
+      "shape": [
+        16,
+        16
+      ],
+      "byteOffset": 142784,
+      "byteLength": 512
+    },
+    {
+      "name": "layers.1.moe.experts.1.w3",
+      "dtype": "f16",
+      "shape": [
+        16,
+        16
+      ],
+      "byteOffset": 143296,
+      "byteLength": 512
+    },
+    {
+      "name": "layers.1.moe.experts.2.w1",
+      "dtype": "f16",
+      "shape": [
+        16,
+        16
+      ],
+      "byteOffset": 143808,
+      "byteLength": 512
+    },
+    {
+      "name": "layers.1.moe.experts.2.w2",
+      "dtype": "f16",
+      "shape": [
+        16,
+        16
+      ],
+      "byteOffset": 144320,
+      "byteLength": 512
+    },
+    {
+      "name": "layers.1.moe.experts.2.w3",
+      "dtype": "f16",
+      "shape": [
+        16,
+        16
+      ],
+      "byteOffset": 144832,
+      "byteLength": 512
+    },
+    {
+      "name": "layers.1.moe.experts.3.w1",
+      "dtype": "f16",
+      "shape": [
+        16,
+        16
+      ],
+      "byteOffset": 145344,
+      "byteLength": 512
+    },
+    {
+      "name": "layers.1.moe.experts.3.w2",
+      "dtype": "f16",
+      "shape": [
+        16,
+        16
+      ],
+      "byteOffset": 145856,
+      "byteLength": 512
+    },
+    {
+      "name": "layers.1.moe.experts.3.w3",
+      "dtype": "f16",
+      "shape": [
+        16,
+        16
+      ],
+      "byteOffset": 146368,
+      "byteLength": 512
+    },
+    {
+      "name": "layers.1.mlp_norm",
+      "dtype": "f16",
+      "shape": [
+        16
+      ],
+      "byteOffset": 146880,
+      "byteLength": 32
+    },
+    {
+      "name": "norm",
+      "dtype": "f16",
+      "shape": [
+        16
+      ],
+      "byteOffset": 146944,
+      "byteLength": 32
+    }
+  ],
+  "evidence": []
+}

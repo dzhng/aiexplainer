@@ -1,0 +1,229 @@
+{
+  "formatVersion": 1,
+  "id": "fixture-residual",
+  "kind": "transformer",
+  "tokenizer": {
+    "kind": "bpe",
+    "file": "../../../../apps/explainer/public/models/tokenizer/tokenizer.json",
+    "sha256": "37c465794d44d16554106eb9d2972c123e05fb76c300bb4bf1cc321fcb363f7b"
+  },
+  "arch": {
+    "dModel": 16,
+    "nLayers": 2,
+    "nHeads": 2,
+    "nKvHeads": 2,
+    "ctx": 32,
+    "vocab": 4096,
+    "attention": "causal",
+    "positions": "rope",
+    "ropeTheta": 10000.0,
+    "mlp": {
+      "kind": "swiglu",
+      "hidden": 32
+    },
+    "norm": "rmsnorm",
+    "normEps": 1e-05,
+    "residual": true,
+    "tiedEmbeddings": true
+  },
+  "weightsFile": "weights.bin",
+  "weightsSha256": "45634c54e895112f1f9b1642cc457dfb55d53b03f43ced0f8640ee29f57ae04e",
+  "tensors": [
+    {
+      "name": "tok_emb",
+      "dtype": "f16",
+      "shape": [
+        4096,
+        16
+      ],
+      "byteOffset": 0,
+      "byteLength": 131072
+    },
+    {
+      "name": "layers.0.attn.wq",
+      "dtype": "f16",
+      "shape": [
+        16,
+        16
+      ],
+      "byteOffset": 131072,
+      "byteLength": 512
+    },
+    {
+      "name": "layers.0.attn.wk",
+      "dtype": "f16",
+      "shape": [
+        16,
+        16
+      ],
+      "byteOffset": 131584,
+      "byteLength": 512
+    },
+    {
+      "name": "layers.0.attn.wv",
+      "dtype": "f16",
+      "shape": [
+        16,
+        16
+      ],
+      "byteOffset": 132096,
+      "byteLength": 512
+    },
+    {
+      "name": "layers.0.attn.wo",
+      "dtype": "f16",
+      "shape": [
+        16,
+        16
+      ],
+      "byteOffset": 132608,
+      "byteLength": 512
+    },
+    {
+      "name": "layers.0.attn_norm",
+      "dtype": "f16",
+      "shape": [
+        16
+      ],
+      "byteOffset": 133120,
+      "byteLength": 32
+    },
+    {
+      "name": "layers.0.mlp.w1",
+      "dtype": "f16",
+      "shape": [
+        32,
+        16
+      ],
+      "byteOffset": 133184,
+      "byteLength": 1024
+    },
+    {
+      "name": "layers.0.mlp.w2",
+      "dtype": "f16",
+      "shape": [
+        16,
+        32
+      ],
+      "byteOffset": 134208,
+      "byteLength": 1024
+    },
+    {
+      "name": "layers.0.mlp.w3",
+      "dtype": "f16",
+      "shape": [
+        32,
+        16
+      ],
+      "byteOffset": 135232,
+      "byteLength": 1024
+    },
+    {
+      "name": "layers.0.mlp_norm",
+      "dtype": "f16",
+      "shape": [
+        16
+      ],
+      "byteOffset": 136256,
+      "byteLength": 32
+    },
+    {
+      "name": "layers.1.attn.wq",
+      "dtype": "f16",
+      "shape": [
+        16,
+        16
+      ],
+      "byteOffset": 136320,
+      "byteLength": 512
+    },
+    {
+      "name": "layers.1.attn.wk",
+      "dtype": "f16",
+      "shape": [
+        16,
+        16
+      ],
+      "byteOffset": 136832,
+      "byteLength": 512
+    },
+    {
+      "name": "layers.1.attn.wv",
+      "dtype": "f16",
+      "shape": [
+        16,
+        16
+      ],
+      "byteOffset": 137344,
+      "byteLength": 512
+    },
+    {
+      "name": "layers.1.attn.wo",
+      "dtype": "f16",
+      "shape": [
+        16,
+        16
+      ],
+      "byteOffset": 137856,
+      "byteLength": 512
+    },
+    {
+      "name": "layers.1.attn_norm",
+      "dtype": "f16",
+      "shape": [
+        16
+      ],
+      "byteOffset": 138368,
+      "byteLength": 32
+    },
+    {
+      "name": "layers.1.mlp.w1",
+      "dtype": "f16",
+      "shape": [
+        32,
+        16
+      ],
+      "byteOffset": 138432,
+      "byteLength": 1024
+    },
+    {
+      "name": "layers.1.mlp.w2",
+      "dtype": "f16",
+      "shape": [
+        16,
+        32
+      ],
+      "byteOffset": 139456,
+      "byteLength": 1024
+    },
+    {
+      "name": "layers.1.mlp.w3",
+      "dtype": "f16",
+      "shape": [
+        32,
+        16
+      ],
+      "byteOffset": 140480,
+      "byteLength": 1024
+    },
+    {
+      "name": "layers.1.mlp_norm",
+      "dtype": "f16",
+      "shape": [
+        16
+      ],
+      "byteOffset": 141504,
+      "byteLength": 32
+    },
+    {
+      "name": "norm",
+      "dtype": "f16",
+      "shape": [
+        16
+      ],
+      "byteOffset": 141568,
+      "byteLength": 32
+    }
+  ],
+  "evidence": []
+}
