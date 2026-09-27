@@ -67,3 +67,43 @@ standalone. Entries are appended per pass and consolidated when the spec closes.
   Verdict: sound.
 - **The scale-label prominence shot moved to slice 04,** because the HUD chip doesn't exist
   until then. Verdict: sound.
+
+## Slice 02
+
+- **`loadModel` is async.** Why: browsers only offer sha256 through `crypto.subtle`, which is
+  async. Verdict: sound.
+- **Counts model size: V = 8192 words × K = 20 successors (1.84 MB).** Why: 99.9% of held-out
+  words are in the vocabulary and 71.9% of held-out next words are in the table; bigger
+  tables gain little. Verdict: sound, measured.
+- **Chapter 0's word splitter is the regex `[a-z]+(?:'[a-z]+)*|[.!?]` after lowercasing.**
+  Commas and quotes are dropped. Verdict: provisional. The regex lives only in
+  `training/counts.py`; slice 10 must move it into the manifest (one owner) before
+  TypeScript splits typed prompts.
+- **`p` in `nextWords` is the share among the 20 kept successors, not the true corpus
+  share.** Why: the contract requires probabilities that sum to 1. Verdict: sound, but
+  chapter 0 copy must say "among the words it kept track of".
+- **The word vocabulary is stored as a zero-padded u32 code-point tensor.** Why: it keeps one
+  `vocabTensor` within the contract's dtypes. Verdict: sound.
+- **Tensors are 64-byte aligned and little-endian.** Verdict: sound.
+- **The `q8_0` dtype is deferred to slice 17, which defines its byte layout.** Verdict: sound.
+- **Generated JSON (models, schemas, fixtures) is excluded from the formatter.** Why:
+  reformatting `tokenizer.json` would change its frozen hash. Verdict: sound.
+- **The chapter-0 probe prompt is the single word "upon" (p(a) = 0.999), not "once upon
+  a".** Why: the counts model reads one word. Verdict: sound; slice 02's example was wrong.
+
+## Slice 14
+
+- **Orchestrator override: the vocabulary is frozen at 4096, not 2048.** Why: chapters
+  4–8 draw per-token pipes and clocks, so tokens must mostly be whole words. At 4096,
+  99.3% of the 2000 most common words are one piece; at 2048 it is 48.5%. The slice's
+  90% rule was too weak to decide anything, and llama2.c also used 4096. Verdict: sound.
+  The rule in slice 14 is rewritten.
+- **Byte-level BPE is trained once at 4096 and truncated for the size sweep.** Truncating
+  equals training at the smaller size (tested). Verdict: sound.
+- **Chapter-1 probes live in a separate `evidence.json` with its own schema.** Why:
+  `tokenizer.json` has no manifest, and adding evidence to it would change its frozen hash.
+  Verdict: sound.
+- **`encode` never turns literal "<bos>"/"<eos>" text into special tokens.** Model code adds
+  specials by id. Verdict: sound.
+- **`rng.ts` (mulberry32) arrived early, as the single owner of seeded randomness, because
+  a property test needed it.** Verdict: sound; slice 15 builds on it.

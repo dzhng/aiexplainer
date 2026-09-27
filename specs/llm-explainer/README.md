@@ -15,15 +15,15 @@ and supersedes the map's open-items list, kickoff prompt and tweakable plan.
 
 ## Next Agent Prompt
 
-**Status (2026-09-27):** slice 01 is done. The workspaces, the uv training
-project, the clock, and the real-GPU harness (`bun apps/explainer/scripts/verify.ts
---route <path>`) exist. The harness passes on hardware Metal and fails on the
-headless shell (negative control).
+**Status (2026-09-27):** slices 01, 02, 03, 14 and 18 are merged into
+`llm-explainer`. Lanes in flight:
 
-**Next pickup:** these can run in parallel:
+- renderer, slices 05–09;
+- HUD, slice 04;
+- model lab: the tokenizer is being refrozen at 4096 vocab, then slices 15–17.
 
-- [02 manifest + counts model](slices/02-manifest-and-counts-model.md), then 03 → 04 (data and HUD lane);
-- [05 renderer foundation](slices/05-renderer-foundation.md), then 06 → 09 (renderer lane).
+**Next pickup:** integrate the lanes as they land, then 10 → 11 → 12 (chapter-0
+compose, pacing, fallback), which need 04 and 09.
 
 You are implementing this spec with [implement-spec](../../.agents/skills/implement-spec/SKILL.md).
 Work the slices in the order of the ladder below. Each slice file is a contract:
@@ -54,9 +54,9 @@ the checklist below, and any new blockers.
 
 ### Global checklist
 
-- [ ] M1 — Chapter 0 through every layer (D14): slices ✅[01](slices/01-scaffold-harness.md) · [02](slices/02-manifest-and-counts-model.md) · [03](slices/03-chapter-contract.md) · [04](slices/04-hud-shell.md) · [05](slices/05-renderer-foundation.md) · [06](slices/06-gltf-pipeline.md) · [07](slices/07-room-lighting.md) · [08](slices/08-bloom.md) · [09](slices/09-labels-occlusion.md) · [10](slices/10-ch0-compose-framing.md) · [11](slices/11-ch0-loop-pacing.md) · [12](slices/12-fallback-share-deploy.md)
+- [ ] M1 — Chapter 0 through every layer (D14): slices ✅[01](slices/01-scaffold-harness.md) · ✅[02](slices/02-manifest-and-counts-model.md) · ✅[03](slices/03-chapter-contract.md) · [04](slices/04-hud-shell.md) · [05](slices/05-renderer-foundation.md) · [06](slices/06-gltf-pipeline.md) · [07](slices/07-room-lighting.md) · [08](slices/08-bloom.md) · [09](slices/09-labels-occlusion.md) · [10](slices/10-ch0-compose-framing.md) · [11](slices/11-ch0-loop-pacing.md) · [12](slices/12-fallback-share-deploy.md)
 - [ ] M2 — Vocabulary lock: [13](slices/13-vocabulary-lock.md)
-- [ ] M3 — Model lab: [14](slices/14-tokenizer.md) · [15](slices/15-transformer-core.md) · [16](slices/16-model-lab-early.md) · [17](slices/17-model-lab-late.md) · [18](slices/18-production-arithmetic.md)
+- [ ] M3 — Model lab: ✅[14](slices/14-tokenizer.md) · [15](slices/15-transformer-core.md) · [16](slices/16-model-lab-early.md) · [17](slices/17-model-lab-late.md) · ✅[18](slices/18-production-arithmetic.md)
 - [ ] M4 — Chapters: [19](slices/19-ch-tokenizer.md) · [20](slices/20-ch-embeddings.md) · [21](slices/21-ch-sampling.md) · [22](slices/22-ch-attention-width.md) · [23](slices/23-ch-attention-sealed.md) · [24](slices/24-ch-attention-flow.md) · [25](slices/25-ch-positions.md) · [26](slices/26-ch-mlp.md) · [27](slices/27-ch-residual.md) · [28](slices/28-ch-stack.md) · [29](slices/29-ch-generation.md) · [30](slices/30-ch-kv-cache.md) · [31](slices/31-ch-batching.md) · [32](slices/32-ch-quantization.md) · [33](slices/33-ch-speculative.md) · [34](slices/34-ch-experts.md) · [35](slices/35-ch-finished.md)
 - [ ] M5 — Release candidate: [36](slices/36-release.md)
 
