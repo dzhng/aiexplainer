@@ -37,7 +37,8 @@ export function formatStat(value: number, format: StatFormat): string {
     case "s":
       return value < 1 ? `${sig3(value * 1000)} ms` : `${sig3(value)} s`;
     case "pct":
-      return `${value >= 0.1 ? grouped(value * 100) : sig3(value * 100)}%`;
+      // Three figures here too, so 0.9991 reads "99.9%" and never rounds up to a certainty.
+      return `${sig3(value * 100)}%`;
     case "x":
       return `${sig3(value)}×`;
   }

@@ -4,6 +4,10 @@
  * a fallback adapter, a page error, or any console warning/error.
  *
  *   bun scripts/verify.ts --route /lab/adapter [--t 12.5] [--out name] [--base http://…]
+ *   bun scripts/verify.ts --route '/#0' --out hud --press '?' --crop panel:tl,panel:help
+ *
+ * `--press` sends keys (comma-separated) once the page is ready. `--crop` names crops from the
+ * probe's `crops()`; each is saved as `<out>-<crop>.png`, padded by `--pad` px.
  *   bun scripts/verify.ts --route /lab/adapter --browser shell   # negative control: expect failure
  */
 import { mkdir } from "node:fs/promises";
@@ -11,6 +15,7 @@ import path from "node:path";
 import { parseArgs } from "node:util";
 import { chromium, type Browser } from "playwright";
 import { createServer, type ViteDevServer } from "vite";
+import type { CropRect } from "../src/lab/probe.ts";
 
 const appRoot = path.resolve(import.meta.dirname, "..");
 const repoRoot = path.resolve(appRoot, "../..");
@@ -25,6 +30,9 @@ const { values: args } = parseArgs({
     browser: { type: "string", default: "chrome" },
     width: { type: "string", default: "1440" },
     height: { type: "string", default: "900" },
+    press: { type: "string" },
+    crop: { type: "string" },
+    pad: { type: "string", default: "12" },
   },
 });
 
@@ -74,22 +82,49 @@ try {
     .catch(() => false);
   if (!installed) throw new Error(`probe never installed\n${failures.join("\n")}`);
   await page.evaluate(() => window.__explainer!.ready);
-  const probe = await page.evaluate(() => ({
-    adapter: window.__explainer!.adapter,
-    errors: window.__explainer!.errors,
-  }));
+  const adapter = await page.evaluate(() => window.__explainer!.adapter);
+  console.log("adapter", JSON.stringify(adapter));
+  if (!adapter) failures.push("no WebGPU adapter");
+  else if (adapter.isFallbackAdapter) failures.push("fallback (software) adapter");
 
-  console.log("adapter", JSON.stringify(probe.adapter));
-  if (!probe.adapter) failures.push("no WebGPU adapter");
-  else if (probe.adapter.isFallbackAdapter) failures.push("fallback (software) adapter");
-  failures.push(...probe.errors.map((e) => `probe: ${e}`));
+  for (const key of args.press?.split(",") ?? []) await page.keyboard.press(key);
+  // Two frames: React commits what the keys changed, then the browser paints it.
+  await page.evaluate(
+    () => new Promise((done) => requestAnimationFrame(() => requestAnimationFrame(done))),
+  );
+  const errors = await page.evaluate(() => window.__explainer!.errors);
+  failures.push(...errors.map((e) => `probe: ${e}`));
 
   if (args.out) {
     const dir = path.join(repoRoot, "throwaway/shots", args.slice);
     await mkdir(dir, { recursive: true });
-    const file = path.join(dir, `${args.out}.png`);
-    await page.screenshot({ path: file });
-    console.log("shot", path.relative(repoRoot, file));
+    const save = async (name: string, clip?: CropRect) => {
+      const file = path.join(dir, `${name}.png`);
+      await page.screenshot({ path: file, clip });
+      console.log("shot", path.relative(repoRoot, file));
+    };
+    const cropIds = args.crop?.split(",") ?? [];
+    if (cropIds.length === 0) await save(args.out);
+    const crops = await page.evaluate(() => window.__explainer!.crops());
+    const pad = Number(args.pad);
+    const viewport = page.viewportSize()!;
+    for (const id of cropIds) {
+      const rect = crops[id];
+      if (!rect) {
+        failures.push(`no crop ${id} (have: ${Object.keys(crops).join(", ") || "none"})`);
+        continue;
+      }
+      const x = Math.max(0, Math.floor(rect.x - pad));
+      const y = Math.max(0, Math.floor(rect.y - pad));
+      const right = Math.min(viewport.width, Math.ceil(rect.x + rect.width + pad));
+      const bottom = Math.min(viewport.height, Math.ceil(rect.y + rect.height + pad));
+      await save(`${args.out}-${id.replace(/\W+/g, "-")}`, {
+        x,
+        y,
+        width: right - x,
+        height: bottom - y,
+      });
+    }
   }
 } finally {
   await browser.close();

@@ -21,7 +21,7 @@
   "type": {
     "ui": "Inter, system-ui, sans-serif",
     "mono": "'JetBrains Mono', ui-monospace, monospace",
-    "sizePx": { "xs": 11, "sm": 12, "md": 14, "lg": 18, "xl": 24 },
+    "sizePx": { "xs": 11, "sm": 12, "md": 14, "lg": 18, "xl": 24, "xxl": 34 },
     "lineHeight": 1.4
   },
   "materials": {
