@@ -12,7 +12,7 @@ export interface ModelMetricEntry {
 export const MODEL_METRICS = {
   "training.tokensSeen": {
     describe: "words or tokens of TinyStories the model read while it was built",
-    read: (model) => model.manifest.training.tokensSeen,
+    read: (model) => trainingRecord(model).tokensSeen,
   },
   vocabSize: {
     describe: "entries in the model's vocabulary",
@@ -46,4 +46,11 @@ function vocabSize(model: LoadedModel): number {
   const vocab = model.tensors.get(ref.vocabTensor);
   if (!vocab?.shape[0]) throw new Error(`${model.manifest.id}: vocab tensor has no rows`);
   return vocab.shape[0];
+}
+
+/** Shipped models always carry a training record; only test fixtures omit it. */
+function trainingRecord(model: LoadedModel): NonNullable<ModelManifest["training"]> {
+  const record = model.manifest.training;
+  if (!record) throw new Error(`model "${model.manifest.id}" has no training record`);
+  return record;
 }

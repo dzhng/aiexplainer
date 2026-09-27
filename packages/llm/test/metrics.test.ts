@@ -11,7 +11,7 @@ async function loadShipped() {
 
 test("model metrics read the shipped counts model's own record and shapes", async () => {
   const model = await loadShipped();
-  expect(modelMetric(model, "training.tokensSeen")).toBe(model.manifest.training.tokensSeen);
+  expect(modelMetric(model, "training.tokensSeen")).toBe(model.manifest.training!.tokensSeen);
   expect(modelMetric(model, "vocabSize")).toBe(model.tensors.get("vocab")!.shape[0]!);
 });
 

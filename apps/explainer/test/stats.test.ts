@@ -23,7 +23,7 @@ test("every written chapter's stats resolve against its shipped model, with a so
 test("chapter 0's chips show the counts model's own numbers", async () => {
   const model = await shipped("counts");
   const [words, vocab, top] = CHAPTERS.autocomplete!.stats;
-  expect(resolveStat(words, model)).toBe(model.manifest.training.tokensSeen);
+  expect(resolveStat(words, model)).toBe(model.manifest.training!.tokensSeen);
   expect(resolveStat(vocab, model)).toBe(model.tensors.get("vocab")!.shape[0]!);
   expect(resolveStat(top, model)).toBe(
     model.manifest.evidence.find((e) => e.probe === "top-successor")!.value,
