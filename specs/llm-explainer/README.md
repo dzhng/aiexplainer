@@ -175,6 +175,9 @@ the human says otherwise.
 - **O2:** every trained model's prompts are measured into its `scenarios.json` (slices 16–17).
 - **O3:** provisionally drafter-64 (α 0.595, expected speedup 1.23). Slice 33 finalises it.
 - **O5** (public domain) stays OPEN until slice 36. It blocks only the public post.
+- **Repo and deploys:** public at https://github.com/dzhng/aiexplainer. Vercel builds a
+  protected preview for every push. Production is `main`, and merging into `main` is the
+  release (the human's call).
 
 ## Single-owner invariants
 
