@@ -47,7 +47,11 @@ export interface ChapterDef {
   labels: LabelDef[];
   loop: Timeline;
   shot: ShotId;
-  help: { sources: SourceRef[] };
+  /**
+   * `notes` say how the scene itself was made where that is not obvious (e.g. a projection
+   * computed offline); the help panel lists them under the chapter's numbers.
+   */
+  help: { sources: SourceRef[]; notes?: string[] };
   /** Loop time captured for the chapter's link-preview image. */
   ogTimeSec: number;
 }

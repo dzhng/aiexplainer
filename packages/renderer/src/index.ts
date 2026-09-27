@@ -33,5 +33,6 @@ export { BAR_MIN_HEIGHT, placeBar, type BarSlot, type BarsParams } from "./kit/b
 export type { BlockParams } from "./kit/block.ts";
 export { BRICK, placeBrick, type BrickParams, type BrickPlacement } from "./kit/brick.ts";
 export type { ContactShadowParams } from "./kit/contact-shadow.ts";
+export { PIN, PIN_PARTS, placePin, type PinFieldParams } from "./kit/pins.ts";
 export type { MeshParams } from "./kit/mesh.ts";
 export type { TubeParams } from "./kit/tube.ts";

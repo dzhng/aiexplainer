@@ -105,6 +105,32 @@
         "roughness": 0.35,
         "opacity": 1
       },
+      "pin": {
+        "color": "#e6e9f5",
+        "emissive": "focus",
+        "metallic": 0.2,
+        "roughness": 0.3,
+        "opacity": 1
+      },
+      "arrow": {
+        "color": "active",
+        "emissive": "active",
+        "metallic": 0,
+        "roughness": 0.5,
+        "opacity": 1
+      },
+      "map": {
+        "color": "#0e1426",
+        "metallic": 0.05,
+        "roughness": 0.7,
+        "opacity": 1
+      },
+      "mapGrid": {
+        "color": "#243258",
+        "metallic": 0,
+        "roughness": 0.6,
+        "opacity": 1
+      },
       "plate": {
         "color": "#1f2a4d",
         "metallic": 0.1,
