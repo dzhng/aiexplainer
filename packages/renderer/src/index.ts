@@ -31,5 +31,6 @@ export { KIT, KIT_ENTRIES, isKitPrimitive, type KitPrimitiveId } from "./kit/cat
 export type { KitBuild, KitCommon, KitPrimitive } from "./kit/primitive.ts";
 export { BAR_MIN_HEIGHT, placeBar, type BarSlot, type BarsParams } from "./kit/bars.ts";
 export type { BlockParams } from "./kit/block.ts";
+export type { ContactShadowParams } from "./kit/contact-shadow.ts";
 export type { MeshParams } from "./kit/mesh.ts";
 export type { TubeParams } from "./kit/tube.ts";

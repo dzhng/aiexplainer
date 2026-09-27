@@ -92,7 +92,7 @@ it copies `/c/N/`), then **Follow on X**. Its only line differs by reason:
 
 Chapter 0 measurements:
 
-- 600 frames, 20.000 s (the loop is 20 s), CRF 18, 532,697 bytes after the 11b room and 04b HUD merged.
+- 600 frames, 20.000 s (the loop is 20 s), CRF 18, 547,689 bytes after the 11b/11c room and 04b HUD merged (the arrival move is skipped under a driven clock).
 - A repeat recording differs in **0 of 600 frames**.
 - Re-encoding gives a byte-identical MP4 and poster.
 
@@ -139,7 +139,7 @@ Chapter 0 measurements:
 - Deployment protection is **on**: Vercel Authentication, `all_except_custom_domains`. An
   unauthenticated request to the preview gets a 302 to the login page.
 - An automation bypass secret was created for the harness. Protection was not changed.
-- Preview: `https://aiexplainer-j4uz4ymmj-david-zhangs-projects-6456877a.vercel.app`.
+- Preview: `https://aiexplainer-2nc9cjngv-david-zhangs-projects-6456877a.vercel.app`.
   It passes:
   - `verify.ts --route /#0 --base <preview>` (hardware Metal, no console errors);
   - the 390×844 fallback;

@@ -21,6 +21,8 @@ export interface MaterialToken {
   metallic?: number;
   roughness?: number;
   opacity: number;
+  /** Specular scale, 0–1 (default 1); 0 for a surface that only darkens (a contact shadow). */
+  specular?: number;
 }
 
 interface LightToken {
@@ -90,15 +92,25 @@ export interface LookTokens {
     reflection: number;
     vignette: { strength: number; radius: number };
     /** The night outside the window: the sky card's glow and the distant lit windows. */
-    window: { sky: ColourValue; skyGlow: number; city: ColourValue; cityGlow: number };
+    window: {
+      sky: ColourValue;
+      skyGlow: number;
+      city: ColourValue;
+      cityGlow: number;
+      /** The faint glow along the horizon, behind the skyline. */
+      horizon: ColourValue;
+      horizonGlow: number;
+    };
     /** The orbit stays inside the room: a world box for target and eye, pitch and distance. */
     camera: { bounds: number[]; minPitch: number; maxPitch: number; maxDistance: number };
     /**
      * The room's own lights, by the preset their nodes bind (`room.practical.*`, the lamp):
-     * `glow` is the emitter's own radiance, `spill` the light it casts on the room (the
-     * prop's baked warm and cool channels at 1).
+     * `glow` is the emitter's own radiance; for the lamp (warm) and the strips (cool),
+     * `spill` is the light it casts on the room (the prop's baked channels at 1). The rack's
+     * indicator LEDs and the desk screens only glow.
      */
-    practicals: Record<"lamp" | "practical", { color: ColourValue; glow: number; spill: number }>;
+    practicals: Record<"lamp" | "practical", { color: ColourValue; glow: number; spill: number }> &
+      Record<"indicator" | "screen", { color: ColourValue; glow: number }>;
   };
   lights: {
     key: LightToken;
@@ -192,6 +204,7 @@ function material(name: string, m: MaterialToken): MaterialLook {
     metallic: unit(`${name}.metallic`, m.metallic ?? 0),
     roughness: unit(`${name}.roughness`, m.roughness ?? 0.6),
     opacity: m.opacity,
+    specular: unit(`${name}.specular`, m.specular ?? 1),
   };
 }
 
@@ -227,16 +240,14 @@ function spill(name: string, p: { color: ColourValue; spill: number }): LinearRg
 /** Presets the room prop binds whose numbers live in `room` (its window and practicals). */
 function roomMaterials(room: LookTokens["room"]): Record<string, MaterialLook> {
   const { window: w, practicals } = room;
-  return {
+  const materials: Record<string, MaterialLook> = {
     sky: glow("room.window.skyGlow", w.sky, w.skyGlow),
     city: glow("room.window.cityGlow", w.city, w.cityGlow),
-    lamp: glow("room.practicals.lamp.glow", practicals.lamp.color, practicals.lamp.glow),
-    practical: glow(
-      "room.practicals.practical.glow",
-      practicals.practical.color,
-      practicals.practical.glow,
-    ),
+    horizon: glow("room.window.horizonGlow", w.horizon, w.horizonGlow),
   };
+  for (const [name, p] of Object.entries(practicals))
+    materials[name] = glow(`room.practicals.${name}.glow`, p.color, p.glow);
+  return materials;
 }
 
 function light(name: string, l: LightToken): LightLook {

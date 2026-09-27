@@ -58,6 +58,14 @@ export function clockIsDriven(search: string): boolean {
 }
 
 /**
+ * Whether chapters open with the arrival move (D42): in real time yes; under a driven clock
+ * (held captures, the step recorder) only with `?arrival=1`, so hero shots stay deterministic.
+ */
+export function arrivalFromSearch(search: string): boolean {
+  return new URLSearchParams(search).get("arrival") === "1" || !clockIsDriven(search);
+}
+
+/**
  * `?clock=held&t=12.5` holds time; `?clock=step&fps=30` advances one frame per probe `step()`
  * (the recorder); anything else runs in real time.
  */

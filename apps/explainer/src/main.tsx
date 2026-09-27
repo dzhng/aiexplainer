@@ -6,7 +6,7 @@ import { installProbe } from "./lab/probe.ts";
 import "./look/global.css";
 import { applyCssVars } from "./look/look.ts";
 import { App } from "./runtime/app.tsx";
-import { clockFromSearch, clockIsDriven } from "./runtime/clock.ts";
+import { arrivalFromSearch, clockFromSearch, clockIsDriven } from "./runtime/clock.ts";
 import { browserSupportEnv, detectSupport } from "./runtime/support.ts";
 import { chapterAt } from "./state/app-state.ts";
 
@@ -34,6 +34,7 @@ if (probe.support === "webgpu") {
       probe={probe}
       debug={debug}
       onReady={markReady}
+      arrival={arrivalFromSearch(location.search)}
     />,
   );
 } else {

@@ -5,11 +5,12 @@
  */
 import { bars } from "./bars.ts";
 import { block } from "./block.ts";
+import { contactShadow } from "./contact-shadow.ts";
 import { mesh } from "./mesh.ts";
 import type { KitPrimitive } from "./primitive.ts";
 import { tube } from "./tube.ts";
 
-export const KIT = { block, tube, mesh, bars } as const;
+export const KIT = { block, tube, mesh, bars, contactShadow } as const;
 export type KitPrimitiveId = keyof typeof KIT;
 
 export function isKitPrimitive(id: string): id is KitPrimitiveId {

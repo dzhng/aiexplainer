@@ -113,6 +113,43 @@
         "metallic": 0,
         "roughness": 1,
         "opacity": 1
+      },
+      "haze": {
+        "color": "#0e1426",
+        "metallic": 0,
+        "roughness": 1,
+        "opacity": 1
+      },
+      "whiteboard": {
+        "color": "#50555f",
+        "metallic": 0,
+        "roughness": 0.35,
+        "opacity": 1
+      },
+      "marker": {
+        "color": "#1b2a55",
+        "metallic": 0,
+        "roughness": 0.6,
+        "opacity": 1
+      },
+      "foliage": {
+        "color": "#1d3325",
+        "metallic": 0,
+        "roughness": 0.8,
+        "opacity": 1
+      },
+      "rubber": {
+        "color": "#0b0c10",
+        "metallic": 0,
+        "roughness": 0.7,
+        "opacity": 1
+      },
+      "shadow": {
+        "color": "#000000",
+        "metallic": 0,
+        "roughness": 1,
+        "opacity": 0.7,
+        "specular": 0
       }
     }
   },
@@ -152,7 +189,9 @@
       "sky": "#243258",
       "skyGlow": 0.3,
       "city": "focus",
-      "cityGlow": 2.2
+      "cityGlow": 1.6,
+      "horizon": "#5a3e52",
+      "horizonGlow": 1.2
     },
     "camera": {
       "bounds": [-8.3, 0.35, -4.3, 8.3, 4.6, 10.3],
@@ -170,6 +209,14 @@
         "color": "#dfe6f5",
         "glow": 1.2,
         "spill": 3.5
+      },
+      "indicator": {
+        "color": "#4dff9a",
+        "glow": 1.2
+      },
+      "screen": {
+        "color": "active",
+        "glow": 0.45
       }
     },
     "vignette": {
