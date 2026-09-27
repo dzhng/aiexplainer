@@ -30,13 +30,10 @@ from pathlib import Path
 import numpy as np
 
 import export
+from paths import MODELS_DIR, TRAIN_FILE, VALID_FILE
 from probes import counts as counts_probes
 
-TRAINING_DIR = Path(__file__).resolve().parent
-DATA_DIR = TRAINING_DIR / "data"
-TRAIN_FILE = DATA_DIR / "TinyStoriesV2-GPT4-train.txt"
-VALID_FILE = DATA_DIR / "TinyStoriesV2-GPT4-valid.txt"
-OUT_DIR = TRAINING_DIR.parent / "apps/explainer/public/models/counts"
+OUT_DIR = MODELS_DIR / "counts"
 
 STORY_SEPARATOR = "<|endoftext|>"
 # How text becomes words. Exported into the manifest, so the app splits typed text the same way.

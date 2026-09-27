@@ -28,11 +28,10 @@ import torch.nn.functional as F
 import data
 import export
 from model import Arch, Mlp, Transformer, load_exported
+from paths import FIXTURES_DIR, MODELS_DIR
 from probes.models import run_probes
 
-TRAINING_DIR = Path(__file__).resolve().parent
-MODELS_DIR = TRAINING_DIR.parent / "apps/explainer/public/models"
-TRAINED_FIXTURES_DIR = TRAINING_DIR / "fixtures/trained"
+TRAINED_FIXTURES_DIR = FIXTURES_DIR / "trained"
 VOCAB = 4096
 PARITY_PROMPTS = 20
 PARITY_PROMPT_TOKENS = 48
@@ -94,9 +93,47 @@ def windows(tokens: np.ndarray, offsets: np.ndarray, ctx: int, device: str) -> t
     return batch[:, :-1], batch[:, 1:]
 
 
+MOE_BALANCE_WEIGHT = 1e-2  # Switch Transformer's α
+MOE_ENTROPY_GATE = 0.9  # expert usage entropy must reach this share of log(experts)
+
+
+class ExportGateError(RuntimeError):
+    pass
+
+
 def aux_loss(model: Transformer) -> torch.Tensor | float:
-    """Extra training losses the arch asks for (the MoE balance loss, slice 17)."""
-    return 0.0
+    """Extra training losses the arch asks for: the MoE balance loss `α·N·Σ fᵢPᵢ`."""
+    return MOE_BALANCE_WEIGHT * model.balance_loss() if model.arch.mlp.kind == "moe" else 0.0
+
+
+@torch.no_grad()
+def expert_usage(model: Transformer, tokens: np.ndarray, windows_: int = 32) -> np.ndarray:
+    """Share of routing slots each expert takes on held-out windows, over all MoE layers."""
+    arch = model.arch
+    rng = np.random.default_rng(7)
+    device = next(model.parameters()).device
+    counts = np.zeros(arch.mlp.experts)
+    offsets = rng.integers(0, len(tokens) - arch.ctx - 1, size=windows_)
+    x, _ = windows(tokens, offsets, arch.ctx, str(device))
+    model.eval()
+    model(x)
+    for layer in model.layers:
+        _, chosen = layer.moe.last_routing
+        counts += np.bincount(chosen.flatten().cpu().numpy(), minlength=arch.mlp.experts)
+    return counts / counts.sum()
+
+
+def usage_entropy_ratio(usage: np.ndarray) -> float:
+    nonzero = usage[usage > 0]
+    return float(-(nonzero * np.log(nonzero)).sum() / np.log(len(usage)))
+
+
+def moe_export_gate(model: Transformer, tokens: np.ndarray) -> float:
+    """Refuse to export a collapsed router: usage entropy must reach 0.9 · log(experts)."""
+    ratio = usage_entropy_ratio(expert_usage(model, tokens))
+    if ratio < MOE_ENTROPY_GATE:
+        raise ExportGateError(f"expert usage entropy is {ratio:.3f} of log(experts), below {MOE_ENTROPY_GATE}")
+    return ratio
 
 
 @torch.no_grad()
@@ -187,7 +224,9 @@ def probe(model_id: str) -> list[dict[str, Any]]:
     return evidence
 
 
-def run(config_path: Path) -> None:
+def run(config_path: Path, *, with_probes: bool = True) -> None:
+    """Train, export and (unless told not to, e.g. when a probe needs another model
+    trained first) probe."""
     config = Config.load(config_path)
     train_tokens, valid_tokens = data.load_tokens("train"), data.load_tokens("valid")
     print(f"{config.id}: {config.arch}")
@@ -195,6 +234,8 @@ def run(config_path: Path) -> None:
     out_dir = MODELS_DIR / config.id
     val_loss = result.val_losses[-1][1]
     model = result.model.cpu().eval()
+    if config.arch.mlp.kind == "moe":
+        print(f"expert usage entropy ÷ log(experts): {moe_export_gate(model, valid_tokens):.3f}")
 
     export.export_model(
         out_dir,
@@ -212,7 +253,7 @@ def run(config_path: Path) -> None:
         evidence=[],  # filled by `probe`, which measures the exported f16 weights
         arch=config.arch.to_json(),
     )
-    evidence = probe(config.id)
+    evidence = probe(config.id) if with_probes else []
     _, shipped = load_exported(out_dir)
     TRAINED_FIXTURES_DIR.mkdir(parents=True, exist_ok=True)
     fixture = parity_fixture(shipped, valid_tokens, config.train.seed)

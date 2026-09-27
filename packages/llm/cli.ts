@@ -3,10 +3,13 @@
 //   bun packages/llm/cli.ts next <model> <word> [k]      top successors of a word
 //   bun packages/llm/cli.ts tokenize <text>              the shared tokenizer's pieces
 //   bun packages/llm/cli.ts forward <model> <text>       top-5 next tokens, one attention row
+//   bun packages/llm/cli.ts speculate --draft <model> --target <model> <text>
+//                                                       speculative decoding, round by round
 //
 // <model> is a model id or a path to a manifest.json.
 import path from "node:path";
 import { pathToFileURL } from "node:url";
+import { parseArgs } from "node:util";
 import {
   countsModel,
   fetchModel,
@@ -15,6 +18,8 @@ import {
   nextWords,
   probabilities,
   promptTokens,
+  seededRng,
+  speculate,
   transformerModel,
 } from "./src/index.ts";
 
@@ -78,6 +83,57 @@ async function runForward(model: string, text: string): Promise<void> {
   });
 }
 
+async function runSpeculate(argv: string[]): Promise<void> {
+  const { values, positionals } = parseArgs({
+    args: argv,
+    allowPositionals: true,
+    options: {
+      draft: { type: "string" },
+      target: { type: "string" },
+      k: { type: "string", default: "4" },
+      tokens: { type: "string", default: "40" },
+      temperature: { type: "string", default: "1" },
+      seed: { type: "string", default: "13" },
+    },
+  });
+  if (!values.draft || !values.target || positionals.length !== 1) {
+    throw new Error("usage: speculate --draft <model> --target <model> <text>");
+  }
+  const [drafter, target] = await Promise.all(
+    [values.draft, values.target].map(async (m) =>
+      transformerModel(await fetchModel(manifestUrl(m))),
+    ),
+  );
+  const { tokenizer } = target!;
+  const show = (ids: number[]) => JSON.stringify(tokenizer.decode(ids));
+  const prompt = promptTokens(tokenizer, positionals[0]!);
+  const result = speculate(target!, drafter!, prompt, {
+    k: Number(values.k),
+    maxNewTokens: Number(values.tokens),
+    temperature: Number(values.temperature),
+    rng: seededRng(Number(values.seed)),
+  });
+  let drafted = 0;
+  let accepted = 0;
+  for (const round of result.rounds) {
+    drafted += round.drafted.length;
+    accepted += round.accepted;
+    const kept = show(round.drafted.slice(0, round.accepted));
+    const rejected = round.drafted.slice(round.accepted);
+    const verdict = rejected.length
+      ? `rejected ${show(rejected)}`
+      : round.drafted.length
+        ? "all accepted"
+        : "(no room left to guess)";
+    console.log(`kept ${kept.padEnd(28)} ${verdict.padEnd(34)} target adds ${show([round.next])}`);
+  }
+  console.log(`\n${show(result.tokens.slice(1))}`);
+  const generated = result.tokens.length - prompt.length;
+  console.log(
+    `${accepted}/${drafted} guesses accepted; ${result.rounds.length} target passes for ${generated} tokens`,
+  );
+}
+
 const [command, ...args] = Bun.argv.slice(2);
 if (command === "next" && args.length >= 2) {
   await next(args[0]!, args[1]!, Number(args[2] ?? 10));
@@ -85,9 +141,12 @@ if (command === "next" && args.length >= 2) {
   await tokenize(args[0]!);
 } else if (command === "forward" && args.length === 2) {
   await runForward(args[0]!, args[1]!);
+} else if (command === "speculate") {
+  await runSpeculate(args);
 } else {
   console.error("usage: bun packages/llm/cli.ts next <model> <word> [k]");
   console.error("       bun packages/llm/cli.ts tokenize <text>");
   console.error("       bun packages/llm/cli.ts forward <model> <text>");
+  console.error("       bun packages/llm/cli.ts speculate --draft <model> --target <model> <text>");
   process.exit(1);
 }

@@ -1,0 +1,21 @@
+# Chapter 7's visible failure: 4 layers, no residual stream, no norm.
+id = "noresidual"
+
+[arch]
+d_model = 96
+n_layers = 4
+n_heads = 2
+n_kv_heads = 2
+ctx = 256
+attention = "causal"
+positions = "rope"
+mlp = { kind = "swiglu", hidden = 384 }
+norm = "none"
+residual = false
+tied_embeddings = true
+
+[train]
+seed = 0
+steps = 5000
+batch_size = 64
+lr = 3e-3

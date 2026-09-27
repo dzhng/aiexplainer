@@ -24,6 +24,10 @@ def encode(text: str) -> list[int]:
     return tokenizer.encode(_reference()[0], text)
 
 
+def decode(ids: list[int]) -> str:
+    return _reference()[0].decode(ids)
+
+
 def vocab() -> list[str]:
     return _reference()[1]["vocab"]
 

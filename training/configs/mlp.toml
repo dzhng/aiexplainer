@@ -1,0 +1,21 @@
+# Chapter 6: the rope model plus a SwiGLU MLP (hidden 4x).
+id = "mlp"
+
+[arch]
+d_model = 96
+n_layers = 1
+n_heads = 1
+n_kv_heads = 1
+ctx = 256
+attention = "causal"
+positions = "rope"
+mlp = { kind = "swiglu", hidden = 384 }
+norm = "none"
+residual = true
+tied_embeddings = false
+
+[train]
+seed = 0
+steps = 4000
+batch_size = 64
+lr = 3e-3

@@ -52,6 +52,72 @@ All configs are **invented starting points**, with the same bounded-retry rule a
 
 Everything within the bounded-retry rule and the size budgets.
 
+## Result (measured 2026-09-27)
+
+Every model ran once; no bounded retry was needed. All use batch 64 × 256 tokens,
+AdamW lr 3e-3, warmup and cosine decay, and the first 50M training tokens. The
+figures below were measured on MPS with another MPS job sometimes running at the
+same time, so the per-1k-step times are upper bounds.
+
+| Model      | Shape                                       | Steps | s per 1k steps | Val loss | weights.bin |
+| ---------- | ------------------------------------------- | ----- | -------------- | -------- | ----------- |
+| mlp        | rope + SwiGLU 384, d96, 1 layer             | 4000  | 62             | 2.515    | 1,867,776   |
+| noresidual | d96, 4 layers, SwiGLU, no residual/norm     | 5000  | 124            | 8.318    | 1,966,080   |
+| residual   | the same, residual + RMSNorm                | 5000  | 215            | 1.904    | 1,967,808   |
+| full       | d128, 4 layers, 4 heads / 2 kv (GQA)        | 8000  | 239            | 1.738    | 3,016,960   |
+| full-q8    | `full` in q8_0                              | —     | —              | —        | 1,603,840   |
+| drafter-64 | 1 layer, d64, 2 heads / 1 kv                | 4000  | 121            | 2.499    | 647,552     |
+| drafter-96 | 1 layer, d96, 2 heads / 1 kv                | 4000  | 184            | 2.309    | 1,063,488   |
+| moe        | `full` shape, 8 experts (hidden 128), top-2 | 8000  | 299            | 1.689    | 4,598,016   |
+
+Slice 17 models use tied embeddings, apart from `mlp`, which follows `attn`/`rope`.
+This keeps the ladder inside its budget: every model file together is
+**22,982,551 bytes** out of 25 MB, and a bun test enforces the limit. `moe` is
+4.6 MB, above slice 16's per-model 4 MB. That limit is scoped to slice 16's
+models; this slice names only the ladder total.
+
+**Probes.**
+
+- **mlp** (chapter 6), on 30 fact prompts with single-token answers:
+  - Switching off the 16 most active neurons drops the total p(answer) by 94.9%. **Pass** (0.3).
+  - Switching off the whole MLP drops it by 99.3%.
+  - The model gives the answer p ≥ 0.1 on 8 of the 30 prompts.
+  - The first metric, the mean of per-prompt relative drops, measured 0.12 with the
+    neurons off and −3.8 with the whole MLP off. It is dominated by prompts where the
+    model never knew the answer (p ≈ 0.001), so it was replaced by the
+    probability-weighted drop. Both are recorded here.
+  - Examples: "Once upon a … time" (p 1.000 → 0.012) and "They lived happily ever … after".
+- **residual / noresidual** (chapter 7):
+  - The val loss ratio is 0.229. **Pass** (≤ 0.9).
+  - `noresidual` never learns: its loss stays at ln 4096 = 8.318, which is uniform guessing.
+  - Signal preserved (RMS of the last layer's stream ÷ RMS of the embeddings): 21.5 for `residual` (**pass**, 0.5) and exactly 0 for `noresidual`, where the signal dies (the visible failure).
+  - A first signal metric, the cosine between the embedding and the top stream,
+    measured 0.064 and 0.0. It was replaced by the residual-norm trace that the contract names.
+- **full** (chapter 8):
+  - Val loss is 1.738. **Pass** (≤ 2.3).
+  - 20 continuations (temperature 0.8) are in `full/scenarios.json`.
+  - The mean total variation between two heads' attention rows is 0.604. **Pass** (0.2).
+  - CPU budget: 3.9 ms per decoded token at d=256 (slice 15), so d=128 is well inside 50 ms.
+- **full-q8** (chapter 12), `training/quantize.py`, symmetric int8 per 32 values:
+  - Top-1 agreement with `full` is 0.994. **Pass** (0.9).
+  - KL(full ‖ q8) is 0.00025 nats. **Pass** (≤ 0.05).
+  - The byte ratio is 0.532. **Pass** (≤ 0.6).
+  - TypeScript dequantization matches Python bit for bit (fixture `training/fixtures/q8.json`).
+- **drafters** (chapter 13): α is Leviathan's β = Σ min(p, q), averaged over 20×128
+  validation positions at temperature 1. The expected speedup at k=4 is
+  (1 − α⁵)/((1 − α)(c·4 + 1)), with c = the ratio of parameter counts.
+  - `drafter-64`: α 0.595, c 0.215, speedup 1.23.
+  - `drafter-96`: α 0.638, c 0.353, speedup 1.03.
+  - **O3 (provisional): `drafter-64`**, the better speedup for its size.
+  - The playable `bun packages/llm/cli.ts speculate --draft drafter-64 --target full "once upon a"`
+    accepted 18 of 48 guesses and took 12 target passes for 30 tokens (seed 13).
+- **moe** (chapter 14):
+  - Routing entropy ÷ log 8 is 1.000 on held-out tokens. The export gate (≥ 0.9)
+    passed, and a test feeds a collapsed router and expects the export to fail.
+  - Every expert takes 11.8–13.2% of routing slots.
+  - Per-expert token kinds are recorded in `moe/scenarios.json` as measured only. Every expert is mostly first choice for word starts (62–90%). Some lean toward punctuation ("." "," newline) and some toward articles.
+  - No specialisation claim.
+
 ## Stays green
 
 01–16.

@@ -28,17 +28,13 @@ from typing import Any
 
 from tokenizers import Tokenizer, decoders, models, pre_tokenizers, trainers
 
+from paths import FIXTURES_DIR, MODELS_DIR, TRAIN_FILE, VALID_FILE
 from probes import tokenizer as tokenizer_probes
 
-TRAINING_DIR = Path(__file__).resolve().parent
-REPO_DIR = TRAINING_DIR.parent
-DATA_DIR = TRAINING_DIR / "data"
-TRAIN_FILE = DATA_DIR / "TinyStoriesV2-GPT4-train.txt"
-VALID_FILE = DATA_DIR / "TinyStoriesV2-GPT4-valid.txt"
-OUT_DIR = REPO_DIR / "apps/explainer/public/models/tokenizer"
+OUT_DIR = MODELS_DIR / "tokenizer"
 TOKENIZER_FILE = OUT_DIR / "tokenizer.json"
 EVIDENCE_FILE = OUT_DIR / "evidence.json"
-PARITY_FILE = TRAINING_DIR / "fixtures/tokenizer.parity.json"
+PARITY_FILE = FIXTURES_DIR / "tokenizer.parity.json"
 
 STORY_SEPARATOR = "<|endoftext|>"
 SPECIAL_TOKENS = {"bos": "<bos>", "eos": "<eos>"}

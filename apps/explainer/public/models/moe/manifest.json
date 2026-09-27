@@ -1,0 +1,1307 @@
+{
+  "formatVersion": 1,
+  "id": "moe",
+  "kind": "transformer",
+  "tokenizer": {
+    "kind": "bpe",
+    "file": "../tokenizer/tokenizer.json",
+    "sha256": "37c465794d44d16554106eb9d2972c123e05fb76c300bb4bf1cc321fcb363f7b"
+  },
+  "arch": {
+    "dModel": 128,
+    "nLayers": 4,
+    "nHeads": 4,
+    "nKvHeads": 2,
+    "ctx": 256,
+    "vocab": 4096,
+    "attention": "causal",
+    "positions": "rope",
+    "ropeTheta": 10000.0,
+    "mlp": {
+      "kind": "moe",
+      "experts": 8,
+      "topK": 2,
+      "hidden": 128
+    },
+    "norm": "rmsnorm",
+    "normEps": 1e-05,
+    "residual": true,
+    "tiedEmbeddings": true
+  },
+  "weightsFile": "weights.bin",
+  "weightsSha256": "1f6d9515f0b9390662804ef6e4360eec8f9ae092999d154d205c3508c90da19e",
+  "tensors": [
+    {
+      "name": "tok_emb",
+      "dtype": "f16",
+      "shape": [
+        4096,
+        128
+      ],
+      "byteOffset": 0,
+      "byteLength": 1048576
+    },
+    {
+      "name": "layers.0.attn.wq",
+      "dtype": "f16",
+      "shape": [
+        128,
+        128
+      ],
+      "byteOffset": 1048576,
+      "byteLength": 32768
+    },
+    {
+      "name": "layers.0.attn.wk",
+      "dtype": "f16",
+      "shape": [
+        64,
+        128
+      ],
+      "byteOffset": 1081344,
+      "byteLength": 16384
+    },
+    {
+      "name": "layers.0.attn.wv",
+      "dtype": "f16",
+      "shape": [
+        64,
+        128
+      ],
+      "byteOffset": 1097728,
+      "byteLength": 16384
+    },
+    {
+      "name": "layers.0.attn.wo",
+      "dtype": "f16",
+      "shape": [
+        128,
+        128
+      ],
+      "byteOffset": 1114112,
+      "byteLength": 32768
+    },
+    {
+      "name": "layers.0.attn_norm",
+      "dtype": "f16",
+      "shape": [
+        128
+      ],
+      "byteOffset": 1146880,
+      "byteLength": 256
+    },
+    {
+      "name": "layers.0.moe.router",
+      "dtype": "f16",
+      "shape": [
+        8,
+        128
+      ],
+      "byteOffset": 1147136,
+      "byteLength": 2048
+    },
+    {
+      "name": "layers.0.moe.experts.0.w1",
+      "dtype": "f16",
+      "shape": [
+        128,
+        128
+      ],
+      "byteOffset": 1149184,
+      "byteLength": 32768
+    },
+    {
+      "name": "layers.0.moe.experts.0.w2",
+      "dtype": "f16",
+      "shape": [
+        128,
+        128
+      ],
+      "byteOffset": 1181952,
+      "byteLength": 32768
+    },
+    {
+      "name": "layers.0.moe.experts.0.w3",
+      "dtype": "f16",
+      "shape": [
+        128,
+        128
+      ],
+      "byteOffset": 1214720,
+      "byteLength": 32768
+    },
+    {
+      "name": "layers.0.moe.experts.1.w1",
+      "dtype": "f16",
+      "shape": [
+        128,
+        128
+      ],
+      "byteOffset": 1247488,
+      "byteLength": 32768
+    },
+    {
+      "name": "layers.0.moe.experts.1.w2",
+      "dtype": "f16",
+      "shape": [
+        128,
+        128
+      ],
+      "byteOffset": 1280256,
+      "byteLength": 32768
+    },
+    {
+      "name": "layers.0.moe.experts.1.w3",
+      "dtype": "f16",
+      "shape": [
+        128,
+        128
+      ],
+      "byteOffset": 1313024,
+      "byteLength": 32768
+    },
+    {
+      "name": "layers.0.moe.experts.2.w1",
+      "dtype": "f16",
+      "shape": [
+        128,
+        128
+      ],
+      "byteOffset": 1345792,
+      "byteLength": 32768
+    },
+    {
+      "name": "layers.0.moe.experts.2.w2",
+      "dtype": "f16",
+      "shape": [
+        128,
+        128
+      ],
+      "byteOffset": 1378560,
+      "byteLength": 32768
+    },
+    {
+      "name": "layers.0.moe.experts.2.w3",
+      "dtype": "f16",
+      "shape": [
+        128,
+        128
+      ],
+      "byteOffset": 1411328,
+      "byteLength": 32768
+    },
+    {
+      "name": "layers.0.moe.experts.3.w1",
+      "dtype": "f16",
+      "shape": [
+        128,
+        128
+      ],
+      "byteOffset": 1444096,
+      "byteLength": 32768
+    },
+    {
+      "name": "layers.0.moe.experts.3.w2",
+      "dtype": "f16",
+      "shape": [
+        128,
+        128
+      ],
+      "byteOffset": 1476864,
+      "byteLength": 32768
+    },
+    {
+      "name": "layers.0.moe.experts.3.w3",
+      "dtype": "f16",
+      "shape": [
+        128,
+        128
+      ],
+      "byteOffset": 1509632,
+      "byteLength": 32768
+    },
+    {
+      "name": "layers.0.moe.experts.4.w1",
+      "dtype": "f16",
+      "shape": [
+        128,
+        128
+      ],
+      "byteOffset": 1542400,
+      "byteLength": 32768
+    },
+    {
+      "name": "layers.0.moe.experts.4.w2",
+      "dtype": "f16",
+      "shape": [
+        128,
+        128
+      ],
+      "byteOffset": 1575168,
+      "byteLength": 32768
+    },
+    {
+      "name": "layers.0.moe.experts.4.w3",
+      "dtype": "f16",
+      "shape": [
+        128,
+        128
+      ],
+      "byteOffset": 1607936,
+      "byteLength": 32768
+    },
+    {
+      "name": "layers.0.moe.experts.5.w1",
+      "dtype": "f16",
+      "shape": [
+        128,
+        128
+      ],
+      "byteOffset": 1640704,
+      "byteLength": 32768
+    },
+    {
+      "name": "layers.0.moe.experts.5.w2",
+      "dtype": "f16",
+      "shape": [
+        128,
+        128
+      ],
+      "byteOffset": 1673472,
+      "byteLength": 32768
+    },
+    {
+      "name": "layers.0.moe.experts.5.w3",
+      "dtype": "f16",
+      "shape": [
+        128,
+        128
+      ],
+      "byteOffset": 1706240,
+      "byteLength": 32768
+    },
+    {
+      "name": "layers.0.moe.experts.6.w1",
+      "dtype": "f16",
+      "shape": [
+        128,
+        128
+      ],
+      "byteOffset": 1739008,
+      "byteLength": 32768
+    },
+    {
+      "name": "layers.0.moe.experts.6.w2",
+      "dtype": "f16",
+      "shape": [
+        128,
+        128
+      ],
+      "byteOffset": 1771776,
+      "byteLength": 32768
+    },
+    {
+      "name": "layers.0.moe.experts.6.w3",
+      "dtype": "f16",
+      "shape": [
+        128,
+        128
+      ],
+      "byteOffset": 1804544,
+      "byteLength": 32768
+    },
+    {
+      "name": "layers.0.moe.experts.7.w1",
+      "dtype": "f16",
+      "shape": [
+        128,
+        128
+      ],
+      "byteOffset": 1837312,
+      "byteLength": 32768
+    },
+    {
+      "name": "layers.0.moe.experts.7.w2",
+      "dtype": "f16",
+      "shape": [
+        128,
+        128
+      ],
+      "byteOffset": 1870080,
+      "byteLength": 32768
+    },
+    {
+      "name": "layers.0.moe.experts.7.w3",
+      "dtype": "f16",
+      "shape": [
+        128,
+        128
+      ],
+      "byteOffset": 1902848,
+      "byteLength": 32768
+    },
+    {
+      "name": "layers.0.mlp_norm",
+      "dtype": "f16",
+      "shape": [
+        128
+      ],
+      "byteOffset": 1935616,
+      "byteLength": 256
+    },
+    {
+      "name": "layers.1.attn.wq",
+      "dtype": "f16",
+      "shape": [
+        128,
+        128
+      ],
+      "byteOffset": 1935872,
+      "byteLength": 32768
+    },
+    {
+      "name": "layers.1.attn.wk",
+      "dtype": "f16",
+      "shape": [
+        64,
+        128
+      ],
+      "byteOffset": 1968640,
+      "byteLength": 16384
+    },
+    {
+      "name": "layers.1.attn.wv",
+      "dtype": "f16",
+      "shape": [
+        64,
+        128
+      ],
+      "byteOffset": 1985024,
+      "byteLength": 16384
+    },
+    {
+      "name": "layers.1.attn.wo",
+      "dtype": "f16",
+      "shape": [
+        128,
+        128
+      ],
+      "byteOffset": 2001408,
+      "byteLength": 32768
+    },
+    {
+      "name": "layers.1.attn_norm",
+      "dtype": "f16",
+      "shape": [
+        128
+      ],
+      "byteOffset": 2034176,
+      "byteLength": 256
+    },
+    {
+      "name": "layers.1.moe.router",
+      "dtype": "f16",
+      "shape": [
+        8,
+        128
+      ],
+      "byteOffset": 2034432,
+      "byteLength": 2048
+    },
+    {
+      "name": "layers.1.moe.experts.0.w1",
+      "dtype": "f16",
+      "shape": [
+        128,
+        128
+      ],
+      "byteOffset": 2036480,
+      "byteLength": 32768
+    },
+    {
+      "name": "layers.1.moe.experts.0.w2",
+      "dtype": "f16",
+      "shape": [
+        128,
+        128
+      ],
+      "byteOffset": 2069248,
+      "byteLength": 32768
+    },
+    {
+      "name": "layers.1.moe.experts.0.w3",
+      "dtype": "f16",
+      "shape": [
+        128,
+        128
+      ],
+      "byteOffset": 2102016,
+      "byteLength": 32768
+    },
+    {
+      "name": "layers.1.moe.experts.1.w1",
+      "dtype": "f16",
+      "shape": [
+        128,
+        128
+      ],
+      "byteOffset": 2134784,
+      "byteLength": 32768
+    },
+    {
+      "name": "layers.1.moe.experts.1.w2",
+      "dtype": "f16",
+      "shape": [
+        128,
+        128
+      ],
+      "byteOffset": 2167552,
+      "byteLength": 32768
+    },
+    {
+      "name": "layers.1.moe.experts.1.w3",
+      "dtype": "f16",
+      "shape": [
+        128,
+        128
+      ],
+      "byteOffset": 2200320,
+      "byteLength": 32768
+    },
+    {
+      "name": "layers.1.moe.experts.2.w1",
+      "dtype": "f16",
+      "shape": [
+        128,
+        128
+      ],
+      "byteOffset": 2233088,
+      "byteLength": 32768
+    },
+    {
+      "name": "layers.1.moe.experts.2.w2",
+      "dtype": "f16",
+      "shape": [
+        128,
+        128
+      ],
+      "byteOffset": 2265856,
+      "byteLength": 32768
+    },
+    {
+      "name": "layers.1.moe.experts.2.w3",
+      "dtype": "f16",
+      "shape": [
+        128,
+        128
+      ],
+      "byteOffset": 2298624,
+      "byteLength": 32768
+    },
+    {
+      "name": "layers.1.moe.experts.3.w1",
+      "dtype": "f16",
+      "shape": [
+        128,
+        128
+      ],
+      "byteOffset": 2331392,
+      "byteLength": 32768
+    },
+    {
+      "name": "layers.1.moe.experts.3.w2",
+      "dtype": "f16",
+      "shape": [
+        128,
+        128
+      ],
+      "byteOffset": 2364160,
+      "byteLength": 32768
+    },
+    {
+      "name": "layers.1.moe.experts.3.w3",
+      "dtype": "f16",
+      "shape": [
+        128,
+        128
+      ],
+      "byteOffset": 2396928,
+      "byteLength": 32768
+    },
+    {
+      "name": "layers.1.moe.experts.4.w1",
+      "dtype": "f16",
+      "shape": [
+        128,
+        128
+      ],
+      "byteOffset": 2429696,
+      "byteLength": 32768
+    },
+    {
+      "name": "layers.1.moe.experts.4.w2",
+      "dtype": "f16",
+      "shape": [
+        128,
+        128
+      ],
+      "byteOffset": 2462464,
+      "byteLength": 32768
+    },
+    {
+      "name": "layers.1.moe.experts.4.w3",
+      "dtype": "f16",
+      "shape": [
+        128,
+        128
+      ],
+      "byteOffset": 2495232,
+      "byteLength": 32768
+    },
+    {
+      "name": "layers.1.moe.experts.5.w1",
+      "dtype": "f16",
+      "shape": [
+        128,
+        128
+      ],
+      "byteOffset": 2528000,
+      "byteLength": 32768
+    },
+    {
+      "name": "layers.1.moe.experts.5.w2",
+      "dtype": "f16",
+      "shape": [
+        128,
+        128
+      ],
+      "byteOffset": 2560768,
+      "byteLength": 32768
+    },
+    {
+      "name": "layers.1.moe.experts.5.w3",
+      "dtype": "f16",
+      "shape": [
+        128,
+        128
+      ],
+      "byteOffset": 2593536,
+      "byteLength": 32768
+    },
+    {
+      "name": "layers.1.moe.experts.6.w1",
+      "dtype": "f16",
+      "shape": [
+        128,
+        128
+      ],
+      "byteOffset": 2626304,
+      "byteLength": 32768
+    },
+    {
+      "name": "layers.1.moe.experts.6.w2",
+      "dtype": "f16",
+      "shape": [
+        128,
+        128
+      ],
+      "byteOffset": 2659072,
+      "byteLength": 32768
+    },
+    {
+      "name": "layers.1.moe.experts.6.w3",
+      "dtype": "f16",
+      "shape": [
+        128,
+        128
+      ],
+      "byteOffset": 2691840,
+      "byteLength": 32768
+    },
+    {
+      "name": "layers.1.moe.experts.7.w1",
+      "dtype": "f16",
+      "shape": [
+        128,
+        128
+      ],
+      "byteOffset": 2724608,
+      "byteLength": 32768
+    },
+    {
+      "name": "layers.1.moe.experts.7.w2",
+      "dtype": "f16",
+      "shape": [
+        128,
+        128
+      ],
+      "byteOffset": 2757376,
+      "byteLength": 32768
+    },
+    {
+      "name": "layers.1.moe.experts.7.w3",
+      "dtype": "f16",
+      "shape": [
+        128,
+        128
+      ],
+      "byteOffset": 2790144,
+      "byteLength": 32768
+    },
+    {
+      "name": "layers.1.mlp_norm",
+      "dtype": "f16",
+      "shape": [
+        128
+      ],
+      "byteOffset": 2822912,
+      "byteLength": 256
+    },
+    {
+      "name": "layers.2.attn.wq",
+      "dtype": "f16",
+      "shape": [
+        128,
+        128
+      ],
+      "byteOffset": 2823168,
+      "byteLength": 32768
+    },
+    {
+      "name": "layers.2.attn.wk",
+      "dtype": "f16",
+      "shape": [
+        64,
+        128
+      ],
+      "byteOffset": 2855936,
+      "byteLength": 16384
+    },
+    {
+      "name": "layers.2.attn.wv",
+      "dtype": "f16",
+      "shape": [
+        64,
+        128
+      ],
+      "byteOffset": 2872320,
+      "byteLength": 16384
+    },
+    {
+      "name": "layers.2.attn.wo",
+      "dtype": "f16",
+      "shape": [
+        128,
+        128
+      ],
+      "byteOffset": 2888704,
+      "byteLength": 32768
+    },
+    {
+      "name": "layers.2.attn_norm",
+      "dtype": "f16",
+      "shape": [
+        128
+      ],
+      "byteOffset": 2921472,
+      "byteLength": 256
+    },
+    {
+      "name": "layers.2.moe.router",
+      "dtype": "f16",
+      "shape": [
+        8,
+        128
+      ],
+      "byteOffset": 2921728,
+      "byteLength": 2048
+    },
+    {
+      "name": "layers.2.moe.experts.0.w1",
+      "dtype": "f16",
+      "shape": [
+        128,
+        128
+      ],
+      "byteOffset": 2923776,
+      "byteLength": 32768
+    },
+    {
+      "name": "layers.2.moe.experts.0.w2",
+      "dtype": "f16",
+      "shape": [
+        128,
+        128
+      ],
+      "byteOffset": 2956544,
+      "byteLength": 32768
+    },
+    {
+      "name": "layers.2.moe.experts.0.w3",
+      "dtype": "f16",
+      "shape": [
+        128,
+        128
+      ],
+      "byteOffset": 2989312,
+      "byteLength": 32768
+    },
+    {
+      "name": "layers.2.moe.experts.1.w1",
+      "dtype": "f16",
+      "shape": [
+        128,
+        128
+      ],
+      "byteOffset": 3022080,
+      "byteLength": 32768
+    },
+    {
+      "name": "layers.2.moe.experts.1.w2",
+      "dtype": "f16",
+      "shape": [
+        128,
+        128
+      ],
+      "byteOffset": 3054848,
+      "byteLength": 32768
+    },
+    {
+      "name": "layers.2.moe.experts.1.w3",
+      "dtype": "f16",
+      "shape": [
+        128,
+        128
+      ],
+      "byteOffset": 3087616,
+      "byteLength": 32768
+    },
+    {
+      "name": "layers.2.moe.experts.2.w1",
+      "dtype": "f16",
+      "shape": [
+        128,
+        128
+      ],
+      "byteOffset": 3120384,
+      "byteLength": 32768
+    },
+    {
+      "name": "layers.2.moe.experts.2.w2",
+      "dtype": "f16",
+      "shape": [
+        128,
+        128
+      ],
+      "byteOffset": 3153152,
+      "byteLength": 32768
+    },
+    {
+      "name": "layers.2.moe.experts.2.w3",
+      "dtype": "f16",
+      "shape": [
+        128,
+        128
+      ],
+      "byteOffset": 3185920,
+      "byteLength": 32768
+    },
+    {
+      "name": "layers.2.moe.experts.3.w1",
+      "dtype": "f16",
+      "shape": [
+        128,
+        128
+      ],
+      "byteOffset": 3218688,
+      "byteLength": 32768
+    },
+    {
+      "name": "layers.2.moe.experts.3.w2",
+      "dtype": "f16",
+      "shape": [
+        128,
+        128
+      ],
+      "byteOffset": 3251456,
+      "byteLength": 32768
+    },
+    {
+      "name": "layers.2.moe.experts.3.w3",
+      "dtype": "f16",
+      "shape": [
+        128,
+        128
+      ],
+      "byteOffset": 3284224,
+      "byteLength": 32768
+    },
+    {
+      "name": "layers.2.moe.experts.4.w1",
+      "dtype": "f16",
+      "shape": [
+        128,
+        128
+      ],
+      "byteOffset": 3316992,
+      "byteLength": 32768
+    },
+    {
+      "name": "layers.2.moe.experts.4.w2",
+      "dtype": "f16",
+      "shape": [
+        128,
+        128
+      ],
+      "byteOffset": 3349760,
+      "byteLength": 32768
+    },
+    {
+      "name": "layers.2.moe.experts.4.w3",
+      "dtype": "f16",
+      "shape": [
+        128,
+        128
+      ],
+      "byteOffset": 3382528,
+      "byteLength": 32768
+    },
+    {
+      "name": "layers.2.moe.experts.5.w1",
+      "dtype": "f16",
+      "shape": [
+        128,
+        128
+      ],
+      "byteOffset": 3415296,
+      "byteLength": 32768
+    },
+    {
+      "name": "layers.2.moe.experts.5.w2",
+      "dtype": "f16",
+      "shape": [
+        128,
+        128
+      ],
+      "byteOffset": 3448064,
+      "byteLength": 32768
+    },
+    {
+      "name": "layers.2.moe.experts.5.w3",
+      "dtype": "f16",
+      "shape": [
+        128,
+        128
+      ],
+      "byteOffset": 3480832,
+      "byteLength": 32768
+    },
+    {
+      "name": "layers.2.moe.experts.6.w1",
+      "dtype": "f16",
+      "shape": [
+        128,
+        128
+      ],
+      "byteOffset": 3513600,
+      "byteLength": 32768
+    },
+    {
+      "name": "layers.2.moe.experts.6.w2",
+      "dtype": "f16",
+      "shape": [
+        128,
+        128
+      ],
+      "byteOffset": 3546368,
+      "byteLength": 32768
+    },
+    {
+      "name": "layers.2.moe.experts.6.w3",
+      "dtype": "f16",
+      "shape": [
+        128,
+        128
+      ],
+      "byteOffset": 3579136,
+      "byteLength": 32768
+    },
+    {
+      "name": "layers.2.moe.experts.7.w1",
+      "dtype": "f16",
+      "shape": [
+        128,
+        128
+      ],
+      "byteOffset": 3611904,
+      "byteLength": 32768
+    },
+    {
+      "name": "layers.2.moe.experts.7.w2",
+      "dtype": "f16",
+      "shape": [
+        128,
+        128
+      ],
+      "byteOffset": 3644672,
+      "byteLength": 32768
+    },
+    {
+      "name": "layers.2.moe.experts.7.w3",
+      "dtype": "f16",
+      "shape": [
+        128,
+        128
+      ],
+      "byteOffset": 3677440,
+      "byteLength": 32768
+    },
+    {
+      "name": "layers.2.mlp_norm",
+      "dtype": "f16",
+      "shape": [
+        128
+      ],
+      "byteOffset": 3710208,
+      "byteLength": 256
+    },
+    {
+      "name": "layers.3.attn.wq",
+      "dtype": "f16",
+      "shape": [
+        128,
+        128
+      ],
+      "byteOffset": 3710464,
+      "byteLength": 32768
+    },
+    {
+      "name": "layers.3.attn.wk",
+      "dtype": "f16",
+      "shape": [
+        64,
+        128
+      ],
+      "byteOffset": 3743232,
+      "byteLength": 16384
+    },
+    {
+      "name": "layers.3.attn.wv",
+      "dtype": "f16",
+      "shape": [
+        64,
+        128
+      ],
+      "byteOffset": 3759616,
+      "byteLength": 16384
+    },
+    {
+      "name": "layers.3.attn.wo",
+      "dtype": "f16",
+      "shape": [
+        128,
+        128
+      ],
+      "byteOffset": 3776000,
+      "byteLength": 32768
+    },
+    {
+      "name": "layers.3.attn_norm",
+      "dtype": "f16",
+      "shape": [
+        128
+      ],
+      "byteOffset": 3808768,
+      "byteLength": 256
+    },
+    {
+      "name": "layers.3.moe.router",
+      "dtype": "f16",
+      "shape": [
+        8,
+        128
+      ],
+      "byteOffset": 3809024,
+      "byteLength": 2048
+    },
+    {
+      "name": "layers.3.moe.experts.0.w1",
+      "dtype": "f16",
+      "shape": [
+        128,
+        128
+      ],
+      "byteOffset": 3811072,
+      "byteLength": 32768
+    },
+    {
+      "name": "layers.3.moe.experts.0.w2",
+      "dtype": "f16",
+      "shape": [
+        128,
+        128
+      ],
+      "byteOffset": 3843840,
+      "byteLength": 32768
+    },
+    {
+      "name": "layers.3.moe.experts.0.w3",
+      "dtype": "f16",
+      "shape": [
+        128,
+        128
+      ],
+      "byteOffset": 3876608,
+      "byteLength": 32768
+    },
+    {
+      "name": "layers.3.moe.experts.1.w1",
+      "dtype": "f16",
+      "shape": [
+        128,
+        128
+      ],
+      "byteOffset": 3909376,
+      "byteLength": 32768
+    },
+    {
+      "name": "layers.3.moe.experts.1.w2",
+      "dtype": "f16",
+      "shape": [
+        128,
+        128
+      ],
+      "byteOffset": 3942144,
+      "byteLength": 32768
+    },
+    {
+      "name": "layers.3.moe.experts.1.w3",
+      "dtype": "f16",
+      "shape": [
+        128,
+        128
+      ],
+      "byteOffset": 3974912,
+      "byteLength": 32768
+    },
+    {
+      "name": "layers.3.moe.experts.2.w1",
+      "dtype": "f16",
+      "shape": [
+        128,
+        128
+      ],
+      "byteOffset": 4007680,
+      "byteLength": 32768
+    },
+    {
+      "name": "layers.3.moe.experts.2.w2",
+      "dtype": "f16",
+      "shape": [
+        128,
+        128
+      ],
+      "byteOffset": 4040448,
+      "byteLength": 32768
+    },
+    {
+      "name": "layers.3.moe.experts.2.w3",
+      "dtype": "f16",
+      "shape": [
+        128,
+        128
+      ],
+      "byteOffset": 4073216,
+      "byteLength": 32768
+    },
+    {
+      "name": "layers.3.moe.experts.3.w1",
+      "dtype": "f16",
+      "shape": [
+        128,
+        128
+      ],
+      "byteOffset": 4105984,
+      "byteLength": 32768
+    },
+    {
+      "name": "layers.3.moe.experts.3.w2",
+      "dtype": "f16",
+      "shape": [
+        128,
+        128
+      ],
+      "byteOffset": 4138752,
+      "byteLength": 32768
+    },
+    {
+      "name": "layers.3.moe.experts.3.w3",
+      "dtype": "f16",
+      "shape": [
+        128,
+        128
+      ],
+      "byteOffset": 4171520,
+      "byteLength": 32768
+    },
+    {
+      "name": "layers.3.moe.experts.4.w1",
+      "dtype": "f16",
+      "shape": [
+        128,
+        128
+      ],
+      "byteOffset": 4204288,
+      "byteLength": 32768
+    },
+    {
+      "name": "layers.3.moe.experts.4.w2",
+      "dtype": "f16",
+      "shape": [
+        128,
+        128
+      ],
+      "byteOffset": 4237056,
+      "byteLength": 32768
+    },
+    {
+      "name": "layers.3.moe.experts.4.w3",
+      "dtype": "f16",
+      "shape": [
+        128,
+        128
+      ],
+      "byteOffset": 4269824,
+      "byteLength": 32768
+    },
+    {
+      "name": "layers.3.moe.experts.5.w1",
+      "dtype": "f16",
+      "shape": [
+        128,
+        128
+      ],
+      "byteOffset": 4302592,
+      "byteLength": 32768
+    },
+    {
+      "name": "layers.3.moe.experts.5.w2",
+      "dtype": "f16",
+      "shape": [
+        128,
+        128
+      ],
+      "byteOffset": 4335360,
+      "byteLength": 32768
+    },
+    {
+      "name": "layers.3.moe.experts.5.w3",
+      "dtype": "f16",
+      "shape": [
+        128,
+        128
+      ],
+      "byteOffset": 4368128,
+      "byteLength": 32768
+    },
+    {
+      "name": "layers.3.moe.experts.6.w1",
+      "dtype": "f16",
+      "shape": [
+        128,
+        128
+      ],
+      "byteOffset": 4400896,
+      "byteLength": 32768
+    },
+    {
+      "name": "layers.3.moe.experts.6.w2",
+      "dtype": "f16",
+      "shape": [
+        128,
+        128
+      ],
+      "byteOffset": 4433664,
+      "byteLength": 32768
+    },
+    {
+      "name": "layers.3.moe.experts.6.w3",
+      "dtype": "f16",
+      "shape": [
+        128,
+        128
+      ],
+      "byteOffset": 4466432,
+      "byteLength": 32768
+    },
+    {
+      "name": "layers.3.moe.experts.7.w1",
+      "dtype": "f16",
+      "shape": [
+        128,
+        128
+      ],
+      "byteOffset": 4499200,
+      "byteLength": 32768
+    },
+    {
+      "name": "layers.3.moe.experts.7.w2",
+      "dtype": "f16",
+      "shape": [
+        128,
+        128
+      ],
+      "byteOffset": 4531968,
+      "byteLength": 32768
+    },
+    {
+      "name": "layers.3.moe.experts.7.w3",
+      "dtype": "f16",
+      "shape": [
+        128,
+        128
+      ],
+      "byteOffset": 4564736,
+      "byteLength": 32768
+    },
+    {
+      "name": "layers.3.mlp_norm",
+      "dtype": "f16",
+      "shape": [
+        128
+      ],
+      "byteOffset": 4597504,
+      "byteLength": 256
+    },
+    {
+      "name": "norm",
+      "dtype": "f16",
+      "shape": [
+        128
+      ],
+      "byteOffset": 4597760,
+      "byteLength": 256
+    }
+  ],
+  "training": {
+    "dataset": "TinyStoriesV2-GPT4",
+    "license": "CDLA-Sharing-1.0",
+    "seed": 0,
+    "steps": 8000,
+    "tokensSeen": 131072000,
+    "valLoss": 1.6885,
+    "wallSeconds": 2391.992,
+    "torch": "2.14.0",
+    "gitSha": "7a3160db25944b0e3d03bde021a1c3efebb2e4bc-dirty"
+  },
+  "evidence": [
+    {
+      "probe": "expert-usage-entropy",
+      "prompt": "",
+      "metric": "routing entropy \u00f7 log(experts) on held-out tokens",
+      "value": 0.9996720692121126,
+      "threshold": 0.9,
+      "pass": true
+    }
+  ]
+}

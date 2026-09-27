@@ -8,9 +8,11 @@ import pytest
 
 import train
 from model import Arch, Mlp
-from schemas import APP_MODELS_DIR, validate
+from paths import MODELS_DIR, TRAINING_DIR
+from schemas import validate
 
-TRAINING_DIR = Path(__file__).resolve().parents[1]
+# Slice 16 budgets each of its models at 4 MB; slice 17 budgets the whole ladder (a bun test).
+SLICE_16_MODELS = {"embed", "attn", "rope"}
 CONFIGS = sorted((TRAINING_DIR / "configs").glob("*.toml"))
 TINY = Arch(d_model=32, n_layers=1, n_heads=2, n_kv_heads=1, ctx=32, vocab=4096, mlp=Mlp("swiglu", 64))
 
@@ -67,10 +69,11 @@ def test_every_config_loads(path: Path):
 
 @pytest.mark.parametrize("path", CONFIGS, ids=lambda p: p.stem)
 def test_every_trained_model_exports_a_valid_manifest_and_scenarios(path: Path):
-    model_dir = APP_MODELS_DIR / path.stem
+    model_dir = MODELS_DIR / path.stem
     manifest = json.loads((model_dir / "manifest.json").read_text())
     validate(manifest, "manifest.schema.json")
     validate(json.loads((model_dir / "scenarios.json").read_text()), "scenarios.schema.json")
     assert manifest["evidence"], "D25"
-    assert (model_dir / "weights.bin").stat().st_size <= 4 * 1024 * 1024, "slice 16 size budget"
+    if path.stem in SLICE_16_MODELS:
+        assert (model_dir / "weights.bin").stat().st_size <= 4 * 1024 * 1024, "slice 16 size budget"
     assert (train.TRAINED_FIXTURES_DIR / f"{path.stem}.json").exists()

@@ -1,0 +1,12 @@
+{
+  "experts": [
+    "expert 0: 11.8% of slots; first choice for word start 68%, punctuation or space 22%; e.g. '.' ' to' ' and' ' the' ','",
+    "expert 1: 12.7% of slots; first choice for word start 81%, punctuation or space 16%; e.g. ',' ' was' ' to' ' and' ' saw'",
+    "expert 2: 12.7% of slots; first choice for word start 90%, punctuation or space 5%; e.g. ' a' ' the' ' and' ',' ' his'",
+    "expert 3: 12.1% of slots; first choice for word start 83%, word piece 10%; e.g. ' the' ',' ' a' ' was' ' and'",
+    "expert 4: 13.0% of slots; first choice for word start 88%, word piece 9%; e.g. ' the' ' time' ' day' ' play' ' The'",
+    "expert 5: 12.0% of slots; first choice for word start 65%, punctuation or space 18%; e.g. '.' '\\n' ' happy' ' Tim' ' it'",
+    "expert 6: 13.2% of slots; first choice for word start 70%, punctuation or space 19%; e.g. '.' ' a' '\\n' ' play' ' with'",
+    "expert 7: 12.4% of slots; first choice for word start 62%, punctuation or space 24%; e.g. '.' ',' ' to' '\\n' ' day'"
+  ]
+}

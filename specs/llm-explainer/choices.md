@@ -238,3 +238,44 @@ standalone. Entries are appended per pass and consolidated when the spec closes.
   bars can therefore be slightly stale as occluders. Verdict: acceptable, because labels
   anchor to static parts; revisit if a chapter labels a moving part.
 - **The prompt box sits inside the title panel.** Verdict: sound (delegated).
+
+## Slice 11
+
+- **Chapter 0's loop runs 20 s and shows the rule twice (once → upon → a), then the failure
+  ("onse": never seen, no bars).** A test checks that each input is the previous one's top
+  successor and that "onse" is not in the vocabulary. Verdict: sound.
+- **A `barsWord` channel lets the bars lag the card.** Verdict: sound.
+- **A "never seen" scene note makes the failure beat readable.** Verdict: sound.
+- **Lower-ranked scene tags hide when they collide with higher-ranked ones, and labels also
+  avoid the HUD panel rects (measured on render and resize).** Verdict: sound.
+- **Shares never round to a false 0% or 100%: they show "<1%" or ">99%".** Verdict: sound.
+- **The third stat is "“a” after “upon”" (the top-successor probe), not a generic "chance of
+  the top next word".** Verdict: sound; it is more concrete.
+- **Human checkpoint (copy read): accepted by the lane after three unprimed critique rounds,**
+  which fixed an off-camera hand-off, a 6 s static hold, a card bounce at the seam, and a
+  label sliding behind the title panel.
+
+## Slice 17
+
+- **`moe` is 4.6 MB, over slice 16's 4 MB per-model cap.** The cap is read as applying only to
+  slice 16's models, since slice 17 names only the 25 MB ladder total. Measured total:
+  22.98 MB, enforced by a test. Verdict: sound.
+- **Slice 17 models use tied embeddings (apart from `mlp`) to fit the budget.** Verdict:
+  sound.
+- **The drafter's acceptance rate is Leviathan's β averaged over teacher-forced validation
+  positions; its cost is the ratio of parameter counts.** Results: drafter-64 α 0.595
+  (expected speedup 1.23), drafter-96 α 0.638 (speedup 1.03). O3 is provisionally
+  drafter-64; slice 33 finalises it. Verdict: sound.
+- **Two probe metrics were changed after their first measurement.** Both first values are
+  recorded in slice 17's file. Verdict: sound, but post hoc, so the human should know.
+  - `mlp`: the mean per-prompt relative drop (0.12) was replaced by the drop in total
+    correct-answer probability (94.9% with the top 16 neurons off). Why: prompts where the
+    model assigns the answer about 0.001 dominated the mean.
+  - `residual`: an embedding-cosine metric was replaced by the residual-norm trace the
+    contract names (21.5 vs exactly 0 for `noresidual`).
+- **`q8_0` is an f16 scale plus 32 int8 values per group.** TypeScript dequantization matches
+  Python bit for bit. Verdict: sound.
+- **Every probe measures the exported f16 weights; the D35 probe runs on the shipped
+  TypeScript runtime.** Verdict: sound; the probes measure what ships.
+- **`noresidual` never learns (val loss 8.3 = ln 4096).** That is chapter 7's visible
+  failure, as intended. Verdict: sound.

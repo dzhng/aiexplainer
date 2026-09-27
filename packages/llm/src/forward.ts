@@ -73,7 +73,8 @@ export interface ForwardTrace {
 }
 
 export interface ForwardResult {
-  /** Next-token logits after the last token, `[vocab]`. */
+  /** Next-token logits after the last token, `[vocab]`; with `allPositions`, after every
+   * token of this call, `[tokens, vocab]`. */
   logits: Float32Array;
   trace?: ForwardTrace;
 }
@@ -91,6 +92,8 @@ export interface ForwardOptions {
   kv?: KvCache;
   /** Sliding window: each position sees at most this many positions, itself included. */
   window?: number;
+  /** Return logits after every token of this call (speculative decoding's verify step). */
+  allPositions?: boolean;
 }
 
 export function createKvCache(model: Transformer): KvCache {
@@ -229,10 +232,10 @@ export function forward(
     }
   }
 
-  const last = x.subarray((T - 1) * d, T * d);
-  const final = new Float32Array(d);
-  normRows(final, last, 1, d, model.norm, arch.normEps);
-  const logits = matmulRows(model.lmHead, final, 1, vocab, d);
+  const rows = options.allPositions ? T : 1;
+  const final = new Float32Array(rows * d);
+  normRows(final, x.subarray((T - rows) * d, T * d), rows, d, model.norm, arch.normEps);
+  const logits = matmulRows(model.lmHead, final, rows, vocab, d);
   if (options.kv) options.kv.length = total;
   return tracer ? { logits, trace: tracer.result() } : { logits };
 }
