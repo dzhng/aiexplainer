@@ -1,0 +1,334 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Design Directions</title>
+<style>
+  :root {
+    --bg: #f4f2ee; --ink: #1d1b19; --muted: #6b6660; --card: #ffffff; --line: #e2ded7;
+    --accent: #2f6fea; --chip: #efece6; --chip-on: #1d1b19; --chip-on-ink: #fff;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink);
+    font: 15px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, sans-serif; }
+  main { max-width: 1240px; margin: 0 auto; padding: 32px 16px 160px; }
+  h1 { font-size: 28px; margin: 0 0 4px; letter-spacing: -0.02em; }
+  h2 { font-size: 20px; margin: 48px 0 4px; letter-spacing: -0.01em; }
+  .sub { color: var(--muted); margin: 0 0 20px; max-width: 760px; }
+  .note { font-size: 13px; color: var(--muted); }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(560px, 1fr)); gap: 20px; }
+  @media (max-width: 640px) { .grid { grid-template-columns: 1fr; } }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 14px; overflow: hidden; }
+  .card .meta { padding: 14px 16px 16px; }
+  .card h3 { margin: 0 0 2px; font-size: 16px; }
+  .card p { margin: 0 0 10px; color: var(--muted); font-size: 14px; }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .chip { border: 1px solid var(--line); background: var(--chip); color: var(--ink); border-radius: 999px;
+    padding: 4px 12px; font-size: 13px; cursor: pointer; user-select: none; }
+  .chip[aria-pressed="true"] { background: var(--chip-on); color: var(--chip-on-ink); border-color: var(--chip-on); }
+  .chip.skip[aria-pressed="true"] { background: #b3261e; border-color: #b3261e; }
+
+  /* ---- stage (the mocked app frame) ---- */
+  .stage { position: relative; aspect-ratio: 16 / 9; overflow: hidden; }
+  .stage svg.scene { position: absolute; inset: 0; width: 100%; height: 100%; }
+  .hud { position: absolute; font-size: 9px; line-height: 1.35; }
+  .hud.tl { left: 10px; top: 10px; width: 36%; }
+  .hud.tr { right: 10px; top: 10px; border-radius: 8px; padding: 6px 8px; }
+  .hud.bc { left: 50%; bottom: 8px; transform: translateX(-50%); display: flex; gap: 3px; border-radius: 8px; padding: 4px; }
+  .hud .brand { font-size: 8px; letter-spacing: .12em; text-transform: uppercase; opacity: .7; }
+  .hud .title { font-size: 15px; font-weight: 700; margin: 2px 0 3px; letter-spacing: -0.01em; }
+  .hud .why { opacity: .8; margin-bottom: 5px; }
+  .hud .stats { display: flex; gap: 4px; margin-bottom: 5px; }
+  .hud .stat { border-radius: 5px; padding: 3px 6px; }
+  .hud .stat b { display: block; font-size: 11px; }
+  .hud .cap { border-radius: 6px; padding: 5px 7px; }
+  .hud .row { display: flex; gap: 3px; align-items: center; margin: 2px 0; }
+  .hud .row span.lbl { width: 34px; opacity: .6; }
+  .hud .seg { border-radius: 4px; padding: 2px 6px; }
+  .hud .rung { border-radius: 5px; padding: 2px 6px; white-space: nowrap; }
+
+  /* ---- axis pickers ---- */
+  .axis { display: grid; grid-template-columns: repeat(auto-fill, minmax(360px, 1fr)); gap: 14px; }
+  .opt { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 14px; cursor: pointer; }
+  .opt[aria-pressed="true"] { outline: 2px solid var(--accent); border-color: var(--accent); }
+  .opt h4 { margin: 0 0 4px; font-size: 14px; }
+  .opt p { margin: 0; font-size: 14px; color: var(--muted); }
+  .opt blockquote { margin: 8px 0 0; padding: 10px 12px; background: var(--chip); border-radius: 8px; font-size: 14px; color: var(--ink); }
+  .opt svg { width: 100%; height: auto; display: block; margin-bottom: 8px; border-radius: 8px; }
+
+  .probe { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; margin-bottom: 12px; }
+  .probe h4 { margin: 0 0 8px; font-size: 15px; }
+  .probe input { width: 100%; margin-top: 8px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; font: inherit; background: #fff; }
+
+  .reply { position: fixed; left: 0; right: 0; bottom: 0; background: #1d1b19; color: #fff; padding: 12px 16px; }
+  .reply .inner { max-width: 1240px; margin: 0 auto; display: flex; gap: 12px; align-items: flex-start; }
+  .reply pre { flex: 1; margin: 0; white-space: pre-wrap; font: 13px/1.45 ui-monospace, SFMono-Regular, Menlo, monospace; max-height: 110px; overflow: auto; }
+  .reply button { background: #fff; color: #1d1b19; border: 0; border-radius: 8px; padding: 8px 14px; font: inherit; font-weight: 600; cursor: pointer; }
+  @keyframes flow { to { stroke-dashoffset: -40; } }
+  .flow { animation: flow 1.6s linear infinite; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Stage 3 · Design directions</h1>
+  <p class="sub">One scene drawn four different ways: <b>chapter 4, Attention</b>. The prompt is <i>“The cat sat on the mat because it was tired”</i>, and we're looking at what flows into the word <b>“it”</b>. Pipe widths are <b>illustrative, not real model output</b>. The layout copies the reference: title top left, controls top right, chapter ladder at the bottom. Only the look changes. Use the chips to mark what you'd <b>steal</b> or <b>skip</b>; the bar at the bottom assembles your reply.</p>
+
+  <div class="grid" id="directions"></div>
+
+  <h2>How literal is the 3D?</h2>
+  <p class="sub">D1 settled on a machine built from real tensors, explained with everyday analogies. What's still open is whether the analogy objects appear <i>in the 3D itself</i>.</p>
+  <div class="axis" data-axis="literal" id="literal"></div>
+
+  <h2>Voice of the captions</h2>
+  <p class="sub">The same caption for the same moment, written three ways. Each one is followed by the “Precisely:” line (D7).</p>
+  <div class="axis" data-axis="voice" id="voice"></div>
+
+  <h2>Label density</h2>
+  <div class="axis" data-axis="labels" id="labels"></div>
+
+  <h2>Context I can't read from the repo</h2>
+  <p class="sub">Answer with chips, or type a note and leave the rest.</p>
+  <div id="probes"></div>
+</main>
+
+<div class="reply"><div class="inner"><pre id="out"></pre><button id="copy">Copy reply</button></div></div>
+
+<script>
+const TOKENS = ["The","cat","sat","on","the","mat","because","it","was","tired"];
+const FOCUS = 7; // "it"
+// Illustrative attention weights from "it" to each earlier token (sum to 1). Not real model output.
+const W = [0.03, 0.41, 0.06, 0.02, 0.03, 0.17, 0.14, 0.14];
+
+const DIRS = [
+  { id: "night", name: "1 · Night lab", blurb: "Closest to the reference: a dark studio, glowing flows with bloom, glass and metal parts. Feels like a serious machine.",
+    bg: ["#0b1020","#1a1f3a"], floor: "#161b30", floorEdge: "#2a3155", block: ["#2b3252","#3a4370","#1f2540"], text: "#e8ecff",
+    pipe: "#b58cff", pipeGlow: true, sealed: "#3a3f58", focus: "#ffb86b", font: "Inter, sans-serif",
+    hudBg: "rgba(20,24,44,.72)", hudInk: "#e8ecff", hudLine: "rgba(255,255,255,.12)", segOn: "#6ea8ff", segOnInk:"#0b1020", brand: "#9aa5d6" },
+  { id: "clay", name: "2 · Daylight clay", blurb: "Soft, bright and matte, like clay toys under a studio light. Water is a pastel blue. Friendly and calm, with no sci-fi feel.",
+    bg: ["#f6efe6","#efe4d6"], floor: "#e8dccb", floorEdge: "#d8c7b1", block: ["#ffffff","#f3ece2","#e2d6c6"], text: "#3b3129",
+    pipe: "#5fa8d3", pipeGlow: false, sealed: "#cdbfae", focus: "#f08a5d", font: "ui-rounded, 'SF Pro Rounded', system-ui, sans-serif",
+    hudBg: "rgba(255,255,255,.82)", hudInk: "#3b3129", hudLine: "rgba(0,0,0,.08)", segOn: "#3b3129", segOnInk:"#fff", brand: "#9c8a78" },
+  { id: "blueprint", name: "3 · Blueprint", blurb: "Line drawings on engineering blue, with dimension marks and callouts. It explains shape and structure more than mood.",
+    bg: ["#123a6b","#0e2f58"], floor: "none", floorEdge: "#8fb8e8", block: ["none","none","none"], text: "#e6f0ff",
+    pipe: "#ffffff", pipeGlow: false, sealed: "#6c8fbd", focus: "#ffd166", font: "ui-monospace, Menlo, monospace", line: true,
+    hudBg: "rgba(10,36,70,.8)", hudInk: "#e6f0ff", hudLine: "rgba(230,240,255,.25)", segOn: "#e6f0ff", segOnInk:"#123a6b", brand: "#8fb8e8" },
+  { id: "toy", name: "4 · Science museum", blurb: "Chunky primary colours and clear tubes of coloured water, like a hands-on exhibit at the Exploratorium. Loud and playful.",
+    bg: ["#fffdf5","#fff4d6"], floor: "#ffd23f", floorEdge: "#e0a800", block: ["#ee4266","#ff6b8b","#c42b4f"], text: "#1b1b1b",
+    pipe: "#3bceac", pipeGlow: false, sealed: "#bdbdbd", focus: "#540d6e", font: "'Avenir Next', 'Trebuchet MS', sans-serif", tubes: true,
+    hudBg: "#ffffff", hudInk: "#1b1b1b", hudLine: "#1b1b1b", segOn: "#540d6e", segOnInk:"#fff", brand: "#540d6e" },
+];
+
+function sceneSVG(d, opts = {}) {
+  const Wd = 800, H = 450;
+  const baseY = 330, x0 = 150, dx = 62, bw = 46, bh = 26, depth = 12;
+  const fx = 560, fy = 150; // the "it" receiver, raised
+  let s = `<svg class="scene" viewBox="0 0 ${Wd} ${H}" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">`;
+  s += `<defs><linearGradient id="bg-${d.id}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${d.bg[0]}"/><stop offset="1" stop-color="${d.bg[1]}"/></linearGradient>`;
+  s += `<filter id="glow-${d.id}" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="4" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>`;
+  s += `<pattern id="grid-${d.id}" width="20" height="20" patternUnits="userSpaceOnUse"><path d="M20 0H0V20" fill="none" stroke="${d.floorEdge}" stroke-opacity=".18" stroke-width="1"/></pattern></defs>`;
+  s += `<rect width="${Wd}" height="${H}" fill="url(#bg-${d.id})"/>`;
+  if (d.line) s += `<rect width="${Wd}" height="${H}" fill="url(#grid-${d.id})"/>`;
+  // floor slab
+  const fl = `M${x0-60},${baseY+30} L${x0+dx*9+80},${baseY+30} L${x0+dx*9+120},${baseY-10} L${x0-20},${baseY-10} Z`;
+  s += d.line ? `<path d="${fl}" fill="none" stroke="${d.floorEdge}" stroke-dasharray="4 4"/>` : `<path d="${fl}" fill="${d.floor}" stroke="${d.floorEdge}"/>`;
+  // pipes (drawn before blocks so blocks sit on top of pipe roots)
+  TOKENS.forEach((t, i) => {
+    if (i === FOCUS) return;
+    const cx = x0 + i * dx + bw / 2, cy = baseY - bh - depth;
+    if (i > FOCUS) {
+      // sealed future pipe stub
+      s += `<path d="M${cx},${cy} C${cx},${cy-50} ${cx-10},${cy-70} ${cx-20},${cy-80}" fill="none" stroke="${d.sealed}" stroke-width="6" stroke-linecap="round" ${d.line?'stroke-dasharray="3 5"':''}/>`;
+      s += `<rect x="${cx-29}" y="${cy-90}" width="18" height="10" rx="2" fill="${d.sealed}" transform="rotate(-30 ${cx-20} ${cy-85})"/>`;
+      return;
+    }
+    const w = 2 + W[i] * 34;
+    const path = `M${cx},${cy} C${cx},${cy-120} ${fx},${fy+140} ${fx},${fy+18}`;
+    if (d.tubes) s += `<path d="${path}" fill="none" stroke="#1b1b1b" stroke-opacity=".85" stroke-width="${w+5}" stroke-linecap="round"/><path d="${path}" fill="none" stroke="#ffffff" stroke-width="${w+2}" stroke-linecap="round"/>`;
+    s += `<path d="${path}" fill="none" stroke="${d.pipe}" stroke-opacity="${d.line?0.95:0.9}" stroke-width="${w}" stroke-linecap="round" ${d.pipeGlow?`filter="url(#glow-${d.id})"`:''}/>`;
+    s += `<path class="flow" d="${path}" fill="none" stroke="${d.line?d.focus:'#ffffff'}" stroke-opacity="${d.line?0.9:0.55}" stroke-width="${Math.max(1, w/3)}" stroke-dasharray="4 16" stroke-linecap="round"/>`;
+    if (opts.labels !== "sparse" && W[i] >= (opts.labels === "dense" ? 0 : 0.1)) {
+      const lx = cx + (fx - cx) * 0.18, ly = cy - 70;
+      s += `<text x="${lx+6}" y="${ly}" font-size="12" font-family="${d.font}" fill="${d.text}" opacity=".85">${Math.round(W[i]*100)}%</text>`;
+    }
+  });
+  // token blocks
+  TOKENS.forEach((t, i) => {
+    const x = x0 + i * dx, y = baseY - bh;
+    const fut = i > FOCUS, foc = i === FOCUS;
+    const [front, top, side] = d.block;
+    const op = fut ? 0.45 : 1;
+    if (d.line) {
+      s += `<g opacity="${op}" fill="none" stroke="${foc?d.focus:d.floorEdge}" stroke-width="1.2"><path d="M${x},${y} h${bw} v${bh} h-${bw} Z"/><path d="M${x},${y} l${depth},-${depth} h${bw} l-${depth},${depth}"/><path d="M${x+bw},${y} l${depth},-${depth} v${bh} l-${depth},${depth}"/></g>`;
+    } else {
+      s += `<g opacity="${op}"><path d="M${x},${y} l${depth},-${depth} h${bw} l-${depth},${depth} Z" fill="${top}"/><path d="M${x+bw},${y} l${depth},-${depth} v${bh} l-${depth},${depth} Z" fill="${side}"/><rect x="${x}" y="${y}" width="${bw}" height="${bh}" fill="${foc?d.focus:front}" ${d.tubes?'stroke="#1b1b1b" stroke-width="2"':''}/></g>`;
+    }
+    const tc = d.tubes && !foc ? "#fff" : (foc && !d.line ? "#fff" : d.text);
+    s += `<text x="${x+bw/2}" y="${y+bh/2+4}" text-anchor="middle" font-size="${t.length>5?9:11}" font-family="${d.font}" font-weight="600" fill="${tc}" opacity="${op}">${t}</text>`;
+  });
+  // receiver: the "it" slot being filled
+  s += d.line
+    ? `<circle cx="${fx}" cy="${fy}" r="20" fill="none" stroke="${d.focus}" stroke-width="1.5"/><path d="M${fx-28},${fy} h-40" stroke="${d.floorEdge}" stroke-dasharray="3 3"/>`
+    : `<circle cx="${fx}" cy="${fy}" r="20" fill="${d.focus}" ${d.pipeGlow?`filter="url(#glow-${d.id})"`:''} ${d.tubes?'stroke="#1b1b1b" stroke-width="3"':''}/>`;
+  s += `<text x="${fx}" y="${fy+4}" text-anchor="middle" font-size="11" font-family="${d.font}" font-weight="700" fill="${d.line?d.focus:'#fff'}">“it”</text>`;
+  if (opts.labels !== "sparse") {
+    s += `<text x="${fx+30}" y="${fy-10}" font-size="11" font-family="${d.font}" fill="${d.text}" opacity=".9">what “it” is about</text>`;
+    s += `<text x="${x0+dx*8+30}" y="${baseY-90}" font-size="11" font-family="${d.font}" fill="${d.text}" opacity=".7">sealed: the future</text>`;
+  }
+  if (opts.labels === "dense") {
+    s += `<text x="${x0-40}" y="${baseY+52}" font-size="10" font-family="${d.font}" fill="${d.text}" opacity=".7">each block = one token · each pipe = one attention weight · widths sum to 100%</text>`;
+    s += `<text x="${fx+30}" y="${fy+8}" font-size="10" font-family="${d.font}" fill="${d.text}" opacity=".6">mix of values, weighted</text>`;
+  }
+  return s + `</svg>`;
+}
+
+function hud(d) {
+  const segs = (items, on) => items.map((x, i) => `<span class="seg" style="${i===on?`background:${d.segOn};color:${d.segOnInk}`:`border:1px solid ${d.hudLine}`}">${x}</span>`).join("");
+  const box = `background:${d.hudBg};color:${d.hudInk};border:1px solid ${d.hudLine};font-family:${d.font}`;
+  const rungs = ["0 Counts","1 Bricks","2 Pins","3 Dice","4 Pipes","5 Clocks","6 Questions","7 River"].map((r,i)=>`<span class="rung" style="${i===4?`background:${d.segOn};color:${d.segOnInk}`:''}">${r}</span>`).join("");
+  return `
+  <div class="hud tl" style="color:${d.hudInk};font-family:${d.font}">
+    <div class="brand" style="color:${d.brand}">How LLMs work, from first principles</div>
+    <div class="title">4 · Attention</div>
+    <div class="why">Last chapter only ever saw one word back. “it” needs to know <i>what</i> it refers to.</div>
+    <div class="stats">
+      <div class="stat" style="${box}">Words seen<b>8</b></div>
+      <div class="stat" style="${box}">Pipes into “it”<b>8</b></div>
+      <div class="stat" style="${box}">Sealed<b>2</b></div>
+    </div>
+    <div class="cap" style="${box}">Every earlier word has a pipe into “it”. The better a word matches what “it” is looking for, the wider its pipe opens. <b>“cat”</b> gets the widest.</div>
+  </div>
+  <div class="hud tr" style="${box}">
+    <div class="row"><span class="lbl">Follow</span>${segs(["All","Pipes","Matching","Sealed"],1)}</div>
+    <div class="row"><span class="lbl">Word</span><span style="flex:1;height:3px;border-radius:2px;background:${d.segOn};opacity:.6;min-width:70px"></span><span>“it”</span></div>
+    <div class="row"><span class="lbl">View</span>${segs(["Whole","Cutaway","Exploded"],0)}</div>
+  </div>
+  <div class="hud bc" style="${box}">${rungs}</div>`;
+}
+
+const state = { steal: {}, skip: {}, literal: null, voice: null, labels: null, probes: {}, notes: {} };
+
+function chip(label, kind, key) {
+  return `<span class="chip ${kind}" role="button" aria-pressed="false" data-kind="${kind}" data-key="${key}">${label}</span>`;
+}
+
+document.getElementById("directions").innerHTML = DIRS.map(d => `
+  <div class="card">
+    <div class="stage" style="background:${d.bg[0]}">${sceneSVG(d)}${hud(d)}</div>
+    <div class="meta">
+      <h3>${d.name}</h3><p>${d.blurb}</p>
+      <div class="chips">
+        ${chip("steal the whole look","steal",d.id+":whole")}
+        ${chip("steal the colours","steal",d.id+":colours")}
+        ${chip("steal the materials","steal",d.id+":materials")}
+        ${chip("steal the type","steal",d.id+":type")}
+        ${chip("skip","skip",d.id+":skip")}
+      </div>
+    </div>
+  </div>`).join("");
+
+// ---- literalness axis (drawn in the night-lab palette so only this axis varies)
+const N = DIRS[0];
+function mini(kind) {
+  let s = `<svg viewBox="0 0 360 150" xmlns="http://www.w3.org/2000/svg"><rect width="360" height="150" fill="${N.bg[0]}"/>`;
+  const toks = ["cat","mat","it"];
+  if (kind === "literal") {
+    // real pipes with valves, water, a tank
+    s += `<rect x="250" y="30" width="60" height="70" rx="6" fill="#26304f" stroke="#5a6aa0"/><rect x="252" y="62" width="56" height="36" fill="#5fa8d3" opacity=".8"/><text x="280" y="22" text-anchor="middle" font-size="11" fill="#e8ecff">“it” tank</text>`;
+    s += `<path d="M60,120 C60,60 200,70 250,70" stroke="#8a95b8" stroke-width="16" fill="none"/><path d="M60,120 C60,60 200,70 250,70" stroke="#5fa8d3" stroke-width="10" fill="none"/>`;
+    s += `<path d="M140,120 C140,95 210,90 250,88" stroke="#8a95b8" stroke-width="9" fill="none"/><path d="M140,120 C140,95 210,90 250,88" stroke="#5fa8d3" stroke-width="4" fill="none"/>`;
+    s += `<circle cx="95" cy="80" r="8" fill="#d14" /><rect x="91" y="68" width="8" height="6" fill="#d14"/><text x="108" y="84" font-size="10" fill="#e8ecff">valve open</text>`;
+    s += `<rect x="40" y="120" width="40" height="18" fill="#3a4370"/><text x="60" y="133" text-anchor="middle" font-size="10" fill="#e8ecff">cat</text><rect x="120" y="120" width="40" height="18" fill="#3a4370"/><text x="140" y="133" text-anchor="middle" font-size="10" fill="#e8ecff">mat</text>`;
+  } else if (kind === "abstract") {
+    // glowing tensor lines, analogy only in text
+    s += `<g stroke="#b58cff" fill="none"><path d="M60,120 C60,60 200,70 270,65" stroke-width="7" opacity=".9"/><path d="M140,120 C140,95 210,90 270,70" stroke-width="3" opacity=".9"/></g>`;
+    s += `<circle cx="280" cy="66" r="14" fill="#ffb86b"/><text x="280" y="70" text-anchor="middle" font-size="10" fill="#0b1020">it</text>`;
+    s += `<text x="20" y="22" font-size="10" fill="#9aa5d6">caption: “think of each line as a pipe…”</text>`;
+    s += `<rect x="40" y="120" width="40" height="18" fill="#3a4370"/><text x="60" y="133" text-anchor="middle" font-size="10" fill="#e8ecff">cat</text><rect x="120" y="120" width="40" height="18" fill="#3a4370"/><text x="140" y="133" text-anchor="middle" font-size="10" fill="#e8ecff">mat</text>`;
+  } else {
+    // blend: glowing lines that behave like water (width, flow), plus a toggle to "show analogy"
+    s += `<path d="M60,120 C60,60 200,70 270,65" stroke="#5fa8d3" stroke-width="9" fill="none" opacity=".85"/><path class="flow" d="M60,120 C60,60 200,70 270,65" stroke="#fff" stroke-width="2" stroke-dasharray="4 14" fill="none" opacity=".7"/>`;
+    s += `<path d="M140,120 C140,95 210,90 270,70" stroke="#5fa8d3" stroke-width="4" fill="none" opacity=".85"/>`;
+    s += `<circle cx="280" cy="66" r="14" fill="#ffb86b"/><text x="280" y="70" text-anchor="middle" font-size="10" fill="#0b1020">it</text>`;
+    s += `<rect x="226" y="108" width="118" height="22" rx="11" fill="#26304f" stroke="#5a6aa0"/><text x="285" y="123" text-anchor="middle" font-size="10" fill="#e8ecff">◐ Analogy · Precise</text>`;
+    s += `<rect x="40" y="120" width="40" height="18" fill="#3a4370"/><text x="60" y="133" text-anchor="middle" font-size="10" fill="#e8ecff">cat</text><rect x="120" y="120" width="40" height="18" fill="#3a4370"/><text x="140" y="133" text-anchor="middle" font-size="10" fill="#e8ecff">mat</text>`;
+  }
+  return s + `</svg>`;
+}
+const LITERAL = [
+  { k: "literal", h: "A · Literal objects", p: "Real pipes with valves and a tank, real dice, a real bus. The metaphor is the scene. Easiest to grasp, but the actual mechanism (vectors, weights) is hidden." },
+  { k: "blend", h: "B · Tensor machine that behaves like the analogy (my pick)", p: "The parts are real tensors, but they move the way the analogy does: water-like flow, pipe widths. An Analogy/Precise toggle swaps the labels between the two readings." },
+  { k: "abstract", h: "C · Abstract, analogy in text only", p: "Glowing data lines. The analogy appears only in the caption. The most honest to the maths, but the hardest for a beginner." },
+];
+document.getElementById("literal").innerHTML = LITERAL.map(o => `<div class="opt" role="button" aria-pressed="false" data-axis="literal" data-val="${o.k}">${mini(o.k)}<h4>${o.h}</h4><p>${o.p}</p></div>`).join("");
+
+const VOICE = [
+  { k: "plain", h: "A · Plain and direct", q: "Every earlier word has a pipe into “it”. The better a word matches what “it” is looking for, the wider its pipe opens. “cat” gets the widest, so most of what flows into “it” is about the cat." },
+  { k: "story", h: "B · Storyteller", q: "“it” has no idea what it means on its own. So it opens a pipe to every word before it and asks: which of you am I talking about? “cat” answers loudest, and most of the water comes from there." },
+  { k: "terse", h: "C · Terse, like a lab manual", q: "Pipes: one per earlier word. Width = match between that word and “it”. Widths sum to 100%. Widest: “cat”, 41%." },
+];
+const PRECISE = "Precisely: each word has a key and “it” has a query (lists of numbers). Score = dot product of the two. Softmax turns the scores into weights that sum to 1, and “it” receives the weighted sum of every word's value.";
+document.getElementById("voice").innerHTML = VOICE.map(o => `<div class="opt" role="button" aria-pressed="false" data-axis="voice" data-val="${o.k}"><h4>${o.h}</h4><blockquote>${o.q}<br><br><span style="color:#6b6660">${PRECISE}</span></blockquote></div>`).join("");
+
+const LABELS = [
+  { k: "sparse", h: "A · Sparse", p: "Only the caption explains. The scene stays clean." },
+  { k: "normal", h: "B · Key parts only", p: "Label the few things this chapter is about, and show numbers on the big pipes." },
+  { k: "dense", h: "C · Everything labelled", p: "Every pipe has a %, plus a legend line. The most informative, and the busiest." },
+];
+document.getElementById("labels").innerHTML = LABELS.map(o => `<div class="opt" role="button" aria-pressed="false" data-axis="labels" data-val="${o.k}"><div class="stage" style="border-radius:8px;overflow:hidden;margin-bottom:8px">${sceneSVG(DIRS[0], {labels:o.k})}</div><h4>${o.h}</h4><p>${o.p}</p></div>`).join("");
+
+const PROBES = [
+  { k: "who", q: "Who is this for, beyond you?", opts: ["just me, for now","post it on X like the reference","friends / coworkers","a course or talk"] },
+  { k: "device", q: "Where will people open it?", opts: ["desktop only","desktop first, phone should work","phone matters as much"] },
+  { k: "length", q: "How long should the full ladder take someone?", opts: ["~10 min skim","~30 min","an hour+, it's a course"] },
+  { k: "done", q: "What does “done” look like for v1?", opts: ["all 16 chapters","ladder up to KV cache","a few polished chapters, the rest later"] },
+  { k: "brand", q: "Whose name is on it?", opts: ["mine (dzhng)","a new brand / site name","no branding"] },
+];
+document.getElementById("probes").innerHTML = PROBES.map(p => `<div class="probe"><h4>${p.q}</h4><div class="chips">${p.opts.map(o => `<span class="chip" role="button" aria-pressed="false" data-probe="${p.k}" data-val="${o}">${o}</span>`).join("")}</div><input data-note="${p.k}" placeholder="or a note…"></div>`).join("");
+
+// ---- interaction + reply assembly
+document.addEventListener("click", e => {
+  const c = e.target.closest("[role=button]");
+  if (!c) return;
+  if (c.dataset.kind) {
+    const on = c.getAttribute("aria-pressed") !== "true";
+    c.setAttribute("aria-pressed", on);
+    state[c.dataset.kind][c.dataset.key] = on;
+  } else if (c.dataset.axis) {
+    document.querySelectorAll(`[data-axis="${c.dataset.axis}"][role=button]`).forEach(x => x.setAttribute("aria-pressed", "false"));
+    c.setAttribute("aria-pressed", "true");
+    state[c.dataset.axis] = c.dataset.val;
+  } else if (c.dataset.probe) {
+    c.parentElement.querySelectorAll(".chip").forEach(x => x.setAttribute("aria-pressed", "false"));
+    c.setAttribute("aria-pressed", "true");
+    state.probes[c.dataset.probe] = c.dataset.val;
+  }
+  render();
+});
+document.addEventListener("input", e => { if (e.target.dataset.note) { state.notes[e.target.dataset.note] = e.target.value; render(); } });
+
+function render() {
+  const lines = [];
+  const pick = kind => Object.entries(state[kind]).filter(([, v]) => v).map(([k]) => k.replace(":", " → "));
+  const st = pick("steal"), sk = pick("skip");
+  if (st.length) lines.push("Steal: " + st.join(", "));
+  if (sk.length) lines.push("Skip: " + sk.map(s => s.replace(" → skip", "")).join(", "));
+  if (state.literal) lines.push("Literalness: " + LITERAL.find(o => o.k === state.literal).h);
+  if (state.voice) lines.push("Voice: " + VOICE.find(o => o.k === state.voice).h);
+  if (state.labels) lines.push("Labels: " + LABELS.find(o => o.k === state.labels).h);
+  PROBES.forEach(p => {
+    const v = state.probes[p.k], n = state.notes[p.k];
+    if (v || n) lines.push(`${p.q} ${[v, n].filter(Boolean).join(" — ")}`);
+  });
+  document.getElementById("out").textContent = lines.length ? lines.join("\n") : "Click chips and options. Your reply builds up here.";
+}
+document.getElementById("copy").onclick = () => {
+  const t = document.getElementById("out").textContent;
+  (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject()).then(
+    () => { document.getElementById("copy").textContent = "Copied"; setTimeout(() => document.getElementById("copy").textContent = "Copy reply", 1200); },
+    () => {});
+};
+render();
+</script>
+</body>
+</html>

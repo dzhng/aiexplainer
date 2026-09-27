@@ -1,0 +1,259 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>LLM Explainer Map</title>
+<style>
+  :root { --bg:#0b1020; --panel:#141a30; --panel2:#1a2140; --ink:#e8ecff; --muted:#9aa5d6; --line:#2a3155;
+    --accent:#b58cff; --warm:#ffb86b; --ok:#6fdc9c; --open:#ffd166; --edge:#6ea8ff; --bad:#ff6b8b; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink); font:15px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",Inter,sans-serif; }
+  main { max-width:1100px; margin:0 auto; padding:36px 16px 80px; }
+  h1 { font-size:30px; margin:0; letter-spacing:-.02em; }
+  h1 span { color:var(--accent); }
+  .lede { color:var(--muted); max-width:760px; margin:6px 0 24px; }
+  nav { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:28px; }
+  nav a { color:var(--ink); text-decoration:none; background:var(--panel); border:1px solid var(--line); border-radius:999px; padding:4px 12px; font-size:13px; }
+  h2 { font-size:21px; margin:44px 0 6px; letter-spacing:-.01em; display:flex; gap:10px; align-items:baseline; }
+  h2 small { color:var(--muted); font-weight:400; font-size:14px; }
+  h3 { font-size:16px; margin:22px 0 8px; }
+  p.note { color:var(--muted); margin:0 0 12px; font-size:14px; }
+  table { width:100%; border-collapse:collapse; background:var(--panel); border:1px solid var(--line); border-radius:12px; overflow:hidden; font-size:14px; }
+  th, td { text-align:left; padding:8px 12px; border-bottom:1px solid var(--line); vertical-align:top; }
+  th { color:var(--muted); font-weight:600; font-size:12px; text-transform:uppercase; letter-spacing:.06em; background:var(--panel2); }
+  tr:last-child td { border-bottom:0; }
+  td.id { color:var(--accent); font-weight:700; white-space:nowrap; }
+  .tag { display:inline-block; border-radius:999px; padding:1px 8px; font-size:11px; font-weight:700; letter-spacing:.04em; white-space:nowrap; }
+  .t-user { background:rgba(181,140,255,.18); color:var(--accent); }
+  .t-terr { background:rgba(110,168,255,.18); color:var(--edge); }
+  .t-open { background:rgba(255,209,102,.18); color:var(--open); }
+  .t-dec  { background:rgba(111,220,156,.18); color:var(--ok); }
+  .t-edge { background:rgba(110,168,255,.18); color:var(--edge); }
+  .t-fixed{ background:rgba(111,220,156,.18); color:var(--ok); }
+  .cards { display:grid; grid-template-columns:repeat(auto-fill,minmax(330px,1fr)); gap:12px; }
+  .card { background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:14px 16px; }
+  .card h4 { margin:0 0 6px; font-size:15px; display:flex; gap:8px; align-items:baseline; justify-content:space-between; }
+  .card dl { margin:0; font-size:14px; }
+  .card dt { color:var(--muted); font-size:11px; text-transform:uppercase; letter-spacing:.06em; margin-top:8px; }
+  .card dd { margin:2px 0 0; }
+  code { font:12.5px ui-monospace,SFMono-Regular,Menlo,monospace; background:var(--panel2); border:1px solid var(--line); border-radius:5px; padding:0 4px; }
+  ul.tight { margin:0; padding-left:18px; } ul.tight li { margin:3px 0; }
+  details { background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:10px 14px; margin-top:10px; }
+  summary { cursor:pointer; font-weight:600; }
+  .opt { color:var(--muted); font-size:13px; }
+  .prompt { position:relative; background:#05070f; border:1px solid var(--accent); border-radius:12px; padding:16px; }
+  .prompt pre { margin:0; white-space:pre-wrap; font:13px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace; }
+  .prompt button { position:absolute; top:10px; right:10px; background:var(--accent); color:#0b1020; border:0; border-radius:8px; padding:6px 12px; font-weight:700; cursor:pointer; }
+  .quad { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:8px; }
+  .quad div { background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:12px 14px; font-size:14px; }
+  .quad b { display:block; color:var(--warm); margin-bottom:2px; }
+  @media (max-width:700px) { .quad { grid-template-columns:1fr; } table { font-size:13px; } }
+</style>
+</head>
+<body>
+<main>
+  <h1>How LLMs work, <span>from first principles</span></h1>
+  <p class="lede">The explore map for <code>apps/explainer</code>, the first app in this monorepo. It covers all four quadrants: what's settled, what was decided and who decided it, the taste we extracted, and the landmines found. Walked on 2026-09-27. Implementation starts from this page.</p>
+  <p class="note" style="border:1px solid var(--open);border-radius:10px;padding:10px 12px;color:var(--open)"><b>Superseded for planning:</b> the build plan now lives in <code>specs/llm-explainer/README.md</code>. It adds D31–D41, resolves O1 and O4, and replaces this page's OPEN table, tweakable plan and kickoff prompt. The decisions D1–D30 on this page remain binding.</p>
+  <nav>
+    <a href="#kk">1 · Known knowns</a><a href="#ku">2 · Known unknowns</a><a href="#uk">3 · Unknown knowns</a>
+    <a href="#uu">4 · Unknown unknowns</a><a href="#ladder">Chapter ladder</a><a href="#confirm">Confirm before coding</a>
+    <a href="#plan">Tweakable plan</a><a href="#prompt">Kickoff prompt</a>
+  </nav>
+
+  <div class="quad">
+    <div><b>Known knowns</b>A 3D explainer in the style of airsup.ai/rocket-engine: one dark room, a Follow row, a slider, a scenario row, Whole/Cutaway/Exploded views, pinned labels, and grounded numbers. The monorepo scaffold already exists.</div>
+    <div><b>Known unknowns</b>Closed as D1–D14 (structure, stack, models, deploy, first slice). There are 5 OPEN items, and each one lists what unblocks it.</div>
+    <div><b>Unknown knowns</b>Closed as D15–D23: Night lab look, a tensor machine that behaves like the analogy, a storyteller voice, made for X, desktop only, a ~10 minute skim, all 16 chapters, branded dzhng.</div>
+    <div><b>Unknown unknowns</b>11 cards, recorded as D24–D30 plus sharp edges. The biggest are the time budget, whether honest real models show each effect, and how speed is shown for production scale.</div>
+  </div>
+
+  <!-- ============ 1 ============ -->
+  <h2 id="kk">1 · Known knowns <small>settled ground, with sources</small></h2>
+  <h3>The reference: airsup.ai/rocket-engine</h3>
+  <p class="note">Sources: the tweet's video frames, the page's HTML and help text, and its JS bundle (fetched 2026-09-27).</p>
+  <ul class="tight">
+    <li><b>A lab of machines</b>, with a switcher at the bottom and a house button for the overview. Every machine uses the same template:
+      <ul class="tight">
+        <li>top left: a title (“Inside the <b>Raptor 3</b>”), a 2-line pitch, 3 stat chips (<code>280 tf · 350 bar · 800 kg/s</code>) and a caption that changes with <b>Follow</b>;</li>
+        <li>top right: a <b>Follow</b> row (All plus 3 things to follow, also on keys 1–4), one slider, a scenario row, <b>Whole / Cutaway / Exploded</b>, play and help;</li>
+        <li>labels pinned to parts in the 3D view.</li>
+      </ul></li>
+    <li>The help panel states where each machine's numbers come from (“Thrust and Isp follow SpaceX's published figures… everything else is an estimate”). <b>That honesty is part of the style.</b></li>
+    <li>Built with React, three.js on WebGL and OrbitControls, with procedural geometry, a dark room and bloom. For us, only the <i>look and feel</i> carries over; the tech doesn't (see D10).</li>
+  </ul>
+  <h3>The territory</h3>
+  <ul class="tight">
+    <li>Monorepo scaffold: <code>package.json</code> (bun workspaces <code>apps/*</code>, <code>packages/*</code>, catalog), <code>turbo.json</code>, <code>packages/typescript-config/base.json</code>, <code>.oxfmtrc.json</code>. Modelled on <code>~/dev/jevgrep</code>.</li>
+    <li>Skills are in <code>.agents/skills/</code>, symlinked from <code>.claude/skills/</code>. The <code>renderer</code> skill (<code>.agents/skills/renderer/SKILL.md</code>) prescribes <b>TypeGPU on WebGPU, no second rendering library</b>, one frame function, one resource registry, pmndrs <code>math</code>, numbers kept in data, and an injectable clock.</li>
+    <li>Blender 5.2.1 LTS is at <code>/Applications/Blender.app</code>. <code>~/dev/3d-harness/sandbox</code> has a Docker image with scripted Blender and MCP. Its README records the axis conversion: Blender <code>(x,y,z)</code> → glTF <code>(x,z,-y)</code>.</li>
+    <li><code>~/dev/3d-harness/apps/workbench/scripts/verify.mjs</code> captures with Playwright <code>launch({ headless: true, channel: 'chrome' })</code>, i.e. real Chrome with WebGPU.</li>
+    <li>Prior art to avoid imitating: bbycroft.net/llm. It's jargon-heavy and shows the whole tower of matrices, which the user found confusing.</li>
+  </ul>
+
+  <!-- ============ 2 ============ -->
+  <h2 id="ku">2 · Known unknowns <small>decision ledger</small></h2>
+  <table>
+    <tr><th>#</th><th>Decision</th><th>Why</th><th>Closed by</th></tr>
+    <tr><td class="id">D1</td><td>What's on screen is a <b>machine built from real tensors</b>, explained with physical analogies.</td><td>It keeps Cutaway/Exploded meaningful, and every part maps to a real tensor.</td><td><span class="tag t-user">user</span></td></tr>
+    <tr><td class="id">D2</td><td><b>Audience: software engineers with zero ML background.</b> Every term of art is defined at first use, and no ML jargon goes unexplained.</td><td>“teach people with only software eng experience”</td><td><span class="tag t-user">user</span></td></tr>
+    <tr><td class="id">D3</td><td>Title: <b>“How LLMs work, from first principles.”</b> The user is the first test user.</td><td>The user's words.</td><td><span class="tag t-user">user</span></td></tr>
+    <tr><td class="id">D4</td><td><b>A progressive build, not a lab of separate machines.</b> It starts with the simplest thing that predicts text, and each chapter adds one part that fixes a visible failure, ending at a production LLM. The reference's machine switcher becomes a <b>chapter ladder</b>.</td><td>The user's words.</td><td><span class="tag t-user">user</span></td></tr>
+    <tr><td class="id">D5</td><td>The camera stays <b>zoomed into one transformer block</b>. “This repeats 32 times” is a single brief zoom-out, never a tower of matrices.</td><td>The bbycroft screenshot was “super confusing”.</td><td><span class="tag t-user">user</span></td></tr>
+    <tr><td class="id">D6</td><td>All the extras are in: tokenizer, embeddings, positions, batching / memory-bound decode, quantization, MoE.</td><td>The user's words.</td><td><span class="tag t-user">user</span></td></tr>
+    <tr><td class="id">D7</td><td>Analogies assume <b>a high-school education</b>: balls, water, pipes, dice, clocks, buses, plus everyday non-physical ones. <b>No electrical-engineering analogies.</b> Each analogy comes first and is followed by the precise claim (“Precisely: a dot product…”), which the analogy never replaces.</td><td>“ball rolling down or water flowing through pipes is easier”. This is also the <code>eli5</code> register.</td><td><span class="tag t-user">user</span></td></tr>
+    <tr><td class="id">D8</td><td>The <b>training chapter is cut for now.</b> The ladder goes straight from heads/layers to the generation loop.</td><td>“skip training for now”. Interpreted as the chapter, not the training pipeline (D9 needs the pipeline); the user didn't object.</td><td><span class="tag t-user">user</span></td></tr>
+    <tr><td class="id">D9</td><td><b>Real tiny models.</b> Each chapter that changes the architecture gets its own tiny model, trained offline on a simple story dataset and run in the browser in TypeScript on the CPU. The pipes show the model's real weights. Production-scale stats are arithmetic from Llama-3-8B's published config. <i>Amended by D26.</i></td><td>Honest numbers are part of the reference's style, and the user can type their own prompt.</td><td><span class="tag t-user">user</span></td></tr>
+    <tr><td class="id">D10</td><td><b>The renderer follows the <code>renderer</code> skill:</b> TypeGPU on WebGPU, with no three.js and no WebGL fallback. React only draws the HTML panels and never reaches into the renderer.</td><td>“the renderer skill is updated, use that”</td><td><span class="tag t-user">user</span></td></tr>
+    <tr><td class="id">D11</td><td><b>Blender builds the static hero models</b> (room, housing, props), written as Python scripts in the repo and exported to glTF. Anything whose shape comes from live model data (pipe widths, token arrows, the sticky-note rack) is <b>procedural TypeScript</b>. A small glTF → TypeGPU loader reads the files; a parser isn't a second renderer.</td><td>“you can also use blender”</td><td><span class="tag t-user">user</span></td></tr>
+    <tr><td class="id">D12</td><td><b>Free exploration</b> like the reference: every control is live at once. Each chapter header carries a one-line <b>“why this chapter exists”</b> that names the previous chapter's failure. <i>Extended by D24.</i></td><td>The user picked free exploration over a guided walkthrough; the why-line keeps the story of the ladder visible.</td><td><span class="tag t-user">user</span></td></tr>
+    <tr><td class="id">D13</td><td><b>Deploy to Vercel</b> as a static Vite build.</td><td>3d-harness already deploys there.</td><td><span class="tag t-user">user</span></td></tr>
+    <tr><td class="id">D14</td><td><b>Slice 1 = chapter 0, built end to end through every layer:</b> training script → exported weights → <code>packages/llm</code> inference → renderer foundation (device, registry, frame fn, orbit camera, glow, pinned labels) → one Blender prop → the reference-style React shell → a Vercel preview.</td><td>Every pipeline risk shows up before the hard metaphors do.</td><td><span class="tag t-user">user</span></td></tr>
+    <tr><td class="id">L1</td><td><b>Workspace layout:</b> <code>apps/explainer</code> (Vite + React), <code>packages/renderer</code> (TypeGPU), <code>packages/llm</code> (TS inference + Llama-3-8B arithmetic), <code>training/</code> (uv Python), <code>assets/blender/</code> (scripts → glTF).</td><td>Proposed and not objected to.</td><td><span class="tag t-terr">settled</span></td></tr>
+  </table>
+  <h3>OPEN</h3>
+  <p class="note" style="color:var(--open)">Superseded: see <code>specs/llm-explainer/README.md</code>.</p>
+  <table>
+    <tr><th>#</th><th>Question</th><th>Unblocked by</th></tr>
+    <tr><td class="id">O1</td><td>TinyStories dataset licence: is it OK to train on and publish the weights?</td><td>Read the dataset card on Hugging Face before posting. If it isn't clear, pick another public-domain children's-story corpus.</td></tr>
+    <tr><td class="id">O2</td><td>The default example prompt for each chapter.</td><td>Running the trained models (D25). Chosen by measurement, never invented.</td></tr>
+    <tr><td class="id">O3</td><td>Which model drafts in speculative decoding.</td><td>Measured acceptance rate (D26).</td></tr>
+    <tr><td class="id">O4</td><td>The reference GPU for speed and throughput arithmetic (proposal: H100 SXM).</td><td>Confirm its published memory bandwidth and FLOPs from the spec sheet.</td></tr>
+    <tr><td class="id">O5</td><td>Public URL / domain on Vercel. <i>Never asked during the walk.</i></td><td>The user picks one before the first public post. It doesn't block slice 1 (preview URLs are fine).</td></tr>
+  </table>
+
+  <!-- ============ 3 ============ -->
+  <h2 id="uk">3 · Unknown knowns <small>taste and context we extracted</small></h2>
+  <p class="note">Extracted with <code>explore/directions.html</code>: the same attention scene drawn in 4 looks, 3 levels of literalness, 3 voices, 3 label densities, plus 5 context questions.</p>
+  <table>
+    <tr><th>#</th><th>Decision</th><th>What it reshaped</th></tr>
+    <tr><td class="id">D15</td><td><b>Look: Night lab</b>, taken whole. Dark navy studio, glowing violet and amber flows with bloom, glass and metal parts.</td><td>Bloom/HDR becomes part of the renderer foundation in slice 1.</td></tr>
+    <tr><td class="id">D16</td><td><b>Literalness B:</b> a tensor machine that <i>behaves like</i> the analogy (water-like flow, pipe widths). An <b>Analogy / Precise</b> toggle swaps the labels between the two readings.</td><td>Not literal valves and tanks. Every visual still maps to a real tensor.</td></tr>
+    <tr><td class="id">D17</td><td><b>Voice: storyteller</b> (“‘it’ has no idea what it means on its own…”), followed by the “Precisely:” line.</td><td>Captions are written per chapter, and each must fit the D24 budget.</td></tr>
+    <tr><td class="id">D18</td><td><b>Labels: key parts only.</b> Numbers appear only on the parts that matter in this chapter.</td><td>Label placement plus an occlusion test (card 9).</td></tr>
+    <tr><td class="id">D19</td><td><b>Made to post on X</b>, like the reference.</td><td>The phone fallback page, deep links and link-preview images (D29).</td></tr>
+    <tr><td class="id">D20</td><td><b>Desktop only.</b> Small screens get a message page.</td><td>Removes responsive 3D layout from scope. Fits WebGPU-only.</td></tr>
+    <tr><td class="id">D21</td><td><b>Pacing: about 10 minutes to skim the whole ladder.</b></td><td>That's about 37 seconds per chapter, which forced D24.</td></tr>
+    <tr><td class="id">D22</td><td><b>v1 means all 16 chapters.</b></td><td>The slices after the first cover the whole ladder.</td></tr>
+    <tr><td class="id">D23</td><td><b>Branded dzhng</b>, with a “Follow on X” button like the reference. No airsup name, logo or implied affiliation.</td><td>Top-left brand slot and footer.</td></tr>
+  </table>
+
+  <!-- ============ 4 ============ -->
+  <h2 id="uu">4 · Unknown unknowns <small>landmines, worst first</small></h2>
+  <p class="note">The sweep covered the scaffold (<code>package.json</code>, <code>turbo.json</code>, <code>.oxfmtrc.json</code>, <code>packages/typescript-config</code>), the <code>renderer</code> skill, 3d-harness's capture setup, and the npm/Python toolchain. It's a greenfield repo, so there were no prior attempts to learn from.</p>
+  <div class="cards">
+    <div class="card"><h4>1 · 16 chapters in 10 minutes <span class="tag t-dec">D24</span></h4><dl>
+      <dt>Evidence</dt><dd>D21 and D22 together give about 37 seconds per chapter. D12 is free exploration, and D17's storyteller captions run long.</dd>
+      <dt>Why it bites</dt><dd>A first-time visitor on free exploration won't find a chapter's point in 37 seconds.</dd>
+      <dt>Decision</dt><dd><b>D24: each chapter plays its main moment on arrival</b>, as a 20–30 second loop with no clicks. The caption is 2 storyteller sentences, with “Precisely:” behind one click. The controls stay available for exploring, and → steps through the ladder.</dd></dl></div>
+    <div class="card"><h4>2 · Tiny models may not show a chapter's effect <span class="tag t-dec">D25</span></h4><dl>
+      <dt>Evidence</dt><dd>A tiny model trained on children's stories may not reliably link “it” → “cat”, and the no-positions model may not visibly fail on “dog bites man”.</dd>
+      <dt>Why it bites</dt><dd>It's tempting to fake the picture, and that breaks D9's honesty.</dd>
+      <dt>Decision</dt><dd><b>D25: nothing on screen is faked.</b> Example prompts are chosen by running the models (O2). If an effect doesn't show, train that model bigger or longer. If it still doesn't show, the chapter says so. Stat chips always name their scale: <b>“this tiny model”</b> or <b>“Llama-3-8B”</b>.</dd></dl></div>
+    <div class="card"><h4>3 · The browser can't show GPU memory speed <span class="tag t-dec">D27</span></h4><dl>
+      <dt>Evidence</dt><dd>Chapters 11–15 (KV cache, batching, quantization, speculative decoding, MoE) are about memory-bandwidth-bound decode on a GPU. A tiny model running on the CPU isn't limited by memory.</dd>
+      <dt>Why it bites</dt><dd>Browser timings would teach the wrong lesson.</dd>
+      <dt>Decision</dt><dd><b>D27: what happens to tokens is real</b> (which drafts get accepted, which expert is chosen, quantized output). <b>Speed and throughput come from Llama-3-8B arithmetic on a named GPU</b> (O4). Browser timing is never shown as “speed”.</dd></dl></div>
+    <div class="card"><h4>4 · One tokenizer for every model <span class="tag t-dec">D28</span></h4><dl>
+      <dt>Evidence</dt><dd>Speculative decoding compares the drafting and checking models token for token.</dd>
+      <dt>Decision</dt><dd><b>D28: chapter 1 trains the tokenizer once</b>, and every later model uses it. Chapter 0 counts whole words, before tokenization has been introduced.</dd></dl></div>
+    <div class="card"><h4>5 · The chapter 4 model is a bad drafter <span class="tag t-dec">D26</span></h4><dl>
+      <dt>Evidence</dt><dd>It has no positions and no MLP, so its guesses would rarely be accepted.</dd>
+      <dt>Why it bites</dt><dd>The chapter would teach that speculative decoding doesn't work.</dd>
+      <dt>Decision</dt><dd><b>D26 (amends D9):</b> the drafter is the smallest full-architecture model (1 layer). The best measured acceptance rate wins (O3).</dd></dl></div>
+    <div class="card"><h4>6 · The MoE router collapses <span class="tag t-edge">sharp edge</span></h4><dl>
+      <dt>Why it bites</dt><dd>A tiny router with no load-balancing term sends everything to one or two experts, so 6 of the 8 on screen sit idle.</dd>
+      <dt>Rule</dt><dd>Train the chapter 15 model with a load-balancing auxiliary loss, and check that expert usage is spread out before exporting.</dd></dl></div>
+    <div class="card"><h4>7 · X is mostly phones; phones get the fallback <span class="tag t-dec">D29</span></h4><dl>
+      <dt>Evidence</dt><dd>D19 (post on X) + D20 (desktop only) + D10 (WebGPU only).</dd>
+      <dt>Why it bites</dt><dd>The message page is the first impression for most people who see the post.</dd>
+      <dt>Decision</dt><dd><b>D29:</b> the fallback plays a <b>recorded video of the real app</b> (captured with the deterministic clock), with a “copy link to open on desktop” button. The same page is shown when WebGPU is missing. Each chapter gets a deep link (<code>/#4</code>) and a link-preview image.</dd></dl></div>
+    <div class="card"><h4>8 · Screenshot checks need the real GPU <span class="tag t-edge">sharp edge</span></h4><dl>
+      <dt>Evidence</dt><dd>The mock check used headless Chrome with <code>--disable-gpu</code>, which has no WebGPU. 3d-harness <code>verify.mjs</code> uses Playwright <code>channel: 'chrome'</code>.</dd>
+      <dt>Rule</dt><dd>Copy the 3d-harness launch setup. Treat any WebGPU validation warning or console error as a failed render (renderer skill).</dd></dl></div>
+    <div class="card"><h4>9 · Labels and bloom are ours to build <span class="tag t-edge">sharp edge</span></h4><dl>
+      <dt>Evidence</dt><dd>D10 means no three.js. HTML labels projected with the shared camera float through solid geometry.</dd>
+      <dt>Rule</dt><dd>Hide labels with a CPU occlusion test against the app's own shapes, using the camera function the GPU packing uses. Bloom needs an <code>rgba16float</code> HDR target and a blur chain in the one frame function. The orbit / zoom / pan controls are also built by hand. All of this is in slice 1.</dd></dl></div>
+    <div class="card"><h4>10 · Toolchain gaps <span class="tag t-dec">D30</span></h4><dl>
+      <dt>Evidence</dt><dd><code>python3 -c "import torch"</code> fails because torch isn't installed. <code>uv 0.12.10</code> is installed. npm: <code>typegpu@0.12.6</code> and <code>math@0.1.0</code> (pmndrs) are both young.</dd>
+      <dt>Decision</dt><dd><b>D30:</b> <code>training/</code> is a uv project with pinned torch on MPS. <b>Exported weights are committed</b> (a few MB), so Vercel never trains. Pin exact versions of typegpu and math, and expect API churn.</dd></dl></div>
+    <div class="card"><h4>11 · Formatter choked on mock HTML <span class="tag t-fixed">fixed</span></h4><dl>
+      <dt>Evidence</dt><dd><code>bun run format:check</code> failed on <code>specs/llm-explainer/explore/directions.html</code>.</dd>
+      <dt>Fix</dt><dd>Added <code>specs/**/explore/**</code> to <code>.oxfmtrc.json</code> <code>ignorePatterns</code>. The check passes again.</dd></dl></div>
+  </div>
+
+  <!-- ============ ladder ============ -->
+  <h2 id="ladder">Chapter ladder <small>16 chapters, the spine of the app</small></h2>
+  <p class="note">Each chapter shows the previous chapter's visible failure → adds one part → it works better. The analogy comes first and the “Precisely:” line follows (D7). The numbers keep the walk's labels; the on-screen numbering is a judgment call in the plan below.</p>
+  <table>
+    <tr><th>#</th><th>Adds</th><th>Fixes</th><th>Analogy</th><th>Model</th></tr>
+    <tr><td class="id">0</td><td>Word-pair counts</td><td>(the start) predict the next word</td><td>Phone autocomplete</td><td>real counts</td></tr>
+    <tr><td class="id">1</td><td>Tokenizer</td><td>There can't be a row for every word</td><td>Lego bricks from a fixed box of shapes</td><td>trains the shared tokenizer (D28)</td></tr>
+    <tr><td class="id">2</td><td>Embeddings</td><td>“cat” and “kitten” are unrelated rows</td><td>Pins on a map with 4096 directions</td><td>—</td></tr>
+    <tr><td class="id">3</td><td>Output + sampling</td><td>How an arrow becomes a word</td><td>Loaded dice; temperature = how loaded they are</td><td>embed → unembed</td></tr>
+    <tr><td class="id">4</td><td>Attention</td><td>It only ever sees one word back</td><td>Water pipes that open wider on a match; pipes from the future are sealed (you can't read tomorrow's paper)</td><td>+ attention, no positions</td></tr>
+    <tr><td class="id">5</td><td>Positions (RoPE)</td><td>“dog bites man” = “man bites dog”</td><td>Clock hands turned by position</td><td>+ RoPE</td></tr>
+    <tr><td class="id">6</td><td>MLP</td><td>Attention moves information but doesn't think</td><td>A panel of yes/no questions, each “yes” gives a push; this is where facts live</td><td>+ MLP</td></tr>
+    <tr><td class="id">7</td><td>Residual + norm</td><td>Stacking loses the original signal</td><td>A river each station pours into; a volume knob</td><td>+ residual, RMSNorm</td></tr>
+    <tr><td class="id">8</td><td>Heads + layers</td><td>One pattern and one pass aren't enough</td><td>Several readers looking for different things; an assembly line (the one zoom-out)</td><td>full tiny model</td></tr>
+    <tr><td class="id">10</td><td>Generation loop</td><td>It predicts one token only</td><td>Rereading the whole page before every new word</td><td>reuses 8</td></tr>
+    <tr><td class="id">11</td><td>KV cache (+ GQA, sliding window)</td><td>The rereading is waste</td><td>Sticky notes; readers share notes; keep only the last N</td><td>reuses 8 · memory from Llama-3-8B</td></tr>
+    <tr><td class="id">12</td><td>Prefill vs decode, batching</td><td>Slow even when the GPU is idle</td><td>A bus: one trip costs the same for 1 passenger or 64</td><td>arithmetic (D27)</td></tr>
+    <tr><td class="id">13</td><td>Quantization</td><td>The weights are too heavy to haul</td><td>A lower-resolution photo</td><td>quantized copy of 8</td></tr>
+    <tr><td class="id">14</td><td>Speculative decoding</td><td>Still one token per trip</td><td>A junior drafts 5 words; the senior checks all 5 in one read</td><td>drafter per D26 + 8</td></tr>
+    <tr><td class="id">15</td><td>Mixture of experts</td><td>A bigger model means more work per token</td><td>Hospital triage: 2 of 8 specialists</td><td>tiny MoE (card 6)</td></tr>
+    <tr><td class="id">16</td><td>The finished machine</td><td>—</td><td>Every part you added, still labelled</td><td>real stats</td></tr>
+  </table>
+
+  <!-- ============ confirm ============ -->
+  <h2 id="confirm">Confirm before coding <small>small facts, not footnotes</small></h2>
+  <ul class="tight">
+    <li>Llama-3-8B config values from the published <code>config.json</code>: 32 layers, 32 query heads, 8 KV heads, hidden 4096, head_dim 128, FFN 14336, vocab 128256. The walk quoted <b>128 KiB of KV cache per token</b> (2 × 32 × 8 × 128 × 2 bytes). Recompute it from the real file.</li>
+    <li>Read the <code>typegpu@0.12.6</code> docs and <code>math@0.1.0</code> <code>API.md</code> before designing the registry and camera.</li>
+    <li>Confirm that Playwright + real Chrome headless gets hardware WebGPU on this Mac (Apple GPU).</li>
+    <li>Check which way the Blender 5.2 glTF exporter converts axes against 3d-harness's note, with one test prop.</li>
+    <li>Confirm the H100 (or chosen GPU) bandwidth and FLOPs from the spec sheet (O4).</li>
+    <li>Check the TinyStories licence (O1).</li>
+  </ul>
+
+  <!-- ============ plan ============ -->
+  <h2 id="plan">Tweakable plan <small>judgment calls first; mechanical work last</small></h2>
+  <p class="note" style="color:var(--open)">Superseded: see <code>specs/llm-explainer/README.md</code>.</p>
+  <details open><summary>Judgment calls: tweak these</summary>
+    <ul class="tight">
+      <li><b>On-screen numbering:</b> renumber to a contiguous <b>0–15</b> now that training is cut. <span class="opt">Alternative: keep the gap for a later training chapter.</span></li>
+      <li><b>Tiny model sizes</b> <i>(invented starting values; tune by D25)</i>: hidden width 64–256, 1–4 layers, 4 heads, 128-token context, a shared BPE vocab of about 2–4k. <span class="opt">Alternative: character-level for chapters 0–3 only.</span></li>
+      <li><b>Weight format:</b> fp16 binary plus a JSON manifest per chapter. <span class="opt">Alternative: fp32 (simpler, twice the bytes).</span></li>
+      <li><b>Where inference runs:</b> CPU TypeScript, per D9. <span class="opt">Alternative: TypeGPU compute later, if the prompt box feels slow.</span></li>
+      <li><b>Blender vs procedural split</b> per D11. The first Blender prop is the chapter 0 autocomplete counter board.</li>
+      <li><b>Chapter loop authoring (D24):</b> each chapter's 20–30 s moment is a timeline in data (config), driven by the injectable clock.</li>
+      <li><b>Controls per chapter:</b> keep the reference grammar (Follow ×3, 1 slider, 1 scenario row, the view row). The things to follow are listed per chapter in the spec.</li>
+    </ul>
+  </details>
+  <details><summary>Mechanical: I trust you on this part</summary>
+    <ul class="tight">
+      <li>Scaffold <code>apps/explainer</code> (Vite + React), <code>packages/renderer</code>, <code>packages/llm</code>, each extending <code>@repo/typescript-config</code> and wired into turbo tasks.</li>
+      <li><code>training/</code> uv project; export script → <code>apps/explainer/public/models/</code>.</li>
+      <li><code>assets/blender/*.py</code> → glTF via <code>Blender --background --python</code>.</li>
+      <li>A Playwright verification script modelled on 3d-harness; resource-registry baseline test (renderer skill).</li>
+      <li>A Vercel project with static output and preview deploys.</li>
+    </ul>
+  </details>
+
+  <!-- ============ prompt ============ -->
+  <h2 id="prompt">Kickoff prompt <small>paste to start the build</small></h2>
+  <p class="note" style="color:var(--open)">Superseded: see <code>specs/llm-explainer/README.md</code>.</p>
+  <div class="prompt"><button id="copy">Copy</button><pre id="p">/write-spec for the LLM explainer, using specs/llm-explainer/explore/map.html as the settled ground. Treat every D-number as a given, don't reopen them. Carry the OPEN items (O1–O5) and the "Confirm before coding" list into the spec.
+
+Slice the full 16-chapter ladder into independently verifiable slices. Slice 1 is D14: chapter 0 built end to end (training → weights → packages/llm → renderer foundation with orbit camera, bloom and occluded labels → one Blender prop → reference-style React shell with the Night lab look → Vercel preview), plus the phone/no-WebGPU fallback page (D29).
+
+Each slice must have a browser checkpoint captured on real Chrome WebGPU (card 8) and a screenshot gate. Follow the renderer skill for all GPU work and the eli5 register (D7) for all copy.</pre></div>
+</main>
+<script>
+document.getElementById("copy").onclick = () => navigator.clipboard && navigator.clipboard.writeText(document.getElementById("p").textContent).then(() => {
+  const b = document.getElementById("copy"); b.textContent = "Copied"; setTimeout(() => b.textContent = "Copy", 1200);
+});
+</script>
+</body>
+</html>
