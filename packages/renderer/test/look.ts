@@ -35,6 +35,13 @@ export function testLook(): LookConfig {
         opacity: 0.3,
         emissive: [0, 0, 0],
       },
+      shadow: {
+        baseColor: [0, 0, 0],
+        metallic: 0,
+        roughness: 1,
+        opacity: 0.7,
+        emissive: [0, 0, 0],
+      },
       floor: {
         baseColor: [0.01, 0.01, 0.02],
         metallic: 0,

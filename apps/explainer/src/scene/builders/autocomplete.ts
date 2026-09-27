@@ -1,8 +1,9 @@
 /**
- * Chapter 0's scene, built from the kit (`mesh`, `bars`, `block`): the counter board split
- * into its nodes, a count bar in each of its slots, and a word card on its rail. Bar heights
- * are the real `nextWords` shares for the word on the card; the slot and rail positions come
- * from the prop's own nodes, so the Blender script stays their only owner.
+ * Chapter 0's scene, built from the kit (`mesh`, `bars`, `block`, `contactShadow`): the
+ * counter board split into its nodes on a soft contact shadow, a count bar in each of its
+ * slots, and a word card on its rail. Bar heights are the real `nextWords` shares for the
+ * word on the card; the slot and rail positions come from the prop's own nodes, so the
+ * Blender script stays their only owner.
  *
  * Views: Exploded pulls the housing back and the slots, bars, rail and card forward in
  * layers; Cutaway takes a section through the front of the slot channels, rail and housing
@@ -149,7 +150,14 @@ export const autocomplete: SceneBuilder = {
       size: [CARD.width, CARD.height, CARD.depth],
       explode: EXPLODE["board.rail"],
     });
-    const parts = [...boardKit.parts, ...barsKit.parts, ...cardKit.parts];
+    // The board's own feet stand on the floor; the shadow grounds them (slot after the card).
+    const shadowKit = KIT.contactShadow.build({
+      id: "shadow",
+      slot: SLOTS + 2,
+      bounds: boardKit.bounds,
+      softness: 0.25,
+    });
+    const parts = [...shadowKit.parts, ...boardKit.parts, ...barsKit.parts, ...cardKit.parts];
     const housing = nodeBox(board, "board.housing");
     const anchors: SceneAnchor[] = [
       // The header plate, centred high on the panel face.

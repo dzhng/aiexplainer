@@ -1,7 +1,14 @@
-/** Wires a canvas's pointer and wheel events to an `OrbitController`; returns the unbind. */
+/**
+ * Wires a canvas's pointer and wheel events to an `OrbitController`; returns the unbind.
+ * `onInput` hears every press and wheel (the stage cancels the arrival move on it).
+ */
 import type { OrbitController } from "@repo/renderer";
 
-export function bindOrbit(canvas: HTMLCanvasElement, orbit: OrbitController): () => void {
+export function bindOrbit(
+  canvas: HTMLCanvasElement,
+  orbit: OrbitController,
+  onInput?: () => void,
+): () => void {
   const pointer = (e: PointerEvent) => ({
     pointerId: e.pointerId,
     x: e.clientX,
@@ -11,12 +18,14 @@ export function bindOrbit(canvas: HTMLCanvasElement, orbit: OrbitController): ()
   });
   const onDown = (e: PointerEvent) => {
     canvas.setPointerCapture(e.pointerId);
+    onInput?.();
     orbit.pointerDown(pointer(e));
   };
   const onMove = (e: PointerEvent) => orbit.pointerMove(pointer(e));
   const onUp = (e: PointerEvent) => orbit.pointerUp(pointer(e));
   const onWheel = (e: WheelEvent) => {
     e.preventDefault();
+    onInput?.();
     orbit.wheel(e.deltaY);
   };
   const onMenu = (e: Event) => e.preventDefault();

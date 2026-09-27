@@ -53,6 +53,14 @@ export function clockIsHeld(search: string): boolean {
   return new URLSearchParams(search).get("clock") === "held";
 }
 
+/**
+ * Whether chapters open with the arrival move (D42): in real time yes; under a held clock
+ * (captures, the recorder) only with `?arrival=1`, so hero shots stay deterministic.
+ */
+export function arrivalFromSearch(search: string): boolean {
+  return new URLSearchParams(search).get("arrival") === "1" || !clockIsHeld(search);
+}
+
 /** `?clock=held&t=12.5` holds time; anything else runs in real time. */
 export function clockFromSearch(search: string): Clock {
   if (!clockIsHeld(search)) return rafClock();

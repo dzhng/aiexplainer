@@ -1,7 +1,7 @@
 import { expect, test } from "bun:test";
 import { readdir, readFile } from "node:fs/promises";
 import path from "node:path";
-import { clockFromSearch, heldClock, stepClock } from "../src/runtime/clock.ts";
+import { arrivalFromSearch, clockFromSearch, heldClock, stepClock } from "../src/runtime/clock.ts";
 
 test("heldClock returns what set gave it", () => {
   const clock = heldClock(2.5);
@@ -33,4 +33,10 @@ test("only clock.ts reads the wall clock", async () => {
     }
   }
   expect(offenders).toEqual([]);
+});
+
+test("a held clock skips the arrival move unless ?arrival=1", () => {
+  expect(arrivalFromSearch("")).toBe(true);
+  expect(arrivalFromSearch("?clock=held&t=5")).toBe(false);
+  expect(arrivalFromSearch("?clock=held&t=0&arrival=1")).toBe(true);
 });

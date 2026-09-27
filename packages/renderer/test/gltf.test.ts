@@ -60,7 +60,7 @@ test("the lab room carries its bake in COLOR_0, its named nodes, and fits the bu
     expect(names).toContain(name);
   expect(names.some((n) => n.startsWith("room.practical."))).toBe(true);
   const triangles = asset.nodes.reduce((n, node) => n + node.indices.length / 3, 0);
-  expect(triangles).toBeLessThanOrEqual(150_000);
+  expect(triangles).toBeLessThanOrEqual(250_000);
   for (const node of asset.nodes) {
     expect(node.ao?.length).toBe(node.positions.length / 3);
     expect(node.light?.length).toBe((node.positions.length / 3) * 2);

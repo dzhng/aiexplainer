@@ -87,14 +87,17 @@ fn fs(in: VertexOut, @builtin(front_facing) frontFacing: bool) -> @location(0) v
   let emitted = material.emissive * sceneLayout.$.dynamics[instance.slot].x * frameLayout.$.frame.debug.x;
   let n = select(-1.0, 1.0, frontFacing) * normalize(in.normal);
   let surface = Surface(material.baseColor, material.metallic, material.roughness, in.ao, in.light);
-  let shading = shadeSurface(surface, n, v, in.worldPos);
+  var shading = shadeSurface(surface, n, v, in.worldPos);
+  shading.specular *= material.specular;
   if (material.opacity >= 1.0) {
     return vec4f(shading.diffuse + shading.specular + emitted, 1.0);
   }
   // Clear glass: no diffuse. It absorbs by its opacity, more toward grazing angles
   // (Fresnel), and reflects the lights on top (premultiplied, so reflections never fade).
+  // A translucent surface's vertex AO is its coverage (1 for glass; a contact shadow's soft
+  // footprint fades to 0 at its edge).
   let edge = fresnelSchlick(vec3f(0.04), max(dot(n, v), 0.0)).x;
-  return vec4f(shading.specular + emitted, mix(material.opacity, 1.0, edge));
+  return vec4f(shading.specular + emitted, mix(material.opacity, 1.0, edge)) * in.ao;
 }
 `;
 

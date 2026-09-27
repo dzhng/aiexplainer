@@ -4,7 +4,12 @@ import { installProbe } from "./lab/probe.ts";
 import "./look/global.css";
 import { applyCssVars } from "./look/look.ts";
 import { App } from "./runtime/app.tsx";
-import { clockFromSearch, clockIsHeld, type HeldClock } from "./runtime/clock.ts";
+import {
+  arrivalFromSearch,
+  clockFromSearch,
+  clockIsHeld,
+  type HeldClock,
+} from "./runtime/clock.ts";
 
 const params = new URLSearchParams(location.search);
 const clock = clockFromSearch(location.search);
@@ -25,5 +30,6 @@ createRoot(document.getElementById("root")!).render(
     probe={probe}
     debug={debug}
     onReady={markReady}
+    arrival={arrivalFromSearch(location.search)}
   />,
 );

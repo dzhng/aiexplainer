@@ -94,7 +94,7 @@ export function sceneOccluders(
           radius: part.radius * scale,
         });
       }
-    } else {
+    } else if (part.kind === "mesh") {
       for (const node of meshNodes(part, scene.assets)) {
         if (!solid(meshMaterial(node, look))) continue;
         const positions = new Float32Array(node.positions.length);
