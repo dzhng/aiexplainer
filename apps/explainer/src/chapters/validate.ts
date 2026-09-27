@@ -110,6 +110,8 @@ export function validateChapter(def: ChapterDef): string[] {
     if (!(STAT_FORMATS as readonly string[]).includes(stat.format))
       problems.push(`stat ${stat.id}: unknown format ${stat.format}`);
     if (!stat.label?.trim()) problems.push(`stat ${stat.id}: missing label`);
+    if (stat.value.kind !== "arith" && def.model === null)
+      problems.push(`stat ${stat.id}: reads a ${stat.value.kind} but the chapter has no model`);
     if (stat.value.kind === "arith") {
       const { fn, args } = stat.value;
       const argProblems = arithProblems(fn, args);

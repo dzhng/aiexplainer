@@ -131,6 +131,7 @@ test("stat formatting names units and keeps three significant figures", () => {
   expect(formatStat(14_336, "int")).toBe("14,336");
   expect(formatStat(208.37, "tok/s")).toBe("208 tok/s");
   expect(formatStat(0.0322, "s")).toBe("32.2 ms");
-  expect(formatStat(0.623, "pct")).toBe("62%");
+  expect(formatStat(0.623, "pct")).toBe("62.3%");
+  expect(formatStat(0.9991, "pct")).toBe("99.9%");
   expect(formatStat(3.3616, "x")).toBe("3.36×");
 });

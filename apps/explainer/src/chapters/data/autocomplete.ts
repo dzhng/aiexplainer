@@ -52,7 +52,7 @@ export const autocomplete: ChapterDef = {
       label: "words counted",
       format: "int",
       scale: "TinyStories",
-      value: { kind: "model", metric: "tokensSeen" },
+      value: { kind: "model", metric: "training.tokensSeen" },
     },
     {
       id: "distinct-words",
@@ -139,13 +139,7 @@ export const autocomplete: ChapterDef = {
     ],
   },
   shot: "bench-close",
-  help: {
-    sources: [
-      {
-        label: "TinyStories (CDLA-Sharing-1.0)",
-        url: "https://huggingface.co/datasets/roneneldan/TinyStories",
-      },
-    ],
-  },
+  // TinyStories is credited once, by the help panel itself, for every chapter.
+  help: { sources: [] },
   ogTimeSec: 5.4,
 };

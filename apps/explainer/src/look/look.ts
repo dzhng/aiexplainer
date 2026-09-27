@@ -74,6 +74,11 @@ export function cssVars(): Record<`--${string}`, string> {
   return vars;
 }
 
+/** Sets every HUD CSS variable on `el` (the app and the lab set them on `<html>`). */
+export function applyCssVars(el: HTMLElement): void {
+  for (const [name, value] of Object.entries(cssVars())) el.style.setProperty(name, value);
+}
+
 export function lookConfig(): LookConfig {
   const tokens = Object.keys(look.palette) as PaletteToken[];
   const palette = Object.fromEntries(tokens.map((t) => [t, linear(t)])) as LookConfig["palette"];

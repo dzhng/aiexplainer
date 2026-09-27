@@ -1,0 +1,14 @@
+/* The stage fills the window: the canvas at the bottom, the HUD over it (see hud.module.css). */
+.stage {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+}
+
+/* A flat stand-in for the WebGPU canvas until slice 10 mounts the renderer here. */
+.canvas {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background: var(--bg-deep);
+}

@@ -2,7 +2,7 @@
  * A chapter is pure data (slice 03). The HUD, the loop, the stats and the scene are all
  * driven by a `ChapterDef`; `validateChapter()` enforces the copy rules and references.
  */
-import type { ArithFnName, ModelId } from "@repo/llm";
+import type { ArithFnName, ModelId, ModelMetric } from "@repo/llm";
 import type shots from "../look/shots.json";
 import type { PaletteToken } from "../look/look.ts";
 import type { ChapterSlug } from "./ladder.ts";
@@ -55,14 +55,18 @@ export interface Caption {
   precisely: string;
 }
 
-/** A number on screen. It is always computed from a model, arithmetic or a probe, never typed in. */
+/**
+ * A number on screen. It is always computed, never typed in: a metric of the chapter's model
+ * (`MODEL_METRICS`), production arithmetic (`ARITH`), or a probe measured on the chapter's
+ * model (its manifest `evidence`). `stats.ts` resolves it.
+ */
 export interface StatChip {
   id: string;
   label: string;
   format: StatFormat;
   scale: StatScale;
   value:
-    | { kind: "model"; metric: string }
+    | { kind: "model"; metric: ModelMetric }
     | { kind: "arith"; fn: ArithFnName; args: Record<string, number> }
     | { kind: "probe"; probe: string };
 }
