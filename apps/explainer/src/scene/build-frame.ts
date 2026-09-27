@@ -10,6 +10,7 @@ import type { TimelineState } from "../chapters/timeline.ts";
 import type { SceneTags } from "../hud/SceneTags.tsx";
 import { autocomplete, type CountsRun } from "./builders/autocomplete.ts";
 import { mlp, type MlpRun } from "./builders/mlp.ts";
+import { residual, type ResidualRun } from "./builders/residual.ts";
 import { withEnvironment } from "./environment.ts";
 
 /** The HUD controls a scene reads. */
@@ -25,7 +26,7 @@ export interface SceneUi {
  * The chapter's model output for what the scene shows (computed through the session,
  * `runtime/scene-run.ts`). Each scene's builder defines its own kind.
  */
-export type SceneRun = CountsRun | MlpRun;
+export type SceneRun = CountsRun | MlpRun | ResidualRun;
 
 export interface SceneBuilder {
   /** Prop URLs by asset id; the app loads them before the first frame. */
@@ -42,7 +43,11 @@ export interface SceneBuilder {
   ): void;
 }
 
-export const SCENE_BUILDERS: Record<SceneBuilderId, SceneBuilder> = { autocomplete, mlp };
+export const SCENE_BUILDERS: Record<SceneBuilderId, SceneBuilder> = {
+  autocomplete,
+  mlp,
+  residual,
+};
 
 /** What one frame of a chapter's scene is: the renderer's input and the overlay's text. */
 export interface SceneFrame {

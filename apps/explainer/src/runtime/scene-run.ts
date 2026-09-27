@@ -10,6 +10,7 @@ import type { ChapterDef } from "../chapters/types.ts";
 import type { SceneRun } from "../scene/build-frame.ts";
 import { autocompleteRun } from "./runs/autocomplete.ts";
 import { mlpRun } from "./runs/mlp.ts";
+import { residualRun } from "./runs/residual.ts";
 import type { Session } from "./session.ts";
 
 /** What a run function may ask of the session. */
@@ -29,6 +30,7 @@ export type SceneRunFn = (
 const RUNS: Partial<Record<SceneBuilderId, SceneRunFn>> = {
   autocomplete: autocompleteRun,
   mlp: mlpRun,
+  residual: residualRun,
 };
 
 /** The scene's run, or null for a chapter whose scene shows no model output. */

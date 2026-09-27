@@ -422,6 +422,22 @@
       "pass": true
     },
     {
+      "probe": "val-loss-residual",
+      "prompt": "",
+      "metric": "validation loss of residual (nats per token)",
+      "value": 1.9042,
+      "threshold": 0.0,
+      "pass": true
+    },
+    {
+      "probe": "val-loss-noresidual",
+      "prompt": "",
+      "metric": "validation loss of noresidual (nats per token)",
+      "value": 8.3178,
+      "threshold": 0.0,
+      "pass": true
+    },
+    {
       "probe": "signal-preserved-residual",
       "prompt": "",
       "metric": "RMS of the last layer's stream \u00f7 RMS of the embeddings",

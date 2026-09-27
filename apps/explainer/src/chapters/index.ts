@@ -4,11 +4,12 @@
  */
 import { autocomplete } from "./data/autocomplete.ts";
 import { mlp } from "./data/mlp.ts";
+import { residual } from "./data/residual.ts";
 import type { ChapterSlug } from "./ladder.ts";
 import type { ChapterDef } from "./types.ts";
 import { validateChapter } from "./validate.ts";
 
-export const CHAPTERS: Partial<Record<ChapterSlug, ChapterDef>> = { autocomplete, mlp };
+export const CHAPTERS: Partial<Record<ChapterSlug, ChapterDef>> = { autocomplete, mlp, residual };
 
 for (const [slug, def] of Object.entries(CHAPTERS)) {
   if (def.slug !== slug)

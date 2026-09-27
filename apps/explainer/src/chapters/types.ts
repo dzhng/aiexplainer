@@ -23,7 +23,8 @@ export const STAT_SCALES = [
 ] as const;
 export type StatScale = (typeof STAT_SCALES)[number];
 
-export const STAT_FORMATS = ["int", "bytes", "tok/s", "s", "pct", "x"] as const;
+/** `nats`: a loss, the average surprise per token (natural-log units). */
+export const STAT_FORMATS = ["int", "bytes", "tok/s", "s", "pct", "x", "nats"] as const;
 export type StatFormat = (typeof STAT_FORMATS)[number];
 
 export interface ChapterDef {

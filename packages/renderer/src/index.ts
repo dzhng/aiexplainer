@@ -41,3 +41,5 @@ export {
   pushEnds,
   type QuestionPanelParams,
 } from "./kit/question-panel.ts";
+export { placePour, placeStretch, stretchSpan, type RiverParams } from "./kit/river.ts";
+export { placeKnob, type VolumeKnobParams } from "./kit/volume-knob.ts";

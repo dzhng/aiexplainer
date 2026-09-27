@@ -78,6 +78,13 @@
         "roughness": 0.45,
         "opacity": 1
       },
+      "river": {
+        "color": "active",
+        "emissive": "active",
+        "metallic": 0,
+        "roughness": 0.05,
+        "opacity": 0.35
+      },
       "neuron": {
         "color": "bgDeep",
         "emissive": "flow",
