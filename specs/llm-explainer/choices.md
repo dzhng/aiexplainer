@@ -174,3 +174,46 @@ standalone. Entries are appended per pass and consolidated when the spec closes.
 - **`bun run verify` now takes about 2 minutes, because the training tests train on MPS.**
   Verdict: acceptable for now; a later maintenance pass may split slow training tests into
   their own script.
+
+## Slices 05–09 (renderer lane)
+
+- **Shaders are WGSL templates resolved by `tgpu.resolve`, so structs come from the TypeGPU
+  schemas. Pipelines are raw WebGPU with every bind-group index pinned.** Why: frame encoding
+  stays allocation-free. This departs from the skill's "pin only group 0", which assumes
+  TypeGPU-managed pipelines. Verdict: sound, but the renderer skill's wording should mention
+  this case.
+- **Group 0 carries both the frame uniform and the look uniform.** Verdict: sound.
+- **`Renderer.setLook()` swaps a new look in without recreating the renderer.** It is the
+  "pipeline rebuild" in the registry-baseline test. Verdict: sound.
+- **`LookConfig` carries linear numbers only; token → linear conversion lives in the app's
+  `look.ts`.** Verdict: sound, single owner.
+- **Every part has a `transform: Mat4`, blocks included; `partWorld` returns it unchanged
+  until slice 13.** Verdict: sound.
+- **Mesh materials bind to presets by the last dotted node-name segment, then fall back to
+  the glTF material name.** Blender materials are named after the presets. Verdict: sound.
+- **Props export without UVs, so builds are byte-reproducible.** Verdict: sound; revisit if
+  a prop ever needs a texture.
+- **The counter board became a tally board on two posts; the first design read as a
+  monitor.** Verdict: sound.
+- **The room is world geometry with depth read-only, outside the prepass.** Verdict: sound.
+- **Specular reflects the room gradient analytically, and lights have an apparent size.**
+  Why: metal and glass didn't read with direct lighting alone. This is a lightweight stand-in
+  for image-based lighting, which the slice's default had left out. Verdict: sound; the human
+  approved the resulting look.
+- **Glass has no diffuse term; its absorption rises with Fresnel toward grazing angles.**
+  Verdict: sound.
+- **Added an AgX saturation knob (1.25) so glows keep their colour.** Verdict: sound.
+- **GPU timing is opt-in (`createRenderer(…, { timing: true })`) and reports
+  `receipt.gpuMs`.** Verdict: sound.
+- **The bloom chain starts at half resolution with 5 mips.** Measured cost: 0.46 ms at
+  1440×900. Verdict: sound.
+- **Translucent parts never occlude labels, and mesh occlusion is tested per triangle.**
+  Why: node bounding boxes are too coarse (the two-post stand spans the whole board).
+  Verdict: sound.
+- **Label overlap is resolved by pill-vs-pill and pill-vs-dot tests using measured pill
+  widths; lab pills are 150 px wide at most.** Verdict: sound.
+- **`placeLabels` takes no viewport (the camera matrices carry it), `sceneOccluders` takes the
+  look, and `hiddenBy` gains `'overlap'`.** Verdict: sound; small contract deltas from the
+  slice text.
+- **Research: `root.destroy()` does NOT free buffers the root created** (measured with a
+  control buffer). This confirms the renderer skill; the registry is required.

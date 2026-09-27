@@ -15,16 +15,13 @@ and supersedes the map's open-items list, kickoff prompt and tweakable plan.
 
 ## Next Agent Prompt
 
-**Status (2026-09-27):** slices 01, 02, 03, 04, 14 and 18 are merged into
+**Status (2026-09-27):** slices 01–09, 14, 15, 16 and 18 are merged into
 `llm-explainer`. Lanes in flight:
 
-- renderer, slices 05–09 (slice 05 committed on the lane);
-- model lab, slice 17 (slices 15 and 16 are merged).
+- chapter 0 compose → pacing → fallback/deploy → vocabulary lock (10 → 11 → 12 → 13);
+- model lab, slice 17.
 
-Slice 04 (the HUD) is merged.
-
-**Next pickup:** integrate the lanes as they land, then 10 → 11 → 12 (chapter-0
-compose, pacing, fallback), which need 04 and 09.
+**Next pickup:** after 13 and 17 land, chapter slices 19–35 fan out (see the ladder).
 
 You are implementing this spec with [implement-spec](../../.agents/skills/implement-spec/SKILL.md).
 Work the slices in the order of the ladder below. Each slice file is a contract:
@@ -48,14 +45,14 @@ When the work reveals the plan is wrong, reslice here first, then continue.
   `withVertex`, `.value` and `layout.bound` were removed.
 - Headless WebGPU only works with Playwright `channel: 'chrome'` on `http://localhost`.
   The default headless shell has no adapter.
-- **`root.destroy()` is contested.** The renderer skill says it does not free what the root created. The 0.12.6 d.ts comment says it does. Keep the registry regardless, and let slice 05's baseline test establish the truth.
+- **`root.destroy()` does not free buffers the root created** (measured in slice 05), despite the 0.12.6 d.ts comment. The registry is required.
 
 **Before ending your pass, update this section:** status, date, the next pickup,
 the checklist below, and any new blockers.
 
 ### Global checklist
 
-- [ ] M1 — Chapter 0 through every layer (D14): slices ✅[01](slices/01-scaffold-harness.md) · ✅[02](slices/02-manifest-and-counts-model.md) · ✅[03](slices/03-chapter-contract.md) · ✅[04](slices/04-hud-shell.md) · [05](slices/05-renderer-foundation.md) · [06](slices/06-gltf-pipeline.md) · [07](slices/07-room-lighting.md) · [08](slices/08-bloom.md) · [09](slices/09-labels-occlusion.md) · [10](slices/10-ch0-compose-framing.md) · [11](slices/11-ch0-loop-pacing.md) · [12](slices/12-fallback-share-deploy.md)
+- [ ] M1 — Chapter 0 through every layer (D14): slices ✅[01](slices/01-scaffold-harness.md) · ✅[02](slices/02-manifest-and-counts-model.md) · ✅[03](slices/03-chapter-contract.md) · ✅[04](slices/04-hud-shell.md) · ✅[05](slices/05-renderer-foundation.md) · ✅[06](slices/06-gltf-pipeline.md) · ✅[07](slices/07-room-lighting.md) · ✅[08](slices/08-bloom.md) · ✅[09](slices/09-labels-occlusion.md) · [10](slices/10-ch0-compose-framing.md) · [11](slices/11-ch0-loop-pacing.md) · [12](slices/12-fallback-share-deploy.md)
 - [ ] M2 — Vocabulary lock: [13](slices/13-vocabulary-lock.md)
 - [ ] M3 — Model lab: ✅[14](slices/14-tokenizer.md) · ✅[15](slices/15-transformer-core.md) · ✅[16](slices/16-model-lab-early.md) · [17](slices/17-model-lab-late.md) · ✅[18](slices/18-production-arithmetic.md)
 - [ ] M4 — Chapters: [19](slices/19-ch-tokenizer.md) · [20](slices/20-ch-embeddings.md) · [21](slices/21-ch-sampling.md) · [22](slices/22-ch-attention-width.md) · [23](slices/23-ch-attention-sealed.md) · [24](slices/24-ch-attention-flow.md) · [25](slices/25-ch-positions.md) · [26](slices/26-ch-mlp.md) · [27](slices/27-ch-residual.md) · [28](slices/28-ch-stack.md) · [29](slices/29-ch-generation.md) · [30](slices/30-ch-kv-cache.md) · [31](slices/31-ch-batching.md) · [32](slices/32-ch-quantization.md) · [33](slices/33-ch-speculative.md) · [34](slices/34-ch-experts.md) · [35](slices/35-ch-finished.md)
@@ -151,6 +148,7 @@ the human says otherwise.
 | D41 | **ffmpeg** (Homebrew) is a build-time tool for the fallback video. It is never used at runtime.                                                                                                                                                | D29 needs recordings. The map's toolchain audit (D30) missed it.                                                                      |
 
 **Human notes:**
+
 - **The bloom look is approved** (2026-09-27, on the slice-08 board shot: "bloom effect looks great"). The slices 07–08 checkpoint is closed, and the `look.json` bloom and emissive knobs are the baseline.
 
 - **Chapter 4 uses name recall, not pronouns (D33).** The 1-layer `attn` model does not send
@@ -278,7 +276,7 @@ Captured 2026-09-27. Details are in each slice.
   and LearnOpenGL "Physically Based Bloom"
   (https://learnopengl.com/Guest-Articles/2022/Phys.-Based-Bloom).
 - **Headless WebGPU on this Mac** was tested with Playwright 1.63 and Chrome 153, `channel:'chrome'`. It gets hardware Metal with no flags, but only in a secure context.
-- **glTF:** the Blender exporter defaults to +Y up (right-handed, front +Z). A hand-written GLB parser is sufficient for uncompressed props.
+- **glTF:** the Blender exporter defaults to +Y up (right-handed, front +Z). A hand-written GLB parser is sufficient for uncompressed props. Verified in slice 06: Blender +X/+Y/+Z land at glTF (1,0,0), (0,0,−1), (0,1,0), and emission exports as `emissiveFactor` × `emissiveStrength`.
 - **Tiny models:**
   - TinyStories paper: https://arxiv.org/abs/2305.07759. Models under 10M parameters, and even 1-layer ones, are fluent.
   - karpathy/llama2.c: Llama-architecture TinyStories models from 260K parameters up, and a 4096-vocab BPE.
