@@ -238,3 +238,19 @@ standalone. Entries are appended per pass and consolidated when the spec closes.
   bars can therefore be slightly stale as occluders. Verdict: acceptable, because labels
   anchor to static parts; revisit if a chapter labels a moving part.
 - **The prompt box sits inside the title panel.** Verdict: sound (delegated).
+
+## Slice 11
+
+- **Chapter 0's loop runs 20 s and shows the rule twice (once → upon → a), then the failure
+  ("onse": never seen, no bars).** A test checks that each input is the previous one's top
+  successor and that "onse" is not in the vocabulary. Verdict: sound.
+- **A `barsWord` channel lets the bars lag the card.** Verdict: sound.
+- **A "never seen" scene note makes the failure beat readable.** Verdict: sound.
+- **Lower-ranked scene tags hide when they collide with higher-ranked ones, and labels also
+  avoid the HUD panel rects (measured on render and resize).** Verdict: sound.
+- **Shares never round to a false 0% or 100%: they show "<1%" or ">99%".** Verdict: sound.
+- **The third stat is "“a” after “upon”" (the top-successor probe), not a generic "chance of
+  the top next word".** Verdict: sound; it is more concrete.
+- **Human checkpoint (copy read): accepted by the lane after three unprimed critique rounds,**
+  which fixed an off-camera hand-off, a 6 s static hold, a card bounce at the seam, and a
+  label sliding behind the title panel.
