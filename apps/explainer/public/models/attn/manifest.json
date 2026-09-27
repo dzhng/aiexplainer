@@ -1,0 +1,151 @@
+{
+  "formatVersion": 1,
+  "id": "attn",
+  "kind": "transformer",
+  "tokenizer": {
+    "kind": "bpe",
+    "file": "../tokenizer/tokenizer.json",
+    "sha256": "37c465794d44d16554106eb9d2972c123e05fb76c300bb4bf1cc321fcb363f7b"
+  },
+  "arch": {
+    "dModel": 96,
+    "nLayers": 1,
+    "nHeads": 1,
+    "nKvHeads": 1,
+    "ctx": 256,
+    "vocab": 4096,
+    "attention": "causal",
+    "positions": "none",
+    "ropeTheta": 10000.0,
+    "mlp": "none",
+    "norm": "none",
+    "normEps": 1e-05,
+    "residual": true,
+    "tiedEmbeddings": false
+  },
+  "weightsFile": "weights.bin",
+  "weightsSha256": "dfb9ac4dd4b721346ecdafab198f3dbc11e7aa6c38c83a56280b76a088a45238",
+  "tensors": [
+    {
+      "name": "tok_emb",
+      "dtype": "f16",
+      "shape": [
+        4096,
+        96
+      ],
+      "byteOffset": 0,
+      "byteLength": 786432
+    },
+    {
+      "name": "layers.0.attn.wq",
+      "dtype": "f16",
+      "shape": [
+        96,
+        96
+      ],
+      "byteOffset": 786432,
+      "byteLength": 18432
+    },
+    {
+      "name": "layers.0.attn.wk",
+      "dtype": "f16",
+      "shape": [
+        96,
+        96
+      ],
+      "byteOffset": 804864,
+      "byteLength": 18432
+    },
+    {
+      "name": "layers.0.attn.wv",
+      "dtype": "f16",
+      "shape": [
+        96,
+        96
+      ],
+      "byteOffset": 823296,
+      "byteLength": 18432
+    },
+    {
+      "name": "layers.0.attn.wo",
+      "dtype": "f16",
+      "shape": [
+        96,
+        96
+      ],
+      "byteOffset": 841728,
+      "byteLength": 18432
+    },
+    {
+      "name": "lm_head",
+      "dtype": "f16",
+      "shape": [
+        4096,
+        96
+      ],
+      "byteOffset": 860160,
+      "byteLength": 786432
+    }
+  ],
+  "training": {
+    "dataset": "TinyStoriesV2-GPT4",
+    "license": "CDLA-Sharing-1.0",
+    "seed": 0,
+    "steps": 4000,
+    "tokensSeen": 65536000,
+    "wallSeconds": 203.513,
+    "torch": "2.14.0",
+    "gitSha": "8840411c08c0cbe946ff7bdf4879304cc70a63e2-dirty",
+    "valLoss": 3.2922
+  },
+  "evidence": [
+    {
+      "probe": "recall-attention",
+      "prompt": "",
+      "metric": "mean attention on the referent \u00f7 uniform (40 prompts)",
+      "value": 2.98171488010521,
+      "threshold": 2.0,
+      "pass": true
+    },
+    {
+      "probe": "recall-attention",
+      "prompt": "Once upon a time, there was a little girl named Mia. She had a toy car that she loved very much. The car was not shiny and new, it looked dull, but",
+      "metric": "attention on the referent \u00f7 uniform",
+      "value": 8.217597484588623,
+      "threshold": 2.0,
+      "pass": true
+    },
+    {
+      "probe": "pronoun-attention",
+      "prompt": "",
+      "metric": "mean attention on the referent \u00f7 uniform (40 prompts)",
+      "value": 0.5839621670544147,
+      "threshold": 2.0,
+      "pass": false
+    },
+    {
+      "probe": "pronoun-attention",
+      "prompt": "Once upon a time, there was a little fish named Fin. Fin loved to swim all day and all evening. He",
+      "metric": "attention on the referent \u00f7 uniform",
+      "value": 1.8479401171207428,
+      "threshold": 2.0,
+      "pass": false
+    },
+    {
+      "probe": "order-invariance",
+      "prompt": "",
+      "metric": "largest total variation over 40 swapped pairs",
+      "value": 0.0,
+      "threshold": 0.0,
+      "pass": true
+    },
+    {
+      "probe": "order-invariance",
+      "prompt": "The dog chased the cat. Then the / The cat chased the dog. Then the",
+      "metric": "total variation",
+      "value": 0.0,
+      "threshold": 0.0,
+      "pass": true
+    }
+  ]
+}

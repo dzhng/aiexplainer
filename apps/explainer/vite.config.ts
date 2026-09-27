@@ -8,9 +8,10 @@ const withLab = process.env.VERCEL_ENV !== "production";
 /** Serves every /lab/<route> path from the single lab entry, in dev and preview. */
 function labRoutes(): Plugin {
   const rewrite = (req: { url?: string }, _res: unknown, next: () => void) => {
-    if (req.url?.startsWith("/lab/") && !req.url.includes(".")) {
-      const query = req.url.indexOf("?");
-      req.url = "/lab/index.html" + (query === -1 ? "" : req.url.slice(query));
+    const [pathname = "", query] = req.url?.split(/\?(.*)/s) ?? [];
+    // A dot in the path means a file; a query (e.g. a prompt) may hold dots freely.
+    if (pathname.startsWith("/lab/") && !pathname.includes(".")) {
+      req.url = "/lab/index.html" + (query === undefined ? "" : `?${query}`);
     }
     next();
   };

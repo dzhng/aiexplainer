@@ -49,6 +49,7 @@ def training_record(
     steps: int,
     tokens_seen: int,
     wall_seconds: float,
+    val_loss: float | None = None,
 ) -> dict[str, Any]:
     return {
         "dataset": DATASET,
@@ -56,6 +57,7 @@ def training_record(
         "seed": seed,
         "steps": steps,
         "tokensSeen": tokens_seen,
+        **({"valLoss": round(val_loss, 4)} if val_loss is not None else {}),
         "wallSeconds": round(wall_seconds, 3),
         "torch": torch.__version__,
         "gitSha": git_sha(),
@@ -126,6 +128,14 @@ def export_model(
     }
     (out_dir / MANIFEST_FILE).write_text(json.dumps(manifest, indent=2) + "\n")
     return manifest
+
+
+def write_evidence(model_dir: Path, evidence: list[dict[str, Any]]) -> None:
+    """Replace an exported model's `evidence` (re-probing without re-exporting weights)."""
+    path = model_dir / MANIFEST_FILE
+    manifest = json.loads(path.read_text())
+    manifest["evidence"] = evidence
+    path.write_text(json.dumps(manifest, indent=2) + "\n")
 
 
 def read_model(model_dir: Path) -> tuple[dict[str, Any], dict[str, np.ndarray]]:

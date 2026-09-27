@@ -6,6 +6,7 @@ import { clockFromSearch, type HeldClock } from "../runtime/clock.ts";
 import { installProbe } from "./probe.ts";
 import { AdapterPage } from "./pages/AdapterPage.tsx";
 import { ArithPage } from "./pages/ArithPage.tsx";
+import { ModelsPage } from "./pages/ModelsPage.tsx";
 import { TokensPage } from "./pages/TokensPage.tsx";
 
 const clock = clockFromSearch(location.search);
@@ -23,6 +24,10 @@ switch (route) {
   case "arith":
     root.render(<ArithPage />);
     markReady();
+    break;
+  case "models":
+    // Waits for the inference worker's answers before it reports ready.
+    root.render(<ModelsPage onReady={markReady} />);
     break;
   case "tokens": {
     // Waits for its model and fonts before it reports ready.

@@ -240,6 +240,7 @@ class Transformer(nn.Module):
         super().__init__()
         self.arch = arch
         self.tok_emb = nn.Embedding(arch.vocab, arch.d_model)
+        nn.init.normal_(self.tok_emb.weight, std=0.02)  # GPT-2's embedding init
         self.layers = nn.ModuleList(Layer(arch) for _ in range(arch.n_layers))
         self.norm = RMSNorm(arch.d_model, arch.norm_eps) if arch.norm == "rmsnorm" else None
         self.lm_head = None if arch.tied_embeddings else nn.Linear(arch.d_model, arch.vocab, bias=False)

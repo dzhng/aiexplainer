@@ -46,7 +46,7 @@ FIXTURES: dict[str, Arch] = {
 
 # Without residuals or norms the signal shrinks or grows layer by layer; this gain keeps
 # the `noresidual` fixture's logits in a range where 1e-3 is a meaningful tolerance.
-INIT_GAIN = {"noresidual": 1.2}
+INIT_GAIN = {"noresidual": 1.1}
 
 
 def random_model(arch: Arch, seed: int, gain: float = 1.0) -> Transformer:
@@ -57,7 +57,9 @@ def random_model(arch: Arch, seed: int, gain: float = 1.0) -> Transformer:
         for name, param in model.named_parameters():
             if name.endswith("norm.weight"):
                 param.copy_(1 + 0.3 * torch.randn_like(param))
-            elif param.dim() == 2 and not name.startswith("tok_emb"):
+            elif name.startswith("tok_emb"):
+                param.normal_(0, 1)
+            elif param.dim() == 2:
                 param.normal_(0, gain / math.sqrt(param.shape[1]))
             param.copy_(param.half().float())
     return model.eval()

@@ -7,7 +7,7 @@ import { z } from "zod";
 export const FORMAT_VERSION = 1;
 
 /** The models the explainer ships (apps/explainer/public/models/<id>). */
-export const ModelId = z.enum(["counts"]);
+export const ModelId = z.enum(["counts", "embed", "attn", "rope"]);
 export type ModelId = z.infer<typeof ModelId>;
 
 /** Random-init parity fixtures (training/fixtures/parity/<name>); never shipped. */
@@ -65,6 +65,13 @@ export const ProbeResult = z.strictObject({
   pass: z.boolean(),
 });
 export type ProbeResult = z.infer<typeof ProbeResult>;
+
+/**
+ * `scenarios.json` next to a trained model's manifest: the prompts its probes chose for
+ * the chapter to show (O2), keyed by probe.
+ */
+export const ModelScenarios = z.record(z.string(), z.array(z.string().min(1)).min(1));
+export type ModelScenarios = z.infer<typeof ModelScenarios>;
 
 export const MlpArch = z.union([
   z.literal("none"),
