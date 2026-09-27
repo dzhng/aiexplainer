@@ -332,3 +332,33 @@ standalone. Entries are appended per pass and consolidated when the spec closes.
 - **Known polish items, accepted for now:** the shelf props are plain boxes, the floor light
   pool reads as a stage spotlight, and the "once" card's label hides for about 1 s mid-move.
   Verdict: provisional; revisit at the whole-spec review.
+
+## Slice 12
+
+- **Incident: the first `vercel deploy` went to production** (a new project with no git
+  connection defaults to the production target). It was aliased to `aiexplainer-red.vercel.app`
+  and removed within minutes; the alias returns 404 now, and every later deploy uses
+  `--target=preview`. The production domain may have been publicly reachable for those minutes.
+  Verdict: mistake, remediated. The rule is always `vercel deploy --yes --target=preview`.
+- **Previews are behind Vercel Authentication (Standard Protection).** One automation-bypass
+  secret (note "harness") exists for the harness; it is not in the repo. Verdict: sound.
+- **The fallback video shows the scene only (HUD hidden but laid out), cropped to the safe
+  rect.** The link-preview card is the whole app, HUD included. Why: at phone width the full-app
+  video repeated the title as unreadable text. Verdict: sound.
+- **The recorder uses a new `?clock=step` plus `probe.step()`.** `clockIsHeld` became
+  `clockIsDriven` (held or step), so HUD motion and the arrival move are skipped while
+  recording. Verdict: sound; a looping video must not open with a one-off camera move.
+- **Media is committed under `public/media/`, not generated on Vercel,** because Vercel's
+  builders have no WebGPU Chrome. Re-run `bun run --cwd apps/explainer media` after any look or
+  loop change; a test fails when a written chapter has no media. Verdict: sound.
+- **Video: H.264 at the best CRF between 18 and 33 that fits 3 MB, poster = first frame.**
+  Chapter 0 is 548 KB, and repeat recordings are byte-identical. Verdict: sound.
+- **Share pages redirect with both a meta refresh and `location.replace`. The `og:image`
+  origin is `SITE_URL`, else `https://$VERCEL_URL`.** Verdict: sound; slice 36 sets `SITE_URL`
+  once O5 is picked.
+- **`detectSupport(env)` takes an environment so it is testable; small-screen is < 900 px or a
+  coarse-only pointer.** Verdict: sound.
+- **The device line differs by reason** ("send yourself the link" vs "needs WebGPU: try
+  desktop Chrome or Edge"). Verdict: sound.
+- **The Vercel project was created via the CLI plus the REST API**, because the CLI has no
+  root-directory flag. Verdict: sound.
