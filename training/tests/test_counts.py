@@ -6,7 +6,7 @@ import numpy as np
 import pytest
 
 import counts
-from manifest_schema import APP_MODELS_DIR, validate_manifest
+from schemas import APP_MODELS_DIR, validate
 
 FIXTURES = Path(__file__).resolve().parents[1] / "fixtures"
 CORPUS = FIXTURES / "counts-corpus.txt"
@@ -73,5 +73,5 @@ def test_committed_fixture_export_matches_the_code(tmp_path: Path):
 @pytest.mark.parametrize("manifest_dir", [FIXTURES / "counts", APP_MODELS_DIR / "counts"])
 def test_exported_counts_manifest_validates_against_the_schema(manifest_dir: Path):
     manifest = json.loads((manifest_dir / "manifest.json").read_text())
-    validate_manifest(manifest)
+    validate(manifest, "manifest.schema.json")
     assert manifest["evidence"], "D25: every model ships measured evidence"

@@ -1,6 +1,7 @@
 // The model file format shared by `training/` and this package: a JSON manifest
 // describing the tensors packed into one little-endian `weights.bin`. This schema is
-// the single owner; `bun run schema` emits it as JSON Schema for the Python exporter.
+// the single owner; `bun run schema` emits it as JSON Schema (src/json-schemas.ts)
+// for the Python exporter.
 import { z } from "zod";
 
 export const FORMAT_VERSION = 1;
@@ -8,7 +9,7 @@ export const FORMAT_VERSION = 1;
 export const ModelId = z.enum(["counts"]);
 export type ModelId = z.infer<typeof ModelId>;
 
-const Sha256 = z.string().regex(/^[0-9a-f]{64}$/, "lowercase hex sha256");
+export const Sha256 = z.string().regex(/^[0-9a-f]{64}$/, "lowercase hex sha256");
 const Count = z.int().nonnegative();
 
 /** Element types a tensor may hold, with their size in bytes. */
@@ -74,10 +75,3 @@ export const ModelManifest = z.strictObject({
   evidence: z.array(ProbeResult).min(1),
 });
 export type ModelManifest = z.infer<typeof ModelManifest>;
-
-/** Where `bun run schema` writes the JSON Schema, relative to this package. */
-export const MANIFEST_SCHEMA_FILE = "schema/manifest.schema.json";
-
-export function manifestJsonSchemaText(): string {
-  return `${JSON.stringify(z.toJSONSchema(ModelManifest), null, 2)}\n`;
-}

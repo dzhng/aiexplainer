@@ -40,6 +40,30 @@ One BPE tokenizer is trained once and frozen, then used by every neural model
 
 **Vocabulary size within 2–4k.** Measure it: pick the smallest size where at least 90% of the 500 most common TinyStories words are a single piece, and record the choice here. After this slice the tokenizer is **frozen**. Changing it means retraining every model.
 
+## Result (measured 2026-09-27)
+
+**Chosen vocabulary size: 2048** (2 special tokens + 256 bytes + 1790 merges).
+sha256 `2ce41742d62977488c2304f2b44cc9a297e24ab24b3fc2b3ffd59284391c81a2`, frozen
+as `TOKENIZER_SHA256` in `training/tokenizer.py`. Training twice gave the same file.
+
+"Word" means a pre-tokenizer piece of ASCII letters with its leading space, as it
+appears mid-sentence (" the"), counted on the validation split. The rule does not
+bind inside 2–4k: every candidate already makes 100% of the 500 most common words
+one piece, so it reduces to the lower bound.
+
+| Vocab | Top 500 one piece | Top 2000 one piece | Word occurrences one piece | Chars per token |
+| ----- | ----------------- | ------------------ | -------------------------- | --------------- |
+| 1024  | 0.668             | 0.173              | 0.789                      | 3.20            |
+| 1536  | 1.000             | 0.336              | 0.870                      | 3.54            |
+| 2048  | 1.000             | 0.485              | 0.907                      | 3.72            |
+| 3072  | 1.000             | 0.796              | 0.947                      | 3.92            |
+| 4096  | 1.000             | 0.993              | 0.969                      | 4.03            |
+
+Chapter-1 probes (`apps/explainer/public/models/tokenizer/evidence.json`): 90.7% of
+held-out word occurrences are one piece; " ugly" is the most frequent lowercase word
+that takes 3 pieces; 3.72 characters per token. Prompts (O2): "Once upon a time,
+there was a little boy named Tim." and "It was so ugly."
+
 ## Stays green
 
 01–13.

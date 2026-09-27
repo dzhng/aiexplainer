@@ -1,6 +1,7 @@
-// Validates a manifest against its weights file and exposes each tensor as a typed-array
-// view into the weights buffer (no copies).
+// Validates a manifest against its weights (and, for BPE models, tokenizer) file and
+// exposes each tensor as a typed-array view into the weights buffer (no copies).
 import { DTYPE_BYTES, type Dtype, ModelManifest, type TensorEntry } from "./manifest.ts";
+import { type Tokenizer, loadTokenizer } from "./tokenizer.ts";
 
 interface TypedArrays {
   f16: Float16Array;
@@ -18,6 +19,8 @@ export interface Tensor<D extends Dtype = Dtype> {
 export interface LoadedModel {
   manifest: ModelManifest;
   tensors: ReadonlyMap<string, Tensor>;
+  /** Set for models that use the shared BPE tokenizer. */
+  tokenizer?: Tokenizer;
 }
 
 export async function sha256Hex(bytes: ArrayBuffer): Promise<string> {
@@ -25,7 +28,12 @@ export async function sha256Hex(bytes: ArrayBuffer): Promise<string> {
   return Array.from(digest, (byte) => byte.toString(16).padStart(2, "0")).join("");
 }
 
-export async function loadModel(manifest: unknown, weights: ArrayBuffer): Promise<LoadedModel> {
+/** `tokenizerFile` is the bytes of the manifest's BPE tokenizer file, when it names one. */
+export async function loadModel(
+  manifest: unknown,
+  weights: ArrayBuffer,
+  tokenizerFile?: ArrayBuffer,
+): Promise<LoadedModel> {
   const parsed = ModelManifest.parse(manifest);
   const actualSha = await sha256Hex(weights);
   if (actualSha !== parsed.weightsSha256) {
@@ -39,10 +47,20 @@ export async function loadModel(manifest: unknown, weights: ArrayBuffer): Promis
   for (const entry of parsed.tensors) {
     tensors.set(entry.name, view(weights, entry));
   }
-  if (parsed.tokenizer.kind === "words" && !tensors.has(parsed.tokenizer.vocabTensor)) {
-    throw new Error(`${parsed.id}: vocab tensor "${parsed.tokenizer.vocabTensor}" is missing`);
+  const ref = parsed.tokenizer;
+  if (ref.kind === "words") {
+    if (!tensors.has(ref.vocabTensor)) {
+      throw new Error(`${parsed.id}: vocab tensor "${ref.vocabTensor}" is missing`);
+    }
+    return { manifest: parsed, tensors };
   }
-  return { manifest: parsed, tensors };
+  if (!tokenizerFile) throw new Error(`${parsed.id}: needs its tokenizer file ${ref.file}`);
+  const tokenizerSha = await sha256Hex(tokenizerFile);
+  if (tokenizerSha !== ref.sha256) {
+    throw new Error(`${parsed.id}: tokenizer sha256 ${tokenizerSha} does not match ${ref.sha256}`);
+  }
+  const tokenizer = loadTokenizer(JSON.parse(new TextDecoder().decode(tokenizerFile)));
+  return { manifest: parsed, tensors, tokenizer };
 }
 
 /** The named tensor, which must exist with the given dtype. */

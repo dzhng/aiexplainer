@@ -5,8 +5,17 @@ type TensorLayout = Pick<ModelManifest["tensors"][number], "name" | "dtype" | "s
   byteOffset?: number;
 };
 
+const tokenizerUrl = new URL(
+  "../../../apps/explainer/public/models/tokenizer/tokenizer.json",
+  import.meta.url,
+);
+
 // A minimal valid model around `weights`, with tensors laid out back to back unless placed.
-async function manifestFor(weights: ArrayBuffer, layouts: TensorLayout[]): Promise<unknown> {
+async function manifestFor(
+  weights: ArrayBuffer,
+  layouts: TensorLayout[],
+  tokenizer: ModelManifest["tokenizer"] = { kind: "words", vocabTensor: layouts[0]!.name },
+): Promise<unknown> {
   let offset = 0;
   const tensors = layouts.map((layout) => {
     const elements = layout.shape.reduce((a, b) => a * b, 1);
@@ -19,7 +28,7 @@ async function manifestFor(weights: ArrayBuffer, layouts: TensorLayout[]): Promi
     formatVersion: 1,
     id: "counts",
     kind: "word-counts",
-    tokenizer: { kind: "words", vocabTensor: layouts[0]!.name },
+    tokenizer,
     weightsFile: "weights.bin",
     weightsSha256: await sha256Hex(weights),
     tensors,
@@ -94,6 +103,25 @@ describe("loadModel", () => {
     };
     manifest.tensors[0]!.dtype = "u8";
     await expect(loadModel(manifest, weights)).rejects.toThrow("dtype");
+  });
+
+  test("loads the BPE tokenizer a manifest pins, and rejects any other file", async () => {
+    const weights = new Float32Array([1]).buffer;
+    const tokenizerFile = await Bun.file(tokenizerUrl).arrayBuffer();
+    const manifest = await manifestFor(weights, [{ name: "w", dtype: "f32", shape: [1] }], {
+      kind: "bpe",
+      file: "../tokenizer/tokenizer.json",
+      sha256: await sha256Hex(tokenizerFile),
+    });
+    const model = await loadModel(manifest, weights, tokenizerFile);
+    expect(model.tokenizer?.decode(model.tokenizer.encode("Once upon a time"))).toBe(
+      "Once upon a time",
+    );
+    const edited = new Uint8Array(tokenizerFile.byteLength + 1);
+    edited.set(new Uint8Array(tokenizerFile));
+    edited[tokenizerFile.byteLength] = 0x20;
+    await expect(loadModel(manifest, weights, edited.buffer)).rejects.toThrow("tokenizer sha256");
+    await expect(loadModel(manifest, weights)).rejects.toThrow("needs its tokenizer file");
   });
 
   test("rejects a tensor that runs past the end of the weights", async () => {

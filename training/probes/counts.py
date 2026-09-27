@@ -8,6 +8,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
+from probes.evidence import result
+
 if TYPE_CHECKING:
     from counts import CountsTable, PairCounts
 
@@ -15,17 +17,6 @@ CANDIDATE_WORDS = 200
 PEAKED_THRESHOLD = 0.5
 COVERAGE_THRESHOLD = 0.98
 HELD_OUT_HIT_THRESHOLD = 0.5
-
-
-def result(probe: str, prompt: str, metric: str, value: float, threshold: float) -> dict[str, Any]:
-    return {
-        "probe": probe,
-        "prompt": prompt,
-        "metric": metric,
-        "value": value,
-        "threshold": threshold,
-        "pass": value >= threshold,
-    }
 
 
 def most_peaked_word(table: CountsTable) -> tuple[str, dict[str, Any]]:

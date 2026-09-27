@@ -1,7 +1,9 @@
 import { expect, test } from "bun:test";
-import { MANIFEST_SCHEMA_FILE, manifestJsonSchemaText } from "../src/index.ts";
+import { jsonSchemaFiles } from "../src/json-schemas.ts";
 
-test("the committed JSON Schema is current (run `bun run schema` after changing the format)", async () => {
-  const committed = await Bun.file(new URL(`../${MANIFEST_SCHEMA_FILE}`, import.meta.url)).text();
-  expect(committed).toBe(manifestJsonSchemaText());
+test("the committed JSON Schemas are current (run `bun run schema` after changing a format)", async () => {
+  for (const [file, text] of Object.entries(jsonSchemaFiles())) {
+    const committed = await Bun.file(new URL(`../schema/${file}`, import.meta.url)).text();
+    expect({ file, text: committed }).toEqual({ file, text });
+  }
 });

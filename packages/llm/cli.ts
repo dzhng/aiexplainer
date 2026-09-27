@@ -1,7 +1,8 @@
 // Dev CLI over the committed models in apps/explainer/public/models.
 //
 //   bun packages/llm/cli.ts next <model> <word> [k]   top successors of a word
-import { countsModel, loadModel, nextWords } from "./src/index.ts";
+//   bun packages/llm/cli.ts tokenize <text>           the shared tokenizer's pieces
+import { countsModel, loadModel, loadTokenizer, nextWords } from "./src/index.ts";
 
 const MODELS_DIR = new URL("../../apps/explainer/public/models/", import.meta.url);
 
@@ -26,10 +27,25 @@ async function next(id: string, word: string, k: number): Promise<void> {
   }
 }
 
+async function tokenize(text: string): Promise<void> {
+  const tokenizer = loadTokenizer(
+    await Bun.file(new URL("tokenizer/tokenizer.json", MODELS_DIR)).json(),
+  );
+  const ids = tokenizer.encode(text);
+  console.log(`${ids.length} pieces for ${[...text].length} characters:`);
+  tokenizer.pieces(ids).forEach(({ text: piece, byteSpan: [start, end] }, i) => {
+    const shown = JSON.stringify(piece).padEnd(16);
+    console.log(`${String(ids[i]).padStart(6)}  ${shown} bytes ${start}-${end}`);
+  });
+}
+
 const [command, ...args] = Bun.argv.slice(2);
 if (command === "next" && args.length >= 2) {
   await next(args[0]!, args[1]!, Number(args[2] ?? 10));
+} else if (command === "tokenize" && args.length === 1) {
+  await tokenize(args[0]!);
 } else {
   console.error("usage: bun packages/llm/cli.ts next <model> <word> [k]");
+  console.error("       bun packages/llm/cli.ts tokenize <text>");
   process.exit(1);
 }

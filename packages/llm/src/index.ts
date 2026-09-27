@@ -2,3 +2,5 @@
 export * from "./manifest.ts";
 export * from "./load.ts";
 export * from "./counts.ts";
+export * from "./tokenizer.ts";
+export * from "./rng.ts";
