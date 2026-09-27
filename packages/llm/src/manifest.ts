@@ -7,7 +7,20 @@ import { z } from "zod";
 export const FORMAT_VERSION = 1;
 
 /** The models the explainer ships (apps/explainer/public/models/<id>). */
-export const ModelId = z.enum(["counts", "embed", "attn", "rope"]);
+export const ModelId = z.enum([
+  "counts",
+  "embed",
+  "attn",
+  "rope",
+  "mlp",
+  "noresidual",
+  "residual",
+  "full",
+  "full-q8",
+  "drafter-64",
+  "drafter-96",
+  "moe",
+]);
 export type ModelId = z.infer<typeof ModelId>;
 
 /** Random-init parity fixtures (training/fixtures/parity/<name>); never shipped. */
@@ -16,10 +29,31 @@ export const FixtureId = z.string().regex(/^fixture-[a-z0-9-]+$/);
 export const Sha256 = z.string().regex(/^[0-9a-f]{64}$/, "lowercase hex sha256");
 const Count = z.int().nonnegative();
 
-/** Element types a tensor may hold, with their size in bytes. */
-export const DTYPE_BYTES = { f16: 2, f32: 4, u32: 4 } as const;
-export const Dtype = z.enum(["f16", "f32", "u32"]);
+/**
+ * Element types a tensor may hold. `q8_0` (chapter 12) stores groups of 32 values as an
+ * f16 scale followed by 32 int8s; a value decodes as `scale · q` (quantize.ts).
+ */
+export const Dtype = z.enum(["f16", "f32", "u32", "q8_0"]);
 export type Dtype = z.infer<typeof Dtype>;
+
+export const Q8_GROUP = 32;
+const Q8_BLOCK_BYTES = 2 + Q8_GROUP;
+
+/** The offset alignment each dtype needs to be viewed in place. */
+export const DTYPE_ALIGNMENT: Record<Dtype, number> = { f16: 2, f32: 4, u32: 4, q8_0: 2 };
+
+/** Bytes a tensor of `elements` values takes, or null if the count doesn't fit the dtype. */
+export function tensorByteLength(dtype: Dtype, elements: number): number | null {
+  switch (dtype) {
+    case "f16":
+      return elements * 2;
+    case "f32":
+    case "u32":
+      return elements * 4;
+    case "q8_0":
+      return elements % Q8_GROUP === 0 ? (elements / Q8_GROUP) * Q8_BLOCK_BYTES : null;
+  }
+}
 
 export const TensorEntry = z.strictObject({
   name: z.string().min(1),

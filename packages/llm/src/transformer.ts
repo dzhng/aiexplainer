@@ -7,6 +7,7 @@
 //   norm [d]                      (the norms exist only when norm is "rmsnorm")
 import type { LoadedModel, Tensor } from "./load.ts";
 import type { TransformerArch } from "./manifest.ts";
+import { dequantizeQ8_0 } from "./quantize.ts";
 import type { Tokenizer } from "./tokenizer.ts";
 
 export interface SwigluWeights {
@@ -116,6 +117,8 @@ function widen(loaded: LoadedModel, name: string, shape: number[]): Float32Array
     case "f16":
     case "f32":
       return Float32Array.from(found.data);
+    case "q8_0":
+      return dequantizeQ8_0(found.data);
     case "u32":
       throw new Error(`${where} is u32, not a float weight`);
   }

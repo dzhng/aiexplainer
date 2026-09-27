@@ -6,6 +6,7 @@
     "specs/**/explore/**",
     "apps/explainer/public/models/**",
     "packages/llm/schema/**",
-    "training/fixtures/**"
+    "training/fixtures/**",
+    "training/probes/prompts/**"
   ]
 }

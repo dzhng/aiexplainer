@@ -1,11 +1,11 @@
 import hashlib
 import json
-from pathlib import Path
 
 import tokenizer
+from paths import FIXTURES_DIR
 from schemas import validate
 
-FIXTURE_CORPUS = Path(__file__).resolve().parents[1] / "fixtures/counts-corpus.txt"
+FIXTURE_CORPUS = FIXTURES_DIR / "counts-corpus.txt"
 
 
 def test_the_committed_tokenizer_is_the_frozen_one():

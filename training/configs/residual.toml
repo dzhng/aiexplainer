@@ -1,0 +1,21 @@
+# Chapter 7: the same 4 layers with residuals and RMSNorm.
+id = "residual"
+
+[arch]
+d_model = 96
+n_layers = 4
+n_heads = 2
+n_kv_heads = 2
+ctx = 256
+attention = "causal"
+positions = "rope"
+mlp = { kind = "swiglu", hidden = 384 }
+norm = "rmsnorm"
+residual = true
+tied_embeddings = true
+
+[train]
+seed = 0
+steps = 5000
+batch_size = 64
+lr = 3e-3

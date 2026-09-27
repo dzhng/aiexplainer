@@ -6,9 +6,10 @@ import numpy as np
 import pytest
 
 import counts
-from schemas import APP_MODELS_DIR, validate
+from paths import FIXTURES_DIR, MODELS_DIR
+from schemas import validate
 
-FIXTURES = Path(__file__).resolve().parents[1] / "fixtures"
+FIXTURES = FIXTURES_DIR
 CORPUS = FIXTURES / "counts-corpus.txt"
 
 
@@ -21,7 +22,7 @@ def test_words_lowercases_and_keeps_only_words_and_sentence_marks():
 
 def test_words_matches_the_shared_split_fixture():
     """The app splits typed text with the manifest's rule; this fixture pins both sides."""
-    cases = json.loads((Path(counts.TRAINING_DIR) / "fixtures/counts-split.json").read_text())
+    cases = json.loads((FIXTURES_DIR / "counts-split.json").read_text())
     for case in cases:
         assert counts.words(case["text"]) == case["words"]
 
@@ -77,7 +78,7 @@ def test_committed_fixture_export_matches_the_code(tmp_path: Path):
     assert fresh["tensors"] == json.loads((committed / "manifest.json").read_text())["tensors"]
 
 
-@pytest.mark.parametrize("manifest_dir", [FIXTURES / "counts", APP_MODELS_DIR / "counts"])
+@pytest.mark.parametrize("manifest_dir", [FIXTURES / "counts", MODELS_DIR / "counts"])
 def test_exported_counts_manifest_validates_against_the_schema(manifest_dir: Path):
     manifest = json.loads((manifest_dir / "manifest.json").read_text())
     validate(manifest, "manifest.schema.json")

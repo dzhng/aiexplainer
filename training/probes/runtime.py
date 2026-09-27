@@ -12,7 +12,8 @@ from pathlib import Path
 
 import numpy as np
 
-REPO_DIR = Path(__file__).resolve().parents[2]
+from paths import REPO_DIR
+
 SCRIPT = REPO_DIR / "packages/llm/scripts/next-token-probs.ts"
 
 

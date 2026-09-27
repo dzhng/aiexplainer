@@ -15,12 +15,10 @@ from pathlib import Path
 import numpy as np
 
 import tokenizer
+from paths import DATA_DIR, TRAIN_FILE, VALID_FILE
 
-TOKENS = {
-    "train": tokenizer.DATA_DIR / "tokens-train.u16",
-    "valid": tokenizer.DATA_DIR / "tokens-valid.u16",
-}
-SOURCES = {"train": tokenizer.TRAIN_FILE, "valid": tokenizer.VALID_FILE}
+TOKENS = {"train": DATA_DIR / "tokens-train.u16", "valid": DATA_DIR / "tokens-valid.u16"}
+SOURCES = {"train": TRAIN_FILE, "valid": VALID_FILE}
 BATCH_STORIES = 20_000
 
 

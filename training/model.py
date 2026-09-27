@@ -189,6 +189,16 @@ class MoE(nn.Module):
             trace["router"] = {"probs": probs, "experts": chosen.float(), "weights": weights}
         return out
 
+    def balance_loss(self) -> torch.Tensor:
+        """Switch Transformer's auxiliary loss `N · Σ fᵢ Pᵢ` for the last forward: fᵢ is the
+        share of routing slots that went to expert i, Pᵢ its mean router probability. It is
+        1 when routing is uniform and grows as it collapses."""
+        assert self.last_routing is not None, "balance_loss needs a forward pass first"
+        probs, chosen = self.last_routing
+        n = probs.shape[-1]
+        share = F.one_hot(chosen, n).float().reshape(-1, n).mean(0)
+        return n * (share * probs.reshape(-1, n).mean(0)).sum()
+
 
 class Layer(nn.Module):
     def __init__(self, arch: Arch):
@@ -262,6 +272,10 @@ class Transformer(nn.Module):
             x = self.norm(x)
         head = self.tok_emb.weight if self.lm_head is None else self.lm_head.weight
         return x @ head.T
+
+    def balance_loss(self) -> torch.Tensor | float:
+        """The sum of every MoE layer's balance loss (0 without MoE layers)."""
+        return sum((layer.moe.balance_loss() for layer in self.layers if hasattr(layer, "moe")), 0.0)
 
     def export_tensors(self, dtype: np.dtype = np.dtype(np.float16)) -> dict[str, np.ndarray]:
         """Canonical tensor name → array, in state-dict order."""

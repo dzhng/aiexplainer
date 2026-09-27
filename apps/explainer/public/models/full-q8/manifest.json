@@ -1,0 +1,441 @@
+{
+  "formatVersion": 1,
+  "id": "full-q8",
+  "kind": "transformer",
+  "tokenizer": {
+    "kind": "bpe",
+    "file": "../tokenizer/tokenizer.json",
+    "sha256": "37c465794d44d16554106eb9d2972c123e05fb76c300bb4bf1cc321fcb363f7b"
+  },
+  "arch": {
+    "dModel": 128,
+    "nLayers": 4,
+    "nHeads": 4,
+    "nKvHeads": 2,
+    "ctx": 256,
+    "vocab": 4096,
+    "attention": "causal",
+    "positions": "rope",
+    "ropeTheta": 10000.0,
+    "mlp": {
+      "kind": "swiglu",
+      "hidden": 512
+    },
+    "norm": "rmsnorm",
+    "normEps": 1e-05,
+    "residual": true,
+    "tiedEmbeddings": true
+  },
+  "weightsFile": "weights.bin",
+  "weightsSha256": "c9410b1a01ce74f8c61788d0b3559346fd459b5dbf01f098198ea457a4c264e8",
+  "tensors": [
+    {
+      "name": "tok_emb",
+      "dtype": "q8_0",
+      "shape": [
+        4096,
+        128
+      ],
+      "byteOffset": 0,
+      "byteLength": 557056
+    },
+    {
+      "name": "layers.0.attn.wq",
+      "dtype": "q8_0",
+      "shape": [
+        128,
+        128
+      ],
+      "byteOffset": 557056,
+      "byteLength": 17408
+    },
+    {
+      "name": "layers.0.attn.wk",
+      "dtype": "q8_0",
+      "shape": [
+        64,
+        128
+      ],
+      "byteOffset": 574464,
+      "byteLength": 8704
+    },
+    {
+      "name": "layers.0.attn.wv",
+      "dtype": "q8_0",
+      "shape": [
+        64,
+        128
+      ],
+      "byteOffset": 583168,
+      "byteLength": 8704
+    },
+    {
+      "name": "layers.0.attn.wo",
+      "dtype": "q8_0",
+      "shape": [
+        128,
+        128
+      ],
+      "byteOffset": 591872,
+      "byteLength": 17408
+    },
+    {
+      "name": "layers.0.attn_norm",
+      "dtype": "f16",
+      "shape": [
+        128
+      ],
+      "byteOffset": 609280,
+      "byteLength": 256
+    },
+    {
+      "name": "layers.0.mlp.w1",
+      "dtype": "q8_0",
+      "shape": [
+        512,
+        128
+      ],
+      "byteOffset": 609536,
+      "byteLength": 69632
+    },
+    {
+      "name": "layers.0.mlp.w2",
+      "dtype": "q8_0",
+      "shape": [
+        128,
+        512
+      ],
+      "byteOffset": 679168,
+      "byteLength": 69632
+    },
+    {
+      "name": "layers.0.mlp.w3",
+      "dtype": "q8_0",
+      "shape": [
+        512,
+        128
+      ],
+      "byteOffset": 748800,
+      "byteLength": 69632
+    },
+    {
+      "name": "layers.0.mlp_norm",
+      "dtype": "f16",
+      "shape": [
+        128
+      ],
+      "byteOffset": 818432,
+      "byteLength": 256
+    },
+    {
+      "name": "layers.1.attn.wq",
+      "dtype": "q8_0",
+      "shape": [
+        128,
+        128
+      ],
+      "byteOffset": 818688,
+      "byteLength": 17408
+    },
+    {
+      "name": "layers.1.attn.wk",
+      "dtype": "q8_0",
+      "shape": [
+        64,
+        128
+      ],
+      "byteOffset": 836096,
+      "byteLength": 8704
+    },
+    {
+      "name": "layers.1.attn.wv",
+      "dtype": "q8_0",
+      "shape": [
+        64,
+        128
+      ],
+      "byteOffset": 844800,
+      "byteLength": 8704
+    },
+    {
+      "name": "layers.1.attn.wo",
+      "dtype": "q8_0",
+      "shape": [
+        128,
+        128
+      ],
+      "byteOffset": 853504,
+      "byteLength": 17408
+    },
+    {
+      "name": "layers.1.attn_norm",
+      "dtype": "f16",
+      "shape": [
+        128
+      ],
+      "byteOffset": 870912,
+      "byteLength": 256
+    },
+    {
+      "name": "layers.1.mlp.w1",
+      "dtype": "q8_0",
+      "shape": [
+        512,
+        128
+      ],
+      "byteOffset": 871168,
+      "byteLength": 69632
+    },
+    {
+      "name": "layers.1.mlp.w2",
+      "dtype": "q8_0",
+      "shape": [
+        128,
+        512
+      ],
+      "byteOffset": 940800,
+      "byteLength": 69632
+    },
+    {
+      "name": "layers.1.mlp.w3",
+      "dtype": "q8_0",
+      "shape": [
+        512,
+        128
+      ],
+      "byteOffset": 1010432,
+      "byteLength": 69632
+    },
+    {
+      "name": "layers.1.mlp_norm",
+      "dtype": "f16",
+      "shape": [
+        128
+      ],
+      "byteOffset": 1080064,
+      "byteLength": 256
+    },
+    {
+      "name": "layers.2.attn.wq",
+      "dtype": "q8_0",
+      "shape": [
+        128,
+        128
+      ],
+      "byteOffset": 1080320,
+      "byteLength": 17408
+    },
+    {
+      "name": "layers.2.attn.wk",
+      "dtype": "q8_0",
+      "shape": [
+        64,
+        128
+      ],
+      "byteOffset": 1097728,
+      "byteLength": 8704
+    },
+    {
+      "name": "layers.2.attn.wv",
+      "dtype": "q8_0",
+      "shape": [
+        64,
+        128
+      ],
+      "byteOffset": 1106432,
+      "byteLength": 8704
+    },
+    {
+      "name": "layers.2.attn.wo",
+      "dtype": "q8_0",
+      "shape": [
+        128,
+        128
+      ],
+      "byteOffset": 1115136,
+      "byteLength": 17408
+    },
+    {
+      "name": "layers.2.attn_norm",
+      "dtype": "f16",
+      "shape": [
+        128
+      ],
+      "byteOffset": 1132544,
+      "byteLength": 256
+    },
+    {
+      "name": "layers.2.mlp.w1",
+      "dtype": "q8_0",
+      "shape": [
+        512,
+        128
+      ],
+      "byteOffset": 1132800,
+      "byteLength": 69632
+    },
+    {
+      "name": "layers.2.mlp.w2",
+      "dtype": "q8_0",
+      "shape": [
+        128,
+        512
+      ],
+      "byteOffset": 1202432,
+      "byteLength": 69632
+    },
+    {
+      "name": "layers.2.mlp.w3",
+      "dtype": "q8_0",
+      "shape": [
+        512,
+        128
+      ],
+      "byteOffset": 1272064,
+      "byteLength": 69632
+    },
+    {
+      "name": "layers.2.mlp_norm",
+      "dtype": "f16",
+      "shape": [
+        128
+      ],
+      "byteOffset": 1341696,
+      "byteLength": 256
+    },
+    {
+      "name": "layers.3.attn.wq",
+      "dtype": "q8_0",
+      "shape": [
+        128,
+        128
+      ],
+      "byteOffset": 1341952,
+      "byteLength": 17408
+    },
+    {
+      "name": "layers.3.attn.wk",
+      "dtype": "q8_0",
+      "shape": [
+        64,
+        128
+      ],
+      "byteOffset": 1359360,
+      "byteLength": 8704
+    },
+    {
+      "name": "layers.3.attn.wv",
+      "dtype": "q8_0",
+      "shape": [
+        64,
+        128
+      ],
+      "byteOffset": 1368064,
+      "byteLength": 8704
+    },
+    {
+      "name": "layers.3.attn.wo",
+      "dtype": "q8_0",
+      "shape": [
+        128,
+        128
+      ],
+      "byteOffset": 1376768,
+      "byteLength": 17408
+    },
+    {
+      "name": "layers.3.attn_norm",
+      "dtype": "f16",
+      "shape": [
+        128
+      ],
+      "byteOffset": 1394176,
+      "byteLength": 256
+    },
+    {
+      "name": "layers.3.mlp.w1",
+      "dtype": "q8_0",
+      "shape": [
+        512,
+        128
+      ],
+      "byteOffset": 1394432,
+      "byteLength": 69632
+    },
+    {
+      "name": "layers.3.mlp.w2",
+      "dtype": "q8_0",
+      "shape": [
+        128,
+        512
+      ],
+      "byteOffset": 1464064,
+      "byteLength": 69632
+    },
+    {
+      "name": "layers.3.mlp.w3",
+      "dtype": "q8_0",
+      "shape": [
+        512,
+        128
+      ],
+      "byteOffset": 1533696,
+      "byteLength": 69632
+    },
+    {
+      "name": "layers.3.mlp_norm",
+      "dtype": "f16",
+      "shape": [
+        128
+      ],
+      "byteOffset": 1603328,
+      "byteLength": 256
+    },
+    {
+      "name": "norm",
+      "dtype": "f16",
+      "shape": [
+        128
+      ],
+      "byteOffset": 1603584,
+      "byteLength": 256
+    }
+  ],
+  "training": {
+    "dataset": "TinyStoriesV2-GPT4",
+    "license": "CDLA-Sharing-1.0",
+    "seed": 0,
+    "steps": 8000,
+    "tokensSeen": 131072000,
+    "valLoss": 1.7382,
+    "wallSeconds": 1912.917,
+    "torch": "2.14.0",
+    "gitSha": "7a3160db25944b0e3d03bde021a1c3efebb2e4bc-dirty"
+  },
+  "evidence": [
+    {
+      "probe": "q8-agreement",
+      "prompt": "",
+      "metric": "share of validation positions where the top next token matches full",
+      "value": 0.994140625,
+      "threshold": 0.9,
+      "pass": true
+    },
+    {
+      "probe": "q8-kl",
+      "prompt": "",
+      "metric": "mean KL(full \u2016 full-q8), nats",
+      "value": 0.00024573417955373874,
+      "threshold": 0.05,
+      "pass": true
+    },
+    {
+      "probe": "q8-bytes",
+      "prompt": "",
+      "metric": "weights.bin bytes, full-q8 \u00f7 full",
+      "value": 0.5316079762409843,
+      "threshold": 0.6,
+      "pass": true
+    }
+  ]
+}
