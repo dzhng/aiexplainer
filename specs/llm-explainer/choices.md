@@ -26,3 +26,44 @@ standalone. Entries are appended per pass and consolidated when the spec closes.
   jsonschema 4.26.0 (latest stable on 2026-09-27).** `bun run verify` now also
   runs `training:test`, whose smoke test fails if Apple's MPS backend is
   unavailable. Verdict: sound, but it makes `verify` Mac-only; revisit if CI is added.
+
+## Slice 03
+
+- **Chapter validation is hand-written, not zod.** Chapter files are TypeScript, so the
+  compiler checks shapes; `validateChapter` only checks what types cannot (loop length,
+  caption budget, unknown anchors/shots/tokens, stat scales) and returns a problem list.
+  Verdict: sound.
+- **Each scene declares its anchor ids in `chapters/scenes.ts`, so the validator can check
+  anchors before any builder exists.** Verdict: provisional; slice 10 may move the list next
+  to the builder so one module owns it.
+- **Timelines are cyclic: after the last keyframe the value blends back to the first.**
+  Why: the D24 loop must have an invisible seam. Verdict: sound.
+- **`shots.json` is seeded with a provisional `bench-close` pose, not left empty.** Why: the
+  validator rejects unknown shots, so chapter 0 needs one; the spec said "starts empty".
+  Slice 10 owns the real values. Verdict: sound (spec wording was wrong).
+- **`look.json` has sections palette (sRGB hex), hud, type, materials.emissive (HDR
+  multipliers), bloom (seeded from LearnOpenGL), flow, and empty room/lights for slice 07.**
+  `lookConfig()` hands the renderer linear colours with emissive applied. Verdict: sound.
+- **`ModelId` is a local union until slice 02 merges, then comes from `@repo/llm`.**
+  Verdict: short-lived; the integrator removes it.
+
+## Slice 18
+
+- **Every speed is a roofline ceiling: a step costs max(bytes ÷ bandwidth, FLOPs ÷ dense
+  FLOP/s).** FLOPs per token = 2 × matmul params + attention (4 × layers × heads × headDim
+  × context). Verdict: sound; matches kipply's inference arithmetic.
+- **Two decode numbers: per sequence (`decodeCeilingTokPerSec`) and whole batch
+  (`batchThroughput`), both with optional precision `{weightBytes, kvBytes}`.** Why:
+  chapter 12 sweeps precision. Verdict: sound.
+- **Units are branded types (`Bytes`, `Seconds`, `TokensPerSec`), with compile-time tests
+  that they cannot mix.** Verdict: sound.
+- **The MoE counterfactual is a named assumption, `llamaAsMoe()`:** attention and
+  embeddings shared, each expert a full copy of the MLPs, labelled hypothetical.
+  Verdict: sound; chapter 14 copy must say "if Llama were an MoE".
+- **Numbers show 3 significant figures with decimal SI bytes ("131 kB", "16.1 GB").** Why:
+  it matches the H100 spec sheet's "80 GB"; precise copy can still say 128 KiB.
+  Verdict: sound, reversible.
+- **A stat-chip format `"s"` (seconds) was added so prefill time can appear on a chip.**
+  Verdict: sound.
+- **The scale-label prominence shot moved to slice 04,** because the HUD chip doesn't exist
+  until then. Verdict: sound.

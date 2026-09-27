@@ -38,7 +38,7 @@ timing is never shown as speed.
 - `weightBytes` at bf16 ≈ 16.06e9.
 - The batch-1 decode ceiling is ≈ 208 tok/s at short context.
 - `ridge(h100) ≈ 295`.
-- `specExpectedTokens` checked against Leviathan et al. 2023 (https://arxiv.org/abs/2211.17192), Theorem 3.8, **read from the PDF** (confirm-list item). Record the equation number here.
+- `specExpectedTokens` checked against Leviathan et al. 2023 (https://arxiv.org/abs/2211.17192), Equation (1) in §3.1, read from the PDF (see Results).
 - Dimensional tests: bytes and seconds never mix, and throughput rises with batch until the ridge, then flattens.
 - **Shot:** the stat-chip specimen on `/lab/tokens`, for each scale label.
   - **Variable:** scale-label prominence. The scale must be legible and must not be mistaken for the value.
