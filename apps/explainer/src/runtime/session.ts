@@ -4,13 +4,13 @@
 // reply to it is dropped. (The worker finishes the stale computation; it is never
 // interrupted mid-forward, only ignored.)
 import type {
+  ForwardOptions,
   ForwardResult,
   ModelId,
   ModelManifest,
   Neighbour,
   NextWord,
   ProbeResult,
-  TraceSpec,
   TransformerArch,
 } from "@repo/llm";
 import { modelManifestUrl } from "./models.ts";
@@ -22,9 +22,15 @@ export interface ModelInfo {
   evidence: ProbeResult[];
 }
 
+/**
+ * A forward pass's options, on the latest model loaded, or on `model` (any model this session
+ * loaded earlier: a chapter that compares two models loads both, then names each).
+ */
+export type RunOptions = Pick<ForwardOptions, "trace" | "window" | "mlpOff"> & { model?: ModelId };
+
 export type WorkerRequest = { id: number } & (
   | { type: "load"; manifestUrl: string }
-  | { type: "run"; tokens: number[]; trace?: TraceSpec; window?: number }
+  | { type: "run"; tokens: number[]; options?: RunOptions }
   | { type: "nextWords"; word: string; k: number }
   | { type: "neighbours"; token: number; k: number }
 );
@@ -42,9 +48,9 @@ export class CancelledError extends Error {
 }
 
 export interface Session {
-  /** Loads a shipped model by id, or any manifest by URL (lab fixtures). */
+  /** Loads a shipped model by id, or any manifest by URL (lab fixtures), and makes it current. */
   load(model: ModelId | URL): Promise<ModelInfo>;
-  run(tokens: number[], trace?: TraceSpec, window?: number): Promise<ForwardResult>;
+  run(tokens: number[], options?: RunOptions): Promise<ForwardResult>;
   nextWords(word: string, k: number): Promise<NextWord[]>;
   /** The loaded transformer's nearest tokens in its input embedding table. */
   neighbours(token: number, k: number): Promise<Neighbour[]>;
@@ -105,8 +111,8 @@ export function createSession(options: SessionOptions = {}): Session {
       cancel();
       return send<ModelInfo>({ id: nextId++, type: "load", manifestUrl: manifestUrl.href });
     },
-    run(tokens, trace, window) {
-      return exclusive<ForwardResult>({ id: nextId++, type: "run", tokens, trace, window });
+    run(tokens, options) {
+      return exclusive<ForwardResult>({ id: nextId++, type: "run", tokens, options });
     },
     nextWords(word, k) {
       return exclusive<NextWord[]>({ id: nextId++, type: "nextWords", word, k });

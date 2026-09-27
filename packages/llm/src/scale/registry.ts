@@ -41,6 +41,20 @@ export const ARITH = {
     describe: "parameters, counted from the layer shapes",
     compute: () => cfg.params,
   }),
+  layers: entry({
+    args: [],
+    unit: "count",
+    scale: "Llama-3-8B",
+    describe: "transformer blocks stacked one after another, from its config",
+    compute: () => cfg.nLayers,
+  }),
+  mlpNeurons: entry({
+    args: [],
+    unit: "count",
+    scale: "Llama-3-8B",
+    describe: "MLP neurons in each block (its config's intermediate size)",
+    compute: () => cfg.intermediate,
+  }),
   kvBytesPerToken: entry({
     args: ["kvBytes"],
     unit: "bytes",

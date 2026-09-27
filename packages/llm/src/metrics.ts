@@ -18,6 +18,15 @@ export const MODEL_METRICS = {
     describe: "entries in the model's vocabulary",
     read: vocabSize,
   },
+  mlpNeurons: {
+    describe: "MLP neurons in each block, from the model's shape",
+    read: (model) => {
+      const { manifest } = model;
+      if (manifest.kind !== "transformer" || manifest.arch.mlp === "none")
+        throw new Error(`${manifest.id} has no MLP`);
+      return manifest.arch.mlp.hidden;
+    },
+  },
 } satisfies Record<string, ModelMetricEntry>;
 
 export type ModelMetric = keyof typeof MODEL_METRICS;

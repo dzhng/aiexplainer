@@ -69,6 +69,13 @@
         "roughness": 0.45,
         "opacity": 1
       },
+      "indicator": {
+        "color": "bgDeep",
+        "emissive": "flow",
+        "metallic": 0,
+        "roughness": 0.25,
+        "opacity": 1
+      },
       "card": {
         "color": "ink",
         "metallic": 0,

@@ -4,12 +4,12 @@
  * scene text the overlay draws. Each chapter names a scene builder; the builder creates its
  * parts once (a new `revision`) and then updates transforms and dynamics in place every frame.
  */
-import type { NextWord } from "@repo/llm";
 import type { FrameInput, SceneDesc } from "@repo/renderer";
 import type { ChapterDef, FollowId, SceneBuilderId, ViewMode } from "../chapters/types.ts";
 import type { TimelineState } from "../chapters/timeline.ts";
 import type { SceneTags } from "../hud/SceneTags.tsx";
-import { autocomplete } from "./builders/autocomplete.ts";
+import { autocomplete, type CountsRun } from "./builders/autocomplete.ts";
+import { mlp, type MlpRun } from "./builders/mlp.ts";
 import { withEnvironment } from "./environment.ts";
 
 /** The HUD controls a scene reads. */
@@ -21,12 +21,11 @@ export interface SceneUi {
   text: string | null;
 }
 
-/** The chapter's model output for what the scene shows (computed by the session worker). */
-export type SceneRun = {
-  kind: "counts";
-  /** One step per loop input (or one for typed text): the word and its real successors. */
-  steps: { word: string; next: NextWord[] }[];
-};
+/**
+ * The chapter's model output for what the scene shows (computed through the session,
+ * `runtime/scene-run.ts`). Each scene's builder defines its own kind.
+ */
+export type SceneRun = CountsRun | MlpRun;
 
 export interface SceneBuilder {
   /** Prop URLs by asset id; the app loads them before the first frame. */
@@ -43,7 +42,7 @@ export interface SceneBuilder {
   ): void;
 }
 
-export const SCENE_BUILDERS: Record<SceneBuilderId, SceneBuilder> = { autocomplete };
+export const SCENE_BUILDERS: Record<SceneBuilderId, SceneBuilder> = { autocomplete, mlp };
 
 /** What one frame of a chapter's scene is: the renderer's input and the overlay's text. */
 export interface SceneFrame {

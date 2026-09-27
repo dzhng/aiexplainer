@@ -4,7 +4,7 @@
  * loop is `runtime/stage.ts`: clock → loop time (restarts on `loopEpoch`, advances only while
  * `playing`) → `evalTimeline` → `buildFrame` → `renderer.frame` → `placeLabels` → label refs.
  */
-import { countsModel, type LoadedModel, type ModelId } from "@repo/llm";
+import type { LoadedModel, ModelId } from "@repo/llm";
 import type { FrameInput, SceneDesc, ScreenRect } from "@repo/renderer";
 import { useEffect, useLayoutEffect, useReducer, useRef, useState } from "react";
 import { CHAPTERS } from "../chapters/index.ts";
@@ -59,14 +59,6 @@ function sceneUi(state: AppState, def: ChapterDef): SceneUi {
     view: state.view,
     text: state.text ?? scenario?.prompt ?? null,
   };
-}
-
-/** Each loaded model's word rule, decoded once (the vocabulary is thousands of words). */
-const splitters = new WeakMap<LoadedModel, (text: string) => string[]>();
-function splitter(model: LoadedModel): (text: string) => string[] {
-  let split = splitters.get(model);
-  if (!split) splitters.set(model, (split = countsModel(model).split));
-  return split;
 }
 
 const SAFE_MARGIN = 16;
@@ -159,16 +151,15 @@ export function App({ hud, clock, probe, debug, onReady }: AppProps) {
   // The scene's model output, from the worker: the loop's inputs, or the reader's text.
   const text = sceneUi(state, def).text;
   useEffect(() => {
-    if (def.model === null) return;
+    // The run reads the chapter's model on this thread too (its tokenizer or word rule).
+    if (def.model === null || model?.manifest.id !== def.model) return;
     let alive = true;
     const id = def.model;
-    const split = model?.manifest.kind === "word-counts" ? splitter(model) : null;
-    if (text !== null && !split) return; // typed text waits for the model's word rule
     // The worker holds one model: load it only when the chapter's model changes.
     if (workerModel.current?.id !== id)
       workerModel.current = { id, loaded: session.load(id).then(() => undefined) };
     void workerModel.current.loaded
-      .then(() => computeRun(def, text, session, split ?? ((t) => [t])))
+      .then(() => computeRun(def, text, session, model))
       .then(
         (next) => alive && setRun(next),
         (error: unknown) => {

@@ -61,6 +61,24 @@ export const DEFAULT_LABEL_BOX: LabelBox = { dx: 18, dy: -40, width: 220, height
 const model: Mat4 = mat4.create();
 
 /**
+ * How much `model` scales a tube's radius around the segment `a`→`b`: the largest stretch
+ * of the two directions across it (a pipe stretched along its length keeps its radius).
+ */
+function crossScale(model: Mat4, a: Vec3, b: Vec3): number {
+  const d = vec3.normalize([0, 0, 0], vec3.subtract([0, 0, 0], b, a));
+  const seed: Vec3 = Math.abs(d[1]) < 0.9 ? [0, 1, 0] : [1, 0, 0];
+  const u = vec3.normalize([0, 0, 0], vec3.cross([0, 0, 0], d, seed));
+  const v = vec3.cross([0, 0, 0], d, u);
+  const across = (w: Vec3) =>
+    Math.hypot(
+      model[0]! * w[0] + model[4]! * w[1] + model[8]! * w[2],
+      model[1]! * w[0] + model[5]! * w[1] + model[9]! * w[2],
+      model[2]! * w[0] + model[6]! * w[1] + model[10]! * w[2],
+    );
+  return Math.max(across(u), across(v));
+}
+
+/**
  * Occluders for every solid part in the current view, in world space. Translucent parts
  * (glass) never hide a label; `look` says which materials are translucent.
  */
@@ -83,15 +101,15 @@ export function sceneOccluders(
         bounds: box3.transformMat4(box3.create(), partLocalBounds(part, scene.assets), model),
       });
     } else if (part.kind === "tube") {
-      // A tube's radius scales with its transform; take the largest axis scale.
-      const scale = Math.max(...mat4.getScaling([0, 0, 0], model));
       for (let i = 0; i + 1 < part.path.length; i++) {
+        const a = part.path[i]!;
+        const b = part.path[i + 1]!;
         out.push({
           kind: "capsule",
           part: part.id,
-          a: vec3.transformMat4([0, 0, 0], part.path[i]!, model),
-          b: vec3.transformMat4([0, 0, 0], part.path[i + 1]!, model),
-          radius: part.radius * scale,
+          a: vec3.transformMat4([0, 0, 0], a, model),
+          b: vec3.transformMat4([0, 0, 0], b, model),
+          radius: part.radius * crossScale(model, a, b),
         });
       }
     } else {

@@ -23,9 +23,17 @@ import {
   type SceneAnchor,
   type SceneDesc,
 } from "@repo/renderer";
+import type { NextWord } from "@repo/llm";
 import type { Mat4, Vec3 } from "math";
 import type { SceneTags } from "../../hud/SceneTags.tsx";
 import type { SceneBuilder, SceneFrame } from "../build-frame.ts";
+
+/** Chapter 0's run (`runtime/runs/autocomplete.ts`). */
+export interface CountsRun {
+  kind: "counts";
+  /** One step per loop input (or one for typed text): the word and its real successors. */
+  steps: { word: string; next: NextWord[] }[];
+}
 
 const SLOTS = 10;
 /** Bars are this share of their slot's width and depth, so the channel walls stay visible. */
@@ -190,7 +198,7 @@ export const autocomplete: SceneBuilder = {
   update(frame: SceneFrame, _def, tl, ui, run) {
     const { scene, dynamics } = frame.input;
     const { layout, bars, card: cardPart } = built.get(scene)!;
-    const steps = run?.steps ?? [];
+    const steps = run?.kind === "counts" ? run.steps : [];
     const typed = ui.text !== null;
     const pick = (channel: number | undefined) =>
       typed ? steps[0] : steps[Math.min(steps.length - 1, Math.max(0, Math.round(channel ?? 0)))];

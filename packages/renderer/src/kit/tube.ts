@@ -99,6 +99,72 @@ export function tubeGeometry(path: Vec3[], radius: number, sides = TUBE_SIDES): 
   return { positions, normals, indices, bounds: boundsOf(positions) };
 }
 
+/** A straight tube of radius 1 from the origin to +Y 1: `placeSegment` stretches it anywhere. */
+export const UNIT_SEGMENT: Vec3[] = [
+  [0, 0, 0],
+  [0, 1, 0],
+];
+
+/**
+ * Places a `UNIT_SEGMENT` tube's `transform` so it runs from `from` to `to` with `radius`
+ * (allocation-free; for straight pipes that move or stretch every frame). A zero-length
+ * segment keeps a sliver along +Y, since a zero scale has no normal matrix.
+ */
+export function placeSegment(transform: number[], from: Vec3, to: Vec3, radius: number): void {
+  let ax = to[0] - from[0];
+  let ay = to[1] - from[1];
+  let az = to[2] - from[2];
+  const length = Math.hypot(ax, ay, az);
+  if (length < 1e-6) {
+    ax = 0;
+    ay = 1e-4;
+    az = 0;
+  }
+  const len = Math.max(length, 1e-4);
+  // A side axis perpendicular to the segment, from whichever world axis is least parallel.
+  const ux = ax / len;
+  const uy = ay / len;
+  const uz = az / len;
+  let sx: number;
+  let sy: number;
+  let sz: number;
+  if (Math.abs(uy) < 0.9) {
+    // side = normalize(up × axis) with up = +Y
+    sx = uz;
+    sy = 0;
+    sz = -ux;
+  } else {
+    // side = normalize(axis × +X)
+    sx = 0;
+    sy = uz;
+    sz = -uy;
+  }
+  const sl = Math.hypot(sx, sy, sz);
+  sx /= sl;
+  sy /= sl;
+  sz /= sl;
+  // other = side × axis, so (side, axis, other) is right-handed and faces keep their winding.
+  const ox = sy * uz - sz * uy;
+  const oy = sz * ux - sx * uz;
+  const oz = sx * uy - sy * ux;
+  transform[0] = sx * radius;
+  transform[1] = sy * radius;
+  transform[2] = sz * radius;
+  transform[3] = 0;
+  transform[4] = ax;
+  transform[5] = ay;
+  transform[6] = az;
+  transform[7] = 0;
+  transform[8] = ox * radius;
+  transform[9] = oy * radius;
+  transform[10] = oz * radius;
+  transform[11] = 0;
+  transform[12] = from[0];
+  transform[13] = from[1];
+  transform[14] = from[2];
+  transform[15] = 1;
+}
+
 export interface TubeParams extends KitCommon {
   material: string;
   /** World-space centreline (the part's transform is the identity). */

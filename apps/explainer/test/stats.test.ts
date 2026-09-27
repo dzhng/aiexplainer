@@ -1,14 +1,11 @@
 import { expect, test } from "bun:test";
-import { loadModel, type LoadedModel, type ModelId } from "@repo/llm";
+import { fetchModel, type LoadedModel, type ModelId } from "@repo/llm";
 import { CHAPTERS } from "../src/chapters/index.ts";
 import { resolveStat, statSource, statText } from "../src/chapters/stats.ts";
 
-const shipped = async (id: ModelId): Promise<LoadedModel> => {
-  const dir = new URL(`../public/models/${id}/`, import.meta.url);
-  const manifest = await Bun.file(new URL("manifest.json", dir)).json();
-  const weights = await Bun.file(new URL("weights.bin", dir)).arrayBuffer();
-  return loadModel(manifest, weights);
-};
+/** A shipped model with its tokenizer, as the app loads it. */
+const shipped = (id: ModelId): Promise<LoadedModel> =>
+  fetchModel(new URL(`../public/models/${id}/manifest.json`, import.meta.url));
 
 test("every written chapter's stats resolve against its shipped model, with a source line", async () => {
   for (const def of Object.values(CHAPTERS)) {

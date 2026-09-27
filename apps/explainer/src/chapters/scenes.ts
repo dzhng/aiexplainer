@@ -6,6 +6,8 @@
 export const SCENE_ANCHORS = {
   /** Chapter 0: the counter board, its count bars, and the word rail. */
   autocomplete: ["board", "bars", "rail"],
+  /** Chapter 6: the question panel, the token arrow, the readout bars, the no-river teaser. */
+  mlp: ["panel", "arrow", "readout", "teaser"],
 } as const satisfies Record<string, readonly string[]>;
 
 /**
@@ -14,6 +16,7 @@ export const SCENE_ANCHORS = {
  */
 export const SCENE_KIT: Record<keyof typeof SCENE_ANCHORS, readonly string[]> = {
   autocomplete: ["mesh", "bars", "block"],
+  mlp: ["questionPanel", "tube", "block", "bars"],
 };
 
 export type SceneBuilderId = keyof typeof SCENE_ANCHORS;

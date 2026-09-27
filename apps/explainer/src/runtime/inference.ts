@@ -1,0 +1,79 @@
+/**
+ * What the inference worker does, with no messaging: it holds every model it has loaded,
+ * keyed by id, and answers requests against the latest one loaded (or a named one). The
+ * worker (`session.worker.ts`) wraps it in messages; `localSession` wraps it in-process for
+ * tests and the fixture-run script, so both paths run the same code.
+ */
+import {
+  countsModel,
+  fetchModel,
+  forward,
+  nearestTokens,
+  nextWords,
+  transformerModel,
+  type CountsModel,
+  type ForwardResult,
+  type Neighbour,
+  type NextWord,
+  type Transformer,
+} from "@repo/llm";
+import type { ModelInfo, RunOptions } from "./session.ts";
+
+type Held =
+  | { kind: "transformer"; transformer: Transformer }
+  | { kind: "counts"; counts: CountsModel };
+
+export interface Inference {
+  load(manifestUrl: URL): Promise<ModelInfo>;
+  run(tokens: number[], options?: RunOptions): ForwardResult;
+  nextWords(word: string, k: number): NextWord[];
+  neighbours(token: number, k: number): Neighbour[];
+}
+
+export function createInference(): Inference {
+  const held = new Map<string, Held>();
+  const infos = new Map<string, ModelInfo>();
+  let current: string | undefined;
+
+  const transformer = (id: string | undefined, what: string): Transformer => {
+    const model = id === undefined ? undefined : held.get(id);
+    if (model?.kind !== "transformer") throw new Error(`${what} needs a loaded transformer`);
+    return model.transformer;
+  };
+
+  return {
+    async load(manifestUrl) {
+      const loaded = await fetchModel(manifestUrl);
+      const { manifest } = loaded;
+      if (!held.has(manifest.id)) {
+        held.set(
+          manifest.id,
+          manifest.kind === "transformer"
+            ? { kind: "transformer", transformer: transformerModel(loaded) }
+            : { kind: "counts", counts: countsModel(loaded) },
+        );
+        const info: ModelInfo = {
+          id: manifest.id,
+          kind: manifest.kind,
+          evidence: manifest.evidence,
+        };
+        if (manifest.kind === "transformer") info.arch = manifest.arch;
+        infos.set(manifest.id, info);
+      }
+      current = manifest.id;
+      return infos.get(manifest.id)!;
+    },
+    run(tokens, options = {}) {
+      const { model, ...forwardOptions } = options;
+      return forward(transformer(model ?? current, "run"), tokens, forwardOptions);
+    },
+    neighbours(token, k) {
+      return nearestTokens(transformer(current, "neighbours"), token, k);
+    },
+    nextWords(word, k) {
+      const model = current === undefined ? undefined : held.get(current);
+      if (model?.kind !== "counts") throw new Error("nextWords needs a loaded counts model");
+      return nextWords(model.counts, word, k);
+    },
+  };
+}
