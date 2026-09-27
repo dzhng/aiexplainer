@@ -12,6 +12,7 @@ import {
   type FrameInput,
   type FrameReceipt,
   type LookConfig,
+  type OrbitPose,
   type Renderer,
   type ScreenRect,
 } from "@repo/renderer";
@@ -28,6 +29,8 @@ export interface StageOptions {
   probe: ProbeApi;
   /** Called once the first frames are on screen (or the stage failed). */
   onReady: () => void;
+  /** Adjusts the drawn camera from the orbit pose each frame (e.g. a turntable). */
+  pose?: (pose: OrbitPose, timeSec: number) => void;
 }
 
 export interface Stage {
@@ -46,7 +49,8 @@ export async function runStage(o: StageOptions): Promise<Stage | null> {
   const renderer = created;
   const input: FrameInput = { ...o.input, timeSec: 0, viewport: { width: 1, height: 1, dpr: 1 } };
   const orbit = new OrbitController(input.camera);
-  input.camera = orbit.pose;
+  const pose: OrbitPose = { ...orbit.pose, target: [...orbit.pose.target] };
+  input.camera = pose;
 
   const { canvas } = o;
   const onDown = (e: PointerEvent) => {
@@ -83,8 +87,16 @@ export async function runStage(o: StageOptions): Promise<Stage | null> {
   let raf = 0;
   const tick = () => {
     const now = o.clock.now();
-    orbit.update(now - last);
+    const current = orbit.update(now - last);
     last = now;
+    pose.target[0] = current.target[0];
+    pose.target[1] = current.target[1];
+    pose.target[2] = current.target[2];
+    pose.yaw = current.yaw;
+    pose.pitch = current.pitch;
+    pose.distance = current.distance;
+    pose.fovY = current.fovY;
+    o.pose?.(pose, now);
     input.timeSec = now;
     input.viewport.width = canvas.clientWidth;
     input.viewport.height = canvas.clientHeight;
@@ -102,7 +114,7 @@ export async function runStage(o: StageOptions): Promise<Stage | null> {
     cameraMatrices(input.camera, input.viewport, matrices);
     const crops: Record<string, ScreenRect> = {};
     for (const part of input.scene.parts) {
-      const rect = projectBox(matrices, partWorldBounds(part, input.view, box));
+      const rect = projectBox(matrices, partWorldBounds(part, input.scene.assets, input.view, box));
       if (rect) crops[`part:${part.id}`] = rect;
     }
     return crops;

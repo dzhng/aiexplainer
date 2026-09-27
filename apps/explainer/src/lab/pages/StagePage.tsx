@@ -3,8 +3,10 @@ import type { Clock } from "../../runtime/clock.ts";
 import type { ProbeApi } from "../probe.ts";
 import { runStage, type StageOptions } from "../stage.ts";
 
+export type StageScene = Pick<StageOptions, "look" | "input" | "pose">;
+
 export interface StagePageProps {
-  scene: () => Pick<StageOptions, "look" | "input">;
+  scene: () => StageScene | Promise<StageScene>;
   clock: Clock;
   probe: ProbeApi;
   onReady: () => void;
@@ -16,16 +18,19 @@ export function StagePage({ scene, clock, probe, onReady }: StagePageProps) {
   useEffect(() => {
     let dispose = () => {};
     let cancelled = false;
-    runStage({ canvas: ref.current!, ...scene(), clock, probe, onReady }).then(
-      (stage) => {
-        if (cancelled) stage?.dispose();
-        else if (stage) dispose = stage.dispose;
-      },
-      (error) => {
-        probe.errors.push(String(error));
-        onReady();
-      },
-    );
+    Promise.resolve()
+      .then(scene)
+      .then((s) => runStage({ canvas: ref.current!, ...s, clock, probe, onReady }))
+      .then(
+        (stage) => {
+          if (cancelled) stage?.dispose();
+          else if (stage) dispose = stage.dispose;
+        },
+        (error) => {
+          probe.errors.push(String(error));
+          onReady();
+        },
+      );
     return () => {
       cancelled = true;
       dispose();

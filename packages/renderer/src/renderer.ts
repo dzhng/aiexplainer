@@ -111,7 +111,7 @@ function buildScene(
     .$usage("index");
   upload(root, indices, compiled.indices);
 
-  const instanceCount = Math.max(1, compiled.parts.length);
+  const instanceCount = Math.max(1, compiled.instanceParts.length);
   const instances = scope.buffer(d.arrayOf(Instance, instanceCount)).$usage("storage");
   const instanceData = new ArrayBuffer(instanceCount * INSTANCE_BYTES);
 

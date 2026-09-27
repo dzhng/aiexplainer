@@ -1,5 +1,5 @@
 /** JSON `FrameInput` fixtures for the lab (`src/lab/fixtures/<name>.json`). */
-import type { FrameInput, LookConfig, OrbitPose, Part, ViewMode } from "@repo/renderer";
+import type { FrameInput, LookConfig, OrbitPose, Part, SceneDesc, ViewMode } from "@repo/renderer";
 import { lookConfig, type MaterialToken } from "../look/look.ts";
 
 export interface FixtureJson {
@@ -23,12 +23,13 @@ export function frameFromParts(
   camera: OrbitPose,
   parts: Part[],
   view: FrameInput["view"] = { mode: "whole", t: 0 },
+  assets: SceneDesc["assets"] = {},
 ): Omit<FrameInput, "timeSec" | "viewport"> {
   const slots = parts.reduce((n, p) => Math.max(n, p.slot + 1), 1);
   return {
     camera,
     view,
-    scene: { revision: 1, parts },
+    scene: { revision: 1, parts, assets },
     dynamics: {
       intensity: new Float32Array(slots).fill(1),
       widthScale: new Float32Array(slots).fill(1),

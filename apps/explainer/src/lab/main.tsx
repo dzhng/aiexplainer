@@ -3,6 +3,7 @@ import { createRoot } from "react-dom/client";
 import { clockFromSearch, type HeldClock } from "../runtime/clock.ts";
 import { calibScene } from "./calib.ts";
 import { loadFixture } from "./fixtures.ts";
+import { kitScene } from "./kit.ts";
 import { installProbe } from "./probe.ts";
 import { registryBaseline } from "./registry-baseline.ts";
 import { AdapterPage } from "./pages/AdapterPage.tsx";
@@ -11,7 +12,8 @@ import { StagePage } from "./pages/StagePage.tsx";
 const clock = clockFromSearch(location.search);
 const { probe, markReady } = installProbe((t) => (clock as Partial<HeldClock>).set?.(t));
 const params = new URLSearchParams(location.search);
-const route = location.pathname.replace(/^\/lab\/?/, "").split("/")[0] || "adapter";
+const [first, sub = ""] = location.pathname.replace(/^\/lab\/?/, "").split("/");
+const route = first || "adapter";
 const root = createRoot(document.getElementById("root")!);
 
 probe.adapter = await probeAdapter(navigator.gpu);
@@ -28,6 +30,9 @@ switch (route) {
     break;
   case "calib":
     stage(calibScene);
+    break;
+  case "kit":
+    stage(() => kitScene(sub));
     break;
   case "registry": {
     const canvas = document.createElement("canvas");

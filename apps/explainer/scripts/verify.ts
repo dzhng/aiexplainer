@@ -6,6 +6,7 @@
  *   bun scripts/verify.ts --route /lab/adapter [--t 12.5] [--out name] [--base http://…]
  *   bun scripts/verify.ts --route /lab/adapter --browser shell   # negative control: expect failure
  *   bun scripts/verify.ts --route '/lab/renderer?fixture=boxes' --t 0 --out boxes --crop 'part:*'
+ *   bun scripts/verify.ts --route /lab/kit/board --t 0,1,2,3 --out board --crop part:board
  *
  * `--crop` takes comma-separated probe crop names (a trailing `*` matches a prefix) and
  * screenshots their union, padded, instead of the whole viewport.
@@ -81,11 +82,14 @@ function unionCrop(crops: Record<string, Rect>, spec: string): Rect {
   };
 }
 
+/** `--t 0,1,2` shoots each held time in one session, as `<out>-t<time>.png`. */
+const times = args.t?.split(",") ?? [];
+
 function withClock(route: string): string {
   if (args.t === undefined) return route;
   const url = new URL(route, "http://x");
   url.searchParams.set("clock", "held");
-  url.searchParams.set("t", args.t);
+  url.searchParams.set("t", times[0]!);
   return url.pathname + url.search;
 }
 
@@ -117,7 +121,6 @@ try {
     adapter: window.__explainer!.adapter,
     errors: window.__explainer!.errors,
     receipt: window.__explainer!.receipt?.(),
-    crops: window.__explainer!.crops?.(),
     results: window.__explainer!.results,
   }));
 
@@ -131,11 +134,20 @@ try {
   if (args.out) {
     const dir = path.join(repoRoot, "throwaway/shots", args.slice);
     await mkdir(dir, { recursive: true });
-    const file = path.join(dir, `${args.out}.png`);
-    const clip = args.crop ? unionCrop(probe.crops ?? {}, args.crop) : undefined;
-    if (clip) console.log("crop", JSON.stringify(clip));
-    await page.screenshot({ path: file, clip });
-    console.log("shot", path.relative(repoRoot, file));
+    for (const t of times.length > 1 ? times : [undefined]) {
+      if (t !== undefined) {
+        await page.evaluate(async (time) => {
+          window.__explainer!.setTime(time);
+          for (let i = 0; i < 3; i++) await new Promise(requestAnimationFrame);
+        }, Number(t));
+      }
+      const crops = await page.evaluate(() => window.__explainer!.crops?.());
+      const file = path.join(dir, `${args.out}${t === undefined ? "" : `-t${t}`}.png`);
+      const clip = args.crop ? unionCrop(crops ?? {}, args.crop) : undefined;
+      if (clip) console.log("crop", JSON.stringify(clip));
+      await page.screenshot({ path: file, clip });
+      console.log("shot", path.relative(repoRoot, file));
+    }
   }
 } finally {
   await browser.close();

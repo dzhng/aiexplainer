@@ -3,6 +3,7 @@
  * the renderer draws exactly that and reports a `FrameReceipt`. Nothing else crosses.
  */
 import type { Mat4, Vec3 } from "math";
+import type { MeshAsset } from "./gltf.ts";
 
 /** Linear-light RGB, as handed over by the app's look module (never sRGB). */
 export type LinearRgb = Vec3;
@@ -49,12 +50,32 @@ export interface TubePart extends PartBase {
   radius: number;
 }
 
-export type Part = BlockPart | TubePart;
+/** A loaded prop, keyed in `SceneDesc.assets`. */
+export type AssetId = string;
+
+/**
+ * One node of a prop (or, without `node`, every node). Materials bind by name: the last
+ * dotted segment of the node name that names a look preset wins (`board.housing` →
+ * `housing`); otherwise the node's glTF material name must name one.
+ */
+export interface MeshPart extends PartBase {
+  kind: "mesh";
+  asset: AssetId;
+  node?: string;
+  /** Offset applied in the Exploded view, scaled by `view.t`. */
+  explode: Vec3;
+  /** Whether the Cutaway view clips this part. */
+  cutaway: "keep" | "clip";
+}
+
+export type Part = BlockPart | TubePart | MeshPart;
 
 export interface SceneDesc {
   /** Bump to make the renderer re-upload the scene; unchanged means reuse. */
   revision: number;
   parts: Part[];
+  /** Parsed props (`parseGlb`), loaded by the app. */
+  assets: Record<AssetId, MeshAsset>;
 }
 
 export interface FrameDynamics {

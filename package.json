@@ -24,7 +24,8 @@
     "format": "oxfmt --write .",
     "format:check": "oxfmt --check .",
     "verify": "bun run format:check && bun run check-types && bun run lint && bun run test && bun run training:test",
-    "training:test": "cd training && uv run pytest -q"
+    "training:test": "cd training && uv run pytest -q",
+    "props:build": "bun assets/blender/build.ts"
   },
   "devDependencies": {
     "oxfmt": "0.57.0",
