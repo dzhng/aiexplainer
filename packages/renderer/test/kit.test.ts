@@ -115,6 +115,37 @@ test("pipes: entries spread across the sink's underside in their sources' arrang
   for (const e of pipeEntries({ sources, sink: [1, 3, 0] })) expect(e).toEqual([1, 3, 0]);
 });
 
+test("sealed: a short stub rises from each source and ends in a wider cap, one slot each", () => {
+  const sources: Vec3[] = [
+    [0, 0, 0],
+    [1, 0.2, 0],
+  ];
+  const built = KIT.sealed.build({
+    id: "s",
+    slot: 2,
+    material: "pipe",
+    capMaterial: "sealed",
+    sources,
+    radius: 0.02,
+  });
+  expect(built.parts.map((p) => [p.id, p.slot])).toEqual([
+    ["s.0", 2],
+    ["s.0.cap", 2],
+    ["s.1", 3],
+    ["s.1.cap", 3],
+  ]);
+  for (let i = 0; i < 2; i++) {
+    const stub = built.parts[2 * i] as { path: Vec3[]; radius: number };
+    const cap = built.parts[2 * i + 1] as { path: Vec3[]; radius: number };
+    expect(stub.path[0]).toEqual(sources[i]!);
+    expect(stub.path.at(-1)![1]).toBeGreaterThan(sources[i]![1]);
+    expect(cap.radius).toBeGreaterThan(stub.radius);
+    // The cap straddles the stub's top.
+    const mid = vec3.lerp([0, 0, 0], cap.path[0]!, cap.path[1]!, 0.5);
+    expect(vec3.distance(mid, stub.path.at(-1)!)).toBeLessThan(1e-9);
+  }
+});
+
 test("tube: a path needs two points", () => {
   expect(() => tubeGeometry([[0, 0, 0]], 1)).toThrow();
 });

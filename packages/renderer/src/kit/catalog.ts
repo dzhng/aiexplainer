@@ -8,10 +8,11 @@ import { block } from "./block.ts";
 import { contactShadow } from "./contact-shadow.ts";
 import { mesh } from "./mesh.ts";
 import { pipes } from "./pipes.ts";
+import { sealed } from "./sealed.ts";
 import type { KitPrimitive } from "./primitive.ts";
 import { tube } from "./tube.ts";
 
-export const KIT = { block, tube, mesh, bars, contactShadow, pipes } as const;
+export const KIT = { block, tube, mesh, bars, contactShadow, pipes, sealed } as const;
 export type KitPrimitiveId = keyof typeof KIT;
 
 export function isKitPrimitive(id: string): id is KitPrimitiveId {

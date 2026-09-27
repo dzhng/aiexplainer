@@ -54,13 +54,13 @@ export const attention: ChapterDef = {
         precisely:
           "The mix is the weighted sum of every position's value vector, using the attention weights; it is added to the last token's own vector (the residual stream).",
       },
-      sentence: {
+      sealed: {
         story: [
-          "Each block is one token of the story, in reading order, laid out line by line like a page.",
-          "The last block, lit orange, is the word the machine is about to continue from.",
+          "The words after “but” are the ones this machine goes on to write, and their pipes are capped shut.",
+          "A word may only draw on the words before it: you can't read tomorrow's newspaper.",
         ],
         precisely:
-          "The tokens are the tokenizer's pieces of the prompt, after a start marker; the attention shown is from the last token, which is where the next-token guess is made.",
+          "The causal mask: before the softmax, every score for a later position is set to minus infinity, so its weight is exactly 0. The dim words are this tiny model's own next four guesses.",
       },
     },
   },
@@ -90,50 +90,59 @@ export const attention: ChapterDef = {
   follow: [
     { id: "pipes", label: "Pipes", anchor: "pipes" },
     { id: "mix", label: "The mix", anchor: "mix" },
-    { id: "sentence", label: "The words", anchor: "sentence" },
+    { id: "sealed", label: "Sealed", anchor: "sealed" },
   ],
   slider: { id: "shares", label: "Pipe shares shown", min: 0, max: 5, step: 1, initial: 3 },
   scenarios,
   views: ["whole", "exploded"],
   labels: [
     { anchor: "sentence", analogy: "The story so far", precise: "Tokens in context" },
-    { anchor: "pipes", analogy: "Wider pipe, more drawn", precise: "Attention weight (area)" },
+    { anchor: "pipes", analogy: "Wider pipe, more drawn", precise: "Attention weight (width)" },
     { anchor: "mix", analogy: "The last word's mix", precise: "Weighted sum of values" },
+    { anchor: "sealed", analogy: "Later words: sealed", precise: "Causal mask: weight 0" },
   ],
   loop: {
-    durationSec: 20,
+    durationSec: 24,
     inputs: [RECALL_PROMPTS.mia],
     channels: {
       /** Word blocks rise out of their steps, then sink back at the seam. */
       blocks: [
         { t: 0, v: 0 },
-        { t: 1.2, v: 1, ease: "inOut" },
-        { t: 18.3, v: 1 },
-        { t: 19.4, v: 0, ease: "inOut" },
+        { t: 2, v: 1 },
+        { t: 22.3, v: 1 },
+        { t: 23.4, v: 0, ease: "inOut" },
       ],
       /** Hairline pipes reach up from each word in reading order. */
       pipes: [
         { t: 0, v: 0 },
         { t: 1.4, v: 0 },
         { t: 4.2, v: 1 },
-        { t: 18.4, v: 1 },
-        { t: 18.6, v: 0, ease: "step" },
+        { t: 22.4, v: 1 },
+        { t: 22.6, v: 0, ease: "step" },
       ],
       /** Pipe widths: 0 hairline, 1 the real attention weights. */
       settle: [
         { t: 0, v: 0 },
         { t: 4.6, v: 0 },
         { t: 7.4, v: 1, ease: "inOut" },
-        { t: 17.4, v: 1 },
-        { t: 18.4, v: 0, ease: "inOut" },
+        { t: 21.4, v: 1 },
+        { t: 22.4, v: 0, ease: "inOut" },
       ],
       /** The mix block lights as the blend arrives. */
       fill: [
         { t: 0, v: 0 },
         { t: 7.8, v: 0 },
         { t: 9.6, v: 1, ease: "inOut" },
-        { t: 17.4, v: 1 },
-        { t: 18.4, v: 0, ease: "inOut" },
+        { t: 21.4, v: 1 },
+        { t: 22.4, v: 0, ease: "inOut" },
+      ],
+      /** The words after "but" rise with their capped, sealed stubs. */
+      future: [
+        { t: 0, v: 0 },
+        { t: 10.4, v: 0 },
+        { t: 11.6, v: 1, ease: "inOut" },
+        { t: 21.4, v: 1 },
+        { t: 22.4, v: 0, ease: "inOut" },
       ],
     },
     beats: [
@@ -158,12 +167,19 @@ export const attention: ChapterDef = {
         focus: "mix",
         tint: "focus",
       },
-      { t: 17.4, id: "drain", note: "the pipes close; the loop starts again", focus: "sentence" },
+      {
+        t: 10.4,
+        id: "sealed",
+        note: "the words the model writes next rise, their pipes capped: it can't read ahead",
+        focus: "sealed",
+        tint: "sealed",
+      },
+      { t: 21.4, id: "drain", note: "the pipes close; the loop starts again", focus: "sentence" },
     ],
   },
   shot: "attention-hero",
   help: {
     sources: [{ label: "Vaswani et al. 2017, attention", url: "https://arxiv.org/abs/1706.03762" }],
   },
-  ogTimeSec: 10,
+  ogTimeSec: 13,
 };

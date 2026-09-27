@@ -85,6 +85,18 @@
         "roughness": 0.15,
         "opacity": 0.4
       },
+      "sealed": {
+        "color": "#6a7090",
+        "metallic": 0.7,
+        "roughness": 0.35,
+        "opacity": 1
+      },
+      "futureWord": {
+        "color": "#171b2c",
+        "metallic": 0.1,
+        "roughness": 0.7,
+        "opacity": 1
+      },
       "focusWord": {
         "color": "focus",
         "emissive": "focus",

@@ -38,11 +38,14 @@ export type SceneRun =
 
 /** One prompt through a one-layer attention model, seen from its last token (the focus). */
 export interface AttentionStep {
-  /** Every token as text, `<bos>` first. */
+  /** Every token as text: `<bos>`, the prompt, then the words the model writes next. */
   tokens: string[];
   /** The focus token's index: the prompt's last. */
   focus: number;
-  /** The focus token's real attention weights over every token (layer 0, head 0). */
+  /**
+   * The focus token's real attention weights over every token (layer 0, head 0); the causal
+   * mask makes every weight after the focus exactly 0.
+   */
   weights: number[];
 }
 

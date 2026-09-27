@@ -1,21 +1,26 @@
 /**
- * Chapter 4's scene: the prompt laid out as word blocks on a stepped stand, one line per step
+ * Chapter 4's scene: the story laid out as word blocks on a stepped stand, one line per step
  * like a page, and above it the last word's mix: a glowing block fed by a pipe from every word
- * up to and including the last (kit: `block`, `pipes`). Each pipe's cross-section area is the
- * last word's real attention weight on the word it comes from (`widthScale` = weight), so the
- * widest pipe runs from the word it draws the most from.
+ * up to and including the focus word (kit: `block`, `pipes`, `sealed`). Each pipe's width is
+ * the focus word's real attention weight on the word it comes from (`widthScale` = weight), so
+ * the widest pipe runs from the word it draws the most from. The words after the focus (the
+ * ones this model writes next) stand in a dim line after it, each with a capped stub: their
+ * pipes are sealed, and their weights in the trace are exactly 0.
  *
  * Views: Exploded lifts the mix and its pipes off the words and drops the stand away.
  *
  * Loop channels read: `blocks` (0 → 1 as the words rise into place), `pipes` (0 → 1: hairline
  * pipes reach up from each word in reading order), `settle` (0 → 1: widths go from hairline
- * to the real weights), `fill` (0 → 1: the mix block lights up as the blend arrives).
- * Typed text shows its settled pipes at once, without the loop's motion.
+ * to the real weights), `fill` (0 → 1: the mix block lights up as the blend arrives),
+ * `future` (0 → 1: the later words rise with their sealed stubs).
+ * Typed text shows everything settled at once, without the loop's motion.
  */
 import {
   KIT,
   pipePaths,
+  sealedPaths,
   type BlockPart,
+  type PipeFan,
   type SceneAnchor,
   type SceneDesc,
   type TubePart,
@@ -26,8 +31,10 @@ import type { SceneTags } from "../../hud/SceneTags.tsx";
 import type { AttentionStep, SceneBuilder, SceneFrame } from "../build-frame.ts";
 import { nextRevision } from "../revision.ts";
 
-/** The most tokens the scene lays out (`<bos>` included); longer text keeps its last ones. */
+/** The most tokens the scene lays out (`<bos>` and the sealed words included). */
 export const MAX_TOKENS = 48;
+/** How many of the words the model writes next stand, sealed, after the focus word. */
+export const FUTURE_WORDS = 4;
 
 /** Word blocks: width grows with the word, so a line reads like set type. Metres. */
 const BLOCK = { perChar: 0.036, pad: 0.07, gap: 0.035, height: 0.13, depth: 0.2 };
@@ -46,6 +53,8 @@ const STEP = { back: 0.36, up: 0.2, frontY: 0.42, frontZ: 0.5 };
 const MIX = { above: 1.1, height: 0.14, depth: 0.5, share: 0.42, glow: 0.14 };
 /** A pipe's radius at weight 1: the width is proportional to the weight. */
 const PIPE_RADIUS = 0.25;
+/** A sealed stub's radius: a plain pipe's, carrying nothing. */
+const SEALED_RADIUS = 0.022;
 /** Pipes glow softly, so their width, not their bloom, carries the weight. */
 const PIPE_GLOW = 0.3;
 /** The lit focus word in its line glows less than the mix it feeds. */
@@ -74,11 +83,21 @@ const EXPLODE = { mix: [0, 0.45, 0] as Vec3, stand: [0, -0.3, 0] as Vec3 };
  */
 const MAX_SHARES = 5;
 const SHARE_ROOM = " 00%";
-/** Scene text slots: the mix's word, the focus word, then one per word block. */
-const TAG = { mix: 0, focus: 1, words: 2 } as const;
+/** The note over the sealed words (the chapter's analogy, from the map's ladder). */
+export const SEALED_NOTE = "you can't read tomorrow's newspaper";
+
+/** Scene text slots: the mix's word, the focus word, the sealed note, then one per word. */
+const TAG = { mix: 0, focus: 1, sealed: 2, words: 3 } as const;
 
 /** Dynamics slots. */
-const SLOT = { stand: 0, words: 1, focus: 2, mix: 3, pipes: 4 } as const;
+const SLOT = {
+  stand: 0,
+  words: 1,
+  focus: 2,
+  mix: 3,
+  sealed: 4,
+  pipes: 4 + FUTURE_WORDS,
+} as const;
 
 /** What a word block shows: `<bos>` is the start marker every prompt begins with. */
 export function tokenLabel(token: string): string {
@@ -92,22 +111,26 @@ interface Layout {
   /** The stand's steps, front to back: centre and size. */
   steps: { centre: Vec3; size: Vec3 }[];
   mix: { centre: Vec3; width: number };
-  /** Where the pipes enter the mix: the centre of its underside and their spread across it. */
-  sink: Vec3;
-  spread: [number, number];
+  /** Every token's pipe fan into the mix. */
+  fan: PipeFan;
+  /** Each block's line, counted from the first (the back step). */
+  rowOf: number[];
+  rows: number;
 }
 
 /**
  * Wraps the blocks into lines no wider than `LINE_WIDTH`, one per step, centred on x = 0.
- * `labels` is what each block must hold (its word, and room for a share on the widest).
+ * `labels` is what each block must hold (its word, and room for a share on the widest). Blocks
+ * from `noWrapFrom` on (the sealed later words) stay on the line they continue, so they never
+ * stand alone in front of the story.
  */
-export function layoutTokens(labels: string[]): Layout {
+export function layoutTokens(labels: string[], noWrapFrom = labels.length): Layout {
   const widths = labels.map((label) => BLOCK.pad + BLOCK.perChar * label.length);
   const lines: number[][] = [[]];
   let run = 0;
   widths.forEach((w, i) => {
     const line = lines.at(-1)!;
-    if (line.length > 0 && run + BLOCK.gap + w > LINE_WIDTH) {
+    if (line.length > 0 && i < noWrapFrom && run + BLOCK.gap + w > LINE_WIDTH) {
       lines.push([i]);
       run = w;
     } else {
@@ -117,7 +140,12 @@ export function layoutTokens(labels: string[]): Layout {
   });
   if (lines.length > MAX_LINES) throw new Error(`attention: ${lines.length} lines of words`);
   const centres: Vec3[] = [];
+  const rowOf: number[] = [];
   const steps: Layout["steps"] = [];
+  const spans = lines.map(
+    (line) => line.reduce((n, i) => n + widths[i]!, 0) + BLOCK.gap * (line.length - 1),
+  );
+  const stepWidth = Math.max(LINE_WIDTH, ...spans) + 0.3;
   const rows = lines.length;
   // The last line sits on the front step; earlier lines step up and back, like a page.
   for (let r = rows - 1; r >= 0; r--) {
@@ -125,14 +153,14 @@ export function layoutTokens(labels: string[]): Layout {
     const back = rows - 1 - r;
     const y = STEP.frontY + back * STEP.up;
     const z = STEP.frontZ - back * STEP.back;
-    const span = line.reduce((n, i) => n + widths[i]!, 0) + BLOCK.gap * (line.length - 1);
-    let x = -span / 2;
+    let x = -spans[r]! / 2;
     for (const i of line) {
+      rowOf[i] = r;
       centres[i] = [x + widths[i]! / 2, y, z];
       x += widths[i]! + BLOCK.gap;
     }
     const top = y - BLOCK.height / 2;
-    steps.push({ centre: [0, top / 2, z], size: [LINE_WIDTH + 0.3, top, STEP.back] });
+    steps.push({ centre: [0, top / 2, z], size: [stepWidth, top, STEP.back] });
   }
   const topY = STEP.frontY + (rows - 1) * STEP.up;
   const midZ = STEP.frontZ - ((rows - 1) * STEP.back) / 2;
@@ -143,9 +171,16 @@ export function layoutTokens(labels: string[]): Layout {
     centres,
     widths,
     steps,
+    rowOf,
+    rows,
     mix: { centre, width },
-    sink: [0, centre[1] - MIX.height / 2, midZ],
-    spread: [width - 0.2, MIX.depth - 0.16],
+    fan: {
+      sources: centres.map(
+        ([x, y, z]): Vec3 => [x, y + BLOCK.height / 2, z - BLOCK.depth * PIPE_FOOT_BACK],
+      ),
+      sink: [0, centre[1] - MIX.height / 2, midZ],
+      spread: [width - 0.2, MIX.depth - 0.16],
+    },
   };
 }
 
@@ -162,14 +197,20 @@ function place(transform: Mat4, centre: Vec3, size: Vec3): void {
 interface Built {
   steps: BlockPart[];
   words: BlockPart[];
+  /** The words after the focus, in their own dim blocks. */
+  later: BlockPart[];
   focusWord: BlockPart;
   mix: BlockPart;
   pipes: TubePart[];
+  /** Stub then cap, per later word. */
+  sealed: TubePart[];
   shown: AttentionStep | null;
   layout: Layout | null;
-  /** The "pipes" label rides the widest pipe of the step shown, at `pipesAt`. */
+  /** Labels that ride a part of the step shown, and where on it. */
   pipesAnchor: SceneAnchor;
   pipesAt: Vec3;
+  sealedAnchor: SceneAnchor;
+  sealedAt: Vec3;
   mixAnchor: SceneAnchor;
 }
 const built = new WeakMap<SceneDesc, Built>();
@@ -180,7 +221,7 @@ function layoutOf(step: AttentionStep): Layout {
   if (!layout) {
     const shares = new Set(widestFirst(step).slice(0, MAX_SHARES));
     const labels = step.tokens.map((t, i) => tokenLabel(t) + (shares.has(i) ? SHARE_ROOM : ""));
-    layouts.set(step, (layout = layoutTokens(labels)));
+    layouts.set(step, (layout = layoutTokens(labels, step.focus + 1)));
   }
   return layout;
 }
@@ -192,20 +233,29 @@ export function widestFirst(step: AttentionStep): number[] {
   );
 }
 
-/** Lays the pipes (and the label riding them) along `step`'s layout: a new revision. */
+/** Lays the pipes, stubs and the labels riding them along `step`'s layout: a new revision. */
 function followStep(scene: SceneDesc, b: Built, step: AttentionStep): void {
   const layout = layoutOf(step);
-  const sources = b.pipes.map((_, i): Vec3 => {
-    const [x, y, z] = layout.centres[Math.min(i, step.focus)]!;
-    return [x, y + BLOCK.height / 2, z - BLOCK.depth * PIPE_FOOT_BACK];
-  });
-  const paths = pipePaths({ sources, sink: layout.sink, spread: layout.spread });
+  const paths = pipePaths(layout.fan);
   b.pipes.forEach((pipe, i) => {
-    pipe.path = paths[i]!;
+    pipe.path = paths[Math.min(i, step.focus)]!;
+  });
+  // Each later word's sealed stub rises from the middle of its block's top.
+  const later = Array.from({ length: FUTURE_WORDS }, (_, j): Vec3 => {
+    const [x, y, z] = layout.centres[Math.min(step.focus + 1 + j, step.tokens.length - 1)]!;
+    return [x, y + BLOCK.height / 2, z];
+  });
+  sealedPaths(later, SEALED_RADIUS).forEach(({ stub, cap }, j) => {
+    b.sealed[2 * j]!.path = stub;
+    b.sealed[2 * j + 1]!.path = cap;
   });
   const top = b.pipes[widestFirst(step)[0]!]!;
   b.pipesAnchor.part = top.id;
   b.pipesAt = top.path[Math.round((top.path.length - 1) * 0.45)]!;
+  // The last later word's right end.
+  const last = Math.min(step.tokens.length - step.focus - 1, FUTURE_WORDS) - 1;
+  b.sealedAnchor.part = b.later[Math.max(0, last)]!.id;
+  b.sealedAt = [0.5, 0, 0.5];
   b.shown = step;
   b.layout = layout;
   scene.revision = nextRevision();
@@ -227,31 +277,48 @@ export const attention: SceneBuilder = {
     const words = Array.from({ length: MAX_TOKENS }, (_, i) =>
       block(`word.${i}`, SLOT.words, "housing"),
     );
+    const later = Array.from({ length: FUTURE_WORDS }, (_, j) =>
+      block(`later.${j}`, SLOT.words, "futureWord"),
+    );
     const focusWord = block("focus-word", SLOT.focus, "focusWord");
     const mix = block("mix", SLOT.mix, "focusWord", EXPLODE.mix);
+    const placeholder: PipeFan = {
+      sources: Array.from({ length: MAX_TOKENS }, (_, i): Vec3 => [i * 0.05, 0.5, 0]),
+      sink: [0, 2, 0],
+    };
     const pipes = KIT.pipes.build({
       id: "pipe",
       slot: SLOT.pipes,
       material: "pipe",
-      sources: Array.from({ length: MAX_TOKENS }, (_, i): Vec3 => [i * 0.05, 0.5, 0]),
-      sink: [0, 2, 0],
       radius: PIPE_RADIUS,
       explode: EXPLODE.mix,
+      ...placeholder,
+    });
+    const sealed = KIT.sealed.build({
+      id: "sealed",
+      slot: SLOT.sealed,
+      material: "pipe",
+      capMaterial: "sealed",
+      radius: SEALED_RADIUS,
+      sources: placeholder.sources.slice(0, FUTURE_WORDS),
     });
     const parts = [
       ...stand.flatMap((s) => s.parts),
       ...words.flatMap((w) => w.parts),
+      ...later.flatMap((w) => w.parts),
       ...focusWord.parts,
       ...mix.parts,
       ...pipes.parts,
+      ...sealed.parts,
     ];
     const pipesAnchor: SceneAnchor = { ...pipes.anchors[0]!, id: "pipes", priority: 2 };
+    const sealedAnchor: SceneAnchor = { ...sealed.anchors[0]!, id: "sealed", priority: 1 };
     // The mix block's right end, so the pill clears the word written on it.
     const mixAnchor: SceneAnchor = { id: "mix", part: "mix", local: MIX_PIN, priority: 3 };
     const anchors: SceneAnchor[] = [
-      // The mix block's right end, so the pill clears the word written on it.
       mixAnchor,
       pipesAnchor,
+      sealedAnchor,
       // The front step's left end: the page of words.
       { id: "sentence", part: "stand.0", local: [-0.5, 0, 0.5], priority: 1 },
     ];
@@ -259,13 +326,17 @@ export const attention: SceneBuilder = {
     built.set(scene, {
       steps: stand.map((s) => s.parts[0] as BlockPart),
       words: words.map((w) => w.parts[0] as BlockPart),
+      later: later.map((w) => w.parts[0] as BlockPart),
       focusWord: focusWord.parts[0] as BlockPart,
       mix: mix.parts[0] as BlockPart,
       pipes: pipes.parts as TubePart[],
+      sealed: sealed.parts as TubePart[],
       shown: null,
       layout: null,
       pipesAnchor,
       pipesAt: pipesAnchor.local,
+      sealedAnchor,
+      sealedAt: sealedAnchor.local,
       mixAnchor,
     });
     // Each word sits on the bottom of its block's front face; the lit words are printed on.
@@ -274,6 +345,8 @@ export const attention: SceneBuilder = {
       anchors: [
         { id: "mix-word", part: "mix", local: [0, 0, 0.5], priority: 0 },
         { id: "focus-word", part: "focus-word", local: [0, 0, 0.5], priority: 0 },
+        // On the riser of the later words' step, under them.
+        { id: "sealed-note", part: "stand.0", local: [0, 0, 0.5], priority: 0 },
         ...Array.from({ length: MAX_TOKENS }, (_, i) => ({
           id: `word.${i}`,
           part: `word.${i}`,
@@ -282,7 +355,7 @@ export const attention: SceneBuilder = {
         })),
       ],
       text: Array.from({ length: TAG.words + MAX_TOKENS }, () => ""),
-      emphasis: [true, true, ...Array.from({ length: MAX_TOKENS }, () => false)],
+      emphasis: [true, true, false, ...Array.from({ length: MAX_TOKENS }, () => false)],
     };
     return { scene, tags };
   },
@@ -294,17 +367,20 @@ export const attention: SceneBuilder = {
     const step = run?.kind === "attention" ? run.steps[0] : undefined;
     if (!step) {
       text.fill("");
-      dynamics.widthScale.fill(0, SLOT.pipes);
+      dynamics.widthScale.fill(0, SLOT.sealed);
       return;
     }
     if (b.shown !== step) followStep(scene, b, step);
     const layout = b.layout!;
     const typed = ui.text !== null;
-    const blocks = typed ? 1 : clamp01(tl.channels.blocks ?? 1);
-    const grow = typed ? 1 : clamp01(tl.channels.pipes ?? 1);
-    const settle = typed ? 1 : clamp01(tl.channels.settle ?? 1);
-    const fill = typed ? 1 : clamp01(tl.channels.fill ?? 1);
+    const channel = (id: string) => (typed ? 1 : clamp01(tl.channels[id] ?? 1));
+    const blocks = channel("blocks");
+    const grow = channel("pipes");
+    const settle = channel("settle");
+    const fill = channel("fill");
+    const future = channel("future");
     const n = step.focus + 1;
+    const laterCount = step.tokens.length - n;
 
     b.steps.forEach((part, i) => {
       const s = layout.steps[i];
@@ -320,39 +396,79 @@ export const attention: SceneBuilder = {
       return rank >= 0 && rank < shown ? `${word} ${share(step.weights[i]!)}` : word;
     };
 
-    // Word blocks rise out of their steps as `blocks` goes 0 → 1 (fully sunk, a block sits
-    // just below its step's top); the focus word is lit.
-    const sunk = BLOCK.height * 1.1 * (1 - blocks);
-    const wordsShown = blocks > 0.6;
+    // A block rises out of its step as its value goes 0 → 1 (fully sunk, it sits just below
+    // the step's top) and returns how far it is still sunk. Earlier words rise line by line
+    // with `blocks`, later ones with `future`.
+    const rise = (part: BlockPart, i: number, up: number) => {
+      const c = layout.centres[i]!;
+      const sunk = BLOCK.height * 1.1 * (1 - up);
+      place(
+        part.transform,
+        [c[0], c[1] - sunk, c[2]],
+        [layout.widths[i]!, BLOCK.height, BLOCK.depth],
+      );
+      return sunk;
+    };
+    const lineUp = (i: number) => clamp01(blocks * (layout.rows + 1) - layout.rowOf[i]!);
     for (let i = 0; i < MAX_TOKENS; i++) {
-      const c = i === step.focus ? undefined : layout.centres[i];
       const part = b.words[i]!;
-      if (c)
-        place(
-          part.transform,
-          [c[0], c[1] - sunk, c[2]],
-          [layout.widths[i]!, BLOCK.height, BLOCK.depth],
-        );
+      const earlier = i < step.focus;
+      const up = earlier ? lineUp(i) : 0;
+      if (earlier) rise(part, i, up);
       else place(part.transform, PARKED, SLIVER);
-      text[TAG.words + i] = c && wordsShown ? label(i) : "";
+      frame.tags.anchors[TAG.words + i]!.part = part.id;
+      text[TAG.words + i] = earlier && up > 0.6 ? label(i) : "";
     }
-    const [fx, fy, fz] = layout.centres[step.focus]!;
-    place(
-      b.focusWord.transform,
-      [fx, fy - sunk, fz],
-      [layout.widths[step.focus]!, BLOCK.height, BLOCK.depth],
-    );
+    const focusUp = lineUp(step.focus);
+    rise(b.focusWord, step.focus, focusUp);
     dynamics.intensity[SLOT.focus] = FOCUS_GLOW;
-    text[TAG.focus] = wordsShown ? label(step.focus) : "";
+    text[TAG.focus] = focusUp > 0.6 ? label(step.focus) : "";
+    const wordsShown = blocks > 0.95;
 
-    // The mix block hangs over the stand; it lights up as the blend arrives.
-    // It grows in with the words, so the loop starts on an empty stand.
-    const grown = Math.max(0.01, blocks);
-    place(b.mix.transform, layout.mix.centre, [
-      layout.mix.width * grown,
-      MIX.height * grown,
-      MIX.depth * grown,
-    ]);
+    // The later words and their sealed stubs come up together; the tags ride the dim blocks.
+    const laterShown = future > 0.6;
+    for (let j = 0; j < FUTURE_WORDS; j++) {
+      const i = n + j;
+      const part = b.later[j]!;
+      const here = j < laterCount;
+      const up = here ? Math.min(blocks, future) : 0;
+      const sunk = here ? rise(part, i, up) : 0;
+      if (!here) place(part.transform, PARKED, SLIVER);
+      // The stub and cap ride their block up, then open once it is almost there.
+      b.sealed[2 * j]!.transform[13] = -sunk;
+      b.sealed[2 * j + 1]!.transform[13] = -sunk;
+      dynamics.widthScale[SLOT.sealed + j] = clamp01((up - 0.7) / 0.3);
+      dynamics.intensity[SLOT.sealed + j] = PIPE_GLOW;
+      if (here) {
+        const anchor = frame.tags.anchors[TAG.words + i]!;
+        anchor.part = part.id;
+        text[TAG.words + i] = laterShown ? tokenLabel(step.tokens[i]!) : "";
+      }
+    }
+    const noted = laterCount > 0 && future >= 0.9 && blocks >= 0.9;
+    if (laterCount > 0) {
+      // Under the later words, low on the riser of the step they stand on.
+      const first = layout.centres[n]!;
+      const last = layout.centres[n + laterCount - 1]!;
+      const row = layout.steps.findIndex((s) => Math.abs(s.centre[2] - first[2]) < 1e-6);
+      const riser = layout.steps[row]!;
+      const note = frame.tags.anchors[TAG.sealed]!;
+      note.part = `stand.${row}`;
+      note.local = [((first[0] + last[0]) / 2 - riser.centre[0]) / riser.size[0], -0.1, 0.5];
+    }
+    text[TAG.sealed] = noted ? SEALED_NOTE : "";
+    b.sealedAnchor.local = noted ? b.sealedAt : OUT_OF_SIGHT;
+
+    // The mix block hangs over the stand; it grows in with the words, so the loop starts on an
+    // empty stand, and lights up as the blend arrives.
+    const grown = blocks;
+    if (grown < 0.02) place(b.mix.transform, PARKED, SLIVER);
+    else
+      place(b.mix.transform, layout.mix.centre, [
+        layout.mix.width * grown,
+        MIX.height * grown,
+        MIX.depth * grown,
+      ]);
     b.mixAnchor.local = blocks >= 0.9 ? MIX_PIN : OUT_OF_SIGHT;
     dynamics.intensity[SLOT.mix] = MIX.glow * (0.3 + 0.7 * fill);
     text[TAG.mix] = wordsShown ? tokenLabel(step.tokens[step.focus]!) : "";

@@ -42,4 +42,5 @@ export {
   type PipeFan,
   type PipesParams,
 } from "./kit/pipes.ts";
+export { sealedPaths, type SealedParams } from "./kit/sealed.ts";
 export type { TubeParams } from "./kit/tube.ts";

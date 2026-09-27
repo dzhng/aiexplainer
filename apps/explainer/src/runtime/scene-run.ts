@@ -6,7 +6,7 @@
 import { countsModel, promptTokens, type LoadedModel } from "@repo/llm";
 import type { ChapterDef } from "../chapters/types.ts";
 import type { AttentionStep, SceneRun } from "../scene/build-frame.ts";
-import { MAX_TOKENS } from "../scene/builders/attention.ts";
+import { FUTURE_WORDS, MAX_TOKENS } from "../scene/builders/attention.ts";
 import type { Session } from "./session.ts";
 
 /** Each loaded counts model's word rule, decoded once (the vocabulary is thousands of words). */
@@ -47,8 +47,10 @@ export async function computeRun(
 }
 
 /**
- * The prompt's last token's attention over every token. Text longer than the scene holds keeps
- * `<bos>` and its last tokens, and the model reads exactly what the scene shows.
+ * The prompt's last token (the focus) and its attention over every token, with the words the
+ * model writes next (greedy) after it: those stand sealed, and the trace gives them weight 0.
+ * Text longer than the scene holds keeps `<bos>` and its last tokens, and the model reads
+ * exactly what the scene shows.
  */
 export async function attentionStep(
   session: Pick<Session, "run">,
@@ -58,8 +60,15 @@ export async function attentionStep(
   const tokenizer = model.tokenizer;
   if (!tokenizer) throw new Error(`${model.manifest.id}: an attention scene needs a tokenizer`);
   const all = promptTokens(tokenizer, prompt);
-  const ids = all.length > MAX_TOKENS ? [all[0]!, ...all.slice(1 - MAX_TOKENS)] : all;
+  const room = MAX_TOKENS - FUTURE_WORDS;
+  const ids = all.length > room ? [all[0]!, ...all.slice(1 - room)] : all;
   const focus = ids.length - 1;
+  for (let k = 0; k < FUTURE_WORDS; k++) {
+    const { logits } = await session.run(ids);
+    let next = 0;
+    for (let v = 1; v < logits.length; v++) if (logits[v]! > logits[next]!) next = v;
+    ids.push(next);
+  }
   const { trace } = await session.run(ids, { tokens: [focus], heads: [0], layers: [0] });
   const weights = trace?.layers[0]?.attn?.weights.data;
   if (!weights) throw new Error("the attention trace is missing its weights");

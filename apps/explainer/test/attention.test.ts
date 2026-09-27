@@ -13,6 +13,8 @@ import { createTimelineState, evalTimeline } from "../src/chapters/timeline.ts";
 import { lookConfig } from "../src/look/look.ts";
 import { computeRun } from "../src/runtime/scene-run.ts";
 import {
+  FUTURE_WORDS,
+  SEALED_NOTE,
   layoutTokens,
   MAX_LINES,
   MAX_TOKENS,
@@ -180,5 +182,56 @@ describe("chapter 4: pipe width is the real attention weight (slice 22)", () => 
   test("the hero frame's structure is stable", () => {
     const { input } = frameAt(attention.ogTimeSec, run);
     expect(input.scene.parts.map((p) => [p.id, p.kind, p.slot])).toMatchSnapshot();
+  });
+});
+
+describe("chapter 4: sealed pipes from the future (slice 23)", () => {
+  const step = run.kind === "attention" ? run.steps[0]! : null;
+  const miaIds = promptTokens(tokenizer, RECALL_PROMPTS.mia);
+
+  test("the later words are the model's own next words, and the trace gives them exactly 0", () => {
+    expect(step!.focus).toBe(miaIds.length - 1);
+    expect(step!.tokens.length).toBe(miaIds.length + FUTURE_WORDS);
+    // Greedy continuation: each later word is the model's top guess after the ones before it.
+    const ids = [...miaIds];
+    for (let k = 0; k < FUTURE_WORDS; k++) {
+      const { logits } = forward(model, ids);
+      const next = logits.indexOf(Math.max(...logits));
+      expect(step!.tokens[ids.length]).toBe(tokenizer.decode([next]));
+      ids.push(next);
+    }
+    // The trace over the whole text, from the focus: every later weight is exactly 0 (the
+    // causal mask), and the earlier ones are the prompt-only weights, bit for bit.
+    const { trace } = forward(model, ids, { trace: { tokens: [step!.focus] } });
+    const weights = trace!.layers[0]!.attn!.weights.data;
+    for (let i = step!.focus + 1; i < ids.length; i++) expect(weights[i]).toBe(0);
+    expect(Array.from(weights.subarray(0, miaIds.length))).toEqual(
+      Array.from(golden(RECALL_PROMPTS.mia)),
+    );
+    expect(step!.weights).toEqual(Array.from(weights));
+  });
+
+  test("caps stand only on the words after the focus, and no pipe runs from them", () => {
+    const at = (t: number) => frameAt(t, run);
+    const sealedOpen = (input: ReturnType<typeof at>["input"]) =>
+      Array.from({ length: FUTURE_WORDS }, (_, j) => {
+        const cap = input.scene.parts.find((p) => p.id === `sealed.${j}.cap`)!;
+        return input.dynamics.widthScale[cap.slot]!;
+      });
+    // Before the beat the later words are not up; after it, every one has its cap.
+    expect(sealedOpen(at(9).input).every((w) => w === 0)).toBe(true);
+    const { input, frame } = at(attention.ogTimeSec);
+    expect(sealedOpen(input)).toEqual(Array.from({ length: FUTURE_WORDS }, () => 1));
+    for (let i = step!.focus + 1; i < step!.tokens.length; i++)
+      expect(input.dynamics.widthScale[pipeOf(input.scene, i).slot]).toBe(0);
+    // Each cap sits over its own later word, past the focus word in reading order.
+    const blocks = Array.from({ length: FUTURE_WORDS }, (_, j) => {
+      const block = input.scene.parts.find((p) => p.id === `later.${j}`)!;
+      const cap = input.scene.parts.find((p) => p.id === `sealed.${j}`) as TubePart;
+      return { x: block.transform[12]!, stub: cap.path[0]![0] };
+    });
+    for (const b of blocks) expect(b.stub).toBeCloseTo(b.x, 6);
+    expect(frame.tags.text).toContain(SEALED_NOTE);
+    expect(frame.tags.text).toContain(tokenLabel(step!.tokens.at(-1)!));
   });
 });
