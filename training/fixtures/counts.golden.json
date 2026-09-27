@@ -1,0 +1,395 @@
+[
+  {
+    "word": ".",
+    "k": 3,
+    "next": [
+      {
+        "word": "the",
+        "count": 7,
+        "p": 0.6363636363636364
+      },
+      {
+        "word": ".",
+        "count": 2,
+        "p": 0.18181818181818182
+      },
+      {
+        "word": "lily",
+        "count": 2,
+        "p": 0.18181818181818182
+      }
+    ]
+  },
+  {
+    "word": "the",
+    "k": 3,
+    "next": [
+      {
+        "word": "cat",
+        "count": 5,
+        "p": 0.5
+      },
+      {
+        "word": "ball",
+        "count": 3,
+        "p": 0.3
+      },
+      {
+        "word": "song",
+        "count": 2,
+        "p": 0.2
+      }
+    ]
+  },
+  {
+    "word": "a",
+    "k": 3,
+    "next": [
+      {
+        "word": "time",
+        "count": 4,
+        "p": 0.5
+      },
+      {
+        "word": "big",
+        "count": 2,
+        "p": 0.25
+      },
+      {
+        "word": "little",
+        "count": 2,
+        "p": 0.25
+      }
+    ]
+  },
+  {
+    "word": "cat",
+    "k": 3,
+    "next": [
+      {
+        "word": ".",
+        "count": 2,
+        "p": 0.4
+      },
+      {
+        "word": "liked",
+        "count": 2,
+        "p": 0.4
+      },
+      {
+        "word": "was",
+        "count": 1,
+        "p": 0.2
+      }
+    ]
+  },
+  {
+    "word": "was",
+    "k": 3,
+    "next": [
+      {
+        "word": "a",
+        "count": 2,
+        "p": 0.5
+      },
+      {
+        "word": "happy",
+        "count": 2,
+        "p": 0.5
+      }
+    ]
+  },
+  {
+    "word": "said",
+    "k": 3,
+    "next": [
+      {
+        "word": ".",
+        "count": 1,
+        "p": 0.5
+      },
+      {
+        "word": "the",
+        "count": 1,
+        "p": 0.5
+      }
+    ]
+  },
+  {
+    "word": "ball",
+    "k": 3,
+    "next": [
+      {
+        "word": ".",
+        "count": 1,
+        "p": 0.3333333333333333
+      },
+      {
+        "word": "a",
+        "count": 1,
+        "p": 0.3333333333333333
+      },
+      {
+        "word": "!",
+        "count": 1,
+        "p": 0.3333333333333333
+      }
+    ]
+  },
+  {
+    "word": "dog",
+    "k": 3,
+    "next": [
+      {
+        "word": "said",
+        "count": 2,
+        "p": 0.5
+      },
+      {
+        "word": ".",
+        "count": 1,
+        "p": 0.25
+      },
+      {
+        "word": "max",
+        "count": 1,
+        "p": 0.25
+      }
+    ]
+  },
+  {
+    "word": "lily",
+    "k": 3,
+    "next": [
+      {
+        "word": ".",
+        "count": 1,
+        "p": 0.3333333333333333
+      },
+      {
+        "word": "was",
+        "count": 1,
+        "p": 0.3333333333333333
+      },
+      {
+        "word": "said",
+        "count": 1,
+        "p": 0.3333333333333333
+      }
+    ]
+  },
+  {
+    "word": "once",
+    "k": 3,
+    "next": [
+      {
+        "word": "upon",
+        "count": 4,
+        "p": 1.0
+      }
+    ]
+  },
+  {
+    "word": "song",
+    "k": 3,
+    "next": [
+      {
+        "word": ".",
+        "count": 2,
+        "p": 0.5
+      },
+      {
+        "word": "the",
+        "count": 1,
+        "p": 0.25
+      },
+      {
+        "word": "was",
+        "count": 1,
+        "p": 0.25
+      }
+    ]
+  },
+  {
+    "word": "time",
+    "k": 3,
+    "next": [
+      {
+        "word": "the",
+        "count": 1,
+        "p": 0.5
+      },
+      {
+        "word": "a",
+        "count": 1,
+        "p": 0.5
+      }
+    ]
+  },
+  {
+    "word": "upon",
+    "k": 3,
+    "next": [
+      {
+        "word": "a",
+        "count": 4,
+        "p": 1.0
+      }
+    ]
+  },
+  {
+    "word": "!",
+    "k": 3,
+    "next": [
+      {
+        "word": "lily",
+        "count": 1,
+        "p": 1.0
+      }
+    ]
+  },
+  {
+    "word": "bird",
+    "k": 3,
+    "next": []
+  },
+  {
+    "word": "boy",
+    "k": 3,
+    "next": [
+      {
+        "word": "said",
+        "count": 1,
+        "p": 1.0
+      }
+    ]
+  },
+  {
+    "word": "liked",
+    "k": 3,
+    "next": [
+      {
+        "word": "the",
+        "count": 2,
+        "p": 0.6666666666666666
+      },
+      {
+        "word": "to",
+        "count": 1,
+        "p": 0.3333333333333333
+      }
+    ]
+  },
+  {
+    "word": "to",
+    "k": 3,
+    "next": [
+      {
+        "word": "the",
+        "count": 1,
+        "p": 1.0
+      }
+    ]
+  },
+  {
+    "word": "?",
+    "k": 3,
+    "next": [
+      {
+        "word": "the",
+        "count": 1,
+        "p": 1.0
+      }
+    ]
+  },
+  {
+    "word": "big",
+    "k": 3,
+    "next": [
+      {
+        "word": "dog",
+        "count": 1,
+        "p": 0.5
+      },
+      {
+        "word": "bird",
+        "count": 1,
+        "p": 0.5
+      }
+    ]
+  },
+  {
+    "word": "day",
+    "k": 3,
+    "next": [
+      {
+        "word": ".",
+        "count": 1,
+        "p": 0.5
+      },
+      {
+        "word": "the",
+        "count": 1,
+        "p": 0.5
+      }
+    ]
+  },
+  {
+    "word": "happy",
+    "k": 3,
+    "next": [
+      {
+        "word": ".",
+        "count": 2,
+        "p": 1.0
+      }
+    ]
+  },
+  {
+    "word": "little",
+    "k": 3,
+    "next": [
+      {
+        "word": "cat",
+        "count": 1,
+        "p": 0.5
+      },
+      {
+        "word": "boy",
+        "count": 1,
+        "p": 0.5
+      }
+    ]
+  },
+  {
+    "word": "max",
+    "k": 3,
+    "next": []
+  },
+  {
+    "word": "The",
+    "k": 3,
+    "next": [
+      {
+        "word": "cat",
+        "count": 5,
+        "p": 0.5
+      },
+      {
+        "word": "ball",
+        "count": 3,
+        "p": 0.3
+      },
+      {
+        "word": "song",
+        "count": 2,
+        "p": 0.2
+      }
+    ]
+  },
+  {
+    "word": "zebra",
+    "k": 3,
+    "next": []
+  }
+]

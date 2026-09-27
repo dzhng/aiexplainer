@@ -12,7 +12,8 @@
       "typegpu": "0.12.6",
       "math": "0.1.0",
       "@webgpu/types": "0.1.74",
-      "@types/node": "26.6.3"
+      "@types/node": "26.6.3",
+      "zod": "4.6.5"
     }
   },
   "type": "module",
