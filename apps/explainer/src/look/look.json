@@ -117,6 +117,23 @@
     "cyclesPerSec": 0.6,
     "spacing": 0.25
   },
+  "views": {
+    "durationSec": 0.6,
+    "cutaway": {
+      "cap": "focus",
+      "capGain": 1.2,
+      "planes": {
+        "default": {
+          "normal": [0, 0, 1],
+          "offset": 0
+        },
+        "autocomplete": {
+          "normal": [0, 0, 1],
+          "offset": 0.08
+        }
+      }
+    }
+  },
   "room": {
     "wallTop": "bgDeep",
     "wallBottom": "bgHigh",

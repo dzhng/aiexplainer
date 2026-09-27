@@ -83,7 +83,6 @@ export function buildFrame(
     };
     out.builder = def.scene;
   }
-  out.input.view.mode = ui.view;
   builder.update(out, def, tl, ui, run);
   return out.input;
 }

@@ -76,6 +76,15 @@ test("rejects an unknown anchor, shot or colour token", () => {
   expect(validateChapter(tint)).toContain("beat word-lands: unknown colour token chartreuse");
 });
 
+test("rejects a scene built from a primitive outside the kit, or an unknown scene", () => {
+  const def = broken(() => {});
+  expect(validateChapter(def, () => ["mesh", "hologram"])).toContain(
+    "unknown kit primitive hologram",
+  );
+  expect(validateChapter(def, () => ["mesh", "bars", "block", "tube"])).toEqual([]);
+  expect(validateChapter(def, () => undefined)).toContain("unknown scene autocomplete");
+});
+
 test("rejects more than 3 follow targets and more than 5 labels", () => {
   const follow = broken(
     (d) => void d.follow.push({ id: "extra", label: "Extra", anchor: "board" }),

@@ -34,6 +34,12 @@ interface PartBase {
   slot: number;
   /** Placement of the part's local geometry in the world; may change every frame. */
   transform: Mat4;
+  /** World offset in the Exploded view, scaled by `view.t` (default: stays put). */
+  explode?: Vec3;
+  /** Whether the Cutaway view clips this part against the cut plane (default: keep). */
+  cutaway?: "keep" | "clip";
+  /** The kit primitive that built the part (`kit/`), for the chapter vocabulary checks. */
+  primitive?: string;
 }
 
 /** A unit cube centred on the origin, placed by `transform`. */
@@ -62,10 +68,6 @@ export interface MeshPart extends PartBase {
   kind: "mesh";
   asset: AssetId;
   node?: string;
-  /** Offset applied in the Exploded view, scaled by `view.t`. */
-  explode: Vec3;
-  /** Whether the Cutaway view clips this part. */
-  cutaway: "keep" | "clip";
 }
 
 export type Part = BlockPart | TubePart | MeshPart;
@@ -107,11 +109,30 @@ export interface FrameDynamics {
 /** Bits of `FrameInput.debug.layers`; a cleared bit hides that layer. */
 export const Layer = { emissive: 1 } as const;
 
+/** A plane: `normal · p = offset`. The Cutaway view removes the side `normal` points to. */
+export interface CutPlane {
+  normal: Vec3;
+  offset: number;
+}
+
+/**
+ * The view vocabulary (slice 13), applied only by `partWorld` and `partCut`: Whole places
+ * parts as authored; Exploded moves each by its `explode` × `t`; Cutaway sweeps the cut
+ * plane in by `t`, clipping `cutaway: "clip"` parts, whose cut faces show the look's cap.
+ */
+export interface FrameView {
+  mode: ViewMode;
+  /** 0 → 1 as the view comes in (the app eases it over `look.views` duration). */
+  t: number;
+  /** The Cutaway plane for this scene; defaults to `look.cutaway.plane`. */
+  cut?: CutPlane;
+}
+
 export interface FrameInput {
   timeSec: number;
   viewport: Viewport;
   camera: OrbitPose;
-  view: { mode: ViewMode; t: number };
+  view: FrameView;
   scene: SceneDesc;
   dynamics: FrameDynamics;
   /** `layers` defaults to every `Layer`; `bloom: false` skips the bloom passes. */
@@ -183,6 +204,8 @@ export interface LookConfig {
   /** Presets bound by name: kit parts name one, prop nodes by their name's segments. */
   materials: Record<string, MaterialLook>;
   /** `saturation` is AgX's look saturation: 1 is the base look, higher keeps glows coloured. */
+  /** The Cutaway view's default plane and the colour its cut faces are capped with. */
+  cutaway: { plane: CutPlane; cap: LinearRgb };
   tonemap: { exposure: number; saturation: number };
   bloom: {
     /** Brightest-channel radiance where bloom starts, and the width of its soft knee. */

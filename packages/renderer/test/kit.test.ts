@@ -1,6 +1,10 @@
 import { expect, test } from "bun:test";
-import { vec3, type Vec3 } from "math";
+import path from "node:path";
+import { mat4, vec3, type Vec3 } from "math";
+import { partWorld } from "../src/camera.ts";
+import { parseGlb } from "../src/gltf.ts";
 import { blockGeometry } from "../src/kit/block.ts";
+import { KIT, KIT_ENTRIES } from "../src/kit/catalog.ts";
 import type { Geometry } from "../src/kit/geometry.ts";
 import { tubeGeometry } from "../src/kit/tube.ts";
 
@@ -51,4 +55,56 @@ test("tube: outward winding, capped ends, and a constant radius through a right-
 
 test("tube: a path needs two points", () => {
   expect(() => tubeGeometry([[0, 0, 0]], 1)).toThrow();
+});
+
+test("every kit primitive's anchors lie inside its bounds, and its parts are tagged", async () => {
+  const board = parseGlb(
+    await Bun.file(
+      path.resolve(import.meta.dirname, "../../../apps/explainer/public/props/counter_board.glb"),
+    ).arrayBuffer(),
+  );
+  const whole = { mode: "whole" as const, t: 0 };
+  for (const [id, primitive] of KIT_ENTRIES) {
+    const built = primitive.build(primitive.example({ board }));
+    expect(built.parts.length).toBeGreaterThan(0);
+    expect(built.anchors.length).toBeGreaterThan(0);
+    for (const part of built.parts) expect(part.primitive).toBe(id);
+    for (const anchor of built.anchors) {
+      const part = built.parts.find((p) => p.id === anchor.part);
+      expect(part).toBeDefined();
+      const world = vec3.transformMat4(
+        [0, 0, 0],
+        anchor.local,
+        partWorld(part!, whole, mat4.create()),
+      );
+      for (let a = 0; a < 3; a++) {
+        expect(world[a]!).toBeGreaterThanOrEqual(built.bounds[a]! - 1e-5);
+        expect(world[a]!).toBeLessThanOrEqual(built.bounds[a + 3]! + 1e-5);
+      }
+    }
+  }
+});
+
+test("the mesh primitive splits a prop into one part per node, with per-node views", async () => {
+  const board = parseGlb(
+    await Bun.file(
+      path.resolve(import.meta.dirname, "../../../apps/explainer/public/props/counter_board.glb"),
+    ).arrayBuffer(),
+  );
+  const built = KIT.mesh.build({
+    id: "board",
+    slot: 0,
+    assetId: "board",
+    asset: board,
+    split: true,
+    nodeExplode: { "board.": [0, 0, -1], "board.rail": [0, 0, 1] },
+    clip: ["board.housing"],
+  });
+  const byId = Object.fromEntries(built.parts.map((p) => [p.id, p]));
+  expect(Object.keys(byId)).toContain("board.housing");
+  expect(Object.keys(byId)).toContain("board.slot.3");
+  expect(byId["board.rail"]!.explode).toEqual([0, 0, 1]);
+  expect(byId["board.stand"]!.explode).toEqual([0, 0, -1]);
+  expect(byId["board.housing"]!.cutaway).toBe("clip");
+  expect(byId["board.rail"]!.cutaway).toBe("keep");
 });

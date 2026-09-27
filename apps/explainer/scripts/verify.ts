@@ -19,6 +19,7 @@
  *   `rect:x,y,w,h` is a literal rectangle. `--size N` shoots an N×N square centred on it.
  * - `--ui '{"text":"happy"}'` sets app controls through the probe (`setUi`) once ready.
  * - `--outline safe` draws that crop's rectangle on the page before shooting (framing review).
+ * - `--full` shoots the whole scrolling page (uncropped shots only), e.g. `/lab/tokens`.
  * - `--mask 'part:board*'` fills that crop (same syntax as one `--crop` item) flat grey before
  *   shooting, so a shot judges what is around the subject (the environment) on its own.
  * - `--strip 0:22:1` shoots held times start…end by step with the loop's beat burned in under
@@ -59,6 +60,7 @@ const { values: args } = parseArgs({
     strip: { type: "string" },
     outline: { type: "string" },
     mask: { type: "string" },
+    full: { type: "boolean" },
   },
 });
 
@@ -321,8 +323,9 @@ try {
       return true;
     }, ui);
     if (!set) failures.push("--ui: this page has no setUi");
-    // The scene's model output comes back from the worker asynchronously.
-    await page.waitForTimeout(500);
+    // The scene's model output comes back from the worker asynchronously, and a view change
+    // eases in over `look.views.durationSec` (0.6 s) of real time.
+    await page.waitForTimeout(900);
   }
   // Two frames: React commits what the keys changed, then the browser paints it.
   await page.evaluate(
@@ -346,7 +349,7 @@ try {
     await mkdir(dir, { recursive: true });
     const save = async (name: string, clip?: CropRect) => {
       const file = path.join(dir, `${name}.png`);
-      await page.screenshot({ path: file, clip });
+      await page.screenshot({ path: file, clip, fullPage: !clip && args.full });
       console.log("shot", path.relative(repoRoot, file));
     };
     for (const t of times.length > 1 ? times : [undefined]) {

@@ -137,9 +137,23 @@ export function projectBox(m: CameraMatrices, box: Box3): ScreenRect | null {
 }
 
 /**
- * The single part → world transform. Explode and cutaway views are applied here and only
- * here; until the view vocabulary lands (slice 13) every view places parts as authored.
+ * The single part → world transform: the one place the Exploded view is applied (each part
+ * moves by its `explode` × `view.t`). Whole and Cutaway place parts as authored.
  */
-export function partWorld(part: Part, _view: { mode: ViewMode; t: number }, out: Mat4): Mat4 {
-  return mat4.copy(out, part.transform);
+export function partWorld(part: Part, view: { mode: ViewMode; t: number }, out: Mat4): Mat4 {
+  mat4.copy(out, part.transform);
+  if (view.mode === "exploded" && part.explode) {
+    out[12] = out[12]! + part.explode[0] * view.t;
+    out[13] = out[13]! + part.explode[1] * view.t;
+    out[14] = out[14]! + part.explode[2] * view.t;
+  }
+  return out;
+}
+
+/**
+ * How far the Cutaway view has cut into a part, 0 (whole) → 1 (cut at the plane): the one
+ * place the Cutaway view is decided. Only `cutaway: "clip"` parts are cut.
+ */
+export function partCut(part: Part, view: { mode: ViewMode; t: number }): number {
+  return view.mode === "cutaway" && part.cutaway === "clip" ? view.t : 0;
 }

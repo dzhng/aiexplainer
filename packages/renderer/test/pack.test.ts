@@ -54,10 +54,13 @@ test("packFrame fills exactly FRAME_UNIFORM_BYTES", () => {
     { width: 640, height: 480, dpr: 1 },
     createCameraMatrices(),
   );
-  const out = packed(FRAME_UNIFORM_BYTES, (o) => packFrame(o, m, 1.5, 640, 480, 1, 0));
+  const out = packed(FRAME_UNIFORM_BYTES, (o) =>
+    packFrame(o, m, 1.5, 640, 480, 1, 0, { normal: [0, 0, 1], offset: 0.25 }),
+  );
   expectFillsExactly(out, FRAME_UNIFORM_BYTES);
   expect(out[35]).toBe(1.5);
   expect(out.subarray(36, 40)).toEqual(new Float32Array([640, 480, 1 / 640, 1 / 480]));
+  expect([...out.subarray(44, 48)]).toEqual([0, 0, 1, 0.25]);
 });
 
 test("packInstance fills exactly INSTANCE_BYTES, with mat3 columns padded", () => {
@@ -65,10 +68,11 @@ test("packInstance fills exactly INSTANCE_BYTES, with mat3 columns padded", () =
   const f32 = new Float32Array(buffer).fill(Number.NaN);
   const u32 = new Uint32Array(buffer);
   const model = mat4.fromTranslation(mat4.create(), [1, 2, 3]);
-  packInstance(f32, u32, 0, model, mat3.create(), 7, 9);
+  packInstance(f32, u32, 0, model, mat3.create(), 7, 9, 0.5);
   expect([...f32.subarray(0, 16)]).toEqual(model);
   expect([...f32.subarray(16, 28)]).toEqual([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0]);
-  expect([...u32.subarray(28, 32)]).toEqual([7, 9, 0, 0]);
+  expect([...u32.subarray(28, 30)]).toEqual([7, 9]);
+  expect([f32[30], u32[31]]).toEqual([0.5, 0]);
   expect([...f32.subarray(32)].every(Number.isNaN)).toBe(true);
 });
 

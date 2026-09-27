@@ -1,6 +1,7 @@
 /**
  * The one frame function. Every pass is encoded here, in this order:
- *   1. depth prepass: opaque geometry, no fragment stage;
+ *   1. depth prepass: opaque geometry, no fragment stage (while the Cutaway view cuts, a
+ *      discard-only one);
  *   2. colour pass into 4× MSAA rgba16float — backdrop, opaque
  *      (depth `equal`), then translucent (depth read-only); the pass end resolves into
  *      the HDR target;
@@ -78,6 +79,8 @@ export function encodeFrame(
   scene: FrameScene,
   look: FrameLook,
   bloom: boolean,
+  /** The Cutaway view is cutting: the prepass discards and nothing is culled. */
+  cutting: boolean,
   receipt: FrameReceipt,
   timer?: FrameTimer,
 ): void {
@@ -89,7 +92,7 @@ export function encodeFrame(
   prepass.setBindGroup(0, look.frame);
   prepass.setBindGroup(1, scene.bindGroup);
   prepass.setIndexBuffer(scene.indexBuffer, "uint32");
-  prepass.setPipeline(pipelines.geometry.prepass);
+  prepass.setPipeline(cutting ? pipelines.geometry.prepassCut : pipelines.geometry.prepass);
   drawGeometry(prepass, scene.draws, false, receipt);
   prepass.end();
 
@@ -99,7 +102,7 @@ export function encodeFrame(
   fullscreen(colour, receipt);
   colour.setBindGroup(1, scene.bindGroup);
   colour.setIndexBuffer(scene.indexBuffer, "uint32");
-  colour.setPipeline(pipelines.geometry.opaque);
+  colour.setPipeline(cutting ? pipelines.geometry.opaqueCut : pipelines.geometry.opaque);
   drawGeometry(colour, scene.draws, false, receipt);
   colour.setPipeline(pipelines.geometry.translucent);
   drawGeometry(colour, scene.draws, true, receipt);

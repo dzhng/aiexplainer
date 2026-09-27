@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test";
-import type { Mat4, Vec3 } from "math";
+import { mat4, type Mat4, type Vec3 } from "math";
 import {
   CAMERA_FAR,
   CAMERA_NEAR,
@@ -7,9 +7,11 @@ import {
   createCameraMatrices,
   createProjected,
   orbitEye,
+  partCut,
+  partWorld,
   project,
 } from "../src/camera.ts";
-import type { OrbitPose } from "../src/frame-input.ts";
+import type { OrbitPose, Part, ViewMode } from "../src/frame-input.ts";
 import { FRAME_UNIFORM_BYTES, packFrame } from "../src/pack.ts";
 
 const A = CAMERA_NEAR / (CAMERA_FAR - CAMERA_NEAR);
@@ -75,7 +77,10 @@ test("project agrees with the packed uniform within 0.5 px", () => {
     createCameraMatrices(),
   );
   const packed = new Float32Array(FRAME_UNIFORM_BYTES / 4);
-  packFrame(packed, m, 0, viewport.width, viewport.height, 1, 1);
+  packFrame(packed, m, 0, viewport.width, viewport.height, 1, 1, {
+    normal: [0, 0, 1],
+    offset: 0.25,
+  });
   const out = createProjected();
   const f = Math.fround;
   for (const p of [
@@ -97,4 +102,48 @@ test("project agrees with the packed uniform within 0.5 px", () => {
     expect(Math.abs(out.x - gx)).toBeLessThan(0.5);
     expect(Math.abs(out.y - gy)).toBeLessThan(0.5);
   }
+});
+
+test("partWorld: Exploded moves a part by explode × t; Whole and Cutaway leave it as authored", () => {
+  const part: Part = {
+    kind: "block",
+    id: "a",
+    slot: 0,
+    material: "metal",
+    transform: mat4.fromTranslation(mat4.create(), [1, 2, 3]),
+    explode: [0, 0, 2],
+    cutaway: "clip",
+  };
+  const at = (mode: ViewMode, t: number) => [
+    ...partWorld(part, { mode, t }, mat4.create()).slice(12, 15),
+  ];
+  expect(at("exploded", 0)).toEqual([1, 2, 3]);
+  expect(at("exploded", 0.5)).toEqual([1, 2, 4]);
+  expect(at("exploded", 1)).toEqual([1, 2, 5]);
+  expect(at("whole", 1)).toEqual([1, 2, 3]);
+  expect(at("cutaway", 1)).toEqual([1, 2, 3]);
+  // A part without an explode vector stays put.
+  const plain = { ...part, explode: undefined };
+  expect([...partWorld(plain, { mode: "exploded", t: 1 }, mat4.create()).slice(12, 15)]).toEqual([
+    1, 2, 3,
+  ]);
+});
+
+test("partCut: only Cutaway cuts, only clip parts, by t", () => {
+  const clip: Part = {
+    kind: "block",
+    id: "a",
+    slot: 0,
+    material: "m",
+    transform: mat4.create(),
+    cutaway: "clip",
+  };
+  const keep: Part = { ...clip, cutaway: "keep" };
+  const unset: Part = { ...clip, cutaway: undefined };
+  expect(partCut(clip, { mode: "cutaway", t: 0.25 })).toBe(0.25);
+  expect(partCut(clip, { mode: "cutaway", t: 1 })).toBe(1);
+  expect(partCut(keep, { mode: "cutaway", t: 1 })).toBe(0);
+  expect(partCut(unset, { mode: "cutaway", t: 1 })).toBe(0);
+  expect(partCut(clip, { mode: "exploded", t: 1 })).toBe(0);
+  expect(partCut(clip, { mode: "whole", t: 1 })).toBe(0);
 });

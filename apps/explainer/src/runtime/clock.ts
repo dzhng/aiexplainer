@@ -20,6 +20,12 @@ export function rafClock(): Clock {
   return { now: () => (performance.now() - start) / 1000 };
 }
 
+/**
+ * Real time for UI motion that keeps moving while the loop clock is held (view changes ease
+ * in on a lab page with `?clock=held` too).
+ */
+export const motionClock: Clock = rafClock();
+
 /** Frozen time for deterministic captures. */
 export function heldClock(t: number): HeldClock {
   let held = t;
