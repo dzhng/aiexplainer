@@ -32,6 +32,7 @@ import type { SceneTags, SceneTagsHandle } from "../hud/SceneTags.tsx";
 import type { ProbeApi } from "../lab/probe.ts";
 import { roomOrbitLimits } from "../scene/environment.ts";
 import type { Clock } from "./clock.ts";
+import { Arrival } from "./arrival.ts";
 import { bindOrbit } from "./orbit-input.ts";
 
 export interface StageOptions {
@@ -60,8 +61,15 @@ export interface StageOptions {
 export interface Stage {
   renderer: Renderer;
   input: FrameInput;
-  /** Cuts the camera to `pose` (a chapter's shot on arrival). */
+  /** Cuts the camera to `pose`. */
   jumpTo(pose: OrbitPose): void;
+  /**
+   * Arrives at `pose` (a chapter's hero shot): with `from`, eases in from it over
+   * `durationSec` (the arrival move, D42), else cuts. Orbit input cancels the move.
+   */
+  arrive(pose: OrbitPose, from?: OrbitPose, durationSec?: number): void;
+  /** Whether the arrival move is still running (the chapter loop waits for it). */
+  arriving(): boolean;
   dispose(): void;
 }
 
@@ -91,7 +99,8 @@ export async function runStage(o: StageOptions): Promise<Stage | null> {
   input.camera = pose;
 
   const { canvas } = o;
-  const unbind = bindOrbit(canvas, orbit);
+  let arrival: Arrival | null = null;
+  const unbind = bindOrbit(canvas, orbit, () => arrival?.cancel());
   const resizeObserver = new ResizeObserver(() => renderer.resize());
   resizeObserver.observe(canvas);
 
@@ -141,6 +150,8 @@ export async function runStage(o: StageOptions): Promise<Stage | null> {
   let raf = 0;
   const tick = () => {
     const now = o.clock.now();
+    const moving = arrival?.at(now);
+    if (moving) orbit.jumpTo(moving);
     const current = orbit.update(now - last);
     last = now;
     pose.target[0] = current.target[0];
@@ -180,7 +191,16 @@ export async function runStage(o: StageOptions): Promise<Stage | null> {
     renderer,
     input,
     jumpTo(target) {
+      arrival?.cancel();
       orbit.jumpTo(target);
+    },
+    arrive(target, from, durationSec = 2.5) {
+      arrival?.cancel();
+      arrival = from ? new Arrival(from, target, durationSec) : null;
+      orbit.jumpTo(from ?? target);
+    },
+    arriving() {
+      return arrival !== null && !arrival.done;
     },
     dispose() {
       cancelAnimationFrame(raf);

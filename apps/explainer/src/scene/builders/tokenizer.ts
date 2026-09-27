@@ -1,5 +1,5 @@
 /**
- * Chapter 1's scene, built from the kit (`block`, `brick`): a work table with a baseplate, the
+ * Chapter 1's scene, built from the kit (`block`, `brick`, `contactShadow`): a work table with a baseplate, the
  * "box of shapes" at the back, and a row of toy bricks, one per tokenizer piece of the text on
  * show, each with its piece and its id written on its face. Pieces come from the real shared
  * tokenizer (the run); a piece that starts a new word (it carries the word's leading space)
@@ -216,6 +216,13 @@ function staticParts(): Part[] {
     },
   ];
   return [
+    // The table stands on the floor; a soft contact shadow grounds its legs.
+    ...KIT.contactShadow.build({
+      id: "shadow",
+      slot: 0,
+      bounds: [tx - sx / 2, 0, tz - sz / 2, tx + sx / 2, ty, tz + sz / 2],
+      softness: 0.3,
+    }).parts,
     ...KIT.block.build({
       id: "table",
       slot: 0,

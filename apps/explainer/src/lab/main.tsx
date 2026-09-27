@@ -2,7 +2,7 @@ import { Layer, probeAdapter } from "@repo/renderer";
 import { createRoot } from "react-dom/client";
 import "../look/global.css";
 import { applyCssVars } from "../look/look.ts";
-import { clockFromSearch, type HeldClock } from "../runtime/clock.ts";
+import { clockFromSearch } from "../runtime/clock.ts";
 import { calibScene } from "./calib.ts";
 import { loadFixture } from "./fixtures.ts";
 import { kitScene } from "./kit.ts";
@@ -18,7 +18,7 @@ import { ModelsPage } from "./pages/ModelsPage.tsx";
 import { TokensPage } from "./pages/TokensPage.tsx";
 
 const clock = clockFromSearch(location.search);
-const { probe, markReady } = installProbe((t) => (clock as Partial<HeldClock>).set?.(t));
+const { probe, markReady } = installProbe(clock);
 const params = new URLSearchParams(location.search);
 const [first, sub = ""] = location.pathname.replace(/^\/lab\/?/, "").split("/");
 const route = first || "adapter";

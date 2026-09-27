@@ -15,13 +15,14 @@ import { SceneTagsLayer, type SceneTagsHandle } from "../hud/SceneTags.tsx";
 import type { ProbeApi } from "../lab/probe.ts";
 import { lookConfig } from "../look/look.ts";
 import { SCENE_BUILDERS, type SceneRun, type SceneUi } from "../scene/build-frame.ts";
+import type { ShotId } from "../chapters/types.ts";
 import { shotPose } from "../scene/shots.ts";
 import {
+  chapterAt,
   chapterFromHash,
   hashFor,
   initialState,
   reduce,
-  writtenChapters,
   type Action,
   type AppState,
 } from "../state/app-state.ts";
@@ -38,9 +39,7 @@ import { runStage, type Stage } from "./stage.ts";
 const reducer = (state: AppState, action: Action) => reduce(state, action, CHAPTERS);
 
 function startState(): AppState {
-  const slug = chapterFromHash(location.hash, CHAPTERS) ?? writtenChapters(CHAPTERS)[0];
-  if (!slug) throw new Error("no chapter is written");
-  return initialState(CHAPTERS, slug);
+  return initialState(CHAPTERS, chapterAt(location.hash, CHAPTERS));
 }
 
 /** Keys typed into a form control belong to it; Space on a button is that button's click. */
@@ -79,15 +78,25 @@ function safeRect(): ScreenRect {
 export interface AppProps {
   /** `?hud=0` hides the HUD for scene-only shots. */
   hud: boolean;
+  /** The HUD's decorative motion (arrival intro, chip count-up); off under a held clock. */
+  hudMotion: boolean;
   clock: Clock;
   probe: ProbeApi;
   /** `?emissive=0&bloom=0` and friends. */
   debug: FrameInput["debug"];
   /** Called once the first chapter's HUD shows real values and its scene is on screen. */
   onReady: () => void;
+  /**
+   * Arrive at each chapter with the camera move from `room-wide` (D42). Off for held-clock
+   * captures unless `?arrival=1`, so hero shots stay deterministic.
+   */
+  arrival: boolean;
 }
 
-export function App({ hud, clock, probe, debug, onReady }: AppProps) {
+/** How long the arrival move takes, seconds. */
+const ARRIVAL_SEC = 2.5;
+
+export function App({ hud, hudMotion, clock, probe, debug, onReady, arrival }: AppProps) {
   const [state, dispatch] = useReducer(reducer, undefined, startState);
   const def = CHAPTERS[state.chapter]!;
   const models = useRef(new Map<ChapterModelId, ModelSource>());
@@ -192,7 +201,12 @@ export function App({ hud, clock, probe, debug, onReady }: AppProps) {
         def: d,
         ui: sceneUi(s, d),
         run: r,
-        loopTime: loopTime.at(clock.now(), s.loopEpoch, s.playing),
+        // The loop starts when the arrival move ends (its 0 is the move's landing).
+        loopTime: loopTime.at(
+          clock.now(),
+          s.loopEpoch,
+          s.playing && !(stage.current?.arriving() ?? false),
+        ),
       };
     });
     void loadSceneAssets(first, assets)
@@ -222,6 +236,7 @@ export function App({ hud, clock, probe, debug, onReady }: AppProps) {
         if (!alive) return created?.dispose();
         stage.current = created;
         if (!created) return;
+        arrive(created, live.current.def.shot);
         probe.beat = scene.beat;
         const sceneCrops = probe.sceneCrops;
         probe.sceneCrops = () => ({ ...sceneCrops?.(), ...(hud ? { safe: safeRect() } : {}) });
@@ -234,9 +249,12 @@ export function App({ hud, clock, probe, debug, onReady }: AppProps) {
     // The stage lives for the app; everything it reads per frame comes through `live`.
   }, []);
 
-  // Arriving at a chapter cuts to its shot.
+  // Arriving at a chapter moves (or cuts) to its shot.
+  const arrive = (target: Stage, shot: ShotId) =>
+    target.arrive(shotPose(shot), arrival ? shotPose("room-wide") : undefined, ARRIVAL_SEC);
   useEffect(() => {
-    stage.current?.jumpTo(shotPose(def.shot));
+    if (stage.current) arrive(stage.current, def.shot);
+    // `arrive` reads only the stable `arrival` flag.
   }, [def.shot, state.loopEpoch]);
 
   // Harness hooks: go to a chapter, or set controls, the way a reader would.
@@ -285,7 +303,14 @@ export function App({ hud, clock, probe, debug, onReady }: AppProps) {
       <Labels ref={labels} labels={def.labels} reading={state.labelMode} />
       <SceneTagsLayer ref={tags} count={SCENE_BUILDERS[def.scene].tagCount} />
       {hud && (
-        <Hud state={state} dispatch={dispatch} def={def} chapters={CHAPTERS} model={chapterModel} />
+        <Hud
+          state={state}
+          dispatch={dispatch}
+          def={def}
+          chapters={CHAPTERS}
+          model={chapterModel}
+          motion={hudMotion}
+        />
       )}
     </main>
   );

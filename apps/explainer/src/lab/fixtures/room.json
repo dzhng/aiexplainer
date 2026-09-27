@@ -1,10 +1,10 @@
 {
   "camera": {
-    "target": [0, 1.6, -1],
-    "yaw": -0.25,
-    "pitch": 0.12,
-    "distance": 10,
-    "fovY": 0.9
+    "target": [0.4, 1.9, -2.0],
+    "yaw": -0.3322,
+    "pitch": 0.1055,
+    "distance": 12.339,
+    "fovY": 0.7679
   },
   "environment": true,
   "parts": []
