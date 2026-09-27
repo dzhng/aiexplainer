@@ -25,11 +25,14 @@ export const FrameUniform = d
   .$name("FrameUniform");
 export const FRAME_UNIFORM_BYTES = 192;
 
-/** One vertex: position, baked AO, normal, and baked (warm, cool) light as two unorm16s. */
+/**
+ * One vertex: position, baked AO, normal, baked (warm, cool) light as two unorm16s, and the
+ * axis point its width scales away from (`FrameDynamics.widthScale`).
+ */
 export const Vertex = d
-  .struct({ position: d.vec3f, ao: d.f32, normal: d.vec3f, light: d.u32 })
+  .struct({ position: d.vec3f, ao: d.f32, normal: d.vec3f, light: d.u32, axis: d.vec3f })
   .$name("Vertex");
-export const VERTEX_BYTES = 32;
+export const VERTEX_BYTES = 48;
 
 export const Instance = d
   .struct({
@@ -98,12 +101,12 @@ const unorm16 = (v: number) => Math.round(Math.min(1, Math.max(0, v)) * 65535);
 
 /**
  * Writes a geometry's vertices as `Vertex` records from record `first`: AO defaults to open
- * (1) and baked light to none.
+ * (1), baked light to none, and the axis to the vertex itself (width scaling leaves it put).
  */
 export function packVertices(
   out: Float32Array,
   first: number,
-  g: Pick<Geometry, "positions" | "normals" | "ao" | "light">,
+  g: Pick<Geometry, "positions" | "normals" | "ao" | "light" | "axis">,
 ): void {
   const u32 = new Uint32Array(out.buffer, out.byteOffset, out.length);
   for (let i = 0; i < g.positions.length / 3; i++) {
@@ -115,6 +118,8 @@ export function packVertices(
     u32[o + 7] = g.light
       ? (unorm16(g.light[i * 2]!) | (unorm16(g.light[i * 2 + 1]!) << 16)) >>> 0
       : 0;
+    out.set((g.axis ?? g.positions).subarray(i * 3, i * 3 + 3), o + 8);
+    out[o + 11] = 0;
   }
 }
 

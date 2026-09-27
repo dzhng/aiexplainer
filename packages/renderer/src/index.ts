@@ -14,7 +14,8 @@ export {
 } from "./camera.ts";
 export { OrbitController, DEFAULT_ORBIT_LIMITS, type OrbitLimits } from "./orbit.ts";
 export { createRenderer, type RendererOptions } from "./renderer.ts";
-export { partWorldBounds } from "./scene.ts";
+export { compileScene, partWorldBounds, type CompiledScene } from "./scene.ts";
+export { VERTEX_BYTES } from "./pack.ts";
 export { GltfUnsupportedError, parseGlb, type MeshAsset, type MeshNode } from "./gltf.ts";
 export {
   DEFAULT_LABEL_BOX,
@@ -32,4 +33,12 @@ export type { KitBuild, KitCommon, KitPrimitive } from "./kit/primitive.ts";
 export { BAR_MIN_HEIGHT, placeBar, type BarSlot, type BarsParams } from "./kit/bars.ts";
 export type { BlockParams } from "./kit/block.ts";
 export type { MeshParams } from "./kit/mesh.ts";
+export {
+  PIPE_SAMPLES,
+  pipeEntries,
+  pipePath,
+  pipePaths,
+  type PipeFan,
+  type PipesParams,
+} from "./kit/pipes.ts";
 export type { TubeParams } from "./kit/tube.ts";

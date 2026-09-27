@@ -4,7 +4,7 @@
  * loop is `runtime/stage.ts`: clock → loop time (restarts on `loopEpoch`, advances only while
  * `playing`) → `evalTimeline` → `buildFrame` → `renderer.frame` → `placeLabels` → label refs.
  */
-import { countsModel, type LoadedModel, type ModelId } from "@repo/llm";
+import type { LoadedModel, ModelId } from "@repo/llm";
 import type { FrameInput, SceneDesc, ScreenRect } from "@repo/renderer";
 import { useEffect, useLayoutEffect, useReducer, useRef, useState } from "react";
 import { CHAPTERS } from "../chapters/index.ts";
@@ -61,14 +61,6 @@ function sceneUi(state: AppState, def: ChapterDef): SceneUi {
   };
 }
 
-/** Each loaded model's word rule, decoded once (the vocabulary is thousands of words). */
-const splitters = new WeakMap<LoadedModel, (text: string) => string[]>();
-function splitter(model: LoadedModel): (text: string) => string[] {
-  let split = splitters.get(model);
-  if (!split) splitters.set(model, (split = countsModel(model).split));
-  return split;
-}
-
 const SAFE_MARGIN = 16;
 
 /** The canvas minus the HUD panels: right of the title panel, below the controls, above the ladder. */
@@ -99,7 +91,9 @@ export function App({ hud, clock, probe, debug, onReady }: AppProps) {
   const [state, dispatch] = useReducer(reducer, undefined, startState);
   const def = CHAPTERS[state.chapter]!;
   const models = useRef(new Map<ModelId, LoadedModel>());
-  const [model, setModel] = useState<LoadedModel | null>(null);
+  const [loadedModel, setModel] = useState<LoadedModel | null>(null);
+  // Until the new chapter's model arrives, the last chapter's model must not stand in for it.
+  const model = loadedModel?.manifest.id === def.model ? loadedModel : null;
   const [run, setRun] = useState<SceneRun | null>(null);
   const [session] = useState<Session>(() => createSession());
   const workerModel = useRef<{ id: ModelId; loaded: Promise<void> } | null>(null);
@@ -162,13 +156,13 @@ export function App({ hud, clock, probe, debug, onReady }: AppProps) {
     if (def.model === null) return;
     let alive = true;
     const id = def.model;
-    const split = model?.manifest.kind === "word-counts" ? splitter(model) : null;
-    if (text !== null && !split) return; // typed text waits for the model's word rule
+    // Text becomes words or tokens by the main thread's copy of the model: wait for it.
+    if (model?.manifest.id !== id) return;
     // The worker holds one model: load it only when the chapter's model changes.
     if (workerModel.current?.id !== id)
       workerModel.current = { id, loaded: session.load(id).then(() => undefined) };
     void workerModel.current.loaded
-      .then(() => computeRun(def, text, session, split ?? ((t) => [t])))
+      .then(() => computeRun(def, text, session, model))
       .then(
         (next) => alive && setRun(next),
         (error: unknown) => {

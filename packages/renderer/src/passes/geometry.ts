@@ -1,5 +1,7 @@
 /**
  * Scene geometry: vertices are pulled from storage by index, instances by instance index.
+ * Each vertex's distance from its axis point is scaled by its part slot's widthScale, so a
+ * tube's radius follows `widthScale` (every other part's axis is the vertex itself).
  * The depth prepass and both colour variants share this one vertex stage, whose position
  * is `@invariant`, so the `equal` depth test in the colour pass matches bit for bit.
  *
@@ -37,7 +39,10 @@ struct VertexOut {
 fn vs(@builtin(vertex_index) vertexIndex: u32, @builtin(instance_index) instanceIndex: u32) -> VertexOut {
   let vertex = sceneLayout.$.vertices[vertexIndex];
   let instance = sceneLayout.$.instances[instanceIndex];
-  let world = instance.model * vec4f(vertex.position, 1.0);
+  // widthScale multiplies the part's width about its axis (a tube's radius).
+  let widthScale = max(sceneLayout.$.dynamics[instance.slot].y, 0.0);
+  let local = vertex.axis + (vertex.position - vertex.axis) * widthScale;
+  let world = instance.model * vec4f(local, 1.0);
   var out: VertexOut;
   out.position = frameLayout.$.frame.viewProj * world;
   out.worldPos = world.xyz;

@@ -2,12 +2,13 @@
  * Every written chapter, keyed by slug and validated at load time. Chapters not yet
  * written are absent; the ladder (`ladder.ts`) still numbers them.
  */
+import { attention } from "./data/attention.ts";
 import { autocomplete } from "./data/autocomplete.ts";
 import type { ChapterSlug } from "./ladder.ts";
 import type { ChapterDef } from "./types.ts";
 import { validateChapter } from "./validate.ts";
 
-export const CHAPTERS: Partial<Record<ChapterSlug, ChapterDef>> = { autocomplete };
+export const CHAPTERS: Partial<Record<ChapterSlug, ChapterDef>> = { autocomplete, attention };
 
 for (const [slug, def] of Object.entries(CHAPTERS)) {
   if (def.slug !== slug)

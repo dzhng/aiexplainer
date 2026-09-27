@@ -1,0 +1,184 @@
+/**
+ * Chapter 4 (slice 22): every pipe's width is the real attention weight. The run is computed
+ * the way the app computes it (through `computeRun`), and checked against a direct forward
+ * pass of the shipped `attn` model.
+ */
+import { describe, expect, test } from "bun:test";
+import { forward, loadModel, promptTokens, transformerModel, type TraceSpec } from "@repo/llm";
+import { compileScene, VERTEX_BYTES, type SceneDesc, type TubePart } from "@repo/renderer";
+import path from "node:path";
+import { attention, RECALL_PROMPTS } from "../src/chapters/data/attention.ts";
+import { SCENE_KIT } from "../src/chapters/scenes.ts";
+import { createTimelineState, evalTimeline } from "../src/chapters/timeline.ts";
+import { lookConfig } from "../src/look/look.ts";
+import { computeRun } from "../src/runtime/scene-run.ts";
+import {
+  layoutTokens,
+  MAX_LINES,
+  MAX_TOKENS,
+  tokenLabel,
+} from "../src/scene/builders/attention.ts";
+import {
+  buildFrame,
+  createSceneFrame,
+  type SceneRun,
+  type SceneUi,
+} from "../src/scene/build-frame.ts";
+
+const models = path.resolve(import.meta.dirname, "../public/models");
+async function load(id: string) {
+  const dir = path.join(models, id);
+  return loadModel(
+    await Bun.file(path.join(dir, "manifest.json")).json(),
+    await Bun.file(path.join(dir, "weights.bin")).arrayBuffer(),
+    await Bun.file(path.join(models, "tokenizer/tokenizer.json")).arrayBuffer(),
+  );
+}
+const loaded = await load("attn");
+const model = transformerModel(loaded);
+const tokenizer = loaded.tokenizer!;
+const session = {
+  nextWords: () => Promise.reject(new Error("attn is not a counts model")),
+  run: async (tokens: number[], trace?: TraceSpec) => forward(model, tokens, { trace }),
+};
+
+/** The shipped model's own weights from the last token of `prompt`. */
+function golden(prompt: string): Float32Array {
+  const ids = promptTokens(tokenizer, prompt);
+  const { trace } = forward(model, ids, { trace: { tokens: [ids.length - 1] } });
+  return trace!.layers[0]!.attn!.weights.data;
+}
+
+function frameAt(t: number, run: SceneRun, text: string | null = null) {
+  const frame = createSceneFrame({
+    camera: { target: [0, 0, 0], yaw: 0, pitch: 0, distance: 5, fovY: 0.7 },
+    view: { mode: "whole", t: 0 },
+    scene: { revision: 0, parts: [], anchors: [], assets: {} },
+    dynamics: {
+      intensity: new Float32Array(1),
+      widthScale: new Float32Array(1),
+      flowPhase: new Float32Array(1),
+    },
+  });
+  const tl = evalTimeline(attention.loop, t, createTimelineState(attention.loop));
+  const ui: SceneUi = { follow: null, slider: 3, view: "whole", text };
+  const input = buildFrame(attention, tl, ui, run, frame);
+  return { input, frame };
+}
+
+const pipeOf = (scene: SceneDesc, i: number) =>
+  scene.parts.find((p) => p.id === `pipe.${i}`) as TubePart;
+
+const run = (await computeRun(attention, null, session, loaded))!;
+
+describe("chapter 4: pipe width is the real attention weight (slice 22)", () => {
+  test("the loop's prompt and every scenario are the attn model's measured prompts (O2)", async () => {
+    const measured = await Bun.file(path.join(models, "attn/scenarios.json")).json();
+    for (const s of attention.scenarios) {
+      expect(measured.attention).toContain(s.prompt);
+      expect(loaded.manifest.evidence.find((e) => e.probe === s.probe)?.pass).toBe(true);
+    }
+    expect(attention.loop.inputs).toEqual([RECALL_PROMPTS.mia]);
+    // The passing per-prompt probe is on the loop's prompt itself.
+    const probe = loaded.manifest.evidence.find(
+      (e) => e.probe === "recall-attention" && e.prompt === RECALL_PROMPTS.mia,
+    );
+    expect(probe?.pass).toBe(true);
+  });
+
+  test("at the hero time, each pipe's packed widthScale equals the trace's weight", () => {
+    const weights = golden(RECALL_PROMPTS.mia);
+    const { input } = frameAt(attention.ogTimeSec, run);
+    for (let i = 0; i < weights.length; i++) {
+      const slot = pipeOf(input.scene, i).slot;
+      expect(input.dynamics.widthScale[slot]).toBe(weights[i]!);
+    }
+    // Pipes past the last token are closed.
+    const past = pipeOf(input.scene, weights.length);
+    expect(input.dynamics.widthScale[past.slot]).toBe(0);
+  });
+
+  test("the widest pipe lands on the name, and it is labelled with its share", () => {
+    const weights = golden(RECALL_PROMPTS.mia);
+    const step = run.kind === "attention" ? run.steps[0]! : null;
+    const widest = weights.indexOf(Math.max(...weights));
+    expect(step!.tokens[widest]).toBe(" Mia");
+    const { input, frame } = frameAt(attention.ogTimeSec, run);
+    const label = input.scene.anchors.find((a) => a.id === "pipes")!;
+    expect(label.part).toBe(`pipe.${widest}`);
+    expect(frame.tags.text).toContain(`Mia ${Math.round(weights[widest]! * 100)}%`);
+  });
+
+  test("CPU mirror: the radii the GPU draws are in the same order as the weights", () => {
+    const weights = golden(RECALL_PROMPTS.mia);
+    const { input } = frameAt(attention.ogTimeSec, run);
+    // The room is not needed to measure the pipes.
+    const compiled = compileScene({ ...input.scene, environment: undefined }, lookConfig());
+    const stride = VERTEX_BYTES / 4;
+    const drawn = Array.from(weights, (_, i) => {
+      const pipe = pipeOf(input.scene, i);
+      const instance = compiled.instanceParts.indexOf(pipe);
+      const draw = compiled.draws.find(
+        (d) => instance >= d.firstInstance && instance < d.firstInstance + d.instanceCount,
+      )!;
+      // The first ring's first vertex, moved as the vertex stage moves it: away from its axis
+      // point by widthScale.
+      const v = compiled.vertices.subarray(draw.baseVertex * stride);
+      const offset = Math.hypot(v[0]! - v[8]!, v[1]! - v[9]!, v[2]! - v[10]!);
+      return offset * input.dynamics.widthScale[pipe.slot]!;
+    });
+    // A wider weight always draws a wider pipe; equal weights (the same word again: this
+    // model has no positions) draw equal pipes, to float precision.
+    for (let i = 0; i < weights.length; i++)
+      for (let j = 0; j < weights.length; j++) {
+        if (weights[i]! < weights[j]!) expect(drawn[i]!).toBeLessThan(drawn[j]!);
+        if (weights[i] === weights[j]) expect(drawn[i]!).toBeCloseTo(drawn[j]!, 6);
+      }
+    // The width is proportional to the weight.
+    const top = weights.indexOf(Math.max(...weights));
+    for (let i = 0; i < weights.length; i++)
+      expect(drawn[i]! / drawn[top]!).toBeCloseTo(weights[i]! / weights[top]!, 5);
+  });
+
+  test("typed text is tokenized and run the same way, settled at once", async () => {
+    const text = "Tom had a red kite. Tom";
+    const typed = (await computeRun(attention, text, session, loaded))!;
+    const weights = golden(text);
+    const { input } = frameAt(0, typed, text);
+    for (let i = 0; i < weights.length; i++)
+      expect(input.dynamics.widthScale[pipeOf(input.scene, i).slot]).toBe(weights[i]!);
+  });
+
+  test("the longest text the scene holds, in the vocabulary's longest pieces, fits the stand", () => {
+    const longest = Math.max(
+      ...Array.from(
+        { length: tokenizer.vocabSize },
+        (_, id) => tokenLabel(tokenizer.decode([id])).length,
+      ),
+    );
+    // Every block as long as the longest piece, and five of them with room for a share.
+    const tokens = Array.from({ length: MAX_TOKENS }, (_, i) =>
+      "x".repeat(longest + (i < 5 ? 4 : 0)),
+    );
+    expect(() => layoutTokens(tokens)).not.toThrow();
+    expect(layoutTokens(tokens).steps.length).toBeLessThanOrEqual(MAX_LINES);
+  });
+
+  test("the point lands by 10 s: widths have settled to the weights before then", () => {
+    const settled = attention.loop.channels.settle!.find((k) => k.v === 1)!.t;
+    expect(settled).toBeLessThan(10);
+    const beat = attention.loop.beats.find((b) => b.id === "widths-settle")!;
+    expect(beat.t).toBeLessThan(10);
+  });
+
+  test("the scene builds only from the primitives its scene declares", () => {
+    const { input } = frameAt(attention.ogTimeSec, run);
+    for (const part of input.scene.parts)
+      expect(SCENE_KIT[attention.scene]).toContain(part.primitive!);
+  });
+
+  test("the hero frame's structure is stable", () => {
+    const { input } = frameAt(attention.ogTimeSec, run);
+    expect(input.scene.parts.map((p) => [p.id, p.kind, p.slot])).toMatchSnapshot();
+  });
+});

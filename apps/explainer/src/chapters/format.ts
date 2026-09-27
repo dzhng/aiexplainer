@@ -43,3 +43,11 @@ export function formatStat(value: number, format: StatFormat): string {
       return `${sig3(value)}×`;
   }
 }
+
+/** "37%", "<1%", ">99%": a share of a whole in scene text, never rounded to a false 0 or 100. */
+export function share(p: number): string {
+  const percent = Math.round(p * 100);
+  if (percent < 1) return "<1%";
+  if (percent > 99 && p < 1) return ">99%";
+  return `${percent}%`;
+}

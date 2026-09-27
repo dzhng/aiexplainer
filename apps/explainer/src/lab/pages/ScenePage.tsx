@@ -2,7 +2,8 @@
  * `/lab/scene/<slug>`: one chapter's scene with no HUD, driven by its committed fixture run
  * (`fixtures/runs/<slug>.json`) at the clock's time (hold it with `?clock=held&t=`), so no
  * inference runs. Controls sit at the chapter's defaults. Every chapter slice reviews its
- * scene here; it is the same `chapterScene` the app draws.
+ * scene here; it is the same `chapterScene` the app draws. `?view=` opens it in a view and
+ * `?yaw=` turns the camera by that many degrees (label sweeps).
  */
 import type { FrameInput, SceneDesc } from "@repo/renderer";
 import { useEffect, useRef } from "react";
@@ -49,8 +50,11 @@ export function ScenePage({ slug, reading, debug, clock, probe, onReady }: Scene
     let dispose = () => {};
     let alive = true;
     const assets: SceneDesc["assets"] = {};
+    const params = new URLSearchParams(location.search);
     // `?view=cutaway|exploded` opens the scene in that view (settled), for view shots.
-    const asked = new URLSearchParams(location.search).get("view") as ViewMode | null;
+    const asked = params.get("view") as ViewMode | null;
+    // `?yaw=<degrees>` turns the camera around the shot's target, for label sweeps.
+    const yaw = (Number(params.get("yaw") ?? 0) * Math.PI) / 180;
     const ui = {
       follow: null,
       slider: def.slider.initial,
@@ -68,6 +72,9 @@ export function ScenePage({ slug, reading, debug, clock, probe, onReady }: Scene
           probe,
           debug,
           update: scene.update,
+          pose: (pose) => {
+            pose.yaw += yaw;
+          },
           labels: labels.current,
           tags: { layer: tags.current, current: () => scene.frame.tags },
           onReady,

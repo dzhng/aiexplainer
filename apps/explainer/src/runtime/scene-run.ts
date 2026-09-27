@@ -1,27 +1,71 @@
 /**
  * The model output a chapter's scene shows, computed in the inference worker (D38): the loop's
- * inputs, or the reader's text in their place. Chapter 0 needs each word's real successors.
+ * inputs, or the reader's text in their place. Chapter 0 needs each word's real successors;
+ * the attention scenes need the last token's real attention weights.
  */
+import { countsModel, promptTokens, type LoadedModel } from "@repo/llm";
 import type { ChapterDef } from "../chapters/types.ts";
-import type { SceneRun } from "../scene/build-frame.ts";
+import type { AttentionStep, SceneRun } from "../scene/build-frame.ts";
+import { MAX_TOKENS } from "../scene/builders/attention.ts";
 import type { Session } from "./session.ts";
 
+/** Each loaded counts model's word rule, decoded once (the vocabulary is thousands of words). */
+const splitters = new WeakMap<LoadedModel, (text: string) => string[]>();
+function splitter(model: LoadedModel): (text: string) => string[] {
+  let split = splitters.get(model);
+  if (!split) splitters.set(model, (split = countsModel(model).split));
+  return split;
+}
+
 /**
- * `split` turns typed text into the model's words (the counts manifest's rule); the last one
- * is the word the machine looks at. Requests run one after another: the session cancels a
- * live request when a new one starts.
+ * `model` is the chapter's model as loaded on the main thread: its word rule or tokenizer
+ * turns text into what the worker runs. Requests run one after another: the session cancels
+ * a live request when a new one starts.
  */
 export async function computeRun(
   def: ChapterDef,
   text: string | null,
-  session: Pick<Session, "nextWords">,
-  split: (text: string) => string[],
+  session: Pick<Session, "nextWords" | "run">,
+  model: LoadedModel,
 ): Promise<SceneRun | null> {
-  if (def.model !== "counts") return null;
-  const typed = text === null ? [] : split(text);
-  const words = text === null ? (def.loop.inputs ?? []) : [typed.at(-1) ?? text.trim()];
-  const steps: SceneRun["steps"] = [];
-  for (const word of words)
-    steps.push({ word, next: await session.nextWords(word, def.slider.max) });
-  return { kind: "counts", steps };
+  const prompts = text === null ? (def.loop.inputs ?? []) : [text];
+  switch (def.scene) {
+    case "autocomplete": {
+      // The machine reads only the last word of typed text.
+      const words = text === null ? prompts : [splitter(model)(text).at(-1) ?? text.trim()];
+      const steps: Extract<SceneRun, { kind: "counts" }>["steps"] = [];
+      for (const word of words)
+        steps.push({ word, next: await session.nextWords(word, def.slider.max) });
+      return { kind: "counts", steps };
+    }
+    case "attention": {
+      const steps: AttentionStep[] = [];
+      for (const prompt of prompts) steps.push(await attentionStep(session, model, prompt));
+      return { kind: "attention", steps };
+    }
+  }
+}
+
+/**
+ * The prompt's last token's attention over every token. Text longer than the scene holds keeps
+ * `<bos>` and its last tokens, and the model reads exactly what the scene shows.
+ */
+export async function attentionStep(
+  session: Pick<Session, "run">,
+  model: LoadedModel,
+  prompt: string,
+): Promise<AttentionStep> {
+  const tokenizer = model.tokenizer;
+  if (!tokenizer) throw new Error(`${model.manifest.id}: an attention scene needs a tokenizer`);
+  const all = promptTokens(tokenizer, prompt);
+  const ids = all.length > MAX_TOKENS ? [all[0]!, ...all.slice(1 - MAX_TOKENS)] : all;
+  const focus = ids.length - 1;
+  const { trace } = await session.run(ids, { tokens: [focus], heads: [0], layers: [0] });
+  const weights = trace?.layers[0]?.attn?.weights.data;
+  if (!weights) throw new Error("the attention trace is missing its weights");
+  return {
+    tokens: ids.map((id) => tokenizer.decode([id])),
+    focus,
+    weights: Array.from(weights),
+  };
 }

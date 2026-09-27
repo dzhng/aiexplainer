@@ -7,7 +7,11 @@ const shipped = async (id: ModelId): Promise<LoadedModel> => {
   const dir = new URL(`../public/models/${id}/`, import.meta.url);
   const manifest = await Bun.file(new URL("manifest.json", dir)).json();
   const weights = await Bun.file(new URL("weights.bin", dir)).arrayBuffer();
-  return loadModel(manifest, weights);
+  const tokenizer =
+    manifest.tokenizer.kind === "bpe"
+      ? await Bun.file(new URL(manifest.tokenizer.file, dir)).arrayBuffer()
+      : undefined;
+  return loadModel(manifest, weights, tokenizer);
 };
 
 test("every written chapter's stats resolve against its shipped model, with a source line", async () => {

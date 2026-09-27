@@ -9,8 +9,10 @@ import type { FrameInput, SceneDesc } from "@repo/renderer";
 import type { ChapterDef, FollowId, SceneBuilderId, ViewMode } from "../chapters/types.ts";
 import type { TimelineState } from "../chapters/timeline.ts";
 import type { SceneTags } from "../hud/SceneTags.tsx";
+import { attention } from "./builders/attention.ts";
 import { autocomplete } from "./builders/autocomplete.ts";
 import { withEnvironment } from "./environment.ts";
+import { nextRevision } from "./revision.ts";
 
 /** The HUD controls a scene reads. */
 export interface SceneUi {
@@ -22,11 +24,27 @@ export interface SceneUi {
 }
 
 /** The chapter's model output for what the scene shows (computed by the session worker). */
-export type SceneRun = {
-  kind: "counts";
-  /** One step per loop input (or one for typed text): the word and its real successors. */
-  steps: { word: string; next: NextWord[] }[];
-};
+export type SceneRun =
+  | {
+      kind: "counts";
+      /** One step per loop input (or one for typed text): the word and its real successors. */
+      steps: { word: string; next: NextWord[] }[];
+    }
+  | {
+      kind: "attention";
+      /** One step per loop input (or one for typed text). */
+      steps: AttentionStep[];
+    };
+
+/** One prompt through a one-layer attention model, seen from its last token (the focus). */
+export interface AttentionStep {
+  /** Every token as text, `<bos>` first. */
+  tokens: string[];
+  /** The focus token's index: the prompt's last. */
+  focus: number;
+  /** The focus token's real attention weights over every token (layer 0, head 0). */
+  weights: number[];
+}
 
 export interface SceneBuilder {
   /** Prop URLs by asset id; the app loads them before the first frame. */
@@ -43,7 +61,7 @@ export interface SceneBuilder {
   ): void;
 }
 
-export const SCENE_BUILDERS: Record<SceneBuilderId, SceneBuilder> = { autocomplete };
+export const SCENE_BUILDERS: Record<SceneBuilderId, SceneBuilder> = { autocomplete, attention };
 
 /** What one frame of a chapter's scene is: the renderer's input and the overlay's text. */
 export interface SceneFrame {
@@ -51,8 +69,6 @@ export interface SceneFrame {
   input: Omit<FrameInput, "timeSec" | "viewport">;
   tags: SceneTags;
 }
-
-let revisions = 0;
 
 export function createSceneFrame(input: SceneFrame["input"]): SceneFrame {
   return { builder: null, input, tags: { anchors: [], text: [], emphasis: [] } };
@@ -72,7 +88,7 @@ export function buildFrame(
 ): SceneFrame["input"] {
   const builder = SCENE_BUILDERS[def.scene];
   if (out.builder !== def.scene) {
-    const created = builder.create(out.input.scene.assets, ++revisions);
+    const created = builder.create(out.input.scene.assets, nextRevision());
     out.input.scene = withEnvironment(created.scene);
     out.tags = created.tags;
     const slots = created.scene.parts.reduce((n, p) => Math.max(n, p.slot + 1), 1);

@@ -24,6 +24,7 @@ import {
   type SceneDesc,
 } from "@repo/renderer";
 import type { Mat4, Vec3 } from "math";
+import { share } from "../../chapters/format.ts";
 import type { SceneTags } from "../../hud/SceneTags.tsx";
 import type { SceneBuilder, SceneFrame } from "../build-frame.ts";
 
@@ -108,14 +109,6 @@ function placeCard(transform: Mat4, x: number, y: number, z: number) {
   transform[14] = z;
 }
 
-/** "37%", "<1%", ">99%": a share of the kept successors, never rounded to a false 0 or 100. */
-export function share(p: number): string {
-  const percent = Math.round(p * 100);
-  if (percent < 1) return "<1%";
-  if (percent > 99 && p < 1) return ">99%";
-  return `${percent}%`;
-}
-
 export const autocomplete: SceneBuilder = {
   assets: { board: "/props/counter_board.glb" },
   // A word per bar, the card's word, and the note for a word with no counts.
@@ -190,7 +183,7 @@ export const autocomplete: SceneBuilder = {
   update(frame: SceneFrame, _def, tl, ui, run) {
     const { scene, dynamics } = frame.input;
     const { layout, bars, card: cardPart } = built.get(scene)!;
-    const steps = run?.steps ?? [];
+    const steps = run?.kind === "counts" ? run.steps : [];
     const typed = ui.text !== null;
     const pick = (channel: number | undefined) =>
       typed ? steps[0] : steps[Math.min(steps.length - 1, Math.max(0, Math.round(channel ?? 0)))];

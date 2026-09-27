@@ -102,6 +102,10 @@ export interface SceneDesc {
 export interface FrameDynamics {
   /** Per part slot, uploaded every frame. */
   intensity: Float32Array;
+  /**
+   * A tube's radius multiplier about its centreline, applied on the GPU: 1 draws the radius it
+   * was built with, 0 closes it. Other parts ignore it.
+   */
   widthScale: Float32Array;
   flowPhase: Float32Array;
 }
