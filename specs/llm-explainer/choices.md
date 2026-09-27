@@ -107,3 +107,33 @@ standalone. Entries are appended per pass and consolidated when the spec closes.
   specials by id. Verdict: sound.
 - **`rng.ts` (mulberry32) arrived early, as the single owner of seeded randomness, because
   a property test needed it.** Verdict: sound; slice 15 builds on it.
+
+## Slice 04
+
+- **AppState carries a `loopEpoch` counter.** Why: the reducer stays pure; the frame loop
+  restarts the chapter's loop whenever the epoch changes. Verdict: sound.
+- **Only scene controls pause the loop** (Follow, slider, scenario, view). The reading aids
+  (Analogy/Precise, Precisely, help) only change text. Verdict: sound reading of D32.
+- **Arriving at a chapter resets its Follow, slider, scenario, view and Precisely.** The label
+  reading and the help state persist across chapters. Verdict: sound.
+- **←/→ and the ladder reach written chapters only.** An unknown or unwritten `/#N` loads the
+  first written chapter and rewrites the hash in place. Verdict: sound until all 16 exist.
+- **Extra keys: Space plays or pauses, ? toggles help, Esc closes it.** Verdict: sound.
+- **Model metrics have one owner, `MODEL_METRICS` in `packages/llm/src/metrics.ts`.**
+  `validateChapter` rejects a model or probe stat on a chapter with no model. Verdict: sound.
+- **`pct` stats show 3 significant figures** ("99.9%", not "100%"). Verdict: sound.
+- **TinyStories is credited once, in the help panel, for every chapter.** It is not listed per
+  chapter. Verdict: sound, single owner.
+- **Fonts are self-hosted: Inter Variable and JetBrains Mono Variable, latin subset only**
+  (plus Inter greek, for Σ), from @fontsource-variable 5.3.0 under OFL-1.1. Verdict: sound.
+  Human checkpoint: kept the delegated default; shots shown for review.
+- **"Follow on X" links to https://x.com/dzhng.** Verdict: user-only. Provisional call:
+  keep it until the human names another handle.
+- **Share copies the `/#N` link for now.** Slice 12 switches it to the `/c/N/` share route
+  (D34). Verdict: short-lived; slice 12 owns the change.
+- **The brand slot is a text wordmark "dzhng" with a placeholder two-block mark, and there is
+  no favicon.** Verdict: provisional; revisit at release (slice 36).
+- **The probe has no `goto`/`setUi`.** The harness drives the UI with real key presses
+  (`--press`) instead. Verdict: sound; slice 10's probe list is superseded.
+- **The HUD created `/lab/tokens` (chips section).** Slice 08 adds its emissive section
+  there. Verdict: sound; the ordering in the spec was wrong.
