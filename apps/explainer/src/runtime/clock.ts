@@ -48,6 +48,15 @@ export function stepClock(fps: number): StepClock {
   };
 }
 
+/**
+ * Whether chapters open with the arrival move (D42): in real time yes; under a held clock
+ * (captures, the recorder) only with `?arrival=1`, so hero shots stay deterministic.
+ */
+export function arrivalFromSearch(search: string): boolean {
+  const params = new URLSearchParams(search);
+  return params.get("arrival") === "1" || params.get("clock") !== "held";
+}
+
 /** `?clock=held&t=12.5` holds time; anything else runs in real time. */
 export function clockFromSearch(search: string): Clock {
   const params = new URLSearchParams(search);

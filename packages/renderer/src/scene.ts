@@ -9,6 +9,7 @@ import { partCut, partWorld } from "./camera.ts";
 import type { FrameInput, LookConfig, MeshPart, Part, SceneDesc } from "./frame-input.ts";
 import type { MeshAsset, MeshNode } from "./gltf.ts";
 import { blockGeometry } from "./kit/block.ts";
+import { shadowGeometry } from "./kit/contact-shadow.ts";
 import type { Geometry } from "./kit/geometry.ts";
 import { tubeGeometry } from "./kit/tube.ts";
 import { packInstance, packVertices, VERTEX_BYTES } from "./pack.ts";
@@ -44,6 +45,7 @@ interface Piece {
 }
 
 const cube = blockGeometry();
+const footprint = shadowGeometry();
 
 export function meshNodes(part: MeshPart, assets: Assets): MeshNode[] {
   const asset: MeshAsset | undefined = assets[part.asset];
@@ -69,6 +71,8 @@ function pieces(part: Part, assets: Assets, look: LookConfig): Piece[] {
   switch (part.kind) {
     case "block":
       return [{ geometry: cube, material: part.material }];
+    case "shadow":
+      return [{ geometry: footprint, material: part.material }];
     case "tube":
       return [{ geometry: tubeGeometry(part.path, part.radius), material: part.material }];
     case "mesh":
@@ -84,6 +88,8 @@ export function partLocalBounds(part: Part, assets: Assets): Box3 {
   switch (part.kind) {
     case "block":
       return cube.bounds;
+    case "shadow":
+      return footprint.bounds;
     case "tube":
       return tubeGeometry(part.path, part.radius).bounds;
     case "mesh": {
