@@ -3,7 +3,6 @@ import { vec3, type Vec3 } from "math";
 import { blockGeometry } from "../src/kit/block.ts";
 import type { Geometry } from "../src/kit/geometry.ts";
 import { tubeGeometry } from "../src/kit/tube.ts";
-import { roomGeometry } from "../src/passes/room.ts";
 
 const at = (a: Float32Array, i: number): Vec3 => [a[i * 3]!, a[i * 3 + 1]!, a[i * 3 + 2]!];
 
@@ -52,8 +51,4 @@ test("tube: outward winding, capped ends, and a constant radius through a right-
 
 test("tube: a path needs two points", () => {
   expect(() => tubeGeometry([[0, 0, 0]], 1)).toThrow();
-});
-
-test("room: the floor faces up and the wall faces in", () => {
-  expectOutwardWinding(roomGeometry(12));
 });

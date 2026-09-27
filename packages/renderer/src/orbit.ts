@@ -2,6 +2,7 @@
  * Orbit, zoom and pan, as a pure state machine: pointer and wheel events in, a damped
  * `OrbitPose` out. No DOM access, so it is driven the same way by the app and by tests.
  */
+import type { Box3 } from "math/shapes";
 import type { OrbitPose } from "./frame-input.ts";
 
 export interface OrbitLimits {
@@ -17,6 +18,11 @@ export interface OrbitLimits {
   zoomStep: number;
   /** Exponential approach rate toward the goal, per second. */
   damping: number;
+  /**
+   * World box both the target and the eye stay inside (an environment room, less a margin
+   * for the near plane): the eye comes closer rather than leave it.
+   */
+  bounds?: Box3;
 }
 
 export const DEFAULT_ORBIT_LIMITS: OrbitLimits = {
@@ -60,12 +66,15 @@ export class OrbitController {
   /** Where the camera is; approaches `goal` in `update`. */
   readonly pose: OrbitPose;
   #drag: { pointerId: number; x: number; y: number; pan: boolean } | null = null;
+  /** The distance the user asked for; `goal.distance` is it, shortened to stay in `bounds`. */
+  #wanted: number;
 
   constructor(
     pose: OrbitPose,
     readonly limits: OrbitLimits = DEFAULT_ORBIT_LIMITS,
   ) {
     this.goal = clonePose(pose);
+    this.#wanted = pose.distance;
     this.#clamp();
     this.pose = clonePose(this.goal);
   }
@@ -77,6 +86,7 @@ export class OrbitController {
   /** Cuts to `pose` with no easing. */
   jumpTo(pose: OrbitPose): void {
     copyPose(this.goal, pose);
+    this.#wanted = pose.distance;
     this.#clamp();
     copyPose(this.pose, this.goal);
   }
@@ -105,7 +115,7 @@ export class OrbitController {
   }
 
   wheel(deltaY: number): void {
-    this.goal.distance *= Math.pow(this.limits.zoomStep, deltaY / 100);
+    this.#wanted *= Math.pow(this.limits.zoomStep, deltaY / 100);
     this.#clamp();
   }
 
@@ -118,6 +128,8 @@ export class OrbitController {
     p.yaw += (g.yaw - p.yaw) * k;
     p.pitch += (g.pitch - p.pitch) * k;
     p.distance += (g.distance - p.distance) * k;
+    // Easing between two poses inside the room can swing the eye outside it; keep it in.
+    this.#keepInside(p);
     p.fovY = g.fovY;
     return p;
   }
@@ -139,6 +151,30 @@ export class OrbitController {
   #clamp(): void {
     const { minPitch, maxPitch, minDistance, maxDistance } = this.limits;
     this.goal.pitch = Math.min(maxPitch, Math.max(minPitch, this.goal.pitch));
-    this.goal.distance = Math.min(maxDistance, Math.max(minDistance, this.goal.distance));
+    this.#wanted = Math.min(maxDistance, Math.max(minDistance, this.#wanted));
+    this.goal.distance = this.#wanted;
+    this.#keepInside(this.goal);
+  }
+
+  /** Pulls `pose`'s target into `bounds`, then its eye in along the view ray. Allocation-free. */
+  #keepInside(pose: OrbitPose): void {
+    const b = this.limits.bounds;
+    if (!b) return;
+    const t = pose.target;
+    for (let i = 0; i < 3; i++) t[i] = Math.min(b[i + 3]!, Math.max(b[i]!, t[i]!));
+    const cp = Math.cos(pose.pitch);
+    // The unit direction from target to eye (as `orbitEye`), and how far it can go.
+    let reach = pose.distance;
+    for (let i = 0; i < 3; i++) {
+      const dir =
+        i === 0
+          ? cp * Math.sin(pose.yaw)
+          : i === 1
+            ? Math.sin(pose.pitch)
+            : cp * Math.cos(pose.yaw);
+      if (dir > 1e-6) reach = Math.min(reach, (b[i + 3]! - t[i]!) / dir);
+      else if (dir < -1e-6) reach = Math.min(reach, (b[i]! - t[i]!) / dir);
+    }
+    pose.distance = Math.max(0.05, reach);
   }
 }

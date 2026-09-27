@@ -22,6 +22,8 @@ struct VertexOut {
   @location(0) worldPos: vec3f,
   @location(1) normal: vec3f,
   @location(2) @interpolate(flat) instance: u32,
+  @location(3) ao: f32,
+  @location(4) light: vec2f,
 }
 
 @vertex
@@ -34,6 +36,8 @@ fn vs(@builtin(vertex_index) vertexIndex: u32, @builtin(instance_index) instance
   out.worldPos = world.xyz;
   out.normal = instance.normalMatrix * vertex.normal;
   out.instance = instanceIndex;
+  out.ao = vertex.ao;
+  out.light = unpack2x16unorm(vertex.light);
   return out;
 }
 
@@ -47,7 +51,8 @@ fn fs(in: VertexOut, @builtin(front_facing) frontFacing: bool) -> @location(0) v
   // Emission is scaled per part slot by the frame's dynamics (and zeroed by the debug layer).
   let emitted = material.emissive * sceneLayout.$.dynamics[instance.slot].x * frameLayout.$.frame.debug.x;
   let n = select(-1.0, 1.0, frontFacing) * normalize(in.normal);
-  let shading = shadeSurface(Surface(material.baseColor, material.metallic, material.roughness), n, v);
+  let surface = Surface(material.baseColor, material.metallic, material.roughness, in.ao, in.light);
+  let shading = shadeSurface(surface, n, v, in.worldPos);
   if (material.opacity >= 1.0) {
     return vec4f(shading.diffuse + shading.specular + emitted, 1.0);
   }

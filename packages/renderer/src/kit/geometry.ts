@@ -6,6 +6,10 @@ export interface Geometry {
   positions: Float32Array;
   /** Unit xyz per vertex. */
   normals: Float32Array;
+  /** Baked ambient occlusion per vertex (1 = open); absent means fully open. */
+  ao?: Float32Array;
+  /** Baked (warm, cool) practical light per vertex, 0–1; absent means none. */
+  light?: Float32Array;
   indices: Uint32Array;
   bounds: Box3;
 }

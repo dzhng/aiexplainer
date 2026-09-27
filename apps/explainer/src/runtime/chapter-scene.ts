@@ -15,6 +15,7 @@ import {
   type SceneRun,
   type SceneUi,
 } from "../scene/build-frame.ts";
+import { ENVIRONMENT } from "../scene/environment.ts";
 import { shotPose } from "../scene/shots.ts";
 
 export interface ChapterSceneState {
@@ -27,9 +28,12 @@ export interface ChapterSceneState {
 
 const loaded = new Map<string, Promise<SceneDesc["assets"][string]>>();
 
-/** Loads (once per URL) every prop the chapter's scene builder needs into `assets`. */
+/** Loads (once per URL) the room and every prop the chapter's scene builder needs into `assets`. */
 export async function loadSceneAssets(def: ChapterDef, assets: SceneDesc["assets"]): Promise<void> {
-  const wanted = Object.entries(SCENE_BUILDERS[def.scene].assets);
+  const wanted = Object.entries({
+    ...SCENE_BUILDERS[def.scene].assets,
+    [ENVIRONMENT.id]: ENVIRONMENT.url,
+  });
   await Promise.all(
     wanted.map(async ([id, url]) => {
       if (!loaded.has(url))
@@ -62,7 +66,8 @@ export function chapterScene(
   const input: ChapterScene["input"] = {
     camera: shotPose(first.shot),
     view: { mode: first.views[0] ?? "whole", t: 0 },
-    scene: { revision: 0, parts: [], anchors: [], assets },
+    // The room shows from the first frame (the stage starts once `loadSceneAssets` is done).
+    scene: { revision: 0, parts: [], anchors: [], assets, environment: ENVIRONMENT.id },
     dynamics: {
       intensity: new Float32Array(1),
       widthScale: new Float32Array(1),

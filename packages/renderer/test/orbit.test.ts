@@ -1,5 +1,6 @@
 import { expect, test } from "bun:test";
 import type { OrbitPose } from "../src/frame-input.ts";
+import { orbitEye } from "../src/camera.ts";
 import { DEFAULT_ORBIT_LIMITS, OrbitController } from "../src/orbit.ts";
 
 const start = (): OrbitPose => ({ target: [0, 0, 0], yaw: 0, pitch: 0.3, distance: 6, fovY: 0.8 });
@@ -60,4 +61,46 @@ test("pan moves the target in the screen plane; moves from other pointers are ig
   orbit.pointerDown({ pointerId: 1, x: 0, y: 0, button: 0 });
   orbit.pointerMove({ pointerId: 2, x: 500, y: 500, button: 0 });
   expect([...orbit.goal.target]).toEqual(before);
+});
+
+test("with bounds, the target and the eye stay inside the box from every side", () => {
+  const bounds = [-9, 0.3, -5, 9, 5, 11] as const;
+  const orbit = new OrbitController(
+    { target: [0, 1.4, 0], yaw: 0, pitch: 0.2, distance: 8, fovY: 0.6 },
+    { ...DEFAULT_ORBIT_LIMITS, bounds: [...bounds] },
+  );
+  const eye: [number, number, number] = [0, 0, 0];
+  const inside = () => {
+    orbitEye(orbit.goal, eye);
+    for (let i = 0; i < 3; i++) {
+      expect(eye[i]!).toBeGreaterThanOrEqual(bounds[i]! - 1e-6);
+      expect(eye[i]!).toBeLessThanOrEqual(bounds[i + 3]! + 1e-6);
+    }
+  };
+  // Facing the room from the front: nothing to clamp.
+  expect(orbit.goal.distance).toBeCloseTo(8, 6);
+  // Swing round to face the window: the back wall is 5 m behind, so the eye comes in.
+  orbit.pointerDown({ pointerId: 1, x: 0, y: 0, button: 0 });
+  for (let x = 0; x <= 600; x += 20) {
+    orbit.pointerMove({ pointerId: 1, x, y: 0, button: 0 });
+    inside();
+  }
+  expect(orbit.goal.distance).toBeLessThan(8);
+  // Swinging back to the front restores the distance asked for.
+  for (let x = 600; x >= 0; x -= 20) orbit.pointerMove({ pointerId: 1, x, y: 0, button: 0 });
+  expect(orbit.goal.distance).toBeCloseTo(8, 6);
+  // Panning far away drags the target only to the wall.
+  orbit.pointerUp({ pointerId: 1, x: 0, y: 0, button: 0 });
+  orbit.pointerDown({ pointerId: 2, x: 0, y: 0, button: 2 });
+  orbit.pointerMove({ pointerId: 2, x: 100_000, y: 0, button: 2 });
+  inside();
+  for (let i = 0; i < 3; i++) {
+    expect(orbit.goal.target[i]!).toBeGreaterThanOrEqual(bounds[i]!);
+    expect(orbit.goal.target[i]!).toBeLessThanOrEqual(bounds[i + 3]!);
+  }
+  // The eased pose stays in too.
+  for (let i = 0; i < 20; i++) {
+    orbitEye(orbit.update(1 / 60), eye);
+    for (let j = 0; j < 3; j++) expect(eye[j]!).toBeLessThanOrEqual(bounds[j + 3]! + 1e-6);
+  }
 });
