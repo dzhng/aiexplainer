@@ -12,6 +12,22 @@ export const TUBE_SIDES = 24;
  */
 export function tubeGeometry(path: Vec3[], radius: number, sides = TUBE_SIDES): Geometry {
   if (path.length < 2) throw new Error("tube: a path needs at least two points");
+  // Equal tubes share one geometry, so the scene draws them as one instanced draw (a brick's
+  // studs, a field of pins: one unit tube placed by each part's transform). Keyed by value,
+  // so a path edited in place and re-uploaded never reads a stale shape.
+  const key = `${radius},${sides}:${path.join(";")}`;
+  const cached = geometryCache.get(key);
+  if (cached) return cached;
+  if (geometryCache.size >= GEOMETRY_CACHE_LIMIT) geometryCache.clear();
+  const geometry = sweep(path, radius, sides);
+  geometryCache.set(key, geometry);
+  return geometry;
+}
+
+const GEOMETRY_CACHE_LIMIT = 256;
+const geometryCache = new Map<string, Geometry>();
+
+function sweep(path: Vec3[], radius: number, sides: number): Geometry {
   const rings = path.length;
   const vertexCount = rings * sides + 2 * (sides + 1);
   const positions = new Float32Array(vertexCount * 3);

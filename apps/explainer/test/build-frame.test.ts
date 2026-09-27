@@ -1,26 +1,31 @@
 import { describe, expect, test } from "bun:test";
-import { countsModel, loadModel, nextWords } from "@repo/llm";
+import { countsModel, nextWords } from "@repo/llm";
 import { parseGlb, type SceneDesc } from "@repo/renderer";
 import path from "node:path";
+import { directSession } from "../scripts/direct-session.ts";
+import { shippedModel } from "../scripts/shipped.ts";
 import { autocomplete } from "../src/chapters/data/autocomplete.ts";
 import { createTimelineState, evalTimeline } from "../src/chapters/timeline.ts";
 import { SCENE_KIT } from "../src/chapters/scenes.ts";
-import { buildFrame, createSceneFrame, type SceneUi } from "../src/scene/build-frame.ts";
+import {
+  buildFrame,
+  createSceneFrame,
+  type SceneRun,
+  type SceneUi,
+} from "../src/scene/build-frame.ts";
 import { share } from "../src/scene/builders/autocomplete.ts";
-import { computeRun } from "../src/runtime/scene-run.ts";
+import { computeRun as runFor } from "../src/runtime/scene-run.ts";
 
 const publicDir = path.resolve(import.meta.dirname, "../public");
 const board = parseGlb(
   await Bun.file(path.join(publicDir, "props/counter_board.glb")).arrayBuffer(),
 );
-const countsDir = path.join(publicDir, "models/counts");
-const model = countsModel(
-  await loadModel(
-    await Bun.file(path.join(countsDir, "manifest.json")).json(),
-    await Bun.file(path.join(countsDir, "weights.bin")).arrayBuffer(),
-  ),
-);
-const session = { nextWords: async (word: string, k: number) => nextWords(model, word, k) };
+const loaded = await shippedModel("counts");
+const model = countsModel(loaded);
+const ctx = { model: loaded, session: directSession(loaded) };
+type CountsRun = Extract<SceneRun, { kind: "counts" }>;
+const computeRun = async (def: typeof autocomplete, text: string | null) =>
+  (await runFor(def, text, ctx)) as CountsRun;
 
 function frameAt(t: number, ui: Partial<SceneUi> = {}, text: string | null = null) {
   const assets: SceneDesc["assets"] = { board };
@@ -42,7 +47,7 @@ const heights = (scene: SceneDesc) =>
   Array.from({ length: 10 }, (_, i) => scene.parts.find((p) => p.id === `bar.${i}`)!.transform[5]);
 
 test("the scene is the board, ten bars and a card, in stable slots", async () => {
-  const run = await computeRun(autocomplete, null, session, model.split);
+  const run = await computeRun(autocomplete, null);
   const { frame, tl, ui } = frameAt(5);
   const input = buildFrame(autocomplete, tl, ui, run, frame);
   expect(input.scene.parts.map((p) => [p.id, p.kind, p.slot])).toMatchSnapshot();
@@ -54,7 +59,7 @@ test("the scene is the board, ten bars and a card, in stable slots", async () =>
 });
 
 test("at full growth, bar heights are the real nextWords shares of the word on the rail", async () => {
-  const run = (await computeRun(autocomplete, null, session, model.split))!;
+  const run = (await computeRun(autocomplete, null))!;
   // t = 4: the first loop input is on the rail and its bars have fully risen.
   const { frame, tl, ui } = frameAt(4);
   expect(tl.channels.bars).toBe(1);
@@ -73,7 +78,7 @@ test("at full growth, bar heights are the real nextWords shares of the word on t
 });
 
 test("typed text shows its last word's bars at full height; an unseen word shows none", async () => {
-  const typed = (await computeRun(autocomplete, "Once upon a", session, model.split))!;
+  const typed = (await computeRun(autocomplete, "Once upon a"))!;
   expect(typed.steps.map((s) => s.word)).toEqual(["a"]);
   // Loop time 0 has the bars down, but typed text ignores the loop's motion.
   const { frame, tl, ui } = frameAt(0, {}, "Once upon a");
@@ -81,7 +86,7 @@ test("typed text shows its last word's bars at full height; an unseen word shows
   const golden = nextWords(model, "a", 10);
   expect(h[1]! / h[0]!).toBeCloseTo(golden[1]!.p / golden[0]!.p, 5);
 
-  const unseen = (await computeRun(autocomplete, "zzyzx", session, model.split))!;
+  const unseen = (await computeRun(autocomplete, "zzyzx"))!;
   const blank = frameAt(0, {}, "zzyzx");
   const hb = heights(buildFrame(autocomplete, blank.tl, blank.ui, unseen, blank.frame).scene);
   expect(Math.max(...hb)).toBeLessThan(0.01);
@@ -108,7 +113,7 @@ describe("chapter 0's loop (slice 11)", () => {
   });
 
   test("the failure beat shows the unseen word and no bars; the seam matches", async () => {
-    const run = (await computeRun(autocomplete, null, session, model.split))!;
+    const run = (await computeRun(autocomplete, null))!;
     const at = (t: number) => {
       const { frame, tl, ui } = frameAt(t);
       const input = buildFrame(autocomplete, tl, ui, run, frame);
@@ -141,7 +146,7 @@ test("shares never round to a false 0% or 100%", () => {
 });
 
 test("the scene builds only from the primitives its scene declares", async () => {
-  const run = await computeRun(autocomplete, null, session, model.split);
+  const run = await computeRun(autocomplete, null);
   const { frame, tl, ui } = frameAt(5);
   const input = buildFrame(autocomplete, tl, ui, run, frame);
   const declared = SCENE_KIT[autocomplete.scene];

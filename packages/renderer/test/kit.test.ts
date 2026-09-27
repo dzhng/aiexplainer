@@ -4,6 +4,7 @@ import { mat4, vec3, type Vec3 } from "math";
 import { partWorld } from "../src/camera.ts";
 import { parseGlb } from "../src/gltf.ts";
 import { blockGeometry } from "../src/kit/block.ts";
+import { placeBrick } from "../src/kit/brick.ts";
 import { KIT, KIT_ENTRIES } from "../src/kit/catalog.ts";
 import { shadowGeometry } from "../src/kit/contact-shadow.ts";
 import type { Geometry } from "../src/kit/geometry.ts";
@@ -108,6 +109,33 @@ test("the mesh primitive splits a prop into one part per node, with per-node vie
   expect(byId["board.stand"]!.explode).toEqual([0, 0, -1]);
   expect(byId["board.housing"]!.cutaway).toBe("clip");
   expect(byId["board.rail"]!.cutaway).toBe("keep");
+});
+
+test("equal tubes share one geometry (one instanced draw); a changed path gets its own", () => {
+  const unit = (top: number): Vec3[] => [
+    [0, 0, 0],
+    [0, top, 0],
+  ];
+  expect(tubeGeometry(unit(1), 1)).toBe(tubeGeometry(unit(1), 1));
+  expect(tubeGeometry(unit(1), 1)).not.toBe(tubeGeometry(unit(2), 1));
+});
+
+test("brick: studs follow its length, and the ones past it are parked out of sight", () => {
+  const built = KIT.brick.build({
+    id: "b",
+    slot: 0,
+    material: "m",
+    center: [0, 1, 0],
+    unit: 0.2,
+    length: 3,
+    studs: 3,
+  });
+  placeBrick(built.parts, { center: [0, 1, 0], unit: 0.2, length: 1 });
+  const [body, ...studs] = built.parts;
+  expect(body!.transform[0]).toBeCloseTo(0.2, 6);
+  // The stud's base sits on the body's top face (1 + half of 1.2 × 0.2).
+  expect(studs[0]!.transform[13]).toBeCloseTo(1.12, 6);
+  expect(studs[1]!.transform[13]).toBeLessThan(-10);
 });
 
 test("contact shadow: faces up, solid at the centre, fading to nothing at the edge", () => {

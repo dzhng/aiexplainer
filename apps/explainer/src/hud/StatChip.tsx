@@ -1,4 +1,4 @@
-import type { LoadedModel } from "@repo/llm";
+import type { ModelSource } from "@repo/llm";
 import { resolveStat, statReady, statText } from "../chapters/stats.ts";
 import type { StatChip as StatChipDef } from "../chapters/types.ts";
 import css from "./hud.module.css";
@@ -16,7 +16,7 @@ export function StatChip({
   countKey = null,
 }: {
   stat: StatChipDef;
-  model: LoadedModel | null;
+  model: ModelSource | null;
   countKey?: number | null;
 }) {
   const ready = statReady(stat, model);

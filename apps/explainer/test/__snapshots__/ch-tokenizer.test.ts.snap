@@ -1,0 +1,34 @@
+// Bun Snapshot v1, https://bun.sh/docs/test/snapshots
+
+exports[`chapter 1: bricks are the real tokenizer's pieces the hero frame: the sentence's bricks, stamped with their ids 1`] = `
+[
+  
+"It
+1016"
+,
+  
+"was
+284"
+,
+  
+"a
+260"
+,
+  
+"bird
+419"
+,
+  
+"c
+68"
+,
+  
+"age
+942"
+,
+  
+"!
+2"
+,
+]
+`;

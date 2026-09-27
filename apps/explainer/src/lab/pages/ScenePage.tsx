@@ -58,6 +58,8 @@ export function ScenePage({ slug, reading, debug, clock, probe, onReady }: Scene
       text: null,
     };
     const scene = chapterScene(def, assets, () => ({ def, ui, run, loopTime: clock.now() }));
+    // `?yaw=<degrees>` turns the camera around the shot's target: a label sweep's azimuths.
+    const yaw = (Number(new URLSearchParams(location.search).get("yaw") ?? 0) * Math.PI) / 180;
     void loadSceneAssets(def, assets)
       .then(() =>
         runStage({
@@ -68,6 +70,9 @@ export function ScenePage({ slug, reading, debug, clock, probe, onReady }: Scene
           probe,
           debug,
           update: scene.update,
+          pose: (pose) => {
+            pose.yaw += yaw;
+          },
           labels: labels.current,
           tags: { layer: tags.current, current: () => scene.frame.tags },
           onReady,

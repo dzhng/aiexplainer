@@ -198,7 +198,7 @@ export const autocomplete: SceneBuilder = {
   update(frame: SceneFrame, _def, tl, ui, run) {
     const { scene, dynamics } = frame.input;
     const { layout, bars, card: cardPart } = built.get(scene)!;
-    const steps = run?.steps ?? [];
+    const steps = run?.kind === "counts" ? run.steps : [];
     const typed = ui.text !== null;
     const pick = (channel: number | undefined) =>
       typed ? steps[0] : steps[Math.min(steps.length - 1, Math.max(0, Math.round(channel ?? 0)))];

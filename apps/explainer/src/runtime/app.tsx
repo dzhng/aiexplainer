@@ -4,11 +4,11 @@
  * loop is `runtime/stage.ts`: clock → loop time (restarts on `loopEpoch`, advances only while
  * `playing`) → `evalTimeline` → `buildFrame` → `renderer.frame` → `placeLabels` → label refs.
  */
-import { countsModel, type LoadedModel, type ModelId } from "@repo/llm";
+import { sourceId, type ModelId, type ModelSource } from "@repo/llm";
 import type { FrameInput, SceneDesc, ScreenRect } from "@repo/renderer";
 import { useEffect, useLayoutEffect, useReducer, useRef, useState } from "react";
 import { CHAPTERS } from "../chapters/index.ts";
-import type { ChapterDef } from "../chapters/types.ts";
+import type { ChapterDef, ChapterModelId } from "../chapters/types.ts";
 import { Hud } from "../hud/Hud.tsx";
 import { Labels, type LabelsHandle } from "../hud/Labels.tsx";
 import { SceneTagsLayer, type SceneTagsHandle } from "../hud/SceneTags.tsx";
@@ -60,14 +60,6 @@ function sceneUi(state: AppState, def: ChapterDef): SceneUi {
   };
 }
 
-/** Each loaded model's word rule, decoded once (the vocabulary is thousands of words). */
-const splitters = new WeakMap<LoadedModel, (text: string) => string[]>();
-function splitter(model: LoadedModel): (text: string) => string[] {
-  let split = splitters.get(model);
-  if (!split) splitters.set(model, (split = countsModel(model).split));
-  return split;
-}
-
 const SAFE_MARGIN = 16;
 
 /** The canvas minus the HUD panels: right of the title panel, below the controls, above the ladder. */
@@ -107,8 +99,8 @@ const ARRIVAL_SEC = 2.5;
 export function App({ hud, hudMotion, clock, probe, debug, onReady, arrival }: AppProps) {
   const [state, dispatch] = useReducer(reducer, undefined, startState);
   const def = CHAPTERS[state.chapter]!;
-  const models = useRef(new Map<ModelId, LoadedModel>());
-  const [model, setModel] = useState<LoadedModel | null>(null);
+  const models = useRef(new Map<ChapterModelId, ModelSource>());
+  const [model, setModel] = useState<ModelSource | null>(null);
   const [run, setRun] = useState<SceneRun | null>(null);
   const [session] = useState<Session>(() => createSession());
   const workerModel = useRef<{ id: ModelId; loaded: Promise<void> } | null>(null);
@@ -160,24 +152,29 @@ export function App({ hud, hudMotion, clock, probe, debug, onReady, arrival }: A
     };
   }, [def.model]);
 
-  useEffect(() => {
-    if (def.model !== null && model === null) return;
-    void document.fonts.ready.then(() => markReady("hud"));
-  }, [def.model, model]);
+  // The model state lands a render after the chapter changes: never hand one chapter's model to
+  // another chapter's stats or run.
+  const chapterModel = model !== null && sourceId(model) === def.model ? model : null;
 
-  // The scene's model output, from the worker: the loop's inputs, or the reader's text.
+  useEffect(() => {
+    if (def.model !== null && chapterModel === null) return;
+    void document.fonts.ready.then(() => markReady("hud"));
+  }, [def.model, chapterModel]);
+
+  // The scene's model output: the loop's inputs, or the reader's text.
   const text = sceneUi(state, def).text;
   useEffect(() => {
-    if (def.model === null) return;
-    let alive = true;
     const id = def.model;
-    const split = model?.manifest.kind === "word-counts" ? splitter(model) : null;
-    if (text !== null && !split) return; // typed text waits for the model's word rule
-    // The worker holds one model: load it only when the chapter's model changes.
-    if (workerModel.current?.id !== id)
+    const model = chapterModel;
+    // The run reads the chapter's model: wait until it has loaded.
+    if (id === null || model === null) return;
+    let alive = true;
+    // The worker holds one trained model: load it only when the chapter's model changes.
+    if (id !== "tokenizer" && workerModel.current?.id !== id)
       workerModel.current = { id, loaded: session.load(id).then(() => undefined) };
-    void workerModel.current.loaded
-      .then(() => computeRun(def, text, session, split ?? ((t) => [t])))
+    const worker = id === "tokenizer" ? Promise.resolve() : workerModel.current!.loaded;
+    void worker
+      .then(() => computeRun(def, text, { model, session }))
       .then(
         (next) => alive && setRun(next),
         (error: unknown) => {
@@ -188,7 +185,7 @@ export function App({ hud, hudMotion, clock, probe, debug, onReady, arrival }: A
     return () => {
       alive = false;
     };
-  }, [def, text, model, session]);
+  }, [def, text, chapterModel, session]);
 
   useEffect(() => () => session.dispose(), [session]);
 
@@ -311,7 +308,7 @@ export function App({ hud, hudMotion, clock, probe, debug, onReady, arrival }: A
           dispatch={dispatch}
           def={def}
           chapters={CHAPTERS}
-          model={model}
+          model={chapterModel}
           motion={hudMotion}
         />
       )}
