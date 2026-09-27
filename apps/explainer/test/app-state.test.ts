@@ -5,6 +5,7 @@ import {
   chapterFromHash,
   initialState,
   reduce,
+  shownSlider,
   type Action,
   type AppState,
   type Chapters,
@@ -123,6 +124,23 @@ describe("controls", () => {
     expect(run(start, { type: "setSlider", value: 3.4 }).slider).toBe(3);
     expect(run(start, { type: "setSlider", value: 99 }).slider).toBe(autocomplete.slider.max);
     expect(run(start, { type: "setSlider", value: -5 }).slider).toBe(autocomplete.slider.min);
+  });
+
+  test("moving the slider marks it set until the next arrival", () => {
+    expect(start.sliderSet).toBe(false);
+    const set = run(start, { type: "setSlider", value: 3 });
+    expect(set.sliderSet).toBe(true);
+    expect(run(set, { type: "goto", chapter: "autocomplete" }).sliderSet).toBe(false);
+  });
+
+  test("a loop that plays the slider shows its value until the reader moves it", () => {
+    const def = { ...autocomplete, slider: { ...autocomplete.slider, loop: "bars" } };
+    expect(shownSlider(start, def, 7.4)).toBe(7);
+    expect(shownSlider(start, def, 99)).toBe(def.slider.max);
+    expect(shownSlider(start, def, null)).toBe(start.slider);
+    expect(shownSlider(start, autocomplete, 7)).toBe(start.slider);
+    const set = run(start, { type: "setSlider", value: 3 });
+    expect(shownSlider(set, def, 7)).toBe(3);
   });
 
   test("a follow target, scenario or view the chapter doesn't have is ignored", () => {

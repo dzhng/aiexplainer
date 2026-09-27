@@ -8,11 +8,22 @@ import css from "./hud.module.css";
  * value is mono and bright; the scale is a quiet outlined tag, so neither reads as the other.
  * Until a model-backed value's model has loaded, the value shows a placeholder.
  */
-export function StatChip({ stat, model }: { stat: StatChipDef; model: LoadedModel | null }) {
+export function StatChip({
+  stat,
+  model,
+  slider,
+}: {
+  stat: StatChipDef;
+  model: LoadedModel | null;
+  /** The HUD slider's value, for a chip whose arithmetic follows it. */
+  slider: number;
+}) {
   return (
     <div className={`${css.box} ${css.chip}`} data-crop={`chip:${stat.id}`}>
       <span className={css.chipLabel}>{stat.label}</span>
-      <span className={css.chipValue}>{statReady(stat, model) ? statText(stat, model) : "…"}</span>
+      <span className={css.chipValue}>
+        {statReady(stat, model) ? statText(stat, model, slider) : "…"}
+      </span>
       <span className={css.chipScale}>{stat.scale}</span>
     </div>
   );

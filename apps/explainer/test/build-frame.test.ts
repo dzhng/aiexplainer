@@ -35,7 +35,11 @@ function frameAt(t: number, ui: Partial<SceneUi> = {}, text: string | null = nul
     },
   });
   const tl = evalTimeline(autocomplete.loop, t, createTimelineState(autocomplete.loop));
-  return { frame, tl, ui: { follow: null, slider: 5, view: "whole" as const, text, ...ui } };
+  return {
+    frame,
+    tl,
+    ui: { follow: null, slider: 5, sliderSet: false, view: "whole" as const, text, ...ui },
+  };
 }
 
 const heights = (scene: SceneDesc) =>

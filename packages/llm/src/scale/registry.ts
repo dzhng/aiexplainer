@@ -5,7 +5,9 @@
  */
 import {
   batchThroughput,
+  computeBoundBatch,
   decodeCeilingTokPerSec,
+  decodeStepSeconds,
   kvBytesPerToken,
   llamaAsMoe,
   maxBatchByMemory,
@@ -68,6 +70,22 @@ export const ARITH = {
     scale: "Llama-3-8B on H100 SXM",
     describe: "tokens per second across the whole batch",
     compute: (a) => batchThroughput(cfg, gpu, a.batch, a.contextLen, a),
+  }),
+  decodeStepSeconds: entry({
+    args: ["batch", "contextLen", "weightBytes", "kvBytes"],
+    unit: "s",
+    scale: "Llama-3-8B on H100 SXM",
+    describe:
+      "one decode step for the whole batch: the slower of reading the bytes and doing the sums",
+    compute: (a) => decodeStepSeconds(cfg, gpu, a.batch, a.contextLen, a),
+  }),
+  computeBoundBatch: entry({
+    args: ["contextLen", "weightBytes", "kvBytes"],
+    unit: "count",
+    scale: "Llama-3-8B on H100 SXM",
+    describe:
+      "the batch where a decode step's sums take as long as reading its bytes; past it, more sequences add no throughput",
+    compute: (a) => computeBoundBatch(cfg, gpu, a.contextLen, a),
   }),
   prefillSeconds: entry({
     args: ["tokens", "weightBytes", "kvBytes"],

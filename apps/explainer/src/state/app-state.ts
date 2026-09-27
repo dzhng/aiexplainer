@@ -17,6 +17,11 @@ export interface AppState {
   /** `null` is "All". */
   follow: FollowId | null;
   slider: number;
+  /**
+   * Whether the reader has moved the slider since arriving. Until they do, a scene may play
+   * its own value for the slider's quantity (chapter 11's loop fills the bus itself).
+   */
+  sliderSet: boolean;
   /** `null` plays the chapter's own loop script; a scenario id swaps in its preset prompt. */
   scenario: string | null;
   /** What the reader typed; `null` (or empty) plays the loop's own inputs. */
@@ -62,6 +67,7 @@ function arrive(chapters: Chapters, slug: ChapterSlug, from: AppState | null): A
     chapter: slug,
     follow: null,
     slider: def.slider.initial,
+    sliderSet: false,
     scenario: null,
     text: null,
     view: def.views[0] ?? "whole",
@@ -79,6 +85,21 @@ export function initialState(chapters: Chapters, slug: ChapterSlug): AppState {
 
 const clamp = (v: number, min: number, max: number) => Math.min(max, Math.max(min, v));
 
+/** `value` on the chapter slider's step, inside its range. */
+function snapSlider(def: ChapterDef, value: number): number {
+  const { min, max, step } = def.slider;
+  return clamp(min + Math.round((value - min) / step) * step, min, max);
+}
+
+/**
+ * The slider value the HUD shows: the reader's once they have moved it; before that, the
+ * loop's own value when the chapter's loop plays the slider (`SliderDef.loop`).
+ */
+export function shownSlider(state: AppState, def: ChapterDef, loopValue: number | null): number {
+  if (state.sliderSet || def.slider.loop === undefined || loopValue === null) return state.slider;
+  return snapSlider(def, loopValue);
+}
+
 export function reduce(state: AppState, action: Action, chapters: Chapters): AppState {
   const def = chapterDef(chapters, state.chapter);
   const paused = { ...state, playing: false };
@@ -94,11 +115,8 @@ export function reduce(state: AppState, action: Action, chapters: Chapters): App
     case "setFollow":
       if (action.follow !== null && !def.follow.some((f) => f.id === action.follow)) return state;
       return { ...paused, follow: action.follow };
-    case "setSlider": {
-      const { min, max, step } = def.slider;
-      const snapped = min + Math.round((action.value - min) / step) * step;
-      return { ...paused, slider: clamp(snapped, min, max) };
-    }
+    case "setSlider":
+      return { ...paused, slider: snapSlider(def, action.value), sliderSet: true };
     case "setScenario":
       if (action.scenario !== null && !def.scenarios.some((s) => s.id === action.scenario))
         return state;

@@ -10,12 +10,15 @@ import type { ChapterDef, FollowId, SceneBuilderId, ViewMode } from "../chapters
 import type { TimelineState } from "../chapters/timeline.ts";
 import type { SceneTags } from "../hud/SceneTags.tsx";
 import { autocomplete } from "./builders/autocomplete.ts";
+import { batching } from "./builders/batching.ts";
 import { withEnvironment } from "./environment.ts";
 
 /** The HUD controls a scene reads. */
 export interface SceneUi {
   follow: FollowId | null;
   slider: number;
+  /** Whether the reader moved the slider; until then a scene may play its own value for it. */
+  sliderSet: boolean;
   view: ViewMode;
   /** Text the reader typed (or a scenario's prompt); it replaces the loop's inputs. */
   text: string | null;
@@ -43,7 +46,10 @@ export interface SceneBuilder {
   ): void;
 }
 
-export const SCENE_BUILDERS: Record<SceneBuilderId, SceneBuilder> = { autocomplete };
+export const SCENE_BUILDERS: Record<SceneBuilderId, SceneBuilder> = {
+  autocomplete,
+  batching,
+};
 
 /** What one frame of a chapter's scene is: the renderer's input and the overlay's text. */
 export interface SceneFrame {

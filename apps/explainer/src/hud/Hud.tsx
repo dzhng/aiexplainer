@@ -36,6 +36,11 @@ export interface HudProps {
   chapters: Chapters;
   /** The chapter's model, once loaded; `null` before then or for a chapter without one. */
   model: LoadedModel | null;
+  /**
+   * The slider value to show: the reader's, or the loop's while the loop still plays the
+   * slider (`SliderDef.loop`). Chips that follow the slider read this too.
+   */
+  slider: number;
 }
 
 export function Hud(props: HudProps) {
@@ -50,7 +55,7 @@ export function Hud(props: HudProps) {
   );
 }
 
-function TitlePanel({ state, dispatch, def, model }: HudProps) {
+function TitlePanel({ state, dispatch, def, model, slider }: HudProps) {
   const caption = (state.follow && def.caption.byFollow[state.follow]) || def.caption.default;
   return (
     <header className={css.tl} data-crop="panel:tl">
@@ -66,7 +71,7 @@ function TitlePanel({ state, dispatch, def, model }: HudProps) {
       <p className={css.why}>{def.why}</p>
       <div className={css.stats}>
         {def.stats.map((stat) => (
-          <StatChip key={stat.id} stat={stat} model={model} />
+          <StatChip key={stat.id} stat={stat} model={model} slider={slider} />
         ))}
       </div>
       <section className={`${css.box} ${css.caption}`} aria-live="polite">
@@ -119,9 +124,9 @@ function Segmented<T>({ label, options, selected, onSelect }: SegmentedProps<T>)
   );
 }
 
-function Controls({ state, dispatch, def }: HudProps) {
+function Controls({ state, dispatch, def, slider: value }: HudProps) {
   const { slider } = def;
-  const fill = ((state.slider - slider.min) / (slider.max - slider.min || 1)) * 100;
+  const fill = ((value - slider.min) / (slider.max - slider.min || 1)) * 100;
   const followKeys = def.follow.length > 0 ? `keys 1–${def.follow.length + 1}` : "";
   return (
     <nav className={`${css.box} ${css.tr}`} data-crop="panel:tr" aria-label="Controls">
@@ -150,12 +155,12 @@ function Controls({ state, dispatch, def }: HudProps) {
             min={slider.min}
             max={slider.max}
             step={slider.step}
-            value={state.slider}
+            value={value}
             style={{ "--fill": `${fill}%` } as CSSProperties}
             onChange={(e) => dispatch({ type: "setSlider", value: Number(e.target.value) })}
           />
           <output className={css.sliderValue} htmlFor="hud-slider">
-            {state.slider}
+            {value}
           </output>
         </div>
       </div>

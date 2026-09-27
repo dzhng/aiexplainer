@@ -75,6 +75,20 @@
         "roughness": 0.7,
         "opacity": 1
       },
+      "crate": {
+        "color": "#4a4036",
+        "emissive": "focus",
+        "metallic": 0.1,
+        "roughness": 0.75,
+        "opacity": 1
+      },
+      "prompt": {
+        "color": "metalDark",
+        "emissive": "active",
+        "metallic": 0.1,
+        "roughness": 0.45,
+        "opacity": 1
+      },
       "wall": {
         "color": "#2e323c",
         "metallic": 0.2,
@@ -130,6 +144,10 @@
         "autocomplete": {
           "normal": [0, 0, 1],
           "offset": 0.08
+        },
+        "batching": {
+          "normal": [0, 0, 1],
+          "offset": 0.4
         }
       }
     }

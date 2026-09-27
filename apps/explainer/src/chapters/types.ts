@@ -67,9 +67,16 @@ export interface StatChip {
   scale: StatScale;
   value:
     | { kind: "model"; metric: ModelMetric }
-    | { kind: "arith"; fn: ArithFnName; args: Record<string, number> }
+    | { kind: "arith"; fn: ArithFnName; args: Record<string, ArithArg> }
     | { kind: "probe"; probe: string };
 }
+
+/**
+ * An arithmetic argument: a fixed number, the HUD slider's value (so the chip follows the
+ * reader's control), or a probe measured on the chapter's model (so a measured rate feeds a
+ * formula without being typed in).
+ */
+export type ArithArg = number | { slider: true } | { probe: string };
 
 export interface FollowTarget {
   id: FollowId;
@@ -91,6 +98,11 @@ export interface SliderDef {
   max: number;
   step: number;
   initial: number;
+  /**
+   * A loop channel that plays the slider until the reader moves it: the HUD shows the
+   * channel's value (rounded into range), so the chips follow the loop (chapter 11's riders).
+   */
+  loop?: ChannelId;
 }
 
 /** A preset prompt. It must cite a passing probe (O2). */

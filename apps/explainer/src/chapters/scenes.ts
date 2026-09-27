@@ -6,6 +6,8 @@
 export const SCENE_ANCHORS = {
   /** Chapter 0: the counter board, its count bars, and the word rail. */
   autocomplete: ["board", "bars", "rail"],
+  /** Chapter 11: the bus, its riders, the weight crates on its roof, and the stop where extras wait. */
+  batching: ["bus", "riders", "crates", "stop"],
 } as const satisfies Record<string, readonly string[]>;
 
 /**
@@ -14,6 +16,7 @@ export const SCENE_ANCHORS = {
  */
 export const SCENE_KIT: Record<keyof typeof SCENE_ANCHORS, readonly string[]> = {
   autocomplete: ["mesh", "bars", "block"],
+  batching: ["mesh", "block"],
 };
 
 export type SceneBuilderId = keyof typeof SCENE_ANCHORS;

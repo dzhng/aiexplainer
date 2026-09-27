@@ -21,13 +21,14 @@ import {
   hashFor,
   initialState,
   reduce,
+  shownSlider,
   writtenChapters,
   type Action,
   type AppState,
 } from "../state/app-state.ts";
 import { actionForKey } from "../state/keys.ts";
 import css from "./app.module.css";
-import { chapterScene, loadSceneAssets } from "./chapter-scene.ts";
+import { chapterScene, loadSceneAssets, type ChapterScene } from "./chapter-scene.ts";
 import type { Clock } from "./clock.ts";
 import { LoopTime } from "./loop-time.ts";
 import { fetchModel } from "./models.ts";
@@ -56,6 +57,7 @@ function sceneUi(state: AppState, def: ChapterDef): SceneUi {
   return {
     follow: state.follow,
     slider: state.slider,
+    sliderSet: state.sliderSet,
     view: state.view,
     text: state.text ?? scenario?.prompt ?? null,
   };
@@ -107,6 +109,23 @@ export function App({ hud, clock, probe, debug, onReady }: AppProps) {
   const labels = useRef<LabelsHandle>(null);
   const tags = useRef<SceneTagsHandle>(null);
   const stage = useRef<Stage | null>(null);
+  const sceneRef = useRef<ChapterScene | null>(null);
+  // A loop that plays the slider (`SliderDef.loop`) shows its value in the HUD, sampled at
+  // 10 Hz: the chips follow the loop without a React render per frame.
+  const [loopSlider, setLoopSlider] = useState<number | null>(null);
+  const playsSlider = def.slider.loop !== undefined && !state.sliderSet;
+  useEffect(() => {
+    setLoopSlider(null);
+    const channel = def.slider.loop;
+    if (!playsSlider || channel === undefined) return;
+    const sample = () => {
+      const value = sceneRef.current?.channel(channel) ?? null;
+      setLoopSlider(value === null ? null : Math.round(value));
+    };
+    sample();
+    const timer = setInterval(sample, 100);
+    return () => clearInterval(timer);
+  }, [def, playsSlider]);
   // The HUD panels' rects, re-measured after each render and on resize: labels steer clear.
   const panelRects = useRef<ScreenRect[]>([]);
   useLayoutEffect(() => {
@@ -189,7 +208,7 @@ export function App({ hud, clock, probe, debug, onReady }: AppProps) {
     const assets: SceneDesc["assets"] = {};
     const loopTime = new LoopTime();
     const first = live.current.def;
-    const scene = chapterScene(first, assets, () => {
+    const scene = (sceneRef.current = chapterScene(first, assets, () => {
       const { state: s, def: d, run: r } = live.current;
       return {
         def: d,
@@ -197,7 +216,7 @@ export function App({ hud, clock, probe, debug, onReady }: AppProps) {
         run: r,
         loopTime: loopTime.at(clock.now(), s.loopEpoch, s.playing),
       };
-    });
+    }));
     void loadSceneAssets(first, assets)
       .then(() =>
         runStage({
@@ -287,7 +306,16 @@ export function App({ hud, clock, probe, debug, onReady }: AppProps) {
       <canvas ref={canvas} className={css.canvas} data-layer="canvas" />
       <Labels ref={labels} labels={def.labels} reading={state.labelMode} />
       <SceneTagsLayer ref={tags} count={SCENE_BUILDERS[def.scene].tagCount} />
-      {hud && <Hud state={state} dispatch={dispatch} def={def} chapters={CHAPTERS} model={model} />}
+      {hud && (
+        <Hud
+          state={state}
+          dispatch={dispatch}
+          def={def}
+          chapters={CHAPTERS}
+          model={model}
+          slider={shownSlider(state, def, loopSlider)}
+        />
+      )}
     </main>
   );
 }
