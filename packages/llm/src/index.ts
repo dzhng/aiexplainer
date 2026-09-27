@@ -8,4 +8,5 @@ export * from "./rng.ts";
 export * from "./transformer.ts";
 export * from "./forward.ts";
 export * from "./sample.ts";
+export * from "./embeddings.ts";
 export * from "./scale/index.ts";

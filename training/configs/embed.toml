@@ -1,0 +1,22 @@
+# Chapters 2 and 3: embed → unembed, no layers (D37). The next token depends only on
+# the current one, through a 64-number embedding.
+id = "embed"
+
+[arch]
+d_model = 64
+n_layers = 0
+n_heads = 1
+n_kv_heads = 1
+ctx = 256
+attention = "none"
+positions = "none"
+mlp = "none"
+norm = "none"
+residual = true
+tied_embeddings = false
+
+[train]
+seed = 0
+steps = 6000
+batch_size = 64
+lr = 3e-3

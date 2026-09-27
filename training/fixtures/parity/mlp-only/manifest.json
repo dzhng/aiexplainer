@@ -27,7 +27,7 @@
     "tiedEmbeddings": true
   },
   "weightsFile": "weights.bin",
-  "weightsSha256": "cb0ddd841b7f3cb8b114e1181ee2acccf81f98bd0d53c5e85677d70811735461",
+  "weightsSha256": "7985edc28243c4ac9257f33136d96d7c3d4e3fb4fd0a893f3b94c8fd59078e50",
   "tensors": [
     {
       "name": "tok_emb",

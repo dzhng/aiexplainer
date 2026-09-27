@@ -13,7 +13,10 @@
             {
               "type": "string",
               "enum": [
-                "counts"
+                "counts",
+                "embed",
+                "attn",
+                "rope"
               ]
             },
             {
@@ -214,7 +217,10 @@
             {
               "type": "string",
               "enum": [
-                "counts"
+                "counts",
+                "embed",
+                "attn",
+                "rope"
               ]
             },
             {

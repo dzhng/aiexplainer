@@ -1,11 +1,12 @@
 // The JSON Schemas `bun run schema` writes to schema/, so training/ can validate what
 // it exports against the zod formats this package owns.
 import { z } from "zod";
-import { ModelManifest } from "./manifest.ts";
+import { ModelManifest, ModelScenarios } from "./manifest.ts";
 import { TokenizerEvidence, TokenizerFile } from "./tokenizer.ts";
 
 const SCHEMAS = {
   "manifest.schema.json": ModelManifest,
+  "scenarios.schema.json": ModelScenarios,
   "tokenizer.schema.json": TokenizerFile,
   "tokenizer-evidence.schema.json": TokenizerEvidence,
 };

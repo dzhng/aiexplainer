@@ -1,0 +1,21 @@
+# Chapter 4: one causal attention layer, no positions, no MLP (D35).
+id = "attn"
+
+[arch]
+d_model = 96
+n_layers = 1
+n_heads = 1
+n_kv_heads = 1
+ctx = 256
+attention = "causal"
+positions = "none"
+mlp = "none"
+norm = "none"
+residual = true
+tied_embeddings = false
+
+[train]
+seed = 0
+steps = 4000
+batch_size = 64
+lr = 3e-3

@@ -7,11 +7,13 @@ import type {
   ForwardResult,
   ModelId,
   ModelManifest,
+  Neighbour,
   NextWord,
   ProbeResult,
   TraceSpec,
   TransformerArch,
 } from "@repo/llm";
+import { modelManifestUrl } from "./models.ts";
 
 export interface ModelInfo {
   id: string;
@@ -24,6 +26,7 @@ export type WorkerRequest = { id: number } & (
   | { type: "load"; manifestUrl: string }
   | { type: "run"; tokens: number[]; trace?: TraceSpec; window?: number }
   | { type: "nextWords"; word: string; k: number }
+  | { type: "neighbours"; token: number; k: number }
 );
 
 export type WorkerReply = { id: number } & (
@@ -43,6 +46,8 @@ export interface Session {
   load(model: ModelId | URL): Promise<ModelInfo>;
   run(tokens: number[], trace?: TraceSpec, window?: number): Promise<ForwardResult>;
   nextWords(word: string, k: number): Promise<NextWord[]>;
+  /** The loaded transformer's nearest tokens in its input embedding table. */
+  neighbours(token: number, k: number): Promise<Neighbour[]>;
   /** Rejects the live request, if any, and drops its eventual reply. */
   cancel(): void;
   dispose(): void;
@@ -55,7 +60,6 @@ export interface SessionOptions {
 }
 
 export function createSession(options: SessionOptions = {}): Session {
-  const modelsUrl = options.modelsUrl ?? new URL("/models/", location.href);
   const worker =
     options.worker ??
     new Worker(new URL("./session.worker.ts", import.meta.url), { type: "module" });
@@ -97,8 +101,7 @@ export function createSession(options: SessionOptions = {}): Session {
 
   return {
     load(model) {
-      const manifestUrl =
-        model instanceof URL ? model : new URL(`${model}/manifest.json`, modelsUrl);
+      const manifestUrl = model instanceof URL ? model : modelManifestUrl(model, options.modelsUrl);
       cancel();
       return send<ModelInfo>({ id: nextId++, type: "load", manifestUrl: manifestUrl.href });
     },
@@ -107,6 +110,9 @@ export function createSession(options: SessionOptions = {}): Session {
     },
     nextWords(word, k) {
       return exclusive<NextWord[]>({ id: nextId++, type: "nextWords", word, k });
+    },
+    neighbours(token, k) {
+      return send<Neighbour[]>({ id: nextId++, type: "neighbours", token, k });
     },
     cancel,
     dispose() {

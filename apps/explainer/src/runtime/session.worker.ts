@@ -4,6 +4,7 @@ import {
   countsModel,
   fetchModel,
   forward,
+  nearestTokens,
   nextWords,
   transformerModel,
   type CountsModel,
@@ -48,6 +49,10 @@ async function handle(request: WorkerRequest): Promise<[unknown, Transferable[]]
         window: request.window,
       });
       return [result, [result.logits.buffer, ...traceBuffers(result.trace)]];
+    }
+    case "neighbours": {
+      if (model?.kind !== "transformer") throw new Error("neighbours needs a loaded transformer");
+      return [nearestTokens(model.transformer, request.token, request.k), []];
     }
     case "nextWords": {
       if (model?.kind !== "counts") throw new Error("nextWords needs a loaded counts model");
