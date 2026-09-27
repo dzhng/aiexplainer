@@ -24,7 +24,7 @@ async function manifestFor(weights: ArrayBuffer, layouts: TensorLayout[]): Promi
     formatVersion: 1,
     id: "counts",
     kind: "word-counts",
-    tokenizer: { kind: "words", vocabTensor: layouts[0]!.name },
+    tokenizer: { kind: "words", vocabTensor: layouts[0]!.name, pattern: "[a-z]+", replace: [] },
     weightsFile: "weights.bin",
     weightsSha256: await sha256Hex(weights),
     tensors,

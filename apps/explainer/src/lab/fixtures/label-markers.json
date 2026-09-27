@@ -1,0 +1,131 @@
+{
+  "camera": {
+    "target": [0, 0, 0],
+    "yaw": 0,
+    "pitch": 0,
+    "distance": 6,
+    "fovY": 0.75
+  },
+  "materials": {
+    "marker": {
+      "color": "#ff00ff",
+      "metallic": 0,
+      "roughness": 1,
+      "opacity": 1
+    }
+  },
+  "parts": [
+    {
+      "kind": "block",
+      "id": "m0",
+      "slot": 0,
+      "material": "marker",
+      "transform": [0.12, 0, 0, 0, 0, 0.12, 0, 0, 0, 0, 0.002, 0, -1.5, 0.8, 0, 1]
+    },
+    {
+      "kind": "block",
+      "id": "m1",
+      "slot": 1,
+      "material": "marker",
+      "transform": [0.12, 0, 0, 0, 0, 0.12, 0, 0, 0, 0, 0.002, 0, 0, 0.8, 0, 1]
+    },
+    {
+      "kind": "block",
+      "id": "m2",
+      "slot": 2,
+      "material": "marker",
+      "transform": [0.12, 0, 0, 0, 0, 0.12, 0, 0, 0, 0, 0.002, 0, 1.5, 0.8, 0, 1]
+    },
+    {
+      "kind": "block",
+      "id": "m3",
+      "slot": 3,
+      "material": "marker",
+      "transform": [0.12, 0, 0, 0, 0, 0.12, 0, 0, 0, 0, 0.002, 0, -1.5, -0.8, 0, 1]
+    },
+    {
+      "kind": "block",
+      "id": "m4",
+      "slot": 4,
+      "material": "marker",
+      "transform": [0.12, 0, 0, 0, 0, 0.12, 0, 0, 0, 0, 0.002, 0, 0, -0.8, 0, 1]
+    },
+    {
+      "kind": "block",
+      "id": "m5",
+      "slot": 5,
+      "material": "marker",
+      "transform": [0.12, 0, 0, 0, 0, 0.12, 0, 0, 0, 0, 0.002, 0, 1.5, -0.8, 0, 1]
+    }
+  ],
+  "anchors": [
+    {
+      "id": "m0",
+      "part": "m0",
+      "local": [0, 0, 0.5],
+      "priority": 0
+    },
+    {
+      "id": "m1",
+      "part": "m1",
+      "local": [0, 0, 0.5],
+      "priority": 1
+    },
+    {
+      "id": "m2",
+      "part": "m2",
+      "local": [0, 0, 0.5],
+      "priority": 2
+    },
+    {
+      "id": "m3",
+      "part": "m3",
+      "local": [0, 0, 0.5],
+      "priority": 3
+    },
+    {
+      "id": "m4",
+      "part": "m4",
+      "local": [0, 0, 0.5],
+      "priority": 4
+    },
+    {
+      "id": "m5",
+      "part": "m5",
+      "local": [0, 0, 0.5],
+      "priority": 5
+    }
+  ],
+  "labels": [
+    {
+      "anchor": "m0",
+      "analogy": "Marker 0",
+      "precise": "Marker 0"
+    },
+    {
+      "anchor": "m1",
+      "analogy": "Marker 1",
+      "precise": "Marker 1"
+    },
+    {
+      "anchor": "m2",
+      "analogy": "Marker 2",
+      "precise": "Marker 2"
+    },
+    {
+      "anchor": "m3",
+      "analogy": "Marker 3",
+      "precise": "Marker 3"
+    },
+    {
+      "anchor": "m4",
+      "analogy": "Marker 4",
+      "precise": "Marker 4"
+    },
+    {
+      "anchor": "m5",
+      "analogy": "Marker 5",
+      "precise": "Marker 5"
+    }
+  ]
+}

@@ -48,3 +48,22 @@ Mip count (5–6), filter weights, and the knob values.
 ## Feedback that would change this slice
 
 "Too much glow" or "not enough". These change `look.json` only.
+
+## Record (2026-09-27)
+
+- **Performance** (`/lab/perf?fixture=board-room`, 1440×900, DPR 1, bloom on/off in 12
+  interleaved blocks of 30 frames, median whole-frame GPU timestamps, two runs agreeing):
+  **1.44 ms with bloom, 0.98 ms without; delta 0.46 ms.** Budget ≤ 8 ms. An earlier run
+  before the final knobs and a 6-mip chain read 2.95 / 1.64 ms (delta 1.31 ms); the
+  difference is mostly GPU clock state, so treat the absolute numbers as ±2×.
+- **Halo shots:** `throwaway/shots/08/bar-bloom{1,0}.png` (256 px around the brightest bar),
+  `corner-bloom{1,0}.png` (dark corner), `full-bloom{1,0}.png`, `tokens-emissive.png`,
+  `halo-zoom.png` (gamma-lifted edge); references `ref-mock-pipe.png`,
+  `ref-airsup-flame.png`. Corner mean luminance changes by 0.02/255 with bloom on (no veil).
+  An unprimed critique found no banding, blockiness or fireflies; its tuning notes (scene
+  glow too weak, 16× swatches too foggy, metal glints blooming) led to the final knobs:
+  threshold 1.6, knee 0.6, intensity 0.45, radius 1.0, 5 mips.
+- **Knobs added beyond the slice:** `tonemap.saturation` (AgX's look saturation, 1.25):
+  AgX's path to white bleached the violet glow to lavender-white. It also makes the slice
+  07 room a little bluer.
+- **Registry baseline** still returns to baseline with the size-dependent bloom chain.

@@ -67,6 +67,7 @@ describe("loop (D32)", () => {
       { type: "setSlider", value: 3 },
       { type: "setScenario", scenario: "once" },
       { type: "setView", view: "cutaway" },
+      { type: "setText", text: "the" },
     ];
     for (const control of controls) {
       const paused = run(start, control);
@@ -103,6 +104,17 @@ describe("loop (D32)", () => {
     const paused = run(start, { type: "togglePlay" });
     const at1 = run(paused, { type: "next" });
     expect(at1).toMatchObject({ playing: true, loopEpoch: start.loopEpoch + 1, view: "cutaway" });
+  });
+});
+
+describe("typed text", () => {
+  test("typing replaces the scenario, and clearing it returns to the loop's inputs", () => {
+    const withScenario = run(start, { type: "setScenario", scenario: "once" });
+    const typed = run(withScenario, { type: "setText", text: "happy" });
+    expect(typed).toMatchObject({ text: "happy", scenario: null, playing: false });
+    expect(run(typed, { type: "setText", text: "" }).text).toBeNull();
+    expect(run(typed, { type: "setScenario", scenario: "once" }).text).toBeNull();
+    expect(run(typed, { type: "goto", chapter: "autocomplete" }).text).toBeNull();
   });
 });
 

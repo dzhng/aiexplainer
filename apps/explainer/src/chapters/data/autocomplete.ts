@@ -88,6 +88,8 @@ export const autocomplete: ChapterDef = {
   ],
   loop: {
     durationSec: 24,
+    // "upon" is the model's own top successor of "once"; "onse" is a misspelling it never saw.
+    inputs: ["once", "upon", "onse"],
     channels: {
       /** Which word is on the rail: 0 the first word, 1 the chosen next word, 2 an unseen word. */
       railWord: [

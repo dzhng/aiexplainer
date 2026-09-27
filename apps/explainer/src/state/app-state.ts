@@ -3,7 +3,7 @@
  * Pure: `reduce` takes the written chapters as context and never reads the DOM or the clock.
  *
  * D32: arriving at a chapter restarts its loop (`loopEpoch` bumps, `playing` turns on); a scene
- * control (Follow, slider, scenario, view) pauses it; ▶ resumes. The reading aids (Analogy /
+ * control (Follow, slider, scenario, view, typed text) pauses it; ▶ resumes. The reading aids (Analogy /
  * Precise, "Precisely", help) change what text is shown, not the scene, so they don't pause.
  */
 import { LADDER, displayNumber, slugAt } from "../chapters/ladder.ts";
@@ -19,6 +19,8 @@ export interface AppState {
   slider: number;
   /** `null` plays the chapter's own loop script; a scenario id swaps in its preset prompt. */
   scenario: string | null;
+  /** What the reader typed; `null` (or empty) plays the loop's own inputs. */
+  text: string | null;
   view: ViewMode;
   playing: boolean;
   /** Bumps on every arrival; the frame loop restarts loop time when it changes. */
@@ -35,6 +37,7 @@ export type Action =
   | { type: "setFollow"; follow: FollowId | null }
   | { type: "setSlider"; value: number }
   | { type: "setScenario"; scenario: string | null }
+  | { type: "setText"; text: string }
   | { type: "setView"; view: ViewMode }
   | { type: "togglePlay" }
   | { type: "toggleLabelMode" }
@@ -60,6 +63,7 @@ function arrive(chapters: Chapters, slug: ChapterSlug, from: AppState | null): A
     follow: null,
     slider: def.slider.initial,
     scenario: null,
+    text: null,
     view: def.views[0] ?? "whole",
     playing: true,
     loopEpoch: (from?.loopEpoch ?? -1) + 1,
@@ -98,7 +102,9 @@ export function reduce(state: AppState, action: Action, chapters: Chapters): App
     case "setScenario":
       if (action.scenario !== null && !def.scenarios.some((s) => s.id === action.scenario))
         return state;
-      return { ...paused, scenario: action.scenario };
+      return { ...paused, scenario: action.scenario, text: null };
+    case "setText":
+      return { ...paused, scenario: null, text: action.text === "" ? null : action.text };
     case "setView":
       return def.views.includes(action.view) ? { ...paused, view: action.view } : state;
     case "togglePlay":

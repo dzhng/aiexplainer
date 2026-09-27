@@ -67,8 +67,17 @@ export const TensorEntry = z.strictObject({
 export type TensorEntry = z.infer<typeof TensorEntry>;
 
 export const TokenizerRef = z.discriminatedUnion("kind", [
-  /** Whole words; the vocabulary is a tensor of code points, one zero-padded row per word. */
-  z.strictObject({ kind: z.literal("words"), vocabTensor: z.string().min(1) }),
+  /**
+   * Whole words; the vocabulary is a tensor of code points, one zero-padded row per word.
+   * Text is split by lowercasing, applying `replace` (e.g. curly → straight apostrophes),
+   * then taking every match of `pattern` (a regex source valid in both Python and JS).
+   */
+  z.strictObject({
+    kind: z.literal("words"),
+    vocabTensor: z.string().min(1),
+    pattern: z.string().min(1),
+    replace: z.array(z.tuple([z.string().min(1), z.string()])),
+  }),
   /** The shared BPE tokenizer, pinned by the sha256 of its file. */
   z.strictObject({ kind: z.literal("bpe"), file: z.string().min(1), sha256: Sha256 }),
 ]);

@@ -21,21 +21,107 @@
   "type": {
     "ui": "Inter, system-ui, sans-serif",
     "mono": "'JetBrains Mono', ui-monospace, monospace",
-    "sizePx": { "xs": 11, "sm": 12, "md": 14, "lg": 18, "xl": 24, "xxl": 34 },
+    "sizePx": {
+      "xs": 11,
+      "sm": 12,
+      "md": 14,
+      "lg": 18,
+      "xl": 24,
+      "xxl": 34
+    },
     "lineHeight": 1.4
   },
   "materials": {
-    "emissive": { "flow": 4, "focus": 6, "active": 3 }
+    "emissive": {
+      "flow": 3,
+      "focus": 6,
+      "active": 3
+    },
+    "presets": {
+      "metal": {
+        "color": "ink",
+        "metallic": 1,
+        "roughness": 0.28,
+        "opacity": 1
+      },
+      "housing": {
+        "color": "metalDark",
+        "metallic": 0.3,
+        "roughness": 0.35,
+        "opacity": 1
+      },
+      "glass": {
+        "color": "active",
+        "metallic": 0,
+        "roughness": 0.05,
+        "opacity": 0.12
+      },
+      "floor": {
+        "color": "floor",
+        "metallic": 0,
+        "roughness": 0.9,
+        "opacity": 1
+      },
+      "bar": {
+        "color": "metalDark",
+        "emissive": "flow",
+        "metallic": 0.1,
+        "roughness": 0.45,
+        "opacity": 1
+      },
+      "card": {
+        "color": "ink",
+        "metallic": 0,
+        "roughness": 0.7,
+        "opacity": 1
+      }
+    }
   },
   "bloom": {
-    "strength": 0.04,
-    "filterRadius": 0.005,
-    "mipLevels": 6
+    "threshold": 1.6,
+    "knee": 0.6,
+    "intensity": 0.45,
+    "radius": 1.0
   },
   "flow": {
     "cyclesPerSec": 0.6,
     "spacing": 0.25
   },
-  "room": {},
-  "lights": {}
+  "room": {
+    "wallTop": "bgDeep",
+    "wallBottom": "bgHigh",
+    "radius": 18,
+    "floorFade": 0.22,
+    "reflection": 1,
+    "vignette": {
+      "strength": 0.55,
+      "radius": 0.45
+    }
+  },
+  "lights": {
+    "key": {
+      "direction": [0.45, 0.8, 0.55],
+      "color": "#fff1e0",
+      "intensity": 9
+    },
+    "rim": {
+      "direction": [-0.3, 0.75, -0.6],
+      "color": "#c0ccff",
+      "intensity": 14
+    },
+    "fill": {
+      "direction": [-0.7, 0.25, 0.6],
+      "color": "#8088a8",
+      "intensity": 2
+    },
+    "size": 0.06
+  },
+  "ambient": {
+    "color": "floorEdge",
+    "intensity": 0.25
+  },
+  "tonemap": {
+    "exposure": 0.7,
+    "saturation": 1.25
+  }
 }

@@ -1,6 +1,6 @@
 # 12 — Support gate, fallback video, share routes and Vercel preview
 
-**Milestone:** M1 (closes D14) · **Depends on:** 11 · **Visual variable:** the fallback page on a phone
+**Milestone:** M1 (closes D14) · **Depends on:** 11b · **Visual variable:** the fallback page on a phone
 
 ## Contract
 

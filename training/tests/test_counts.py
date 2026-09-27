@@ -20,6 +20,13 @@ def test_words_lowercases_and_keeps_only_words_and_sentence_marks():
     ]  # fmt: skip
 
 
+def test_words_matches_the_shared_split_fixture():
+    """The app splits typed text with the manifest's rule; this fixture pins both sides."""
+    cases = json.loads((Path(counts.TRAINING_DIR) / "fixtures/counts-split.json").read_text())
+    for case in cases:
+        assert counts.words(case["text"]) == case["words"]
+
+
 def test_exact_counts_on_the_fixture_corpus():
     counted = counts.count_file(CORPUS)
     assert counted.unigrams["cat"] == 6

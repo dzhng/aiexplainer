@@ -1,12 +1,7 @@
-import type { AdapterReport } from "@repo/renderer";
+import type { AdapterReport, FrameReceipt, LabelPlacement, ScreenRect } from "@repo/renderer";
 
 /** A crop in CSS pixels of the viewport. */
-export interface CropRect {
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-}
+export type CropRect = ScreenRect;
 
 /** What the verification harness reads from `window.__explainer`. */
 export interface ProbeApi {
@@ -15,10 +10,23 @@ export interface ProbeApi {
   errors: string[];
   setTime(t: number): void;
   /**
-   * Named crops for screenshots. HUD crops (`panel:*`, `specimen:*`) are the DOM rects of
-   * elements tagged `data-crop="<id>"`; renderer crops (`part:*`, `label:*`) join later.
+   * Named crops for screenshots: HUD crops (`panel:*`, `chip:*`, `specimen:*`) are the DOM
+   * rects of elements tagged `data-crop="<id>"`; scene crops (`part:*` from the app's own
+   * shapes, `label:*` from the label layer) come from `sceneCrops` when a scene is running.
    */
   crops(): Record<string, CropRect>;
+  /** Set by pages that render a scene. */
+  sceneCrops?: () => Record<string, CropRect>;
+  /** The last frame's receipt, on pages that render. */
+  receipt?: () => FrameReceipt;
+  /** The latest label placements. */
+  labels?: () => LabelPlacement[];
+  /** The app only: go to a chapter by slug, as the ladder does. */
+  goto?: (slug: string) => void;
+  /** The app only: set HUD controls (`text`, `follow`, `slider`, `view`, `playing: false`). */
+  setUi?: (ui: Record<string, unknown>) => void;
+  /** Free-form results of in-page checks, printed by the harness. */
+  results?: unknown;
 }
 
 declare global {
@@ -50,7 +58,7 @@ export function installProbe(setTime: (t: number) => void): {
     adapter: null,
     errors: [],
     setTime,
-    crops: domCrops,
+    crops: () => ({ ...domCrops(), ...probe.sceneCrops?.() }),
   };
   window.addEventListener("error", (event) => probe.errors.push(event.message));
   window.addEventListener("unhandledrejection", (event) => probe.errors.push(String(event.reason)));

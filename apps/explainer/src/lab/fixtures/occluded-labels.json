@@ -1,0 +1,122 @@
+{
+  "camera": {
+    "target": [0, 0.8, 0],
+    "yaw": 0,
+    "pitch": 0.3,
+    "distance": 7,
+    "fovY": 0.75
+  },
+  "materials": {
+    "amber": {
+      "color": "focus",
+      "opacity": 1
+    },
+    "blue": {
+      "color": "active",
+      "opacity": 1
+    },
+    "violet": {
+      "color": "flow",
+      "metallic": 0.2,
+      "roughness": 0.4,
+      "opacity": 1
+    }
+  },
+  "parts": [
+    {
+      "kind": "block",
+      "id": "floor",
+      "slot": 0,
+      "material": "floor",
+      "transform": [7, 0, 0, 0, 0, 0.1, 0, 0, 0, 0, 5, 0, 0, -0.05, 0, 1]
+    },
+    {
+      "kind": "block",
+      "id": "screen",
+      "slot": 1,
+      "material": "housing",
+      "transform": [1.8, 0, 0, 0, 0, 1.5, 0, 0, 0, 0, 0.1, 0, -0.9, 0.75, 0.9, 1]
+    },
+    {
+      "kind": "block",
+      "id": "hidden",
+      "slot": 2,
+      "material": "amber",
+      "transform": [0.8, 0, 0, 0, 0, 0.8, 0, 0, 0, 0, 0.8, 0, -0.9, 0.4, -0.3, 1]
+    },
+    {
+      "kind": "block",
+      "id": "open",
+      "slot": 3,
+      "material": "blue",
+      "transform": [0.9, 0, 0, 0, 0, 0.9, 0, 0, 0, 0, 0.9, 0, 1.3, 0.45, 0.2, 1]
+    },
+    {
+      "kind": "block",
+      "id": "back",
+      "slot": 4,
+      "material": "amber",
+      "transform": [0.4, 0, 0, 0, 0, 0.4, 0, 0, 0, 0, 0.4, 0, 0.5, 1.2, -1.9, 1]
+    },
+    {
+      "kind": "tube",
+      "id": "pipe",
+      "slot": 5,
+      "material": "violet",
+      "radius": 0.14,
+      "path": [
+        [-2.6, 1.2, -1.2],
+        [2.6, 1.2, -1.2]
+      ],
+      "transform": [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]
+    }
+  ],
+  "anchors": [
+    {
+      "id": "hidden",
+      "part": "hidden",
+      "local": [0, 0.5, 0.5],
+      "priority": 4
+    },
+    {
+      "id": "open",
+      "part": "open",
+      "local": [0, 0.5, 0.5],
+      "priority": 3
+    },
+    {
+      "id": "back",
+      "part": "back",
+      "local": [0, 0, 0.5],
+      "priority": 2
+    },
+    {
+      "id": "pipe",
+      "part": "pipe",
+      "local": [-1.8, 1.34, -1.2],
+      "priority": 1
+    }
+  ],
+  "labels": [
+    {
+      "anchor": "hidden",
+      "analogy": "Behind the screen",
+      "precise": "Occluded block"
+    },
+    {
+      "anchor": "open",
+      "analogy": "In plain view",
+      "precise": "Visible block"
+    },
+    {
+      "anchor": "back",
+      "analogy": "Behind the pipe",
+      "precise": "Block behind a capsule"
+    },
+    {
+      "anchor": "pipe",
+      "analogy": "Pipe",
+      "precise": "Tube capsule"
+    }
+  ]
+}

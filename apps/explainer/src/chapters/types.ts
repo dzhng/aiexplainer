@@ -127,6 +127,11 @@ export interface Beat {
 /** The arrival loop (D24). It wraps at `durationSec`, and interpolation wraps with it. */
 export interface Timeline {
   durationSec: number;
+  /**
+   * What the loop feeds the chapter's model, in order (chapter 0: the words that land on the
+   * rail). The app runs the real model on each; the scene's channels pick which one shows.
+   */
+  inputs?: string[];
   channels: Record<ChannelId, Keyframe[]>;
   beats: Beat[];
 }

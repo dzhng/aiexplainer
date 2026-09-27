@@ -50,3 +50,20 @@ Bar layout on the board, the hero pose values, and the prompt-box placement (ins
 ## Feedback that would change this slice
 
 Framing preferences, which change `shots.json` only. A rethink of the chapter-0 metaphor goes back to the map ladder.
+
+## Record (2026-09-27)
+
+- **First full look (human checkpoint; implementer's call): accepted.** Shots:
+  `throwaway/shots/10/hero-safe.png` (the hero frame at t = 5.4 s with `safe` outlined),
+  `hero.png`, `typed.png` (the reader typed "the"), `lab-scene.png` (`/lab/scene/autocomplete`),
+  `vs-airsup.png` (the reference beside ours). The board sits wholly inside `safe`; nothing
+  important is under a panel. Next to the reference ours is a smaller, framed object rather
+  than a full-bleed one: the spec puts the subject inside `safe`, and the title panel here is
+  much taller than the reference's.
+- **Integration:** the four HUD panels compose unchanged against slice 04's accepted crops
+  (the prompt box is new); the scene matches the accepted slice 07–09 look.
+- **Inference runs in the Web Worker already** (`runtime/session.ts`, slice 15), so the
+  synchronous `nextWords` seam planned for this slice never existed.
+- An unprimed critique found the first framing loose (bars a thin band, the value tags
+  clipping bar tops, labels over tags); the shot was tightened on the bar field, tags lifted,
+  and labels now choose a side that avoids scene text.

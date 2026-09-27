@@ -32,9 +32,16 @@ test("the HUD CSS variables and the renderer config come from the same tokens", 
   expect(vars["--bg-deep"]).toBe(look.palette.bgDeep);
   expect(vars["--hud-panel"]).toBe(look.hud.panel);
   expect(vars["--text-md"]).toBe(`${look.type.sizePx.md}px`);
-  const config = lookConfig();
-  expect(config.palette.flow).toEqual(linear("flow"));
+  const config = lookConfig({ bar: { color: "metalDark", emissive: "flow", opacity: 1 } });
+  expect(config.room.wallTop).toEqual(linear(look.room.wallTop as PaletteToken));
+  expect(config.materials.bar!.baseColor).toEqual(linear("metalDark"));
   const gain = look.materials.emissive.flow!;
-  expect(config.emissive.flow as number[]).toEqual(linear("flow").map((c) => c * gain));
-  expect(config.emissive.ink).toBeUndefined();
+  expect([...config.materials.bar!.emissive]).toEqual(linear("flow").map((c) => c * gain));
+  expect(config.materials.metal!.emissive).toEqual([0, 0, 0]);
+});
+
+test("a token without an emissive gain cannot glow, and bad numbers are rejected", () => {
+  expect(() => lookConfig({ x: { color: "ink", emissive: "ink", opacity: 1 } })).toThrow(/ink/);
+  expect(() => lookConfig({ x: { color: "ink", opacity: 1.5 } })).toThrow(/opacity/);
+  expect(() => lookConfig({ x: { color: "nope" as PaletteToken, opacity: 1 } })).toThrow(/nope/);
 });

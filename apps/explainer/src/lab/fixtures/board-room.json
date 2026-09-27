@@ -1,0 +1,155 @@
+{
+  "camera": {
+    "target": [0, 1.15, 0],
+    "yaw": -0.38,
+    "pitch": 0.14,
+    "distance": 6.3,
+    "fovY": 0.75
+  },
+  "assets": {
+    "board": "/props/counter_board.glb"
+  },
+  "parts": [
+    {
+      "kind": "mesh",
+      "id": "board",
+      "slot": 0,
+      "asset": "board",
+      "transform": [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1],
+      "explode": [0, 0, 0],
+      "cutaway": "clip"
+    },
+    {
+      "kind": "block",
+      "id": "bar.0",
+      "slot": 1,
+      "material": "bar",
+      "transform": [0.15, 0, 0, 0, 0, 0.92, 0, 0, 0, 0, 0.045, 0, -1.35, 1.338, 0.095, 1]
+    },
+    {
+      "kind": "block",
+      "id": "bar.1",
+      "slot": 2,
+      "material": "bar",
+      "transform": [0.15, 0, 0, 0, 0, 0.64, 0, 0, 0, 0, 0.045, 0, -1.05, 1.198, 0.095, 1]
+    },
+    {
+      "kind": "block",
+      "id": "bar.2",
+      "slot": 3,
+      "material": "bar",
+      "transform": [0.15, 0, 0, 0, 0, 0.46, 0, 0, 0, 0, 0.045, 0, -0.75, 1.108, 0.095, 1]
+    },
+    {
+      "kind": "block",
+      "id": "bar.3",
+      "slot": 4,
+      "material": "bar",
+      "transform": [0.15, 0, 0, 0, 0, 0.33, 0, 0, 0, 0, 0.045, 0, -0.45, 1.043, 0.095, 1]
+    },
+    {
+      "kind": "block",
+      "id": "bar.4",
+      "slot": 5,
+      "material": "bar",
+      "transform": [0.15, 0, 0, 0, 0, 0.24, 0, 0, 0, 0, 0.045, 0, -0.15, 0.998, 0.095, 1]
+    },
+    {
+      "kind": "block",
+      "id": "bar.5",
+      "slot": 6,
+      "material": "bar",
+      "transform": [0.15, 0, 0, 0, 0, 0.17, 0, 0, 0, 0, 0.045, 0, 0.15, 0.963, 0.095, 1]
+    },
+    {
+      "kind": "block",
+      "id": "bar.6",
+      "slot": 7,
+      "material": "bar",
+      "transform": [0.15, 0, 0, 0, 0, 0.12, 0, 0, 0, 0, 0.045, 0, 0.45, 0.938, 0.095, 1]
+    },
+    {
+      "kind": "block",
+      "id": "bar.7",
+      "slot": 8,
+      "material": "bar",
+      "transform": [0.15, 0, 0, 0, 0, 0.08, 0, 0, 0, 0, 0.045, 0, 0.75, 0.918, 0.095, 1]
+    },
+    {
+      "kind": "block",
+      "id": "bar.8",
+      "slot": 9,
+      "material": "bar",
+      "transform": [0.15, 0, 0, 0, 0, 0.05, 0, 0, 0, 0, 0.045, 0, 1.05, 0.903, 0.095, 1]
+    },
+    {
+      "kind": "block",
+      "id": "bar.9",
+      "slot": 10,
+      "material": "bar",
+      "transform": [0.15, 0, 0, 0, 0, 0.03, 0, 0, 0, 0, 0.045, 0, 1.35, 0.893, 0.095, 1]
+    },
+    {
+      "kind": "block",
+      "id": "card",
+      "slot": 11,
+      "material": "card",
+      "transform": [0.55, 0, 0, 0, 0, 0.28, 0, 0, 0, 0, 0.02, 0, -0.95, 0.8375, 0.16, 1]
+    },
+    {
+      "kind": "block",
+      "id": "glass",
+      "slot": 12,
+      "material": "glass",
+      "transform": [3.0, 0, 0, 0, 0, 1.05, 0, 0, 0, 0, 0.012, 0, 0, 1.36, 0.15, 1]
+    }
+  ],
+  "anchors": [
+    {
+      "id": "top",
+      "part": "bar.0",
+      "local": [0, 0.5, 0.5],
+      "priority": 4
+    },
+    {
+      "id": "card",
+      "part": "card",
+      "local": [0, 0, 0.5],
+      "priority": 3
+    },
+    {
+      "id": "header",
+      "part": "board",
+      "local": [0, 2.06, 0.095],
+      "priority": 2
+    },
+    {
+      "id": "rare",
+      "part": "bar.9",
+      "local": [0, 0.5, 0.5],
+      "priority": 1
+    }
+  ],
+  "labels": [
+    {
+      "anchor": "top",
+      "analogy": "Most likely next",
+      "precise": "Highest count"
+    },
+    {
+      "anchor": "card",
+      "analogy": "Your word",
+      "precise": "Current word"
+    },
+    {
+      "anchor": "header",
+      "analogy": "Counter board",
+      "precise": "Word-pair counts"
+    },
+    {
+      "anchor": "rare",
+      "analogy": "Rarely next",
+      "precise": "Lowest count"
+    }
+  ]
+}

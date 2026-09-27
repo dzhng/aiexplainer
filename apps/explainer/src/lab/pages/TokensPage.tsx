@@ -1,7 +1,8 @@
 /**
  * `/lab/tokens`: specimens of the look tokens, one section per `?section=` (all by default).
  * This slice adds `chips`, the stat chip once per scale label, with real values from the same
- * resolver the HUD uses. Slice 08 adds `emissive`; slice 13 completes the page.
+ * resolver the HUD uses. `?section=emissive` is served by the renderer instead (`lab/tokens.ts`);
+ * slice 13 completes the page.
  */
 import type { LoadedModel } from "@repo/llm";
 import { useEffect, useState } from "react";

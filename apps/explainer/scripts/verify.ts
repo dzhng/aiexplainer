@@ -4,16 +4,29 @@
  * a fallback adapter, a page error, or any console warning/error.
  *
  *   bun scripts/verify.ts --route /lab/adapter [--t 12.5] [--out name] [--base http://…]
- *   bun scripts/verify.ts --route '/#0' --out hud --press '?' --crop panel:tl,panel:help
- *
- * `--press` sends keys (comma-separated) once the page is ready. `--crop` names crops from the
- * probe's `crops()`; each is saved as `<out>-<crop>.png`, padded by `--pad` px.
  *   bun scripts/verify.ts --route /lab/adapter --browser shell   # negative control: expect failure
+ *   bun scripts/verify.ts --route '/#0' --out hud --press '?' --crop panel:tl,panel:help
+ *   bun scripts/verify.ts --route '/lab/renderer?fixture=boxes' --t 0 --out boxes --crop 'part:near+part:far'
+ *   bun scripts/verify.ts --route /lab/kit/board --t 0,1,2,3 --out board --crop part:board
+ *
+ * - `--t` holds the clock; a comma list (`0,1,2`) shoots each time in one session as
+ *   `<out>-t<time>`.
+ * - `--press` sends keys (comma-separated) once the page is ready.
+ * - `--crop` names crops from the probe's `crops()` (DOM `data-crop` tags plus the scene's
+ *   `part:*` / `label:*`), comma-separated; each is saved as `<out>-<crop>.png`, padded by
+ *   `--pad` px. Within one crop, `a+b` shoots the union, a trailing `*` matches a prefix (a
+ *   wildcard that matches nothing, e.g. every label hidden, shoots the whole viewport), and
+ *   `rect:x,y,w,h` is a literal rectangle. `--size N` shoots an N×N square centred on it.
+ * - `--ui '{"text":"happy"}'` sets app controls through the probe (`setUi`) once ready.
+ * - `--outline safe` draws that crop's rectangle on the page before shooting (framing review).
+ * - `--check label-dots` (on a fixture of flat magenta markers with one anchor each) proves
+ *   CPU placement and GPU raster agree: every visible label's dot, and the placement it came
+ *   from, must lie within 2 px of its marker's rendered pixel centroid.
  */
 import { mkdir } from "node:fs/promises";
 import path from "node:path";
 import { parseArgs } from "node:util";
-import { chromium, type Browser } from "playwright";
+import { chromium, type Browser, type Page } from "playwright";
 import { createServer, type ViteDevServer } from "vite";
 import type { CropRect } from "../src/lab/probe.ts";
 
@@ -33,6 +46,10 @@ const { values: args } = parseArgs({
     press: { type: "string" },
     crop: { type: "string" },
     pad: { type: "string", default: "12" },
+    size: { type: "string" },
+    check: { type: "string" },
+    ui: { type: "string" },
+    outline: { type: "string" },
   },
 });
 
@@ -50,12 +67,136 @@ async function serve(): Promise<{ base: string; server?: ViteDevServer }> {
   return { base, server };
 }
 
+/**
+ * The clip for one `--crop` item, clamped to the viewport; `undefined` means the whole
+ * viewport, `null` a named crop that does not exist.
+ */
+function resolveCrop(crops: Record<string, CropRect>, spec: string): CropRect | undefined | null {
+  const literal = /^rect:(\d+),(\d+),(\d+),(\d+)$/.exec(spec);
+  if (literal) {
+    const [x, y, width, height] = literal.slice(1).map(Number) as [number, number, number, number];
+    return { x, y, width, height };
+  }
+  const names: string[] = [];
+  for (const name of spec.split("+")) {
+    if (name.endsWith("*"))
+      names.push(...Object.keys(crops).filter((key) => key.startsWith(name.slice(0, -1))));
+    else if (name in crops) names.push(name);
+    else return null;
+  }
+  if (!names.length) {
+    console.log(`crop "${spec}" matched nothing visible; shooting the whole viewport`);
+    return undefined;
+  }
+  const rects = names.map((name) => crops[name]!);
+  const x0 = Math.min(...rects.map((r) => r.x));
+  const y0 = Math.min(...rects.map((r) => r.y));
+  const x1 = Math.max(...rects.map((r) => r.x + r.width));
+  const y1 = Math.max(...rects.map((r) => r.y + r.height));
+  const width = Number(args.width);
+  const height = Number(args.height);
+  if (args.size) {
+    const size = Number(args.size);
+    const x = Math.min(Math.max(0, Math.round((x0 + x1 - size) / 2)), width - size);
+    const y = Math.min(Math.max(0, Math.round((y0 + y1 - size) / 2)), height - size);
+    return { x, y, width: size, height: size };
+  }
+  const pad = Number(args.pad);
+  const left = Math.max(0, Math.floor(x0 - pad));
+  const top = Math.max(0, Math.floor(y0 - pad));
+  const right = Math.min(width, Math.ceil(x1 + pad));
+  const bottom = Math.min(height, Math.ceil(y1 + pad));
+  return { x: left, y: top, width: right - left, height: bottom - top };
+}
+
+const times = args.t?.split(",") ?? [];
+
 function withClock(route: string): string {
   if (args.t === undefined) return route;
   const url = new URL(route, "http://x");
   url.searchParams.set("clock", "held");
-  url.searchParams.set("t", args.t);
-  return url.pathname + url.search;
+  url.searchParams.set("t", times[0]!);
+  return url.pathname + url.search + url.hash;
+}
+
+/** Label dots vs rendered markers; returns failures. */
+async function checkLabelDots(page: Page): Promise<string[]> {
+  const dots = await page.evaluate(() =>
+    (window.__explainer!.labels?.() ?? []).map((p) => {
+      const node = document.querySelector<HTMLElement>(`[data-label="${p.id}"] [data-dot]`);
+      const r = node?.getBoundingClientRect();
+      return { ...p, domX: r ? r.left + r.width / 2 : NaN, domY: r ? r.top + r.height / 2 : NaN };
+    }),
+  );
+  await page.evaluate(async () => {
+    document.querySelector<HTMLElement>("[data-labels]")!.style.visibility = "hidden";
+    for (let i = 0; i < 3; i++) await new Promise(requestAnimationFrame);
+  });
+  const png = (await page.screenshot()).toString("base64");
+  const centroids = await page.evaluate(
+    async ({ png, points }) => {
+      const image = await createImageBitmap(
+        await (await fetch(`data:image/png;base64,${png}`)).blob(),
+      );
+      const canvas = new OffscreenCanvas(image.width, image.height);
+      const context = canvas.getContext("2d")!;
+      context.drawImage(image, 0, 0);
+      const { data, width, height } = context.getImageData(0, 0, image.width, image.height);
+      return points.map(({ x, y }) => {
+        let sx = 0;
+        let sy = 0;
+        let n = 0;
+        for (
+          let py = Math.max(0, Math.round(y) - 30);
+          py < Math.min(height, Math.round(y) + 30);
+          py++
+        ) {
+          for (
+            let px = Math.max(0, Math.round(x) - 30);
+            px < Math.min(width, Math.round(x) + 30);
+            px++
+          ) {
+            const i = (py * width + px) * 4;
+            const [r, g, b] = [data[i]!, data[i + 1]!, data[i + 2]!];
+            if (r - g > 60 && b - g > 60) {
+              sx += px + 0.5;
+              sy += py + 0.5;
+              n++;
+            }
+          }
+        }
+        return n ? { x: sx / n, y: sy / n, n } : null;
+      });
+    },
+    { png, points: dots.map(({ x, y }) => ({ x, y })) },
+  );
+  await page.evaluate(() => {
+    document.querySelector<HTMLElement>("[data-labels]")!.style.visibility = "";
+  });
+  const failures: string[] = [];
+  const report = dots.map((dot, i) => {
+    const c = centroids[i];
+    if (!dot.visible) return { id: dot.id, hidden: dot.hiddenBy };
+    if (!c) {
+      failures.push(`label-dots: no marker pixels near ${dot.id}`);
+      return { id: dot.id, marker: null };
+    }
+    const placementError = Math.hypot(dot.x - c.x, dot.y - c.y);
+    const domError = Math.hypot(dot.domX - c.x, dot.domY - c.y);
+    if (placementError > 2 || domError > 2)
+      failures.push(
+        `label-dots: ${dot.id} is ${placementError.toFixed(2)} px (placement) / ${domError.toFixed(2)} px (dot) from its marker`,
+      );
+    return {
+      id: dot.id,
+      placementError: +placementError.toFixed(3),
+      domError: +domError.toFixed(3),
+      pixels: c.n,
+    };
+  });
+  console.log("label-dots", JSON.stringify(report));
+  if (!dots.some((d) => d.visible)) failures.push("label-dots: no visible labels to check");
+  return failures;
 }
 
 const { base, server } = await serve();
@@ -88,12 +229,32 @@ try {
   else if (adapter.isFallbackAdapter) failures.push("fallback (software) adapter");
 
   for (const key of args.press?.split(",") ?? []) await page.keyboard.press(key);
+  if (args.ui) {
+    const ui = JSON.parse(args.ui) as Record<string, unknown>;
+    const set = await page.evaluate((u) => {
+      if (!window.__explainer!.setUi) return false;
+      window.__explainer!.setUi(u);
+      return true;
+    }, ui);
+    if (!set) failures.push("--ui: this page has no setUi");
+    // The scene's model output comes back from the worker asynchronously.
+    await page.waitForTimeout(500);
+  }
   // Two frames: React commits what the keys changed, then the browser paints it.
   await page.evaluate(
     () => new Promise((done) => requestAnimationFrame(() => requestAnimationFrame(done))),
   );
-  const errors = await page.evaluate(() => window.__explainer!.errors);
-  failures.push(...errors.map((e) => `probe: ${e}`));
+  const probe = await page.evaluate(() => ({
+    errors: window.__explainer!.errors,
+    receipt: window.__explainer!.receipt?.(),
+    results: window.__explainer!.results,
+  }));
+  if (probe.receipt) console.log("receipt", JSON.stringify(probe.receipt));
+  if (probe.results !== undefined) console.log("results", JSON.stringify(probe.results));
+  failures.push(...probe.errors.map((e) => `probe: ${e}`));
+
+  if (args.check === "label-dots") failures.push(...(await checkLabelDots(page)));
+  else if (args.check) failures.push(`unknown check "${args.check}"`);
 
   if (args.out) {
     const dir = path.join(repoRoot, "throwaway/shots", args.slice);
@@ -103,27 +264,56 @@ try {
       await page.screenshot({ path: file, clip });
       console.log("shot", path.relative(repoRoot, file));
     };
-    const cropIds = args.crop?.split(",") ?? [];
-    if (cropIds.length === 0) await save(args.out);
-    const crops = await page.evaluate(() => window.__explainer!.crops());
-    const pad = Number(args.pad);
-    const viewport = page.viewportSize()!;
-    for (const id of cropIds) {
-      const rect = crops[id];
-      if (!rect) {
-        failures.push(`no crop ${id} (have: ${Object.keys(crops).join(", ") || "none"})`);
-        continue;
+    for (const t of times.length > 1 ? times : [undefined]) {
+      if (t !== undefined) {
+        await page.evaluate(async (time) => {
+          window.__explainer!.setTime(time);
+          for (let i = 0; i < 3; i++) await new Promise(requestAnimationFrame);
+        }, Number(t));
       }
-      const x = Math.max(0, Math.floor(rect.x - pad));
-      const y = Math.max(0, Math.floor(rect.y - pad));
-      const right = Math.min(viewport.width, Math.ceil(rect.x + rect.width + pad));
-      const bottom = Math.min(viewport.height, Math.ceil(rect.y + rect.height + pad));
-      await save(`${args.out}-${id.replace(/\W+/g, "-")}`, {
-        x,
-        y,
-        width: right - x,
-        height: bottom - y,
-      });
+      const [crops, labels] = await page.evaluate(() => [
+        window.__explainer!.crops(),
+        window.__explainer!.labels?.(),
+      ]);
+      if (labels?.length)
+        console.log(
+          "labels",
+          labels
+            .map((l) => `${l.id}:${l.hiddenBy ?? "shown"}@${Math.round(l.x)},${Math.round(l.y)}`)
+            .join(" "),
+        );
+      if (args.outline) {
+        const rect = crops[args.outline];
+        if (!rect) failures.push(`--outline: no crop ${args.outline}`);
+        else
+          await page.evaluate(({ x, y, width, height }) => {
+            const box = document.getElementById("harness-outline") ?? document.createElement("div");
+            box.id = "harness-outline";
+            Object.assign(box.style, {
+              position: "fixed",
+              left: `${x}px`,
+              top: `${y}px`,
+              width: `${width}px`,
+              height: `${height}px`,
+              border: "2px dashed #ff3bd4",
+              boxSizing: "border-box",
+              pointerEvents: "none",
+              zIndex: "10",
+            });
+            document.body.append(box);
+          }, rect);
+      }
+      const name = t === undefined ? args.out : `${args.out}-t${t}`;
+      const cropIds = args.crop?.split(",") ?? [];
+      if (cropIds.length === 0) await save(name);
+      for (const id of cropIds) {
+        const clip = resolveCrop(crops, id);
+        if (clip === null) {
+          failures.push(`no crop ${id} (have: ${Object.keys(crops).join(", ") || "none"})`);
+          continue;
+        }
+        await save(`${name}-${id.replace(/\W+/g, "-").replace(/^-|-$/g, "")}`, clip);
+      }
     }
   }
 } finally {

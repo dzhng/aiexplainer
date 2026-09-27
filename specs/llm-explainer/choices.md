@@ -137,3 +137,104 @@ standalone. Entries are appended per pass and consolidated when the spec closes.
   (`--press`) instead. Verdict: sound; slice 10's probe list is superseded.
 - **The HUD created `/lab/tokens` (chips section).** Slice 08 adds its emissive section
   there. Verdict: sound; the ordering in the spec was wrong.
+
+## Slice 15
+
+- **Attention sums its keys in a fixed order (highest score first).** Why: D35's "shuffling
+  earlier words changes nothing" must hold bit for bit, and floating-point addition depends
+  on order. Verdict: sound.
+- **The trace is split into attn (with its own residual record), mlp, router and
+  mlpResidual.** Why: each layer has two residual additions, so one flat record per layer
+  would blur them. Verdict: sound.
+- **Every prompt starts with the `<bos>` token (`promptTokens`).** Verdict: sound.
+- **Manifests require a matching tokenizer and an arch for transformers, and the arch adds
+  `normEps`.** Verdict: sound.
+- **The 9 random-init parity fixtures cost 2.6 MB,** because every token table must span the
+  full 4096 vocabulary. Verdict: acceptable; revisit if repo size matters.
+- **Plain JS loops for the forward pass.** The `full` size measured 2.9 ms per prompt token
+  and 3.9 ms per cached token, far under the 50 ms budget. Verdict: sound.
+
+## Slice 16
+
+- **Embeddings start from N(0, 0.02), GPT-2's init; the random-init fixtures were
+  regenerated.** Why: N(0, 1) with tied embeddings starts at a loss of about 30.
+  Verdict: sound.
+- **The chapter-4 probe added a name-recall prompt set after the pronoun set failed.** Both
+  are recorded; chapter 4 uses the passing set, and the README human note explains it.
+  Verdict: sound per D33, but post hoc. The human should know it was not planned up front.
+- **MPS training is not bit-deterministic across processes, so the MPS test checks
+  agreement within 1e-5.** CPU runs are bit-identical. Verdict: sound.
+- **The trained-model parity fixtures keep every 16th logit plus the top 8** (about 100 KB
+  each). Verdict: sound.
+- **The lab middleware no longer serves the main app for `/lab` URLs whose query has a
+  "."** (a harness bug). Verdict: sound fix.
+- **`runtime/models.ts` now delegates to `@repo/llm` `fetchModel`, which resolves the
+  tokenizer path against the manifest's directory.** Why: slice 04 had duplicated it with the
+  wrong base. Verdict: sound.
+- **`bun run verify` now takes about 2 minutes, because the training tests train on MPS.**
+  Verdict: acceptable for now; a later maintenance pass may split slow training tests into
+  their own script.
+
+## Slices 05–09 (renderer lane)
+
+- **Shaders are WGSL templates resolved by `tgpu.resolve`, so structs come from the TypeGPU
+  schemas. Pipelines are raw WebGPU with every bind-group index pinned.** Why: frame encoding
+  stays allocation-free. This departs from the skill's "pin only group 0", which assumes
+  TypeGPU-managed pipelines. Verdict: sound, but the renderer skill's wording should mention
+  this case.
+- **Group 0 carries both the frame uniform and the look uniform.** Verdict: sound.
+- **`Renderer.setLook()` swaps a new look in without recreating the renderer.** It is the
+  "pipeline rebuild" in the registry-baseline test. Verdict: sound.
+- **`LookConfig` carries linear numbers only; token → linear conversion lives in the app's
+  `look.ts`.** Verdict: sound, single owner.
+- **Every part has a `transform: Mat4`, blocks included; `partWorld` returns it unchanged
+  until slice 13.** Verdict: sound.
+- **Mesh materials bind to presets by the last dotted node-name segment, then fall back to
+  the glTF material name.** Blender materials are named after the presets. Verdict: sound.
+- **Props export without UVs, so builds are byte-reproducible.** Verdict: sound; revisit if
+  a prop ever needs a texture.
+- **The counter board became a tally board on two posts; the first design read as a
+  monitor.** Verdict: sound.
+- **The room is world geometry with depth read-only, outside the prepass.** Verdict: sound.
+- **Specular reflects the room gradient analytically, and lights have an apparent size.**
+  Why: metal and glass didn't read with direct lighting alone. This is a lightweight stand-in
+  for image-based lighting, which the slice's default had left out. Verdict: sound; the human
+  approved the resulting look.
+- **Glass has no diffuse term; its absorption rises with Fresnel toward grazing angles.**
+  Verdict: sound.
+- **Added an AgX saturation knob (1.25) so glows keep their colour.** Verdict: sound.
+- **GPU timing is opt-in (`createRenderer(…, { timing: true })`) and reports
+  `receipt.gpuMs`.** Verdict: sound.
+- **The bloom chain starts at half resolution with 5 mips.** Measured cost: 0.46 ms at
+  1440×900. Verdict: sound.
+- **Translucent parts never occlude labels, and mesh occlusion is tested per triangle.**
+  Why: node bounding boxes are too coarse (the two-post stand spans the whole board).
+  Verdict: sound.
+- **Label overlap is resolved by pill-vs-pill and pill-vs-dot tests using measured pill
+  widths; lab pills are 150 px wide at most.** Verdict: sound.
+- **`placeLabels` takes no viewport (the camera matrices carry it), `sceneOccluders` takes the
+  look, and `hiddenBy` gains `'overlap'`.** Verdict: sound; small contract deltas from the
+  slice text.
+- **Research: `root.destroy()` does NOT free buffers the root created** (measured with a
+  control buffer). This confirms the renderer skill; the registry is required.
+
+## Slice 10
+
+- **Part transforms are per-frame data.** The renderer repacks instances every frame
+  (allocation-free), and `revision` only signals a change in structure. Verdict: sound.
+- **Labels take the first side (up-right, up-left, down-right, down-left) that avoids other
+  labels, scene text and the screen edge.** Verdict: sound.
+- **Bar words and the card word are "scene text", a separate overlay using the same
+  placement code.** They are not labels, so D18's five-label cap still holds. Verdict: sound.
+- **Chapter 0's loop words live in chapter data as `loop.inputs` (once, upon, onse); typed
+  text or a scenario replaces them.** Verdict: sound.
+- **The word-splitting regex lives in the counts manifest (`tokenizer.pattern`/`replace`),
+  pinned by a Python/TS fixture.** Verdict: sound; this closes the slice-02 provisional entry.
+- **No synchronous inference seam was ever built:** chapter 0 used slice 15's worker from
+  the start. Verdict: sound; the README's short-lived seam is removed.
+- **`buildFrame` returns `SceneFrame` (frame input plus scene-text tags).** Verdict: sound;
+  a small deviation from the slice's signature.
+- **Occluders are rebuilt only on a revision or view change, not when parts move.** Moving
+  bars can therefore be slightly stale as occluders. Verdict: acceptable, because labels
+  anchor to static parts; revisit if a chapter labels a moving part.
+- **The prompt box sits inside the title panel.** Verdict: sound (delegated).

@@ -36,7 +36,14 @@ from probes import counts as counts_probes
 OUT_DIR = MODELS_DIR / "counts"
 
 STORY_SEPARATOR = "<|endoftext|>"
-WORD_PATTERN = re.compile(r"[a-z]+(?:'[a-z]+)*|[.!?]")
+# How text becomes words. Exported into the manifest, so the app splits typed text the same way.
+WORDS_TOKENIZER = {
+    "kind": "words",
+    "vocabTensor": "vocab",
+    "pattern": r"[a-z]+(?:'[a-z]+)*|[.!?]",
+    "replace": [["’", "'"]],
+}
+WORD_PATTERN = re.compile(WORDS_TOKENIZER["pattern"])
 VOCAB_SIZE = 8192
 SUCCESSORS_PER_WORD = 20
 CHUNK_BYTES = 32 << 20
@@ -44,7 +51,10 @@ CHUNK_BYTES = 32 << 20
 
 def words(text: str) -> list[str]:
     """Lowercase `text` and split it into the words and sentence marks the model counts."""
-    return WORD_PATTERN.findall(text.lower().replace("’", "'"))
+    normal = text.lower()
+    for old, new in WORDS_TOKENIZER["replace"]:
+        normal = normal.replace(old, new)
+    return WORD_PATTERN.findall(normal)
 
 
 @dataclass
@@ -163,7 +173,7 @@ def export_table(
         out_dir,
         model_id="counts",
         kind="word-counts",
-        tokenizer={"kind": "words", "vocabTensor": "vocab"},
+        tokenizer=WORDS_TOKENIZER,
         tensors={
             "vocab": vocab_codepoints(table.vocab),
             "successors": table.successors,

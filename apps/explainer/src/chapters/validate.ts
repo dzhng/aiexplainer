@@ -54,6 +54,9 @@ function checkLoop(def: ChapterDef, loop: Timeline, problems: string[]) {
   if (!(d >= LOOP_SEC.min && d <= LOOP_SEC.max))
     problems.push(`loop: ${d} s is outside ${LOOP_SEC.min}–${LOOP_SEC.max} s`);
   const inLoop = (t: number) => t >= 0 && t < d;
+  loop.inputs?.forEach((input, i) => {
+    if (!input.trim()) problems.push(`loop.inputs[${i}]: empty`);
+  });
   for (const [id, keys] of Object.entries(loop.channels)) {
     if (keys.length === 0) problems.push(`loop.${id}: no keyframes`);
     keys.forEach((k, i) => {

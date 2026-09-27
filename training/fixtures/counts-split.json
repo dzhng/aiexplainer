@@ -1,0 +1,66 @@
+[
+  {
+    "text": "Once upon a time, there was a little girl named Lily.",
+    "words": [
+      "once",
+      "upon",
+      "a",
+      "time",
+      "there",
+      "was",
+      "a",
+      "little",
+      "girl",
+      "named",
+      "lily",
+      "."
+    ]
+  },
+  {
+    "text": "She didn’t want to go! Why? Because it's DARK...",
+    "words": [
+      "she",
+      "didn't",
+      "want",
+      "to",
+      "go",
+      "!",
+      "why",
+      "?",
+      "because",
+      "it's",
+      "dark",
+      ".",
+      ".",
+      "."
+    ]
+  },
+  {
+    "text": "Tom's dog ran—fast—to the park; 3 cats watched.",
+    "words": [
+      "tom's",
+      "dog",
+      "ran",
+      "fast",
+      "to",
+      "the",
+      "park",
+      "cats",
+      "watched",
+      "."
+    ]
+  },
+  {
+    "text": "  ",
+    "words": []
+  },
+  {
+    "text": "rock'n'roll isn't 'quoted' text",
+    "words": [
+      "rock'n'roll",
+      "isn't",
+      "quoted",
+      "text"
+    ]
+  }
+]

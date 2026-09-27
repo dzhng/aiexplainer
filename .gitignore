@@ -5,4 +5,5 @@ dist/
 !.env.example
 .DS_Store
 throwaway/
+__pycache__/
 .claude/worktrees/
