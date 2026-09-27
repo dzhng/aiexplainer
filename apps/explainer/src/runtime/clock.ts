@@ -42,9 +42,18 @@ export function stepClock(fps: number): StepClock {
   };
 }
 
-/** `?clock=held&t=12.5` holds time; anything else runs in real time. */
+/**
+ * `?clock=held&t=12.5` holds time; `?clock=step&fps=30` advances one frame per probe `step()`
+ * (the recorder); anything else runs in real time.
+ */
 export function clockFromSearch(search: string): Clock {
   const params = new URLSearchParams(search);
-  if (params.get("clock") !== "held") return rafClock();
-  return heldClock(Number(params.get("t") ?? 0));
+  switch (params.get("clock")) {
+    case "held":
+      return heldClock(Number(params.get("t") ?? 0));
+    case "step":
+      return stepClock(Number(params.get("fps") ?? 30));
+    default:
+      return rafClock();
+  }
 }

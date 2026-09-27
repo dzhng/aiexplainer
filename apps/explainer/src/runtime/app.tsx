@@ -17,11 +17,11 @@ import { lookConfig } from "../look/look.ts";
 import { SCENE_BUILDERS, type SceneRun, type SceneUi } from "../scene/build-frame.ts";
 import { shotPose } from "../scene/shots.ts";
 import {
+  chapterAt,
   chapterFromHash,
   hashFor,
   initialState,
   reduce,
-  writtenChapters,
   type Action,
   type AppState,
 } from "../state/app-state.ts";
@@ -38,9 +38,7 @@ import { runStage, type Stage } from "./stage.ts";
 const reducer = (state: AppState, action: Action) => reduce(state, action, CHAPTERS);
 
 function startState(): AppState {
-  const slug = chapterFromHash(location.hash, CHAPTERS) ?? writtenChapters(CHAPTERS)[0];
-  if (!slug) throw new Error("no chapter is written");
-  return initialState(CHAPTERS, slug);
+  return initialState(CHAPTERS, chapterAt(location.hash, CHAPTERS));
 }
 
 /** Keys typed into a form control belong to it; Space on a button is that button's click. */

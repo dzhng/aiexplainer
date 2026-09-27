@@ -5,12 +5,13 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build": "vite build && bun scripts/share.ts",
     "preview": "vite preview",
     "check-types": "tsc --noEmit",
     "lint": "oxlint src scripts test",
     "test": "bun test test",
-    "verify:browser": "bun scripts/verify.ts"
+    "verify:browser": "bun scripts/verify.ts",
+    "media": "bun scripts/record.ts"
   },
   "dependencies": {
     "@repo/llm": "workspace:*",

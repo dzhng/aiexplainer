@@ -1,0 +1,6 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "buildCommand": "turbo build",
+  "outputDirectory": "dist",
+  "rewrites": [{ "source": "/lab/:path*", "destination": "/lab/index.html" }]
+}

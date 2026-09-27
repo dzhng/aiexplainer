@@ -58,6 +58,107 @@ The app is deployed as a Vercel preview.
 
 The `small-screen` threshold (±100 px), video encoding settings within the budget, and the redirect mechanism.
 
+## Result (measured 2026-09-27)
+
+**Re-running the media is one command.** `bun run --cwd apps/explainer media` records
+every written chapter; `media <slug>` records one; `--repeat` records twice and compares
+the two frame by frame. Run it again after slice 11b changes the look.
+
+**Support gate.**
+
+- `small-screen` is width < 900 px, or a coarse pointer with no fine pointer anywhere.
+- `no-webgpu` means no adapter, or a software-fallback adapter.
+- `?force=fallback` forces the fallback.
+- `main.tsx` picks the app or the fallback from the adapter probe the app already runs,
+  and the probe reports the choice as `support`.
+
+**Fallback page.** It shows, in order: the brand and title, the video (poster first), the
+why-line, one line saying why this is a video, **Copy link** (the one filled button;
+it copies `/c/N/`), then **Follow on X**. Its only line differs by reason:
+
+- `small-screen`: "Best on a desktop browser: send yourself the link."
+- `no-webgpu`: "The 3D machine needs WebGPU: try desktop Chrome or Edge."
+
+**Recorder.**
+
+- Loads the page with `?clock=step&fps=30`; each probe `step()` advances exactly one frame.
+- Captures at 1920×1080 with the HUD hidden. The HUD stays laid out, so the camera and
+  label placement are exactly the app's.
+- Crops each frame to the largest 16:9 box in the app's `safe` rect, then scales it to 1280×720.
+  - The first recording kept the full app, HUD included. At phone width the HUD
+    repeated the page's title as unreadable text (unprimed critique), so the video is
+    now the scene only.
+- Encodes H.264 at the best CRF that fits 3 MB.
+
+Chapter 0 measurements:
+
+- 600 frames, 20.000 s (the loop is 20 s), CRF 18, 452,700 bytes.
+- A repeat recording differs in **0 of 600 frames**.
+- Re-encoding gives a byte-identical MP4 and poster.
+
+**Link-preview card.**
+
+- 1200×630, the whole app with the HUD, at `ogTimeSec`. It is shot once two consecutive
+  frames agree.
+- Two separate loads of the card differ slightly (PSNR 44 dB), so the card is not
+  byte-reproducible; the video is.
+- The media is committed in `apps/explainer/public/media/`: the video, the poster (the
+  first frame) and the card.
+
+**Share pages.**
+
+- `scripts/share.ts` runs after `vite build` and writes `dist/c/<N>/index.html`. Each page
+  has absolute `og:*` and `twitter:*` tags, a meta refresh and `location.replace` to `/#N`.
+- The origin is `SITE_URL`, else `https://$VERCEL_URL`, else `vite preview`.
+- `bun scripts/share.ts --check [--base]` confirms each page lands on `/#N` with JS off
+  and with JS on. It passed locally and on the preview.
+
+**Harness.**
+
+- `scripts/harness.ts` is shared by verify, record and share.
+- New flags: `--browser webkit`, `--no-webgpu`, and `--expect fallback`.
+- `VERCEL_AUTOMATION_BYPASS_SECRET` opens a protected preview through Vercel's automation
+  bypass header.
+- Playwright's WebKit build here **has** WebGPU, so the "WebKit with WebGPU disabled" check
+  removes `navigator.gpu` before any page script runs.
+- Passing checks:
+  - WebKit with `--no-webgpu` gets `no-webgpu`;
+  - Chrome at 390×844 gets `small-screen`;
+  - `?force=fallback` gets the fallback;
+  - `/#0` gets the app.
+
+**Vercel.**
+
+- Project `aiexplainer` (team david-zhangs-projects-6456877a):
+  - Root Directory `apps/explainer`;
+  - framework Vite;
+  - build `turbo build`, output `dist`;
+  - `vercel.json` rewrites `/lab/*` to the lab entry (the lab is left out of production
+    builds);
+  - `turbo.json` passes `SITE_URL`, `VERCEL_ENV` and `VERCEL_URL` to the build.
+- Deployment protection is **on**: Vercel Authentication, `all_except_custom_domains`. An
+  unauthenticated request to the preview gets a 302 to the login page.
+- An automation bypass secret was created for the harness. Protection was not changed.
+- Preview: `https://aiexplainer-qlxirhvnr-david-zhangs-projects-6456877a.vercel.app`.
+  It passes:
+  - `verify.ts --route /#0 --base <preview>` (hardware Metal, no console errors);
+  - the 390×844 fallback;
+  - `/lab/models`;
+  - the share check.
+- The first `vercel deploy` (no flags) on the new, git-less project went to the
+  **production** target. It was removed within minutes, and deploys now pass
+  `--target=preview`. O5 stays open; no domain was set.
+
+**Shots** (`throwaway/shots/12/`): `fallback-390.png`, `fallback-desktop.png`,
+`fallback-webkit.png` and `preview-0.png`. The unprimed critique ran twice. Fixed from it:
+
+- the duplicated header in the video;
+- a weak and centred device line;
+- the button widths.
+
+Accepted: the grey "0" chapter number (the HUD's convention), and space below the buttons
+on tall phones.
+
 ## Stays green
 
 01–11.
