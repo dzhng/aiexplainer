@@ -10,6 +10,9 @@ import type { AnchorId, SceneBuilderId } from "./scenes.ts";
 
 export type { AnchorId, ChapterSlug, ModelId, SceneBuilderId };
 
+/** A chapter's model: a trained model's id, or the shared tokenizer alone (chapter 1). */
+export type ChapterModelId = ModelId | "tokenizer";
+
 export type ShotId = keyof typeof shots;
 export type FollowId = string;
 export type ChannelId = string;
@@ -23,7 +26,7 @@ export const STAT_SCALES = [
 ] as const;
 export type StatScale = (typeof STAT_SCALES)[number];
 
-export const STAT_FORMATS = ["int", "bytes", "tok/s", "s", "pct", "x"] as const;
+export const STAT_FORMATS = ["int", "num", "bytes", "tok/s", "s", "pct", "x"] as const;
 export type StatFormat = (typeof STAT_FORMATS)[number];
 
 export interface ChapterDef {
@@ -31,7 +34,7 @@ export interface ChapterDef {
   title: string;
   /** Names the previous chapter's visible failure (D12). */
   why: string;
-  model: ModelId | null;
+  model: ChapterModelId | null;
   scene: SceneBuilderId;
   caption: { default: Caption; byFollow: Partial<Record<FollowId, Caption>> };
   stats: [StatChip, StatChip, StatChip];

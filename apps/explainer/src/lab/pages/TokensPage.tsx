@@ -9,7 +9,7 @@
  * routes (`?section=emissive`, `/lab/scene/autocomplete?view=…`); the page is ready once
  * every frame is.
  */
-import type { LoadedModel } from "@repo/llm";
+import type { ModelSource } from "@repo/llm";
 import type { LabelPlacement } from "@repo/renderer";
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { autocomplete } from "../../chapters/data/autocomplete.ts";
@@ -229,7 +229,7 @@ function HudSection() {
 }
 
 function ChipsSection({ onReady }: { onReady: () => void }) {
-  const [model, setModel] = useState<LoadedModel | null>(null);
+  const [model, setModel] = useState<ModelSource | null>(null);
   useEffect(() => {
     void fetchModel("counts").then(setModel);
   }, []);

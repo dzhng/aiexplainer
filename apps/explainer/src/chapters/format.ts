@@ -30,6 +30,9 @@ export function formatStat(value: number, format: StatFormat): string {
   switch (format) {
     case "int":
       return Math.abs(value) >= 1e6 ? scaled(value, WORDS, "") : grouped(value);
+    case "num":
+      // A measured average, e.g. characters per token: three figures, no unit.
+      return sig3(value);
     case "bytes":
       return scaled(value, SI, "B");
     case "tok/s":

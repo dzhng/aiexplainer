@@ -3,7 +3,7 @@
  * (top left), the controls (top right), the chapter ladder (bottom), the corner links, and the
  * help panel. Every control dispatches an `Action`; the keyboard (`state/keys.ts`) sends the same.
  */
-import type { LoadedModel } from "@repo/llm";
+import type { ModelSource } from "@repo/llm";
 import { useState, type CSSProperties, type Dispatch } from "react";
 import { LADDER, displayNumber } from "../chapters/ladder.ts";
 import type { ChapterDef, ViewMode } from "../chapters/types.ts";
@@ -35,7 +35,7 @@ export interface HudProps {
   def: ChapterDef;
   chapters: Chapters;
   /** The chapter's model, once loaded; `null` before then or for a chapter without one. */
-  model: LoadedModel | null;
+  model: ModelSource | null;
 }
 
 export function Hud(props: HudProps) {

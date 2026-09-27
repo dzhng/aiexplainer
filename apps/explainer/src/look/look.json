@@ -75,6 +75,33 @@
         "roughness": 0.7,
         "opacity": 1
       },
+      "brickLetter": {
+        "color": "#b9c1d9",
+        "emissive": "active",
+        "metallic": 0,
+        "roughness": 0.35,
+        "opacity": 1
+      },
+      "brickEarly": {
+        "color": "#d6a53c",
+        "emissive": "focus",
+        "metallic": 0,
+        "roughness": 0.35,
+        "opacity": 1
+      },
+      "brickLate": {
+        "color": "#d4664a",
+        "emissive": "focus",
+        "metallic": 0,
+        "roughness": 0.35,
+        "opacity": 1
+      },
+      "plate": {
+        "color": "#1f2a4d",
+        "metallic": 0.1,
+        "roughness": 0.6,
+        "opacity": 1
+      },
       "wall": {
         "color": "#2e323c",
         "metallic": 0.2,

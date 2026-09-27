@@ -101,18 +101,20 @@ export async function runStage(o: StageOptions): Promise<Stage | null> {
   const tagAnchors: WorldAnchor[] = [];
   const tagPlacements: LabelPlacement[] = [];
   const obstacles: ScreenRect[] = [];
-  // Occluders change with the scene's structure or the view; anchors move every frame.
-  const occludedFor = { revision: -1, mode: input.view.mode, t: Number.NaN };
+  // Occluders change with the scene's structure, its layout or the view; anchors move every frame.
+  const occludedFor = { revision: -1, layout: -1, mode: input.view.mode, t: Number.NaN };
   let occluders: Occluder[] = [];
   const placeAll = () => {
     const { scene, view } = input;
     if (
       occludedFor.revision !== scene.revision ||
+      occludedFor.layout !== (scene.layout ?? 0) ||
       occludedFor.mode !== view.mode ||
       occludedFor.t !== view.t
     ) {
       occluders = sceneOccluders(scene, view, o.look);
       occludedFor.revision = scene.revision;
+      occludedFor.layout = scene.layout ?? 0;
       occludedFor.mode = view.mode;
       occludedFor.t = view.t;
     }

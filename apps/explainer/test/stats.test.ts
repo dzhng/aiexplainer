@@ -1,14 +1,7 @@
 import { expect, test } from "bun:test";
-import { loadModel, type LoadedModel, type ModelId } from "@repo/llm";
+import { shipped, shippedModel } from "../scripts/shipped.ts";
 import { CHAPTERS } from "../src/chapters/index.ts";
 import { resolveStat, statSource, statText } from "../src/chapters/stats.ts";
-
-const shipped = async (id: ModelId): Promise<LoadedModel> => {
-  const dir = new URL(`../public/models/${id}/`, import.meta.url);
-  const manifest = await Bun.file(new URL("manifest.json", dir)).json();
-  const weights = await Bun.file(new URL("weights.bin", dir)).arrayBuffer();
-  return loadModel(manifest, weights);
-};
 
 test("every written chapter's stats resolve against its shipped model, with a source line", async () => {
   for (const def of Object.values(CHAPTERS)) {
@@ -21,7 +14,7 @@ test("every written chapter's stats resolve against its shipped model, with a so
 });
 
 test("chapter 0's chips show the counts model's own numbers", async () => {
-  const model = await shipped("counts");
+  const model = await shippedModel("counts");
   const [words, vocab, top] = CHAPTERS.autocomplete!.stats;
   expect(resolveStat(words, model)).toBe(model.manifest.training!.tokensSeen);
   expect(resolveStat(vocab, model)).toBe(model.tensors.get("vocab")!.shape[0]!);
