@@ -12,6 +12,7 @@ import hashlib
 import json
 import os
 import subprocess
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
@@ -19,8 +20,8 @@ import numpy as np
 import torch
 
 import tokenizer
+from paths import REPO_DIR
 
-REPO_DIR = Path(__file__).resolve().parent.parent
 FORMAT_VERSION = 1
 TENSOR_ALIGNMENT = 64
 WEIGHTS_FILE = "weights.bin"
@@ -29,6 +30,24 @@ DATASET = "TinyStoriesV2-GPT4"
 LICENSE = "CDLA-Sharing-1.0"
 
 DTYPES = {np.dtype(np.float16): "f16", np.dtype(np.float32): "f32", np.dtype(np.uint32): "u32"}
+Q8_GROUP = 32
+Q8_BLOCK_BYTES = 2 + Q8_GROUP
+
+
+@dataclass(frozen=True)
+class Q8Tensor:
+    """A tensor already packed as `q8_0` blocks (quantize.py)."""
+
+    blocks: bytes
+    shape: tuple[int, ...]
+
+
+def dequantize_q8_0(blocks: bytes) -> np.ndarray:
+    """`q8_0` blocks → float32, exactly as packages/llm `dequantizeQ8_0`: f16 scale × int8."""
+    raw = np.frombuffer(blocks, dtype=np.uint8).reshape(-1, Q8_BLOCK_BYTES)
+    scales = raw[:, :2].copy().view("<f2").astype(np.float32)
+    q = raw[:, 2:].view(np.int8).astype(np.float32)
+    return (scales * q).reshape(-1)
 
 
 def git_sha() -> str:
@@ -64,21 +83,25 @@ def training_record(
     }
 
 
-def pack_tensors(tensors: dict[str, np.ndarray]) -> tuple[bytes, list[dict[str, Any]]]:
+def pack_tensors(tensors: dict[str, np.ndarray | Q8Tensor]) -> tuple[bytes, list[dict[str, Any]]]:
     """Lay tensors out back to back on aligned offsets; return the bytes and their table."""
     blob = bytearray()
     table = []
     for name, array in tensors.items():
-        dtype = DTYPES.get(array.dtype)
-        if dtype is None:
-            raise ValueError(f"tensor {name!r} has unsupported dtype {array.dtype}")
-        data = np.ascontiguousarray(array, dtype=array.dtype.newbyteorder("<")).tobytes()
+        if isinstance(array, Q8Tensor):
+            dtype, data, shape = "q8_0", array.blocks, array.shape
+        else:
+            dtype = DTYPES.get(array.dtype)
+            if dtype is None:
+                raise ValueError(f"tensor {name!r} has unsupported dtype {array.dtype}")
+            data = np.ascontiguousarray(array, dtype=array.dtype.newbyteorder("<")).tobytes()
+            shape = array.shape
         blob.extend(b"\0" * (-len(blob) % TENSOR_ALIGNMENT))
         table.append(
             {
                 "name": name,
                 "dtype": dtype,
-                "shape": list(array.shape),
+                "shape": list(shape),
                 "byteOffset": len(blob),
                 "byteLength": len(data),
             }
@@ -102,7 +125,7 @@ def export_model(
     model_id: str,
     kind: str,
     tokenizer: dict[str, Any],
-    tensors: dict[str, np.ndarray],
+    tensors: dict[str, np.ndarray | Q8Tensor],
     training: dict[str, Any] | None,
     evidence: list[dict[str, Any]],
     arch: dict[str, Any] | None = None,
@@ -139,19 +162,21 @@ def write_evidence(model_dir: Path, evidence: list[dict[str, Any]]) -> None:
 
 
 def read_model(model_dir: Path) -> tuple[dict[str, Any], dict[str, np.ndarray]]:
-    """The inverse of `export_model`: the manifest and its tensors (views into the file)."""
+    """The inverse of `export_model`: the manifest and its tensors (views into the file;
+    `q8_0` tensors come back dequantized to float32)."""
     manifest = json.loads((model_dir / MANIFEST_FILE).read_text())
     weights = (model_dir / manifest["weightsFile"]).read_bytes()
     if hashlib.sha256(weights).hexdigest() != manifest["weightsSha256"]:
         raise ValueError(f"{model_dir}: weights do not match the manifest's sha256")
     by_name = {name: np.dtype(dtype).newbyteorder("<") for dtype, name in DTYPES.items()}
-    tensors = {
-        entry["name"]: np.frombuffer(
-            weights,
-            dtype=by_name[entry["dtype"]],
-            count=int(np.prod(entry["shape"], dtype=np.int64)),
-            offset=entry["byteOffset"],
-        ).reshape(entry["shape"])
-        for entry in manifest["tensors"]
-    }
-    return manifest, tensors
+
+    def tensor(entry: dict[str, Any]) -> np.ndarray:
+        start = entry["byteOffset"]
+        if entry["dtype"] == "q8_0":
+            blocks = weights[start : start + entry["byteLength"]]
+            return dequantize_q8_0(blocks).reshape(entry["shape"])
+        count = int(np.prod(entry["shape"], dtype=np.int64))
+        array = np.frombuffer(weights, dtype=by_name[entry["dtype"]], count=count, offset=start)
+        return array.reshape(entry["shape"])
+
+    return manifest, {entry["name"]: tensor(entry) for entry in manifest["tensors"]}

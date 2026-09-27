@@ -9,4 +9,6 @@ export * from "./transformer.ts";
 export * from "./forward.ts";
 export * from "./sample.ts";
 export * from "./embeddings.ts";
+export * from "./quantize.ts";
+export * from "./speculative.ts";
 export * from "./scale/index.ts";

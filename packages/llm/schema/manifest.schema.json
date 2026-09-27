@@ -16,7 +16,15 @@
                 "counts",
                 "embed",
                 "attn",
-                "rope"
+                "rope",
+                "mlp",
+                "noresidual",
+                "residual",
+                "full",
+                "full-q8",
+                "drafter-64",
+                "drafter-96",
+                "moe"
               ]
             },
             {
@@ -48,7 +56,8 @@
                 "enum": [
                   "f16",
                   "f32",
-                  "u32"
+                  "u32",
+                  "q8_0"
                 ]
               },
               "shape": {
@@ -220,7 +229,15 @@
                 "counts",
                 "embed",
                 "attn",
-                "rope"
+                "rope",
+                "mlp",
+                "noresidual",
+                "residual",
+                "full",
+                "full-q8",
+                "drafter-64",
+                "drafter-96",
+                "moe"
               ]
             },
             {
@@ -252,7 +269,8 @@
                 "enum": [
                   "f16",
                   "f32",
-                  "u32"
+                  "u32",
+                  "q8_0"
                 ]
               },
               "shape": {

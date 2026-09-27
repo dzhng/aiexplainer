@@ -17,8 +17,9 @@ import torch
 import export
 import tokenizer
 from model import Arch, Mlp, Trace, Transformer
+from paths import FIXTURES_DIR
 
-PARITY_DIR = Path(__file__).resolve().parent / "parity"
+PARITY_DIR = FIXTURES_DIR / "parity"
 PROMPT = "Once upon a time, there was a little girl named Lily. She"
 SEED = 15
 D = 16

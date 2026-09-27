@@ -13,6 +13,7 @@ import re
 from pathlib import Path
 
 import tokenizer
+from paths import VALID_FILE
 
 PROMPTS_DIR = Path(__file__).resolve().parent / "prompts"
 MIN_PROMPTS = 30
@@ -32,6 +33,24 @@ NEIGHBOUR_PAIRS = [
     ("friend", "friends"), ("one", "two"), ("he", "she"), ("eat", "drink"),
 ]  # fmt: skip
 
+# Chapter 6: fact-like prompts and the word that completes them. Hand-written (slice 17
+# names "the sky is ___" and "a cat says ___"); only single-token answers are used.
+FACT_PROMPTS = [
+    ("The sky is", "blue"), ("The grass is", "green"), ("The sun is", "hot"),
+    ("The snow is", "cold"), ("A cow says", "moo"), ("A dog says", "woof"),
+    ("A cat says", "meow"), ("A duck says", "quack"), ("Birds can", "fly"),
+    ("Fish live in the", "water"), ("Bees make", "honey"), ("Once upon a", "time"),
+    ("They lived happily ever", "after"), ("The fire was very", "hot"),
+    ("The ice cream was very", "cold"), ("At night, the sky is", "dark"),
+    ("She brushed her", "teeth"), ("He put on his", "shoes"), ("The baby started to", "cry"),
+    ("The lemon was very", "sour"), ("The candy was very", "sweet"), ("The bird sang a", "song"),
+    ("She read a", "book"), ("Mom baked a", "cake"), ("The frog jumped into the", "pond"),
+    ("Apples are", "red"), ("Bananas are", "yellow"), ("An elephant is very", "big"),
+    ("A mouse is very", "small"), ("The monkey ate a", "banana"), ("He was tired, so he went to", "bed"),
+    ("The boat sailed on the", "sea"), ("The clock said it was time for", "bed"),
+    ("She drank a glass of", "milk"),
+]  # fmt: skip
+
 # Chapter 5: the spec's example, then pairs drawn from validation sentences.
 ORDER_EXAMPLES = [
     ("The dog chased the cat. Then the", "The cat chased the dog. Then the"),
@@ -40,7 +59,7 @@ ORDER_EXAMPLES = [
 
 
 def valid_stories() -> list[str]:
-    return list(tokenizer.read_stories(tokenizer.VALID_FILE))
+    return list(tokenizer.read_stories(VALID_FILE))
 
 
 def first_sentences(stories: list[str]) -> list[str]:
@@ -129,6 +148,7 @@ def main() -> None:
     PROMPTS_DIR.mkdir(exist_ok=True)
     sets = {
         "neighbours": [list(pair) for pair in NEIGHBOUR_PAIRS],
+        "facts": [list(pair) for pair in FACT_PROMPTS],
         "sampling": sampling_prompts(stories, rng),
         "pronoun": pronoun_prompts(stories, rng),
         "recall": recall_prompts(stories, rng),

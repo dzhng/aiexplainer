@@ -1,13 +1,11 @@
 """Validation against the JSON Schemas emitted by packages/llm (the formats' single owner)."""
 
 import json
-from pathlib import Path
 
 import jsonschema
 
-REPO_DIR = Path(__file__).resolve().parents[2]
-SCHEMA_DIR = REPO_DIR / "packages/llm/schema"
-APP_MODELS_DIR = REPO_DIR / "apps/explainer/public/models"
+from paths import SCHEMA_DIR
+
 
 
 def validate(document: dict, schema_file: str) -> None:

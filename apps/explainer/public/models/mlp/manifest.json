@@ -1,0 +1,168 @@
+{
+  "formatVersion": 1,
+  "id": "mlp",
+  "kind": "transformer",
+  "tokenizer": {
+    "kind": "bpe",
+    "file": "../tokenizer/tokenizer.json",
+    "sha256": "37c465794d44d16554106eb9d2972c123e05fb76c300bb4bf1cc321fcb363f7b"
+  },
+  "arch": {
+    "dModel": 96,
+    "nLayers": 1,
+    "nHeads": 1,
+    "nKvHeads": 1,
+    "ctx": 256,
+    "vocab": 4096,
+    "attention": "causal",
+    "positions": "rope",
+    "ropeTheta": 10000.0,
+    "mlp": {
+      "kind": "swiglu",
+      "hidden": 384
+    },
+    "norm": "none",
+    "normEps": 1e-05,
+    "residual": true,
+    "tiedEmbeddings": false
+  },
+  "weightsFile": "weights.bin",
+  "weightsSha256": "d3569d71d2474681d7fbbaaa86b1ebccf48bc5140af181ef8b1a52d756ad7941",
+  "tensors": [
+    {
+      "name": "tok_emb",
+      "dtype": "f16",
+      "shape": [
+        4096,
+        96
+      ],
+      "byteOffset": 0,
+      "byteLength": 786432
+    },
+    {
+      "name": "layers.0.attn.wq",
+      "dtype": "f16",
+      "shape": [
+        96,
+        96
+      ],
+      "byteOffset": 786432,
+      "byteLength": 18432
+    },
+    {
+      "name": "layers.0.attn.wk",
+      "dtype": "f16",
+      "shape": [
+        96,
+        96
+      ],
+      "byteOffset": 804864,
+      "byteLength": 18432
+    },
+    {
+      "name": "layers.0.attn.wv",
+      "dtype": "f16",
+      "shape": [
+        96,
+        96
+      ],
+      "byteOffset": 823296,
+      "byteLength": 18432
+    },
+    {
+      "name": "layers.0.attn.wo",
+      "dtype": "f16",
+      "shape": [
+        96,
+        96
+      ],
+      "byteOffset": 841728,
+      "byteLength": 18432
+    },
+    {
+      "name": "layers.0.mlp.w1",
+      "dtype": "f16",
+      "shape": [
+        384,
+        96
+      ],
+      "byteOffset": 860160,
+      "byteLength": 73728
+    },
+    {
+      "name": "layers.0.mlp.w2",
+      "dtype": "f16",
+      "shape": [
+        96,
+        384
+      ],
+      "byteOffset": 933888,
+      "byteLength": 73728
+    },
+    {
+      "name": "layers.0.mlp.w3",
+      "dtype": "f16",
+      "shape": [
+        384,
+        96
+      ],
+      "byteOffset": 1007616,
+      "byteLength": 73728
+    },
+    {
+      "name": "lm_head",
+      "dtype": "f16",
+      "shape": [
+        4096,
+        96
+      ],
+      "byteOffset": 1081344,
+      "byteLength": 786432
+    }
+  ],
+  "training": {
+    "dataset": "TinyStoriesV2-GPT4",
+    "license": "CDLA-Sharing-1.0",
+    "seed": 0,
+    "steps": 4000,
+    "tokensSeen": 65536000,
+    "valLoss": 2.5153,
+    "wallSeconds": 247.981,
+    "torch": "2.14.0",
+    "gitSha": "7a3160db25944b0e3d03bde021a1c3efebb2e4bc-dirty"
+  },
+  "evidence": [
+    {
+      "probe": "mlp-neurons",
+      "prompt": "",
+      "metric": "drop in total p(answer) with the top 16 neurons off (30 prompts)",
+      "value": 0.9492171408153891,
+      "threshold": 0.3,
+      "pass": true
+    },
+    {
+      "probe": "mlp-whole",
+      "prompt": "",
+      "metric": "drop in total p(answer) with the whole MLP off (30 prompts)",
+      "value": 0.9931080812561541,
+      "threshold": 0.3,
+      "pass": true
+    },
+    {
+      "probe": "mlp-known",
+      "prompt": "",
+      "metric": "prompts where the model gives the answer p \u2265 0.1",
+      "value": 8.0,
+      "threshold": 1,
+      "pass": true
+    },
+    {
+      "probe": "mlp-neurons",
+      "prompt": "Once upon a \u2026 time",
+      "metric": "p(answer) 1.000 \u2192 0.012 with the top 16 neurons off",
+      "value": 0.987626840980415,
+      "threshold": 0.3,
+      "pass": true
+    }
+  ]
+}

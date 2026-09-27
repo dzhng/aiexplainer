@@ -1,7 +1,16 @@
 [
-  ["The dog chased the cat. Then the", "The cat chased the dog. Then the"],
-  ["Then Tom gave Lily a ball and", "Then Lily gave Tom a ball and"],
-  ["One bright day, Tom and Sue went to play", "One bright day, Tom to Sue went and play"],
+  [
+    "The dog chased the cat. Then the",
+    "The cat chased the dog. Then the"
+  ],
+  [
+    "Then Tom gave Lily a ball and",
+    "Then Lily gave Tom a ball and"
+  ],
+  [
+    "One bright day, Tom and Sue went to play",
+    "One bright day, Tom to Sue went and play"
+  ],
   [
     "Once upon a time, there was a little girl named Lucy",
     "Once upon girl time, there was a little a named Lucy"
@@ -18,12 +27,18 @@
     "One day, a big bird named Will was eager to play",
     "One day, bird big a named Will was eager to play"
   ],
-  ["Once upon a time, there was a big helicopter", "Once was a time, there upon a big helicopter"],
+  [
+    "Once upon a time, there was a big helicopter",
+    "Once was a time, there upon a big helicopter"
+  ],
   [
     "Once upon a time, there were two smart children",
     "Once upon a time, there two were smart children"
   ],
-  ["Once upon a time, there was a lonely pan", "Once upon a time, there a was lonely pan"],
+  [
+    "Once upon a time, there was a lonely pan",
+    "Once upon a time, there a was lonely pan"
+  ],
   [
     "One day, a poor cat named Tom went for a walk",
     "One day, a Tom cat named poor went for a walk"
@@ -40,7 +55,10 @@
     "One day, a little boy named Tim went to the park with his dad",
     "One day, named little boy a Tim went to the park with his dad"
   ],
-  ["Once upon a time, there was a big truck", "Once a upon time, there was a big truck"],
+  [
+    "Once upon a time, there was a big truck",
+    "Once a upon time, there was a big truck"
+  ],
   [
     "Once upon a time, there was a big, strong man named Tom",
     "Once upon a time, named was a big, strong man there Tom"
@@ -53,9 +71,18 @@
     "Once upon a time, there was a little girl named Olive",
     "Once named a time, there was a little girl upon Olive"
   ],
-  ["Once upon a time, there was an enormous tree", "Once upon was time, there a an enormous tree"],
-  ["Once upon a time, there was a boy named Tim", "Once upon named time, there was a boy a Tim"],
-  ["Jack was a curious 3 year old boy", "Jack was a year 3 curious old boy"],
+  [
+    "Once upon a time, there was an enormous tree",
+    "Once upon was time, there a an enormous tree"
+  ],
+  [
+    "Once upon a time, there was a boy named Tim",
+    "Once upon named time, there was a boy a Tim"
+  ],
+  [
+    "Jack was a curious 3 year old boy",
+    "Jack was a year 3 curious old boy"
+  ],
   [
     "Once upon a time, there was a big boy named Sam",
     "Once upon a time, there was a boy big named Sam"
@@ -64,7 +91,10 @@
     "Once upon a time, there was a grumpy cat named Tom",
     "Once upon a time, there was a named cat grumpy Tom"
   ],
-  ["Anna liked to help her mom in the kitchen", "Anna liked help to her mom in the kitchen"],
+  [
+    "Anna liked to help her mom in the kitchen",
+    "Anna liked help to her mom in the kitchen"
+  ],
   [
     "One day, a boy named Tim had a knot in his shoe",
     "One day, a boy named Tim knot a had in his shoe"
@@ -73,7 +103,10 @@
     "Once upon a time there were two best friends, Jordan and Joe",
     "Once best a time there were two upon friends, Jordan and Joe"
   ],
-  ["Once upon a time, there was a big yard", "Once a upon time, there was a big yard"],
+  [
+    "Once upon a time, there was a big yard",
+    "Once a upon time, there was a big yard"
+  ],
   [
     "Once upon a time, a little dog named Spot was playing in his yard",
     "Once upon a time, a little dog named his was playing in Spot yard"
@@ -90,8 +123,14 @@
     "Once upon a time, there was an elderly lady named Jane",
     "Once there a time, upon was an elderly lady named Jane"
   ],
-  ["Once upon a time, there was a curious pilot", "Once a a time, there was upon curious pilot"],
-  ["Lila and Ben were playing in the water", "Lila and in were playing Ben the water"],
+  [
+    "Once upon a time, there was a curious pilot",
+    "Once a a time, there was upon curious pilot"
+  ],
+  [
+    "Lila and Ben were playing in the water",
+    "Lila and in were playing Ben the water"
+  ],
   [
     "Once upon a time there were three children named Amy, Sam, and Joey",
     "Once upon a time children were three there named Amy, Sam, and Joey"
@@ -116,5 +155,8 @@
     "Once upon a time, there was a little boy named Tim",
     "Once upon a time, there was a boy little named Tim"
   ],
-  ["Once upon a time, there was a boy named Tim", "Once upon named time, there was a boy a Tim"]
+  [
+    "Once upon a time, there was a boy named Tim",
+    "Once upon named time, there was a boy a Tim"
+  ]
 ]

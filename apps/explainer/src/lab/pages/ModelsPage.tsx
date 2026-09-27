@@ -13,7 +13,19 @@ import {
 import { useEffect, useState, type CSSProperties } from "react";
 import { createSession, type ModelInfo } from "../../runtime/session.ts";
 
-const MODELS: ModelId[] = ["embed", "attn", "rope"];
+const MODELS: ModelId[] = [
+  "embed",
+  "attn",
+  "rope",
+  "mlp",
+  "noresidual",
+  "residual",
+  "full",
+  "full-q8",
+  "drafter-64",
+  "drafter-96",
+  "moe",
+];
 
 interface Report {
   info: ModelInfo;
@@ -222,8 +234,10 @@ function tokenLabel(text: string): string {
   return text.replaceAll(" ", "·").replaceAll("\n", "⏎");
 }
 
+/** Three decimals, or three significant figures for values too small to show that way. */
 function formatValue(value: number): string {
-  return Number.isInteger(value) ? String(value) : value.toFixed(3);
+  if (Number.isInteger(value)) return String(value);
+  return Math.abs(value) < 0.01 ? value.toPrecision(3) : value.toFixed(3);
 }
 
 const page: CSSProperties = {
