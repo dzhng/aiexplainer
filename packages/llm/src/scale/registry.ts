@@ -43,6 +43,13 @@ export const ARITH = {
     describe: "parameters, counted from the layer shapes",
     compute: () => cfg.params,
   }),
+  vocab: entry({
+    args: [],
+    unit: "count",
+    scale: "Llama-3-8B",
+    describe: "entries in its tokenizer's vocabulary, from the published config",
+    compute: () => cfg.vocab,
+  }),
   kvBytesPerToken: entry({
     args: ["kvBytes"],
     unit: "bytes",

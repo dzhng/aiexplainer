@@ -1,7 +1,8 @@
 /**
- * Chapter 11's scene, built from the kit (`mesh`, `block`): the double-decker bus prop split
- * into its nodes, one glowing cube per rider on its 16 seats, the weight crates on its roof
- * rack, and a bus stop where riders past the bus's capacity wait.
+ * Chapter 11's scene, built from the kit (`mesh`, `block`, `contactShadow`): the double-decker
+ * bus prop split into its nodes, one glowing cube per rider on its 16 seats, the weight crates
+ * on its roof rack, a contact shadow under it, and a bus stop where riders past the bus's
+ * capacity wait.
  *
  * Occupancy is honest arithmetic: the bus holds `computeBoundBatch` riders (the batch where a
  * decode step's sums take as long as its haul of bytes). Every rider is one cube; a seat
@@ -244,7 +245,15 @@ export const batching: SceneBuilder = {
       size: [0.36, 0.26, 0.03],
       explode: STOP_EXPLODE,
     });
+    // The bus's wheels stand on the floor; the shadow grounds it (the last slot).
+    const shadow = KIT.contactShadow.build({
+      id: "shadow",
+      slot: SLOT.stop + 2,
+      bounds: busKit.bounds,
+      softness: 0.25,
+    });
     const parts = [
+      ...shadow.parts,
       ...busKit.parts,
       ...riders,
       ...tokens,

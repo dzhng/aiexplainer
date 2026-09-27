@@ -4,19 +4,21 @@
  * loop is `runtime/stage.ts`: clock → loop time (restarts on `loopEpoch`, advances only while
  * `playing`) → `evalTimeline` → `buildFrame` → `renderer.frame` → `placeLabels` → label refs.
  */
-import { countsModel, type LoadedModel, type ModelId } from "@repo/llm";
+import { sourceId, type ModelId, type ModelSource } from "@repo/llm";
 import type { FrameInput, SceneDesc, ScreenRect } from "@repo/renderer";
 import { useEffect, useLayoutEffect, useReducer, useRef, useState } from "react";
 import { CHAPTERS } from "../chapters/index.ts";
-import type { ChapterDef } from "../chapters/types.ts";
+import type { ChapterDef, ChapterModelId } from "../chapters/types.ts";
 import { Hud } from "../hud/Hud.tsx";
 import { Labels, type LabelsHandle } from "../hud/Labels.tsx";
 import { SceneTagsLayer, type SceneTagsHandle } from "../hud/SceneTags.tsx";
 import type { ProbeApi } from "../lab/probe.ts";
 import { lookConfig } from "../look/look.ts";
 import { SCENE_BUILDERS, type SceneRun, type SceneUi } from "../scene/build-frame.ts";
+import type { ShotId } from "../chapters/types.ts";
 import { shotPose } from "../scene/shots.ts";
 import {
+  chapterAt,
   chapterFromHash,
   hashFor,
   initialState,
@@ -39,9 +41,7 @@ import { runStage, type Stage } from "./stage.ts";
 const reducer = (state: AppState, action: Action) => reduce(state, action, CHAPTERS);
 
 function startState(): AppState {
-  const slug = chapterFromHash(location.hash, CHAPTERS) ?? writtenChapters(CHAPTERS)[0];
-  if (!slug) throw new Error("no chapter is written");
-  return initialState(CHAPTERS, slug);
+  return initialState(CHAPTERS, chapterAt(location.hash, CHAPTERS));
 }
 
 /** Keys typed into a form control belong to it; Space on a button is that button's click. */
@@ -63,14 +63,6 @@ function sceneUi(state: AppState, def: ChapterDef): SceneUi {
   };
 }
 
-/** Each loaded model's word rule, decoded once (the vocabulary is thousands of words). */
-const splitters = new WeakMap<LoadedModel, (text: string) => string[]>();
-function splitter(model: LoadedModel): (text: string) => string[] {
-  let split = splitters.get(model);
-  if (!split) splitters.set(model, (split = countsModel(model).split));
-  return split;
-}
-
 const SAFE_MARGIN = 16;
 
 /** The canvas minus the HUD panels: right of the title panel, below the controls, above the ladder. */
@@ -89,19 +81,29 @@ function safeRect(): ScreenRect {
 export interface AppProps {
   /** `?hud=0` hides the HUD for scene-only shots. */
   hud: boolean;
+  /** The HUD's decorative motion (arrival intro, chip count-up); off under a held clock. */
+  hudMotion: boolean;
   clock: Clock;
   probe: ProbeApi;
   /** `?emissive=0&bloom=0` and friends. */
   debug: FrameInput["debug"];
   /** Called once the first chapter's HUD shows real values and its scene is on screen. */
   onReady: () => void;
+  /**
+   * Arrive at each chapter with the camera move from `room-wide` (D42). Off for held-clock
+   * captures unless `?arrival=1`, so hero shots stay deterministic.
+   */
+  arrival: boolean;
 }
 
-export function App({ hud, clock, probe, debug, onReady }: AppProps) {
+/** How long the arrival move takes, seconds. */
+const ARRIVAL_SEC = 2.5;
+
+export function App({ hud, hudMotion, clock, probe, debug, onReady, arrival }: AppProps) {
   const [state, dispatch] = useReducer(reducer, undefined, startState);
   const def = CHAPTERS[state.chapter]!;
-  const models = useRef(new Map<ModelId, LoadedModel>());
-  const [model, setModel] = useState<LoadedModel | null>(null);
+  const models = useRef(new Map<ChapterModelId, ModelSource>());
+  const [model, setModel] = useState<ModelSource | null>(null);
   const [run, setRun] = useState<SceneRun | null>(null);
   const [session] = useState<Session>(() => createSession());
   const workerModel = useRef<{ id: ModelId; loaded: Promise<void> } | null>(null);
@@ -170,24 +172,29 @@ export function App({ hud, clock, probe, debug, onReady }: AppProps) {
     };
   }, [def.model]);
 
-  useEffect(() => {
-    if (def.model !== null && model === null) return;
-    void document.fonts.ready.then(() => markReady("hud"));
-  }, [def.model, model]);
+  // The model state lands a render after the chapter changes: never hand one chapter's model to
+  // another chapter's stats or run.
+  const chapterModel = model !== null && sourceId(model) === def.model ? model : null;
 
-  // The scene's model output, from the worker: the loop's inputs, or the reader's text.
+  useEffect(() => {
+    if (def.model !== null && chapterModel === null) return;
+    void document.fonts.ready.then(() => markReady("hud"));
+  }, [def.model, chapterModel]);
+
+  // The scene's model output: the loop's inputs, or the reader's text.
   const text = sceneUi(state, def).text;
   useEffect(() => {
-    if (def.model === null) return;
-    let alive = true;
     const id = def.model;
-    const split = model?.manifest.kind === "word-counts" ? splitter(model) : null;
-    if (text !== null && !split) return; // typed text waits for the model's word rule
-    // The worker holds one model: load it only when the chapter's model changes.
-    if (workerModel.current?.id !== id)
+    const model = chapterModel;
+    // The run reads the chapter's model: wait until it has loaded.
+    if (id === null || model === null) return;
+    let alive = true;
+    // The worker holds one trained model: load it only when the chapter's model changes.
+    if (id !== "tokenizer" && workerModel.current?.id !== id)
       workerModel.current = { id, loaded: session.load(id).then(() => undefined) };
-    void workerModel.current.loaded
-      .then(() => computeRun(def, text, session, split ?? ((t) => [t])))
+    const worker = id === "tokenizer" ? Promise.resolve() : workerModel.current!.loaded;
+    void worker
+      .then(() => computeRun(def, text, { model, session }))
       .then(
         (next) => alive && setRun(next),
         (error: unknown) => {
@@ -198,7 +205,7 @@ export function App({ hud, clock, probe, debug, onReady }: AppProps) {
     return () => {
       alive = false;
     };
-  }, [def, text, model, session]);
+  }, [def, text, chapterModel, session]);
 
   useEffect(() => () => session.dispose(), [session]);
 
@@ -214,7 +221,12 @@ export function App({ hud, clock, probe, debug, onReady }: AppProps) {
         def: d,
         ui: sceneUi(s, d),
         run: r,
-        loopTime: loopTime.at(clock.now(), s.loopEpoch, s.playing),
+        // The loop starts when the arrival move ends (its 0 is the move's landing).
+        loopTime: loopTime.at(
+          clock.now(),
+          s.loopEpoch,
+          s.playing && !(stage.current?.arriving() ?? false),
+        ),
       };
     }));
     void loadSceneAssets(first, assets)
@@ -244,6 +256,7 @@ export function App({ hud, clock, probe, debug, onReady }: AppProps) {
         if (!alive) return created?.dispose();
         stage.current = created;
         if (!created) return;
+        arrive(created, live.current.def.shot);
         probe.beat = scene.beat;
         const sceneCrops = probe.sceneCrops;
         probe.sceneCrops = () => ({ ...sceneCrops?.(), ...(hud ? { safe: safeRect() } : {}) });
@@ -256,9 +269,12 @@ export function App({ hud, clock, probe, debug, onReady }: AppProps) {
     // The stage lives for the app; everything it reads per frame comes through `live`.
   }, []);
 
-  // Arriving at a chapter cuts to its shot.
+  // Arriving at a chapter moves (or cuts) to its shot.
+  const arrive = (target: Stage, shot: ShotId) =>
+    target.arrive(shotPose(shot), arrival ? shotPose("room-wide") : undefined, ARRIVAL_SEC);
   useEffect(() => {
-    stage.current?.jumpTo(shotPose(def.shot));
+    if (stage.current) arrive(stage.current, def.shot);
+    // `arrive` reads only the stable `arrival` flag.
   }, [def.shot, state.loopEpoch]);
 
   // Harness hooks: go to a chapter, or set controls, the way a reader would.
@@ -312,7 +328,8 @@ export function App({ hud, clock, probe, debug, onReady }: AppProps) {
           dispatch={dispatch}
           def={def}
           chapters={CHAPTERS}
-          model={model}
+          model={chapterModel}
+          motion={hudMotion}
           slider={shownSlider(state, def, loopSlider)}
         />
       )}

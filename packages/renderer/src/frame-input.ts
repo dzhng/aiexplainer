@@ -56,6 +56,15 @@ export interface TubePart extends PartBase {
   radius: number;
 }
 
+/**
+ * A soft footprint on the floor (`kit/contact-shadow.ts`): a unit quad in xz whose coverage
+ * fades to its edge, placed by `transform`, drawn with a translucent `material`.
+ */
+export interface ShadowPart extends PartBase {
+  kind: "shadow";
+  material: string;
+}
+
 /** A loaded prop, keyed in `SceneDesc.assets`. */
 export type AssetId = string;
 
@@ -70,7 +79,7 @@ export interface MeshPart extends PartBase {
   node?: string;
 }
 
-export type Part = BlockPart | TubePart | MeshPart;
+export type Part = BlockPart | TubePart | MeshPart | ShadowPart;
 
 /** A point on a part where a label pins; the label's text stays with the app. */
 export interface SceneAnchor {
@@ -88,6 +97,11 @@ export interface SceneDesc {
    * the renderer then re-uploads it. Transforms alone are re-read every frame.
    */
   revision: number;
+  /**
+   * Bump when parts have moved in a way that changes what hides what (bricks laid out anew),
+   * so label occlusion is re-tested; transforms alone, re-read every frame, do not re-test it.
+   */
+  layout?: number;
   parts: Part[];
   anchors: SceneAnchor[];
   /** Parsed props (`parseGlb`), loaded by the app. */
@@ -160,6 +174,11 @@ export interface MaterialLook {
   roughness: number;
   /** 1 is opaque; anything lower draws in the translucent pass. */
   opacity: number;
+  /**
+   * Scales specular (lights and reflection); default 1. A contact shadow is 0: it only
+   * darkens what is under it.
+   */
+  specular?: number;
 }
 
 export interface LightLook {

@@ -45,3 +45,28 @@ Every earlier slice.
 ## Feedback that would change this slice
 
 The analogy not landing for the human. Rework the copy and the beats; the model and seam stay the same.
+
+## Results (lane A, 2026-09-27)
+
+- **Model:** the shared tokenizer is chapter 1's model (`model: "tokenizer"`): the app loads
+  `tokenizer.json` with its `evidence.json` (sha-checked) as a `LoadedTokenizer`, and the stat
+  chips read it like any model (vocab 4,096 from the file; 4.03 characters per token from the
+  `chars-per-token` probe; Llama-3-8B 128,256 from `ARITH.vocab`).
+- **Kit:** `brick` (body block plus one unit-tube stud per unit of length; `placeBrick` resizes
+  and moves it). Equal tubes now share one geometry, so all studs draw as one instanced draw.
+- **Loop (24 s):** chapter 0's “onse” card arrives, leaves, and two bricks “on” + “se” come out
+  of the box of shapes; “It was a birdcage!” comes out as seven bricks (bird | c | age) and is
+  stamped with ids by 9.4 s; the box lights up with its size; “The cat and the kitten.” comes
+  out and cat 460 / kitten 2083 light up as two unrelated numbers (the failure).
+- **Colour → frequency (delegated):** pale = a single byte, yellow = ids under 1,024 (early,
+  common BPE merges), coral = later merges. A test proves ids are in merge order.
+- **Slider:** “Bricks shown”, 1–16 (the text-length scrubber). Text longer than a row wraps to
+  a second row in front; the camera looks down enough to read both.
+- **Occlusion:** moving parts left stale label occluders (hidden face text). `SceneDesc.layout`
+  was added: a builder bumps it when parts move in a way that changes what hides what, and the
+  stage re-tests occlusion then.
+- **Checks:** kit turntable (8 azimuths), hero on `/lab/scene/tokenizer?clock=held&t=12` and
+  `/#1`, 24-frame strip, 12-azimuth label sweep (`?yaw=` on the scene lab page), registry equal
+  after 10 in/out gotos, bun tests `ch-tokenizer.test.ts`. Two unprimed critique rounds: fixed
+  fused same-word bricks (piece gap), labels pointing at unstamped bricks, over-bright glow,
+  bricks hanging in mid-air (they now arc out of and back into the box).

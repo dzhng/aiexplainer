@@ -304,3 +304,78 @@ standalone. Entries are appended per pass and consolidated when the spec closes.
   faces z-fought in the cut. Verdict: sound.
 - **From the hero angle, Exploded reads mostly as a depth shift.** Verdict: accepted for
   chapter 0; later chapters with more parts should explode sideways.
+
+## Slice 04b
+
+- **Direction: holo-tactical, taken whole (the human's pick).** Verdict: sound.
+- **The HUD cyan is a HUD-only `hud.accent`, not the palette's `active`,** so restyling the
+  HUD can never change the scene. Verdict: sound.
+- **Body copy stays in Inter.** Chakra Petch (caps) is for headings, controls, chips and
+  labels only, for legibility. Verdict: sound.
+- **Labels are sentence case, not the mock's caps,** because caps overflow the renderer's
+  220 px label box. Verdict: sound.
+- **The help panel's plate is opaque.** Verdict: sound.
+- **Stat chips count up over 400 ms and then show the exact settled text; a held clock or
+  reduced motion skips it.** Verdict: sound; tested.
+- **Panels slide in over 360 ms on arrival via `useArrivalIntro`, keyed on `loopEpoch`.**
+  11c may key it to the camera-move start. Verdict: sound.
+- **Only Chakra Petch weights 600 and 700 ship.** Verdict: sound.
+- **The brand mark is not redrawn;** brand art is deferred to slice 36. Verdict: sound.
+
+## Slice 11c
+
+- **The contact shadow is a `shadow` part kind with a soft footprint.** Materials gain a
+  `specular` knob, and the shadow's is 0, so it only darkens. Verdict: sound; it is one blob,
+  not per-foot contact (polish item).
+- **The arrival move is a smoothstep from `room-wide` to the hero pose over 2.5 s
+  (`runtime/arrival.ts`).** The loop clock is paused until landing. Verdict: sound, per D42.
+- **Known polish items, accepted for now:** the shelf props are plain boxes, the floor light
+  pool reads as a stage spotlight, and the "once" card's label hides for about 1 s mid-move.
+  Verdict: provisional; revisit at the whole-spec review.
+
+## Slice 12
+
+- **Incident: the first `vercel deploy` went to production** (a new project with no git
+  connection defaults to the production target). It was aliased to `aiexplainer-red.vercel.app`
+  and removed within minutes; the alias returns 404 now, and every later deploy uses
+  `--target=preview`. The production domain may have been publicly reachable for those minutes.
+  Verdict: mistake, remediated. The rule is always `vercel deploy --yes --target=preview`.
+- **Previews are behind Vercel Authentication (Standard Protection).** One automation-bypass
+  secret (note "harness") exists for the harness; it is not in the repo. Verdict: sound.
+- **The fallback video shows the scene only (HUD hidden but laid out), cropped to the safe
+  rect.** The link-preview card is the whole app, HUD included. Why: at phone width the full-app
+  video repeated the title as unreadable text. Verdict: sound.
+- **The recorder uses a new `?clock=step` plus `probe.step()`.** `clockIsHeld` became
+  `clockIsDriven` (held or step), so HUD motion and the arrival move are skipped while
+  recording. Verdict: sound; a looping video must not open with a one-off camera move.
+- **Media is committed under `public/media/`, not generated on Vercel,** because Vercel's
+  builders have no WebGPU Chrome. Re-run `bun run --cwd apps/explainer media` after any look or
+  loop change; a test fails when a written chapter has no media. Verdict: sound.
+- **Video: H.264 at the best CRF between 18 and 33 that fits 3 MB, poster = first frame.**
+  Chapter 0 is 548 KB, and repeat recordings are byte-identical. Verdict: sound.
+- **Share pages redirect with both a meta refresh and `location.replace`. The `og:image`
+  origin is `SITE_URL`, else `https://$VERCEL_URL`.** Verdict: sound; slice 36 sets `SITE_URL`
+  once O5 is picked.
+- **`detectSupport(env)` takes an environment so it is testable; small-screen is < 900 px or a
+  coarse-only pointer.** Verdict: sound.
+- **The device line differs by reason** ("send yourself the link" vs "needs WebGPU: try
+  desktop Chrome or Edge"). Verdict: sound.
+- **The Vercel project was created via the CLI plus the REST API**, because the CLI has no
+  root-directory flag. Verdict: sound.
+
+## Slice 19 (chapter 1)
+
+- **The tokenizer is a chapter "model" (`model: "tokenizer"`, a `LoadedTokenizer` as a
+  `ModelSource`),** so stats, the HUD text box and the run treat it like any model.
+  Verdict: sound.
+- **`computeRun` takes `{ model, session }` and switches on the scene.** Verdict: sound.
+- **Brick colour encodes merge order:** pale = a single byte, yellow = id < 1024, coral =
+  later merges. A test proves ids follow merge order. Verdict: sound.
+- **`SceneDesc.layout` was added: a builder bumps it, and the stage re-tests label occlusion.**
+  Why: moving parts left stale occluders (the slice-10 caveat). Verdict: sound; it closes that
+  provisional entry.
+- **Identical tubes share one geometry (a content-keyed cache), so brick studs instance.**
+  Verdict: sound.
+- **The app hands the HUD only the model that matches the current chapter.** Why: a page error
+  on ←/→ otherwise. Verdict: sound fix.
+- **A new `ARITH.vocab` entry supplies Llama-3-8B's 128,256.** Verdict: sound.

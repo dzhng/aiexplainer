@@ -149,6 +149,18 @@ export function chapterFromHash(hash: string, chapters: Chapters): ChapterSlug |
   return slug && chapters[slug] ? slug : undefined;
 }
 
+/** The chapter a `#N` address names, or the first written chapter. */
+export function chapterAt(hash: string, chapters: Chapters): ChapterSlug {
+  const slug = chapterFromHash(hash, chapters) ?? writtenChapters(chapters)[0];
+  if (!slug) throw new Error("no chapter is written");
+  return slug;
+}
+
 export function hashFor(slug: ChapterSlug): string {
   return `#${displayNumber(slug)}`;
+}
+
+/** The chapter's share page (D34): its own link-preview card, redirecting to `/#N`. */
+export function sharePathFor(slug: ChapterSlug): string {
+  return `/c/${displayNumber(slug)}/`;
 }

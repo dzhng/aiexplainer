@@ -31,6 +31,7 @@ exports[`chapter 11's scene the scene is the bus, a cube per rider place, prompt
   "crate (block, slot 7)": 1,
   "crate (block, slot 8)": 1,
   "rider (block, slot 1)": 336,
+  "shadow (shadow, slot 11)": 1,
   "stop (block, slot 10)": 1,
   "stop (block, slot 9)": 1,
   "token (block, slot 2)": 256,

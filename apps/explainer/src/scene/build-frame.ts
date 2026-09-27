@@ -10,6 +10,7 @@ import type { ChapterDef, FollowId, SceneBuilderId, ViewMode } from "../chapters
 import type { TimelineState } from "../chapters/timeline.ts";
 import type { SceneTags } from "../hud/SceneTags.tsx";
 import { autocomplete } from "./builders/autocomplete.ts";
+import { tokenizer } from "./builders/tokenizer.ts";
 import { batching } from "./builders/batching.ts";
 import { withEnvironment } from "./environment.ts";
 
@@ -24,12 +25,23 @@ export interface SceneUi {
   text: string | null;
 }
 
-/** The chapter's model output for what the scene shows (computed by the session worker). */
-export type SceneRun = {
-  kind: "counts";
-  /** One step per loop input (or one for typed text): the word and its real successors. */
-  steps: { word: string; next: NextWord[] }[];
-};
+/** The chapter's model output for what the scene shows (`runtime/scene-run.ts`). */
+export type SceneRun =
+  | {
+      kind: "counts";
+      /** One step per loop input (or one for typed text): the word and its real successors. */
+      steps: { word: string; next: NextWord[] }[];
+    }
+  | {
+      kind: "pieces";
+      /** Entries in the tokenizer's vocabulary: the box of shapes. */
+      vocab: number;
+      /**
+       * One step per loop input (or one for typed text): the text and its tokenizer pieces,
+       * each with its id, its text (a leading space included) and its length in bytes.
+       */
+      steps: { text: string; pieces: { id: number; text: string; bytes: number }[] }[];
+    };
 
 export interface SceneBuilder {
   /** Prop URLs by asset id; the app loads them before the first frame. */
@@ -48,6 +60,7 @@ export interface SceneBuilder {
 
 export const SCENE_BUILDERS: Record<SceneBuilderId, SceneBuilder> = {
   autocomplete,
+  tokenizer,
   batching,
 };
 
