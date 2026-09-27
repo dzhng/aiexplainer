@@ -10,6 +10,7 @@ import type { ChapterDef, FollowId, SceneBuilderId, ViewMode } from "../chapters
 import type { TimelineState } from "../chapters/timeline.ts";
 import type { SceneTags } from "../hud/SceneTags.tsx";
 import { autocomplete } from "./builders/autocomplete.ts";
+import { embeddings } from "./builders/embeddings.ts";
 import { tokenizer } from "./builders/tokenizer.ts";
 import { withEnvironment } from "./environment.ts";
 
@@ -38,6 +39,19 @@ export type SceneRun =
        * each with its id, its text (a leading space included) and its length in bytes.
        */
       steps: { text: string; pieces: { id: number; text: string; bytes: number }[] }[];
+    }
+  | {
+      kind: "pins";
+      /**
+       * One step per loop input (or one for typed text): its tokens, each at its embedding's
+       * projection on the map (`scene/embed-map.ts`), and the cosine similarity of the first
+       * two tokens' embeddings when there are two.
+       */
+      steps: {
+        text: string;
+        pins: { id: number; text: string; bytes: number; at: [number, number, number] }[];
+        cosine: number | null;
+      }[];
     };
 
 export interface SceneBuilder {
@@ -55,7 +69,11 @@ export interface SceneBuilder {
   ): void;
 }
 
-export const SCENE_BUILDERS: Record<SceneBuilderId, SceneBuilder> = { autocomplete, tokenizer };
+export const SCENE_BUILDERS: Record<SceneBuilderId, SceneBuilder> = {
+  autocomplete,
+  tokenizer,
+  embeddings,
+};
 
 /** What one frame of a chapter's scene is: the renderer's input and the overlay's text. */
 export interface SceneFrame {

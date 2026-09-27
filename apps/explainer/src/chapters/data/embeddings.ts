@@ -1,0 +1,220 @@
+/**
+ * Chapter 2: embeddings, as pins on a map (D37: the `embed` model's input table). Every pin is
+ * a real row of the table seen from its 3 most spread-out directions (a PCA computed offline,
+ * `scene/embed-map.json`); the pinned words are the model's neighbour-probe pairs. The loop's
+ * “cat” and “kitten” fly in from chapter 1 as bricks and land side by side; the failure the next
+ * chapter fixes is that a pin only knows its own word (“it” lands on the same pin every time).
+ */
+import type { ChapterDef } from "../types.ts";
+
+export const embeddings: ChapterDef = {
+  slug: "embeddings",
+  title: "Embeddings",
+  why: "Chapter 1's “cat” and “kitten” were two unrelated numbers. So give every piece a place on a map.",
+  model: "embed",
+  scene: "embeddings",
+  caption: {
+    default: {
+      story: [
+        "Each brick becomes a pin on a map, and the machine learns where to stick it, so words used alike end up close.",
+        "“cat” lands right beside “kitten”, and “sun” beside “moon”: nobody told it that, it learned it from the stories.",
+      ],
+      precisely:
+        "Each token id picks one row of an embedding table, a list of numbers called its embedding (a vector). This map shows the pinned words' rows along the 3 directions where they differ most (PCA, computed once offline); the real rows have many more.",
+    },
+    byFollow: {
+      pins: {
+        story: [
+          "A pin marks where one word's list of numbers points; the map is only a shadow of all its directions.",
+          "Words that turn up in the same kinds of sentences get lists that point nearly the same way.",
+        ],
+        precisely:
+          "Similarity is the cosine of the angle between two embeddings: 1 for the same direction, 0 for unrelated. The chip shows how often a word's partner beats random words on it.",
+      },
+      arrows: {
+        story: [
+          "Each arrow runs from the centre, where a word made of all zeros would sit, out to its pin.",
+          "Which way an arrow points matters more than how long it is: that is what makes two words alike.",
+        ],
+        precisely:
+          "An embedding is a vector; each arrow is that vector's shadow, drawn from the zero vector's shadow. Cosine similarity compares directions and ignores length.",
+      },
+      text: {
+        story: [
+          "Type some words and each one flies to its own pin, the very same pin every time.",
+          "That is also the catch: a pin knows its own word, but nothing about the words around it.",
+        ],
+        precisely:
+          "Embedding lookup depends only on the token id, so a token gets the same vector in any sentence. Words are looked up as they sit mid-sentence, with their leading space.",
+      },
+    },
+  },
+  stats: [
+    {
+      id: "directions",
+      label: "directions per word",
+      format: "int",
+      scale: "this tiny model",
+      value: { kind: "model", metric: "dModel" },
+    },
+    {
+      id: "llama-directions",
+      label: "directions per word",
+      format: "int",
+      scale: "Llama-3-8B",
+      value: { kind: "arith", fn: "hidden", args: {} },
+    },
+    {
+      id: "partner-nearer",
+      label: "partner beats random words",
+      format: "pct",
+      scale: "this tiny model",
+      value: { kind: "probe", probe: "neighbours" },
+    },
+  ],
+  follow: [
+    { id: "pins", label: "Pins", anchor: "pins" },
+    { id: "arrows", label: "Arrows", anchor: "arrows" },
+    { id: "text", label: "Your text", anchor: "text" },
+  ],
+  slider: { id: "pinned", label: "Words pinned", min: 2, max: 60, step: 2, initial: 60 },
+  scenarios: [
+    { id: "sun", label: "sun moon", prompt: "sun moon", probe: "neighbours" },
+    { id: "said", label: "said asked", prompt: "said asked", probe: "neighbours" },
+    { id: "sad", label: "sad upset", prompt: "sad upset", probe: "neighbours" },
+  ],
+  views: ["whole"],
+  labels: [
+    {
+      anchor: "map",
+      analogy: "The map (a shadow)",
+      precise: "PCA projection",
+    },
+    { anchor: "pins", analogy: "A word's pin", precise: "Token embedding" },
+    { anchor: "arrows", analogy: "Its arrow from the centre", precise: "Embedding vector" },
+    { anchor: "origin", analogy: "The centre: all zeros", precise: "Zero vector" },
+    { anchor: "text", analogy: "This word's pin", precise: "Looked-up embedding" },
+  ],
+  loop: {
+    durationSec: 24,
+    inputs: ["cat kitten", "it"],
+    channels: {
+      /** Which loop input is flying in; it changes only while none of its pins is down. */
+      input: [
+        { t: 0, v: 0, ease: "step" },
+        { t: 14.4, v: 1, ease: "step" },
+      ],
+      /** The input's bricks appear over the map, fly to their places and become pins. */
+      fly: [
+        { t: 0, v: 0 },
+        { t: 0.2, v: 0 },
+        { t: 3.4, v: 1 },
+        { t: 14.4, v: 1 },
+        { t: 14.45, v: 0, ease: "step" },
+        { t: 14.6, v: 0 },
+        { t: 16.4, v: 1 },
+        { t: 23.8, v: 1 },
+        { t: 23.85, v: 0, ease: "step" },
+      ],
+      /** The input's pins sink back into the map before the next word (and at the end). */
+      sink: [
+        { t: 0, v: 0 },
+        { t: 13.4, v: 0 },
+        { t: 14.2, v: 1, ease: "inOut" },
+        { t: 14.4, v: 1 },
+        { t: 14.45, v: 0, ease: "step" },
+        { t: 22.8, v: 0 },
+        { t: 23.6, v: 1, ease: "inOut" },
+        { t: 23.8, v: 1 },
+        { t: 23.85, v: 0, ease: "step" },
+      ],
+      /** Every arrow but the input word's shrinks away: the failure beat isolates “it”. */
+      focus: [
+        { t: 0, v: 0 },
+        { t: 17.4, v: 0 },
+        { t: 18.2, v: 1, ease: "inOut" },
+        { t: 22.6, v: 1 },
+        { t: 23.2, v: 0, ease: "inOut" },
+      ],
+      /** The input's pins light up. */
+      pair: [
+        { t: 0, v: 0 },
+        { t: 4.6, v: 0 },
+        { t: 5.2, v: 1, ease: "inOut" },
+        { t: 9.2, v: 1 },
+        { t: 9.8, v: 0, ease: "inOut" },
+        { t: 17.4, v: 0 },
+        { t: 18, v: 1, ease: "inOut" },
+        { t: 22.4, v: 1 },
+        { t: 22.9, v: 0, ease: "inOut" },
+      ],
+      /** Arrows grow from the origin to every pin. */
+      arrows: [
+        { t: 0, v: 0 },
+        { t: 9.6, v: 0 },
+        { t: 12, v: 1, ease: "inOut" },
+        { t: 22.8, v: 1 },
+        { t: 23.7, v: 0, ease: "inOut" },
+      ],
+      pairNote: [
+        { t: 0, v: 0, ease: "step" },
+        { t: 5, v: 1, ease: "step" },
+        { t: 9.6, v: 0, ease: "step" },
+      ],
+      itNote: [
+        { t: 0, v: 0, ease: "step" },
+        { t: 17.6, v: 1, ease: "step" },
+        { t: 22.6, v: 0, ease: "step" },
+      ],
+    },
+    beats: [
+      {
+        t: 0,
+        id: "bricks",
+        note: "chapter 1's “cat” and “kitten” bricks appear over the map",
+        focus: "text",
+      },
+      {
+        t: 1.8,
+        id: "fly",
+        note: "each brick flies to its own word's place and becomes a pin",
+        focus: "pins",
+      },
+      {
+        t: 5,
+        id: "close",
+        note: "cat and kitten light up side by side, with how nearly they point the same way",
+        focus: "pins",
+        tint: "focus",
+      },
+      {
+        t: 9.6,
+        id: "arrows",
+        note: "an arrow grows from the centre to every pin",
+        focus: "arrows",
+      },
+      { t: 14.4, id: "it-lands", note: "the word “it” flies in and becomes a pin", focus: "text" },
+      {
+        t: 17.6,
+        id: "failure",
+        note: "the other arrows fade: “it” always lands on this one pin, whatever came before",
+        focus: "text",
+        tint: "focus",
+      },
+      {
+        t: 22.6,
+        id: "reset",
+        note: "the pin sinks back into the map and the arrows shrink; the loop starts again",
+        focus: "origin",
+      },
+    ],
+  },
+  shot: "map-table",
+  help: {
+    sources: [],
+    notes: [
+      "The map is a shadow: each pin's place is its word's row of this tiny model's embedding table, projected onto the 3 directions along which the 60 pinned words differ most (principal component analysis, computed once, offline, from the model file). Across and into the map are the first two directions; a pin's height is the third.",
+    ],
+  },
+  ogTimeSec: 12.5,
+};
