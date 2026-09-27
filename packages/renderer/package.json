@@ -1,0 +1,24 @@
+{
+  "name": "@repo/renderer",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "check-types": "tsc --noEmit",
+    "lint": "oxlint src",
+    "test": "bun test test"
+  },
+  "dependencies": {
+    "math": "catalog:",
+    "typegpu": "catalog:"
+  },
+  "devDependencies": {
+    "@repo/typescript-config": "workspace:*",
+    "@types/bun": "catalog:",
+    "@webgpu/types": "catalog:",
+    "typescript": "catalog:"
+  }
+}

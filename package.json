@@ -1,0 +1,39 @@
+{
+  "name": "aiexplainer",
+  "private": true,
+  "workspaces": {
+    "packages": [
+      "apps/*",
+      "packages/*"
+    ],
+    "catalog": {
+      "typescript": "5.9.3",
+      "@types/bun": "1.3.14",
+      "typegpu": "0.12.6",
+      "math": "0.1.0",
+      "@webgpu/types": "0.1.74",
+      "@types/node": "26.6.3"
+    }
+  },
+  "type": "module",
+  "scripts": {
+    "build": "turbo build",
+    "check-types": "turbo check-types",
+    "lint": "turbo lint",
+    "test": "turbo test",
+    "format": "oxfmt --write .",
+    "format:check": "oxfmt --check .",
+    "verify": "bun run format:check && bun run check-types && bun run lint && bun run test && bun run training:test",
+    "training:test": "cd training && uv run pytest -q"
+  },
+  "devDependencies": {
+    "oxfmt": "0.57.0",
+    "oxlint": "1.72.0",
+    "turbo": "2.10.3",
+    "typescript": "catalog:"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "packageManager": "bun@1.3.14"
+}

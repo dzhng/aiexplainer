@@ -24,6 +24,10 @@ Bun + Turborepo monorepo.
 
 ```bash
 bun install
-bun run verify   # format check, type check, lint, test
+cd training && uv sync && cd ..       # Python env for training the tiny models
+bun run verify                        # format, types, lint, bun tests, training tests
+bun apps/explainer/scripts/verify.ts --route /lab/adapter   # real-GPU browser check
 bun run format
 ```
+
+- `training/` is a uv project (PyTorch on Apple's MPS), not a bun workspace.
