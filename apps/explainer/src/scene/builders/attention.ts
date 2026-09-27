@@ -43,13 +43,13 @@ const STEP = { back: 0.36, up: 0.2, frontY: 0.42, frontZ: 0.5 };
  * The mix block: how far above the top line it hangs, its size (a share of the widest line,
  * so the pipes can enter its underside spread out), and its glow.
  */
-const MIX = { above: 1.1, height: 0.14, depth: 0.5, share: 0.42, glow: 0.2 };
+const MIX = { above: 1.1, height: 0.14, depth: 0.5, share: 0.42, glow: 0.14 };
 /** A pipe's radius at weight 1: the width is proportional to the weight. */
 const PIPE_RADIUS = 0.25;
 /** Pipes glow softly, so their width, not their bloom, carries the weight. */
 const PIPE_GLOW = 0.3;
 /** The lit focus word in its line glows less than the mix it feeds. */
-const FOCUS_GLOW = 0.12;
+const FOCUS_GLOW = 0.08;
 /** The thread a pipe starts as, before it settles to its weight (as a widthScale). */
 const HAIRLINE = 0.02;
 /** Pipes leave from the back half of their word's top, clear of the word on its face. */
@@ -57,8 +57,13 @@ const PIPE_FOOT_BACK = 0.25;
 /** Where unused blocks wait: under the floor, at a sliver of size. */
 const PARKED: Vec3 = [0, -2, 0];
 const SLIVER: Vec3 = [0.01, 0.01, 0.01];
-/** Where a label waits while its part has nothing to show: far below the room, off screen. */
-const OUT_OF_SIGHT: Vec3 = [0, -100, 0];
+/**
+ * Where a label waits while its part has nothing to show: far below the room and off screen,
+ * even in the local space of a part shrunk to a sliver.
+ */
+const OUT_OF_SIGHT: Vec3 = [0, -1e6, 0];
+/** The mix block's pin: its right end (in its own unit space), clear of its word. */
+const MIX_PIN: Vec3 = [0.5, 0, 0.5];
 
 /** Exploded view: the mix and its pipes lift off the words; the stand drops away. */
 const EXPLODE = { mix: [0, 0.45, 0] as Vec3, stand: [0, -0.3, 0] as Vec3 };
@@ -165,6 +170,7 @@ interface Built {
   /** The "pipes" label rides the widest pipe of the step shown, at `pipesAt`. */
   pipesAnchor: SceneAnchor;
   pipesAt: Vec3;
+  mixAnchor: SceneAnchor;
 }
 const built = new WeakMap<SceneDesc, Built>();
 const layouts = new WeakMap<AttentionStep, Layout>();
@@ -240,9 +246,11 @@ export const attention: SceneBuilder = {
       ...pipes.parts,
     ];
     const pipesAnchor: SceneAnchor = { ...pipes.anchors[0]!, id: "pipes", priority: 2 };
+    // The mix block's right end, so the pill clears the word written on it.
+    const mixAnchor: SceneAnchor = { id: "mix", part: "mix", local: MIX_PIN, priority: 3 };
     const anchors: SceneAnchor[] = [
       // The mix block's right end, so the pill clears the word written on it.
-      { id: "mix", part: "mix", local: [0.5, 0, 0.5], priority: 3 },
+      mixAnchor,
       pipesAnchor,
       // The front step's left end: the page of words.
       { id: "sentence", part: "stand.0", local: [-0.5, 0, 0.5], priority: 1 },
@@ -258,6 +266,7 @@ export const attention: SceneBuilder = {
       layout: null,
       pipesAnchor,
       pipesAt: pipesAnchor.local,
+      mixAnchor,
     });
     // Each word sits on the bottom of its block's front face; the lit words are printed on.
     const onFace: Vec3 = [0, -0.5, 0.5];
@@ -337,7 +346,14 @@ export const attention: SceneBuilder = {
     text[TAG.focus] = wordsShown ? label(step.focus) : "";
 
     // The mix block hangs over the stand; it lights up as the blend arrives.
-    place(b.mix.transform, layout.mix.centre, [layout.mix.width, MIX.height, MIX.depth]);
+    // It grows in with the words, so the loop starts on an empty stand.
+    const grown = Math.max(0.01, blocks);
+    place(b.mix.transform, layout.mix.centre, [
+      layout.mix.width * grown,
+      MIX.height * grown,
+      MIX.depth * grown,
+    ]);
+    b.mixAnchor.local = blocks >= 0.9 ? MIX_PIN : OUT_OF_SIGHT;
     dynamics.intensity[SLOT.mix] = MIX.glow * (0.3 + 0.7 * fill);
     text[TAG.mix] = wordsShown ? tokenLabel(step.tokens[step.focus]!) : "";
 

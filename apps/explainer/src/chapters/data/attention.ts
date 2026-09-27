@@ -108,8 +108,8 @@ export const attention: ChapterDef = {
       blocks: [
         { t: 0, v: 0 },
         { t: 1.2, v: 1, ease: "inOut" },
-        { t: 18.8, v: 1 },
-        { t: 19.8, v: 0, ease: "inOut" },
+        { t: 18.3, v: 1 },
+        { t: 19.4, v: 0, ease: "inOut" },
       ],
       /** Hairline pipes reach up from each word in reading order. */
       pipes: [
