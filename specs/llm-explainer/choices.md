@@ -362,3 +362,20 @@ standalone. Entries are appended per pass and consolidated when the spec closes.
   desktop Chrome or Edge"). Verdict: sound.
 - **The Vercel project was created via the CLI plus the REST API**, because the CLI has no
   root-directory flag. Verdict: sound.
+
+## Slice 19 (chapter 1)
+
+- **The tokenizer is a chapter "model" (`model: "tokenizer"`, a `LoadedTokenizer` as a
+  `ModelSource`),** so stats, the HUD text box and the run treat it like any model.
+  Verdict: sound.
+- **`computeRun` takes `{ model, session }` and switches on the scene.** Verdict: sound.
+- **Brick colour encodes merge order:** pale = a single byte, yellow = id < 1024, coral =
+  later merges. A test proves ids follow merge order. Verdict: sound.
+- **`SceneDesc.layout` was added: a builder bumps it, and the stage re-tests label occlusion.**
+  Why: moving parts left stale occluders (the slice-10 caveat). Verdict: sound; it closes that
+  provisional entry.
+- **Identical tubes share one geometry (a content-keyed cache), so brick studs instance.**
+  Verdict: sound.
+- **The app hands the HUD only the model that matches the current chapter.** Why: a page error
+  on ←/→ otherwise. Verdict: sound fix.
+- **A new `ARITH.vocab` entry supplies Llama-3-8B's 128,256.** Verdict: sound.
