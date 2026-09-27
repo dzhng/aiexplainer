@@ -53,7 +53,7 @@ the checklist below, and any new blockers.
 
 ### Global checklist
 
-- [ ] M1 — Chapter 0 through every layer (D14): slices ✅[01](slices/01-scaffold-harness.md) · ✅[02](slices/02-manifest-and-counts-model.md) · ✅[03](slices/03-chapter-contract.md) · ✅[04](slices/04-hud-shell.md) · ✅[05](slices/05-renderer-foundation.md) · ✅[06](slices/06-gltf-pipeline.md) · ✅[07](slices/07-room-lighting.md) · ✅[08](slices/08-bloom.md) · ✅[09](slices/09-labels-occlusion.md) · ✅[10](slices/10-ch0-compose-framing.md) · ✅[11](slices/11-ch0-loop-pacing.md) · [11b](slices/11b-lab-room.md) · [12](slices/12-fallback-share-deploy.md)
+- [ ] M1 — Chapter 0 through every layer (D14): slices ✅[01](slices/01-scaffold-harness.md) · ✅[02](slices/02-manifest-and-counts-model.md) · ✅[03](slices/03-chapter-contract.md) · ✅[04](slices/04-hud-shell.md) · ✅[05](slices/05-renderer-foundation.md) · ✅[06](slices/06-gltf-pipeline.md) · ✅[07](slices/07-room-lighting.md) · ✅[08](slices/08-bloom.md) · ✅[09](slices/09-labels-occlusion.md) · ✅[10](slices/10-ch0-compose-framing.md) · ✅[11](slices/11-ch0-loop-pacing.md) · ✅[11b](slices/11b-lab-room.md) · [11c](slices/11c-rich-room-arrival.md) · [04b](slices/04b-game-ui.md) · [12](slices/12-fallback-share-deploy.md)
 - [ ] M2 — Vocabulary lock: [13](slices/13-vocabulary-lock.md)
 - [ ] M3 — Model lab: ✅[14](slices/14-tokenizer.md) · ✅[15](slices/15-transformer-core.md) · ✅[16](slices/16-model-lab-early.md) · ✅[17](slices/17-model-lab-late.md) · ✅[18](slices/18-production-arithmetic.md)
 - [ ] M4 — Chapters: [19](slices/19-ch-tokenizer.md) · [20](slices/20-ch-embeddings.md) · [21](slices/21-ch-sampling.md) · [22](slices/22-ch-attention-width.md) · [23](slices/23-ch-attention-sealed.md) · [24](slices/24-ch-attention-flow.md) · [25](slices/25-ch-positions.md) · [26](slices/26-ch-mlp.md) · [27](slices/27-ch-residual.md) · [28](slices/28-ch-stack.md) · [29](slices/29-ch-generation.md) · [30](slices/30-ch-kv-cache.md) · [31](slices/31-ch-batching.md) · [32](slices/32-ch-quantization.md) · [33](slices/33-ch-speculative.md) · [34](slices/34-ch-experts.md) · [35](slices/35-ch-finished.md)
@@ -111,6 +111,8 @@ qualify the precise claims.
 M1  01 → 02 → 03 → 04        (data, contract, HUD on a stub canvas)
          01 → 05 → 06 → 07 → 08 → 09   (renderer, one visual variable each)
     04 + 09 → 10 → 11 → 11b → 12   (ch0 compose, pacing, the lab room, fallback + deploy)
+    11b + 13 → 11c;  04 + 09 → 04b   (a richer room + arrival move; the game UI restyle)
+    12 re-records its media after 11c and 04b land
 M2  12 → 13                  (vocabulary lock: kit, tokens, views)
 M3  02 → 14 → 15 → 16 → 17   (model lab: every model trained and probed before any chapter art)
     03 → 18                  (production arithmetic; independent)
@@ -146,9 +148,16 @@ the human says otherwise.
 | D38 | **Inference runs in a Web Worker** (CPU TypeScript) and can be cancelled.                                                                                                                                                                      | It keeps the controls responsive while a typed prompt runs. It honours D9: no GPU inference.                                          |
 | D39 | **No new workspaces beyond L1.** Chapter data, timelines and look tokens live in `apps/explainer`.                                                                                                                                             | One owner already exists for each. A `packages/chapters` would have only one consumer.                                                |
 | D40 | **The dev-only lab routes** (`/lab/*`) are a second Vite entry, `apps/explainer/lab.html`, deployed to preview builds only.                                                                                                                    | Each visual variable needs a fixture surface that doesn't require booting the whole app.                                              |
+| D42 | **Arrival move.** Each chapter opens on a wide room shot and eases in to its hero shot (about 2.5 s). The loop starts when the move ends. Any camera input cancels the move. Held clocks and recordings skip it unless `?arrival=1` is given.  | Human request (11c). It shows off the room without costing the D24 budget.                                                            |
 | D41 | **ffmpeg** (Homebrew) is a build-time tool for the fallback video. It is never used at runtime.                                                                                                                                                | D29 needs recordings. The map's toolchain audit (D30) missed it.                                                                      |
 
 **Human notes:**
+
+- **A richer room, an arrival move and a game UI** (2026-09-27, on the 11b shots): "the zoom is
+  fine, but richer room … animate starting pulled back then zoom in when first going to the
+  scene … make the UI look like a game UI, not some b2b saas". This added
+  [slice 11c](slices/11c-rich-room-arrival.md) (a richer room, contact shadows, the arrival
+  move) and [slice 04b](slices/04b-game-ui.md) (the game UI restyle).
 
 - **Put the machines in a nice room, not a blue gradient** (2026-09-27, on the slice-10 hero shot). This added [slice 11b, the lab room](slices/11b-lab-room.md), a shared environment for every chapter, placed before the video, link-preview images and vocabulary lock capture the look.
 
