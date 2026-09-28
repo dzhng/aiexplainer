@@ -112,6 +112,11 @@ export const finished: ChapterDef = {
     technical:
       "Each station is its own chapter's scene, run on that chapter's tiny model. Llama-3-8B: a tokenizer, embeddings, 32 blocks of RoPE attention (GQA) and SwiGLU MLP on a residual stream with RMSNorm, then sampling, one token per pass, with a KV cache; it is not a mixture of experts.",
   },
+  brief: [
+    "Every part from the series now runs together as one machine.",
+    "The camera visits each part in the order a word meets it.",
+    "Watch each part light up in turn, then see this tiny model beside a real production model, Llama-3-8B.",
+  ],
   stats: [
     {
       id: "tiny",
@@ -145,6 +150,7 @@ export const finished: ChapterDef = {
   tour: { channel: "stop" },
   loop: {
     durationSec: DURATION,
+    endSec: wholeAgainAt,
     channels: { stop: stopKeys },
     beats: [
       { t: 0, id: "whole", note: "the whole machine: every part you added, in one room" },

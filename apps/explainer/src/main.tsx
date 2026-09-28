@@ -10,6 +10,7 @@ import { App } from "./runtime/app.tsx";
 import { arrivalFromSearch, clockFromSearch, clockIsDriven } from "./runtime/clock.ts";
 import { browserSupportEnv, detectSupport, type Support } from "./runtime/support.ts";
 import { chapterAt } from "./state/app-state.ts";
+import { lessonStartFromSearch } from "./state/lesson.ts";
 
 const params = new URLSearchParams(location.search);
 const clock = clockFromSearch(location.search);
@@ -36,15 +37,22 @@ if (support === "webgpu") {
     layers: layersFrom(params),
     bloom: params.get("bloom") !== "0",
   };
+  const driven = clockIsDriven(location.search);
   root.render(
     <App
       hud={params.get("hud") !== "0"}
-      hudMotion={!clockIsDriven(location.search)}
+      hudMotion={!driven}
       clock={clock}
       probe={probe}
       debug={debug}
       onReady={markReady}
       arrival={arrivalFromSearch(location.search)}
+      // Captures (a driven clock) open straight into the pass, and remember nothing.
+      lesson={{
+        start: lessonStartFromSearch(location.search, driven),
+        ends: !driven,
+        store: driven ? null : () => localStorage,
+      }}
       // The adapter probe passed but the device or renderer did not start.
       onUnsupported={() => showFallback("no-webgpu")}
     />,

@@ -19,6 +19,11 @@ export const generation: ChapterDef = {
     technical:
       "Autoregressive generation: sample the next token from the model's output, append it to the input, and run the full forward pass again over every token.",
   },
+  brief: [
+    "One pass through the machine predicts only the next word.",
+    "To write a story, it adds that word to the end of the text and starts over.",
+    "Watch it reread everything from the first word each time, and see the cost climb.",
+  ],
   stats: [
     {
       id: "context",
@@ -63,6 +68,7 @@ export const generation: ChapterDef = {
   ],
   loop: {
     durationSec: 24,
+    endSec: 22.4,
     inputs: ["Once upon a time, there was a little"],
     channels: {
       /** Steps done (integer part) and the live step's phase (fraction), 3 s a word. */

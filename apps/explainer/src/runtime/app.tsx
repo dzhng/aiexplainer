@@ -1,8 +1,10 @@
 /**
  * The app: owns the `AppState` reducer, `/#N` routing, the keyboard, the chapter's model, the
  * inference session, and the stage (canvas, labels and scene text, then the HUD). The frame
- * loop is `runtime/stage.ts`: clock → loop time (restarts on `loopEpoch`, advances only while
- * `playing`) → `evalTimeline` → `buildFrame` → `renderer.frame` → `placeLabels` → label refs.
+ * loop is `runtime/stage.ts`: clock → loop time (the lesson's, `state/lesson.ts`: its pass
+ * restarts on `loopEpoch`) → `evalTimeline` → `buildFrame` → `renderer.frame` → `placeLabels`
+ * → label refs. The frame loop also moves the lesson on when the arrival move ends and when
+ * the pass reaches the lesson's end.
  */
 import { sourceId, type ModelSource } from "@repo/llm";
 import type { FrameInput, SceneDesc, ScreenRect } from "@repo/renderer";
@@ -21,13 +23,22 @@ import {
   chapterFromHash,
   hashFor,
   initialState,
+  nextUnlocked,
   reduce,
   shownSlider,
   snapSlider,
   type Action,
   type AppState,
+  writtenChapters,
 } from "../state/app-state.ts";
 import { actionForKey } from "../state/keys.ts";
+import {
+  lessonTime,
+  loadCompleted,
+  saveCompleted,
+  type CompletionStore,
+  type LessonStart,
+} from "../state/lesson.ts";
 import css from "./app.module.css";
 import { chapterScene, loadSceneAssets, type ChapterScene } from "./chapter-scene.ts";
 import type { Clock } from "./clock.ts";
@@ -41,15 +52,11 @@ import { runStage, type Stage } from "./stage.ts";
 
 const reducer = (state: AppState, action: Action) => reduce(state, action, CHAPTERS);
 
-function startState(): AppState {
-  return initialState(CHAPTERS, chapterAt(location.hash, CHAPTERS));
-}
-
-/** Keys typed into a form control belong to it; Space on a button is that button's click. */
+/** Keys typed into a form control belong to it; Space or Enter on a button is its click. */
 function ownsKey(target: EventTarget | null, key: string): boolean {
   if (!(target instanceof HTMLElement)) return false;
   if (target.isContentEditable || target.matches("input, textarea, select")) return true;
-  return key === " " && target.matches("button, a");
+  return (key === " " || key === "Enter") && target.matches("button, a");
 }
 
 /** The UI a scene reads; a scenario's prompt stands in for typed text. */
@@ -92,6 +99,18 @@ export interface AppProps {
    * captures unless `?arrival=1`, so hero shots stay deterministic.
    */
   arrival: boolean;
+  /** How the lesson runs (`state/lesson.ts`). */
+  lesson: {
+    /** Where each chapter opens past the arrival move (`?lesson=`). */
+    start: LessonStart;
+    /**
+     * The pass ends by itself at the lesson's end. Off under a driven clock, where the loop
+     * wraps as it always did, so held shots and the recorder see the whole loop.
+     */
+    ends: boolean;
+    /** Where completion is remembered; `null` (captures) remembers nothing. */
+    store: (() => CompletionStore) | null;
+  };
   /**
    * The renderer could not start although the adapter probe passed (a refused device, a failed
    * pipeline): the page shows the fallback instead.
@@ -100,8 +119,15 @@ export interface AppProps {
 }
 
 export function App(props: AppProps) {
-  const { hud, hudMotion, clock, probe, debug, onReady, arrival, onUnsupported } = props;
-  const [state, dispatch] = useReducer(reducer, undefined, startState);
+  const { hud, hudMotion, clock, probe, debug, onReady, arrival, lesson, onUnsupported } = props;
+  const [state, dispatch] = useReducer(reducer, undefined, () =>
+    initialState(
+      CHAPTERS,
+      chapterAt(location.hash, CHAPTERS),
+      { move: arrival, start: lesson.start },
+      lesson.store ? loadCompleted(lesson.store, writtenChapters(CHAPTERS)) : [],
+    ),
+  );
   const def = CHAPTERS[state.chapter]!;
   // Every shipped model the main thread fetched, kept for the session: the chapter's (the HUD's
   // stats read it) and any other a run asks for (the finished machine reads every chapter's).
@@ -155,6 +181,11 @@ export function App(props: AppProps) {
   // The frame loop reads these every frame; React state lands here after each render.
   const live = useRef({ state, def, run });
   live.current = { state, def, run };
+  // The lesson bar's progress: the scene's loop time as a share of the lesson's pass.
+  const [progress] = useState(() => () => {
+    const t = sceneRef.current?.beat()?.t;
+    return t === undefined ? null : t / live.current.def.loop.endSec;
+  });
   const ready = useRef({ hud: false, scene: false, fired: false });
   const markReady = (part: "hud" | "scene") => {
     ready.current[part] = true;
@@ -230,6 +261,11 @@ export function App(props: AppProps) {
     void loadSceneAssets(def, assets);
   }, [def, assets]);
 
+  // Completion outlives the visit where the browser allows it.
+  useEffect(() => {
+    if (lesson.store) saveCompleted(lesson.store, state.completed);
+  }, [state.completed]);
+
   // The reader took the camera from a tour (by orbiting): it stays theirs until the chapter's
   // loop restarts.
   const cameraTaken = useRef(false);
@@ -242,19 +278,31 @@ export function App(props: AppProps) {
     let alive = true;
     const loopTime = new LoopTime();
     const first = live.current.def;
+    // Each lesson event goes out once: for the visit whose move ended, for the pass that ended.
+    const sent = { moved: -1, ended: -1 };
     const scene = (sceneRef.current = chapterScene(first, assets, () => {
       const { state: s, def: d, run: r } = live.current;
+      const moving = stage.current?.arriving() ?? true;
+      const moved = s.lesson === "arriving" && movedFor.current === s.visit && !moving;
+      if (moved && sent.moved < s.visit) {
+        sent.moved = s.visit;
+        dispatch({ type: "lesson", event: "moved" });
+      }
+      const end = d.loop.endSec;
+      let pass = loopTime.at(clock.now(), s.loopEpoch, s.lesson === "playing" && !s.paused);
+      if (lesson.ends && s.lesson === "playing" && pass >= end) {
+        pass = end;
+        if (sent.ended < s.loopEpoch) {
+          sent.ended = s.loopEpoch;
+          dispatch({ type: "lesson", event: "end" });
+        }
+      }
       return {
         def: d,
         ui: sceneUi(s, d),
         run: r,
-        // The loop starts when the arrival move ends (its 0 is the move's landing).
-        loopTime: loopTime.at(
-          clock.now(),
-          s.loopEpoch,
-          s.playing && !(stage.current?.arriving() ?? false),
-        ),
-        steer: !cameraTaken.current && !(stage.current?.arriving() ?? true),
+        loopTime: lessonTime(s.lesson, pass, end),
+        steer: !cameraTaken.current && !moving,
       };
     }));
     void loadSceneAssets(first, assets)
@@ -291,7 +339,7 @@ export function App(props: AppProps) {
         if (!alive) return created?.dispose();
         if (!created) return onUnsupported();
         stage.current = created;
-        arrive(created, live.current.def.shot);
+        arrive(created, live.current.def.shot, live.current.state.visit);
         probe.beat = scene.beat;
         const sceneCrops = probe.sceneCrops;
         probe.sceneCrops = () => ({ ...sceneCrops?.(), ...(hud ? { safe: safeRect() } : {}) });
@@ -304,23 +352,39 @@ export function App(props: AppProps) {
     // The stage lives for the app; everything it reads per frame comes through `live`.
   }, []);
 
-  // Arriving at a chapter moves (or cuts) to its shot.
-  const arrive = (target: Stage, shot: ShotId) =>
+  // Arriving at a chapter moves (or cuts) to its shot; `movedFor` is the visit it moved for.
+  const movedFor = useRef(-1);
+  const arrive = (target: Stage, shot: ShotId, visit: number) => {
+    movedFor.current = visit;
     target.arrive(shotPose(shot), arrival ? shotPose("room-wide") : undefined, ARRIVAL_SEC);
+  };
+  // A pass that starts within a visit (Start, Replay) cuts back to the chapter's shot.
   useEffect(() => {
-    if (stage.current) arrive(stage.current, def.shot);
-    // `arrive` reads only the stable `arrival` flag.
-  }, [def.shot, state.loopEpoch]);
+    const target = stage.current;
+    if (!target) return;
+    if (movedFor.current !== state.visit) arrive(target, def.shot, state.visit);
+    else if (state.lesson === "playing") target.jumpTo(shotPose(def.shot));
+    // `arrive` reads only the stable `arrival` flag; the lesson is read as the epoch changes.
+  }, [def.shot, state.visit, state.loopEpoch]);
 
   // Harness hooks: go to a chapter, or set controls, the way a reader would.
   useEffect(() => {
     probe.goto = (slug) => dispatch({ type: "goto", chapter: slug as AppState["chapter"] });
     probe.setUi = (ui) => {
+      const touches = ["text", "slider", "scenario"].some((key) => ui[key] !== undefined);
+      // The controls are the reader's on their turn: get there the way a reader would.
+      if (touches)
+        for (const event of ["moved", "start", "skip"] as const)
+          dispatch({ type: "lesson", event });
       if (ui.text !== undefined) dispatch({ type: "setText", text: String(ui.text) });
       if (ui.slider !== undefined) dispatch({ type: "setSlider", value: Number(ui.slider) });
       if (ui.scenario !== undefined)
         dispatch({ type: "setScenario", scenario: ui.scenario as string | null });
-      if (ui.playing === false && live.current.state.playing) dispatch({ type: "togglePlay" });
+      if (ui.paused === true && !live.current.state.paused) dispatch({ type: "togglePause" });
+    };
+    probe.lesson = () => {
+      const { state: s } = live.current;
+      return { phase: s.lesson, next: nextUnlocked(s) };
     };
   }, [probe]);
 
@@ -365,6 +429,7 @@ export function App(props: AppProps) {
           motion={hudMotion}
           slider={shownSlider(state, def, loopSlider)}
           answered={answered}
+          progress={progress}
         />
       )}
     </main>

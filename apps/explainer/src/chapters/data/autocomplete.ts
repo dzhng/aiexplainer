@@ -23,6 +23,11 @@ export const autocomplete: ChapterDef = {
     technical:
       "For each word it knows, this tiny model keeps the 20 words that most often came right after it in TinyStories; each bar is one word's share of those kept counts. It reads only the last word, so a word outside its vocabulary has no counts and no prediction.",
   },
+  brief: [
+    "This series builds a machine that writes text, one part at a time, from the simplest thing that works up to a real production model.",
+    "Every version does one job: guess the next word.",
+    "Watch this first one guess from word counts, then stall on a word it never saw.",
+  ],
   stats: [
     {
       id: "words-counted",
@@ -57,6 +62,7 @@ export const autocomplete: ChapterDef = {
   ],
   loop: {
     durationSec: 20,
+    endSec: 17.8,
     inputs: ["once", "once upon", "once upon a", "onse"],
     channels: {
       /** Which input is on the rail; it changes only while the card is off the rail. */

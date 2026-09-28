@@ -26,6 +26,11 @@ export const experts: ChapterDef = {
     technical:
       "Mixture of experts: the MLP is split into 8 experts, and a small router picks the top 2 for each token, mixing their outputs by its renormalised probabilities; the other 6 do no work for that token.",
   },
+  brief: [
+    "A smarter machine needs more knowledge, but every extra weight slows down each word.",
+    "Like a hospital's triage desk, a router sends each word to just 2 of 8 expert bays.",
+    "Watch the words split up, and see that each one pays only for the bays it visits.",
+  ],
   stats: [
     {
       id: "total",
@@ -65,6 +70,7 @@ export const experts: ChapterDef = {
   ],
   loop: {
     durationSec: 24,
+    endSec: 23.2,
     inputs: ["Once upon a time, there was a little girl"],
     channels: {
       /** Which word is at the desk (0-based), one every 2.1 s. */

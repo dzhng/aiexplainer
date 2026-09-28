@@ -581,7 +581,7 @@ Each entry carries a subject tag: [data], [arith], [app], [renderer], [scene],
 
 ## Amendments
 
-The human's eight post-release requests (README, "Amendments after release") left these
+The human's nine post-release requests (README, "Amendments after release") left these
 choices to the implementation. Each names its verdict.
 
 1. **The story panel sits under the caption in the left column, not in a right-hand
@@ -690,3 +690,55 @@ choices to the implementation. Each names its verdict.
     "The intro's tally" instead of "Chapter 0". The phone-keyboard analogy (the chapters
     table) stays in the first sentence. Verdict: a default for the human to confirm
     (copy taste).
+
+20. **The lesson ends at `Timeline.endSec`, not at the loop's end.** A loop wraps, so its
+    last frame is its first; holding it would show an empty scene. Each chapter names the
+    last moment its point is fully on screen, where its reset tail begins (the intro holds
+    “onse” with no bars; chapter 4 holds the swapped sentence with the same guess). The
+    pass plays 0 → `endSec`, then the scene holds it. Captures still see the whole loop.
+    Verdict: sound.
+
+21. **Controls are locked in the reducer, not only greyed in the HUD.** Before the
+    reader's turn, `setText`, `setScenario` and `setSlider` are no-ops, and the HUD wraps
+    the numbered steps in one disabled `fieldset`. The reading aids (label wording,
+    Technical, help) and the ladder work in every phase. Verdict: sound.
+
+22. **→ follows the Next rule; ← and the ladder are always open.** → steps on only once
+    the chapter is complete, like the Next button, so the key never skips a lesson the
+    button wouldn't. ← and the ladder jump freely, as the request kept. Verdict: a default
+    for the human to confirm.
+
+23. **Replay plays the lesson as written: the reader's text, example and knob reset.** The
+    brief and caption describe the loop's own inputs, so replaying with the reader's text
+    would narrate the wrong story. Replay cuts the camera back to the chapter's shot and
+    keeps the chapter complete. Verdict: a default for the human to confirm.
+
+24. **Every arrival shows the brief, even for a completed chapter.** Completion (in
+    `localStorage`, key `aiexplainer.completed`) only opens Next at once; the lesson still
+    opens with its brief, and Skip is one click away. Storage that throws or holds junk
+    reads as nothing completed. Captures never read or write it. Verdict: a default for
+    the human to confirm.
+
+25. **Space pauses the pass; there is no ▶ after it.** The play/pause icon moved into the
+    lesson bar and exists only while the lesson plays. On the reader's turn the scene
+    holds still, so there is nothing to play; Replay lesson takes its place. Enter or
+    Space presses Start on the brief, which also takes focus. Verdict: sound.
+
+26. **Flow pulses freeze on the reader's turn.** Pulses are driven by loop time inside the
+    scene builders, which this change did not touch, so holding `endSec` holds them. The
+    request allowed ambient motion to keep running; that needs a separate ambient clock
+    for the builders. Verdict: acceptable, with a known cost (a stiller scene).
+
+27. **Next is pinned under the column; the panels above it scroll.** In a short window
+    (chapters with a knob at 1200×800) the title and story panels scroll behind the faded
+    edge, and Next stays in view; below 840 px tall the notes under the lesson bar and
+    Next are dropped. The last chapter's Next reads "Back to the intro".
+    Verdict: sound.
+
+28. **Captures open straight into the pass and never end it.** Under `?clock=held|step`
+    the lesson starts in `playing` at the clock's time and the loop wraps as before, so
+    hero shots, strips, cards and the recorded video keep their timing. The card and the
+    video now show the lesson bar with Skip, so media needs re-recording. `?lesson=brief`
+    and `?lesson=done` shoot the other states; the harness's `--lesson <phase>` waits for
+    a phase in real time, and `--ui` skips to the reader's turn first, as a reader must.
+    Verdict: sound.

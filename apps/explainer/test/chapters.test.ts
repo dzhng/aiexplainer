@@ -58,6 +58,26 @@ test("rejects a story sentence over 25 words and a missing technical line", () =
   expect(validateChapter(noTechnical)).toContain("caption: missing technical line");
 });
 
+test("rejects a lesson brief of one or four sentences, or with a sentence over 25 words", () => {
+  const one = broken((d) => void (d.brief = ["Just one sentence."]));
+  expect(validateChapter(one)).toContain("brief: must be 2–3 sentences");
+  const four = broken((d) => void d.brief.push("A fourth sentence."));
+  expect(validateChapter(four)).toContain("brief: must be 2–3 sentences");
+  const long = broken((d) => void (d.brief[1] = Array(26).fill("word").join(" ") + "."));
+  expect(validateChapter(long)).toContain("brief: sentence 2 has 26 words (max 25)");
+  const packed = broken((d) => void (d.brief[0] = "One sentence. And another."));
+  expect(validateChapter(packed)).toContain("brief: sentence 1 holds more than one sentence");
+});
+
+test("rejects a lesson end outside the loop", () => {
+  for (const endSec of [0, 21]) {
+    const def = broken((d) => void (d.loop.endSec = endSec));
+    expect(validateChapter(def)).toContain(
+      `loop: the lesson's end ${endSec} s is outside the loop`,
+    );
+  }
+});
+
 test("rejects a stat with no scale", () => {
   const def = broken((d) => void delete (d.stats[1] as Partial<ChapterDef["stats"][1]>).scale);
   expect(validateChapter(def)).toContain("stat distinct-words: missing or unknown scale");

@@ -19,7 +19,11 @@
  *   `--pad` px. Within one crop, `a+b` shoots the union, a trailing `*` matches a prefix (a
  *   wildcard that matches nothing, e.g. every label hidden, shoots the whole viewport), and
  *   `rect:x,y,w,h` is a literal rectangle. `--size N` shoots an N×N square centred on it.
- * - `--ui '{"text":"happy"}'` sets app controls through the probe (`setUi`) once ready.
+ * - `--ui '{"text":"happy"}'` sets app controls through the probe (`setUi`) once ready; the
+ *   controls are the reader's only on their turn, so it skips the lesson first.
+ * - `--lesson briefing` waits (in real time) until the app's lesson reaches that phase before
+ *   pressing keys, e.g. `--route '/#4' --lesson briefing --press Enter`. To shoot a phase under
+ *   a held clock, open it instead: `?lesson=brief`, `?lesson=done` (the default is the pass).
  * - `--outline safe` draws that crop's rectangle on the page before shooting (framing review).
  * - `--full` shoots the whole scrolling page (uncropped shots only), e.g. `/lab/tokens`.
  * - `--mask 'part:board*'` fills that crop (same syntax as one `--crop` item) flat grey before
@@ -76,6 +80,7 @@ const { values: args } = parseArgs({
     expect: { type: "string", default: "app" },
     "no-webgpu": { type: "boolean", default: false },
     mask: { type: "string" },
+    lesson: { type: "string" },
     full: { type: "boolean" },
   },
 });
@@ -312,6 +317,12 @@ try {
   else if (support !== undefined && support !== "webgpu")
     failures.push(`the page chose the fallback (${support})`);
 
+  if (args.lesson)
+    await page.waitForFunction(
+      (phase) => window.__explainer!.lesson?.().phase === phase,
+      args.lesson,
+      { timeout: 15_000 },
+    );
   for (const key of args.press?.split(",") ?? []) await page.keyboard.press(key);
   if (args.ui) {
     const ui = JSON.parse(args.ui) as Record<string, unknown>;
@@ -330,7 +341,9 @@ try {
     errors: window.__explainer!.errors,
     receipt: window.__explainer!.receipt?.(),
     results: window.__explainer!.results,
+    lesson: window.__explainer!.lesson?.(),
   }));
+  if (probe.lesson) console.log("lesson", JSON.stringify(probe.lesson));
   if (probe.receipt) console.log("receipt", JSON.stringify(probe.receipt));
   if (probe.results !== undefined) console.log("results", JSON.stringify(probe.results));
   failures.push(...probe.errors.map((e) => `probe: ${e}`));

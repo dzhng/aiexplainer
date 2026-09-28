@@ -94,7 +94,7 @@ The full wording and evidence are in [explore/map.html](explore/map.html).
 | D9  | Real tiny models, run on the CPU in TypeScript; production numbers are Llama-3-8B arithmetic. Amended by D26.                  | `packages/llm`, `packages/llm/src/scale/`                                             |
 | D10 | The renderer is TypeGPU on WebGPU: no three.js, no WebGL. React only draws HTML panels.                                        | `packages/renderer`                                                                   |
 | D11 | Blender scripts build the static props; anything shaped by model data is procedural TypeScript.                                | `assets/blender/*.py`, `packages/renderer/src/gltf.ts`, `kit/`                        |
-| D12 | Free exploration: every control is live. Each chapter header names the previous chapter's failure.                             | `ChapterDef.why`, shown by the HUD                                                    |
+| D12 | ~~Free exploration.~~ Superseded by the lesson flow (Amendments). Each chapter header names the previous chapter's failure.    | `ChapterDef.why`, shown by the HUD                                                    |
 | D13 | Deploy to Vercel as a static Vite build.                                                                                       | `apps/explainer/vercel.json`                                                          |
 | D14 | Build chapter 0 end to end first.                                                                                              | no code needed (build order)                                                          |
 | L1  | Workspaces: `apps/explainer`, `packages/renderer`, `packages/llm`, `training/` (uv), `assets/blender/`.                        | the repo layout                                                                       |
@@ -107,7 +107,7 @@ The full wording and evidence are in [explore/map.html](explore/map.html).
 | D21 | About 10 minutes to skim the ladder.                                                                                           | 16 loops plus 16 arrival moves come to about 7 minutes                                |
 | D22 | v1 is all 16 chapters.                                                                                                         | `chapters/index.ts`                                                                   |
 | D23 | Branded dzhng, with "Follow on X"; no airsup name or implied affiliation.                                                      | `look/brand.ts`                                                                       |
-| D24 | Each chapter plays a 20–30 s loop on arrival; captions are 2 sentences with "Technical" behind a click.                        | `validate.ts` (`LOOP_SEC`, `checkCaption`)                                            |
+| D24 | A 20–30 s loop per chapter (~~on arrival~~: see the lesson flow); captions are 2 sentences with "Technical" behind a click.    | `validate.ts` (`LOOP_SEC`, `checkCaption`)                                            |
 | D25 | Nothing on screen is faked. Prompts are chosen by running the models; every number names its scale.                            | `chapters/stats.ts`, `STAT_SCALES` (`types.ts`); probes in `training/probes/`         |
 | D26 | The drafter is the smallest full-architecture model; the best measured acceptance wins.                                        | `training/configs/drafter-64.toml`                                                    |
 | D27 | Speed comes from Llama-3-8B arithmetic on a named GPU; browser timing is never shown as speed.                                 | chip values can only be model, arith or probe                                         |
@@ -127,7 +127,7 @@ orbit are built by hand (`labels.ts`, `passes/bloom.ts`, `orbit.ts`).
 | #   | Decision                                                                                                                                                                                           | Why                                                                                                              |
 | --- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
 | D31 | Chapters are numbered 0–15 by ladder index; 0 reads "Intro" on screen (amended). Code uses slugs. Deep links use the display number.                                                               | Links become permanent once posted, so the numbering had to be fixed before the first post.                      |
-| D32 | Arriving at a chapter restarts its loop. Any scene control pauses it, and ▶ resumes it. There is no idle auto-resume.                                                                              | Free exploration (D12) and auto-play (D24) needed a rule; the scene must not move under a reader's hand.         |
+| D32 | ~~Arriving at a chapter restarts its loop. Any scene control pauses it, and ▶ resumes it.~~ Superseded by the lesson flow (Amendments): controls are locked while the lesson plays.                | Free exploration (D12) and auto-play (D24) needed a rule; the scene must not move under a reader's hand.         |
 | D33 | If a model fails its probe after bounded retries, the chapter still gets a loop that shows the honest result and says so.                                                                          | A chapter with no effect still has to show something, and it must not fake one.                                  |
 | D34 | Each chapter has a static `/c/<N>/index.html` with its own link-preview metadata, which redirects to `/#N`.                                                                                        | Crawlers ignore URL fragments, so `/#N` alone can't carry per-chapter preview images. Amends D29.                |
 | D35 | The chapter-4 and chapter-5 models have one layer.                                                                                                                                                 | With several layers, causal attention can infer position without RoPE, so "order doesn't matter" would be false. |
@@ -172,7 +172,7 @@ orbit are built by hand (`labels.ts`, `passes/bloom.ts`, `orbit.ts`).
 ## Amendments after release (2026-09-28)
 
 The human reviewed the live site and asked for five changes, then for three more the
-same day (the last three items). Each landed as its own commit; the ledger entries are
+same day, then for the lesson flow (the last four items). Each landed as its own commit; the ledger entries are
 in [choices.md](choices.md) ("Amendments").
 
 - **The label toggle says what it does, and "Precise" is "Technical".** "Add a
@@ -234,6 +234,26 @@ in [choices.md](choices.md) ("Amendments").
   fallback page and the share-card title. Addresses keep the display number, so `/#0`
   and `/c/0/` still open it, and chapters 1–15 keep their numbers. This amends D31's
   on-screen wording.
+- **Every chapter is a lesson: brief, Start, one pass, your turn, Next** (2026-09-28).
+  "I think there needs to be a big next button on the left column that goes to the next
+  page, which gets enabled after the current lesson is done. or else it's too hard for
+  user to understand what's happened. also - there needs to be a big 'start' button that
+  starts the lesson/animations … the left side can be positioned as the user taking over
+  and doing their own tweaks after the animations are over (there can be a skip button …)
+  apply this structure for all lessons". A free-running loop with live controls left
+  readers unsure what had happened and when they were done. Each chapter now runs one
+  state machine (`state/lesson.ts`): the arrival move (D42), then a brief card over the
+  scene (`ChapterDef.brief`: 2–3 validated storyteller sentences on what the lesson is
+  about and what to watch for; the intro's sets up the series) with a big Start (Enter),
+  then one pass of the loop from 0 to `Timeline.endSec` with the controls locked (Skip
+  ends it; Space pauses), then "Your turn": the scene holds the lesson's end, the reader's
+  input drives it, and Replay lesson plays it again as written. A big Next in the left
+  column opens once the lesson ends or is skipped; completion is remembered in
+  `localStorage` where allowed. The ladder still jumps anywhere. Captures on a driven
+  clock open straight into the pass and never end it, so shots and the recorded video
+  are unchanged; `?lesson=brief|done` shoots the other states. This supersedes D12
+  (free exploration first), D24 (the loop plays on arrival) and D32 (touching a control
+  pauses the loop).
 
 ## Principles
 

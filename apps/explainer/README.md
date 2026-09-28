@@ -68,6 +68,9 @@ and named crops.
   share page per chapter (`/c/<N>/`, D34), because crawlers ignore `#` fragments.
 - Query flags isolate layers for shots: `?hud=0`, `?labels=0`, `?bloom=0`, `?layers=`,
   `?emissive=0`, and `?arrival=1` to keep the arrival move under a held clock.
+- A driven clock (`?clock=held|step`) opens each chapter straight into its lesson's pass
+  and never ends it, so shots and videos see the loop. `?lesson=brief` or `?lesson=done`
+  opens on the brief card or the reader's turn instead (`src/state/lesson.ts`).
 
 `test/` holds the bun tests. `test/scene-harness.ts` builds a chapter's run and its frame
 at a loop time, the same way the app does. Use it rather than a local copy.

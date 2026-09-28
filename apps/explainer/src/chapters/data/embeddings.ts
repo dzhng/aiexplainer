@@ -21,6 +21,11 @@ export const embeddings: ChapterDef = {
     technical:
       "Each token id picks one row of an embedding table, a list of numbers called its embedding (a vector). This map shows the pinned words' rows along the 3 directions where they differ most (PCA, computed once offline); the real rows have many more.",
   },
+  brief: [
+    "To the machine, each brick is just a number, so “cat” and “kitten” look unrelated.",
+    "This lesson gives every brick a pin on a map, placed so words used alike sit close together.",
+    "Watch the pins land, then spot what a single pin can't show: the words that came before it.",
+  ],
   stats: [
     {
       id: "directions",
@@ -62,6 +67,7 @@ export const embeddings: ChapterDef = {
   ],
   loop: {
     durationSec: 24,
+    endSec: 22.4,
     inputs: ["cat kitten", "it"],
     channels: {
       /** Which loop input is flying in; it changes only while none of its pins is down. */
