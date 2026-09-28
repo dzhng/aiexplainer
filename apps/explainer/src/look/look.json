@@ -110,6 +110,27 @@
         "roughness": 0.5,
         "opacity": 1
       },
+      "river": {
+        "color": "active",
+        "emissive": "active",
+        "metallic": 0,
+        "roughness": 0.05,
+        "opacity": 0.35
+      },
+      "barAlt": {
+        "color": "metalDark",
+        "emissive": "active",
+        "metallic": 0.1,
+        "roughness": 0.45,
+        "opacity": 1
+      },
+      "neuron": {
+        "color": "bgDeep",
+        "emissive": "flow",
+        "metallic": 0,
+        "roughness": 0.25,
+        "opacity": 1
+      },
       "card": {
         "color": "ink",
         "metallic": 0,
@@ -137,10 +158,71 @@
         "roughness": 0.35,
         "opacity": 1
       },
+      "pin": {
+        "color": "#e6e9f5",
+        "emissive": "focus",
+        "metallic": 0.2,
+        "roughness": 0.3,
+        "opacity": 1
+      },
+      "arrow": {
+        "color": "active",
+        "emissive": "active",
+        "metallic": 0,
+        "roughness": 0.5,
+        "opacity": 1
+      },
+      "map": {
+        "color": "#0e1426",
+        "metallic": 0.05,
+        "roughness": 0.7,
+        "opacity": 1
+      },
+      "mapGrid": {
+        "color": "#243258",
+        "metallic": 0,
+        "roughness": 0.6,
+        "opacity": 1
+      },
+      "dieA": {
+        "color": "#d6a53c",
+        "emissive": "focus",
+        "metallic": 0,
+        "roughness": 0.4,
+        "opacity": 1
+      },
+      "dieB": {
+        "color": "#e8e0c8",
+        "emissive": "focus",
+        "metallic": 0,
+        "roughness": 0.4,
+        "opacity": 1
+      },
+      "dieOther": {
+        "color": "#4a5070",
+        "emissive": "focus",
+        "metallic": 0.1,
+        "roughness": 0.5,
+        "opacity": 1
+      },
       "plate": {
         "color": "#1f2a4d",
         "metallic": 0.1,
         "roughness": 0.6,
+        "opacity": 1
+      },
+      "crate": {
+        "color": "#4a4036",
+        "emissive": "focus",
+        "metallic": 0.1,
+        "roughness": 0.75,
+        "opacity": 1
+      },
+      "prompt": {
+        "color": "metalDark",
+        "emissive": "active",
+        "metallic": 0.1,
+        "roughness": 0.45,
         "opacity": 1
       },
       "wall": {
@@ -236,6 +318,10 @@
         "autocomplete": {
           "normal": [0, 0, 1],
           "offset": 0.08
+        },
+        "batching": {
+          "normal": [0, 0, 1],
+          "offset": 0.4
         }
       }
     }

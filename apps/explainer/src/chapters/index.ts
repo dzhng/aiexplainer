@@ -4,7 +4,15 @@
  */
 import { attention } from "./data/attention.ts";
 import { autocomplete } from "./data/autocomplete.ts";
+import { embeddings } from "./data/embeddings.ts";
+import { sampling } from "./data/sampling.ts";
 import { tokenizer } from "./data/tokenizer.ts";
+import { mlp } from "./data/mlp.ts";
+import { generation } from "./data/generation.ts";
+import { residual } from "./data/residual.ts";
+import { stack } from "./data/stack.ts";
+import { batching } from "./data/batching.ts";
+import { quantization } from "./data/quantization.ts";
 import type { ChapterSlug } from "./ladder.ts";
 import type { ChapterDef } from "./types.ts";
 import { validateChapter } from "./validate.ts";
@@ -12,7 +20,15 @@ import { validateChapter } from "./validate.ts";
 export const CHAPTERS: Partial<Record<ChapterSlug, ChapterDef>> = {
   autocomplete,
   tokenizer,
+  embeddings,
+  sampling,
   attention,
+  mlp,
+  residual,
+  stack,
+  generation,
+  batching,
+  quantization,
 };
 
 for (const [slug, def] of Object.entries(CHAPTERS)) {

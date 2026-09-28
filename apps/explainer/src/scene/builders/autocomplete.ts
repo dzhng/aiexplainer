@@ -24,10 +24,18 @@ import {
   type SceneAnchor,
   type SceneDesc,
 } from "@repo/renderer";
+import type { NextWord } from "@repo/llm";
 import type { Mat4, Vec3 } from "math";
 import { share } from "../../chapters/format.ts";
 import type { SceneTags } from "../../hud/SceneTags.tsx";
 import type { SceneBuilder, SceneFrame } from "../build-frame.ts";
+
+/** Chapter 0's run (`runtime/runs/autocomplete.ts`). */
+export interface CountsRun {
+  kind: "counts";
+  /** One step per loop input (or one for typed text): the word and its real successors. */
+  steps: { word: string; next: NextWord[] }[];
+}
 
 const SLOTS = 10;
 /** Bars are this share of their slot's width and depth, so the channel walls stay visible. */

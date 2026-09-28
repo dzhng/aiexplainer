@@ -6,13 +6,18 @@
 import { bars } from "./bars.ts";
 import { block } from "./block.ts";
 import { brick } from "./brick.ts";
+import { pins } from "./pins.ts";
 import { contactShadow } from "./contact-shadow.ts";
 import { flows } from "./flows.ts";
+import { die } from "./die.ts";
 import { mesh } from "./mesh.ts";
 import { pipes } from "./pipes.ts";
 import { sealed } from "./sealed.ts";
 import type { KitPrimitive } from "./primitive.ts";
+import { questionPanel } from "./question-panel.ts";
+import { river } from "./river.ts";
 import { tube } from "./tube.ts";
+import { volumeKnob } from "./volume-knob.ts";
 
 export const KIT = {
   block,
@@ -24,6 +29,11 @@ export const KIT = {
   pipes,
   sealed,
   flows,
+  pins,
+  questionPanel,
+  river,
+  volumeKnob,
+  die,
 } as const;
 export type KitPrimitiveId = keyof typeof KIT;
 

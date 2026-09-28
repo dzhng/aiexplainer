@@ -13,7 +13,7 @@ import { CloseIcon } from "./icons.tsx";
 const TINYSTORIES = "https://huggingface.co/datasets/roneneldan/TinyStories";
 const CDLA = "https://cdla.dev/sharing-1-0/";
 
-export function Help({ dispatch, def, model }: HudProps) {
+export function Help({ dispatch, def, model, slider }: HudProps) {
   const close = () => dispatch({ type: "toggleHelp" });
   return (
     <div className={css.scrim} onClick={close}>
@@ -81,10 +81,15 @@ export function Help({ dispatch, def, model }: HudProps) {
         {def.stats.map((stat) => (
           <p key={stat.id} className={css.helpStat}>
             {stat.label} <span className={css.helpScale}>({stat.scale})</span>:{" "}
-            <b>{statReady(stat, model) ? statText(stat, model) : "…"}</b>
+            <b>{statReady(stat, model) ? statText(stat, model, slider) : "…"}</b>
             <span className={css.helpSource}>
               {statReady(stat, model) ? statSource(stat, model) : "Loading the model…"}
             </span>
+          </p>
+        ))}
+        {def.help.notes?.map((note) => (
+          <p key={note} className={css.helpStat}>
+            {note}
           </p>
         ))}
 

@@ -37,8 +37,34 @@ import type { Mat4, Vec3 } from "math";
 import { share } from "../../chapters/format.ts";
 import { look } from "../../look/look.ts";
 import type { SceneTags } from "../../hud/SceneTags.tsx";
-import type { AttentionStep, SceneBuilder, SceneFrame } from "../build-frame.ts";
+import type { SceneBuilder, SceneFrame } from "../build-frame.ts";
 import { nextRevision } from "../revision.ts";
+
+/** Chapters 4 and 5's run (`runtime/runs/attention.ts`): one step per loop input. */
+export interface AttentionRun {
+  kind: "attention";
+  steps: AttentionStep[];
+}
+
+/** One prompt through a one-layer attention model, seen from its last token (the focus). */
+export interface AttentionStep {
+  /** Every token as text: `<bos>`, the prompt, then the words the model writes next. */
+  tokens: string[];
+  /** The focus token's index: the prompt's last. */
+  focus: number;
+  /**
+   * The focus token's real attention weights over every token (layer 0, head 0); the causal
+   * mask makes every weight after the focus exactly 0.
+   */
+  weights: number[];
+  /** The model's top guess for the word after the focus, and its probability. */
+  guess: { token: string; p: number };
+  /**
+   * How attention turned the focus token's vector toward `referent` (the token it draws the
+   * most from, other than itself): the angle between them before and after, in degrees.
+   */
+  turn: { referent: number; before: number; after: number };
+}
 
 /** The most tokens the scene lays out (`<bos>` and the sealed words included). */
 export const MAX_TOKENS = 48;

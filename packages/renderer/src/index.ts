@@ -34,6 +34,8 @@ export { BAR_MIN_HEIGHT, placeBar, type BarSlot, type BarsParams } from "./kit/b
 export type { BlockParams } from "./kit/block.ts";
 export { BRICK, placeBrick, type BrickParams, type BrickPlacement } from "./kit/brick.ts";
 export type { ContactShadowParams } from "./kit/contact-shadow.ts";
+export { faceAt, placeDie, type DieParams, type DiePose } from "./kit/die.ts";
+export { PIN, PIN_PARTS, placePin, type PinFieldParams } from "./kit/pins.ts";
 export type { MeshParams } from "./kit/mesh.ts";
 export {
   PIPE_SAMPLES,
@@ -45,4 +47,13 @@ export {
 } from "./kit/pipes.ts";
 export { sealedPaths, type SealedParams } from "./kit/sealed.ts";
 export type { FlowsParams } from "./kit/flows.ts";
-export type { TubeParams } from "./kit/tube.ts";
+export { placeSegment, UNIT_SEGMENT, type TubeParams } from "./kit/tube.ts";
+export {
+  lampCenter,
+  panelSize,
+  placePush,
+  pushEnds,
+  type QuestionPanelParams,
+} from "./kit/question-panel.ts";
+export { placePour, placeStretch, stretchSpan, type RiverParams } from "./kit/river.ts";
+export { placeKnob, type VolumeKnobParams } from "./kit/volume-knob.ts";

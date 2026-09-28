@@ -1,5 +1,5 @@
 /**
- * `/lab/kit/<name>`: a Blender prop (`board`, `axis`) or a kit primitive (`block`, `tube`,
+ * `/lab/kit/<name>`: a Blender prop (`board`, `bus`, `axis`) or a kit primitive (`block`, `tube`,
  * `mesh`, `bars`: its `example` build) on a turntable. The camera turns 45° per second, so a
  * held clock at t = 0…7 gives the eight review azimuths.
  */
@@ -13,6 +13,10 @@ const PROPS: Record<string, { file: string; camera: OrbitPose }> = {
   board: {
     file: "/props/counter_board.glb",
     camera: { target: [0, 1.2, 0], yaw: 0, pitch: 0.18, distance: 6.2, fovY: 0.75 },
+  },
+  bus: {
+    file: "/props/bus.glb",
+    camera: { target: [0, 1.1, 0], yaw: 0, pitch: 0.18, distance: 7, fovY: 0.75 },
   },
   axis: {
     file: "/props/axis_probe.glb",

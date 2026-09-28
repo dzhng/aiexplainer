@@ -11,9 +11,9 @@ import { attention, ORDER_PROMPTS, RECALL_PROMPTS } from "../src/chapters/data/a
 import { SCENE_KIT } from "../src/chapters/scenes.ts";
 import { createTimelineState, evalTimeline } from "../src/chapters/timeline.ts";
 import { look, lookConfig } from "../src/look/look.ts";
-import { angleDeg, computeRun } from "../src/runtime/scene-run.ts";
-import { directSession } from "../scripts/direct-session.ts";
-import { shippedModel } from "../scripts/shipped.ts";
+import { computeRun } from "../src/runtime/scene-run.ts";
+import { angleDeg } from "../src/runtime/runs/attention.ts";
+import { shippedContext, shippedModel } from "../scripts/shipped.ts";
 import {
   FUTURE_WORDS,
   ORDER_NOTE,
@@ -35,7 +35,7 @@ const models = path.resolve(import.meta.dirname, "../public/models");
 const loaded = await shippedModel("attn");
 const model = transformerModel(loaded);
 const tokenizer = loaded.tokenizer!;
-const ctx = { model: loaded, session: directSession(loaded) };
+const ctx = { ...(await shippedContext("attn")), model: loaded };
 
 /** The shipped model's own weights from the last token of `prompt`. */
 function golden(prompt: string): Float32Array {
@@ -56,7 +56,7 @@ function frameAt(t: number, run: SceneRun, text: string | null = null) {
     },
   });
   const tl = evalTimeline(attention.loop, t, createTimelineState(attention.loop));
-  const ui: SceneUi = { follow: null, slider: 3, view: "whole", text };
+  const ui: SceneUi = { follow: null, slider: 3, sliderSet: false, view: "whole", text };
   const input = buildFrame(attention, tl, ui, run, frame);
   return { input, frame };
 }

@@ -247,7 +247,7 @@ function ChipsSection({ onReady }: { onReady: () => void }) {
         }}
       >
         {STAT_SCALES.map((scale) => (
-          <StatChip key={scale} stat={SPECIMENS[scale]} model={model} />
+          <StatChip key={scale} stat={SPECIMENS[scale]} model={model} slider={0} />
         ))}
       </div>
     </Section>

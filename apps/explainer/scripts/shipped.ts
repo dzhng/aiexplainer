@@ -5,7 +5,10 @@
 import { loadModel, loadTokenizerWithEvidence, type LoadedModel, type ModelId } from "@repo/llm";
 import type { LoadedTokenizer, ModelSource } from "@repo/llm";
 import path from "node:path";
+import { pathToFileURL } from "node:url";
 import type { ChapterModelId } from "../src/chapters/types.ts";
+import { localSession } from "../src/runtime/local-session.ts";
+import type { RunContext } from "../src/runtime/scene-run.ts";
 
 const modelsDir = path.resolve(import.meta.dirname, "../public/models");
 
@@ -33,4 +36,14 @@ export async function shippedModel(id: ModelId): Promise<LoadedModel> {
 
 export function shipped(id: ChapterModelId): Promise<ModelSource> {
   return id === "tokenizer" ? shippedTokenizer() : shippedModel(id);
+}
+
+/**
+ * What `computeRun` needs for a chapter, in-process: its shipped model on "the main thread",
+ * and a `localSession` (the worker's own code) holding it.
+ */
+export async function shippedContext(id: ChapterModelId): Promise<RunContext> {
+  const session = localSession(pathToFileURL(`${modelsDir}/`));
+  if (id !== "tokenizer") await session.load(id);
+  return { model: await shipped(id), session };
 }

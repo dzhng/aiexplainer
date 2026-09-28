@@ -38,6 +38,11 @@ export interface HudProps {
   model: ModelSource | null;
   /** Decorative motion is allowed (a live clock); reduced-motion readers still get none. */
   motion: boolean;
+  /**
+   * The slider value to show: the reader's, or the loop's while the loop still plays the
+   * slider (`SliderDef.loop`). Chips that follow the slider read this too.
+   */
+  slider: number;
 }
 
 export function Hud(props: HudProps) {
@@ -58,7 +63,7 @@ export function Hud(props: HudProps) {
   );
 }
 
-function TitlePanel({ state, dispatch, def, model, motion }: HudProps) {
+function TitlePanel({ state, dispatch, def, model, motion, slider }: HudProps) {
   const caption = (state.follow && def.caption.byFollow[state.follow]) || def.caption.default;
   return (
     <header className={css.tl} data-crop="panel:tl" data-intro="left">
@@ -78,6 +83,7 @@ function TitlePanel({ state, dispatch, def, model, motion }: HudProps) {
             key={stat.id}
             stat={stat}
             model={model}
+            slider={slider}
             countKey={motion ? state.loopEpoch : null}
           />
         ))}
@@ -134,9 +140,9 @@ function Segmented<T>({ label, options, selected, onSelect, className }: Segment
   );
 }
 
-function Controls({ state, dispatch, def }: HudProps) {
+function Controls({ state, dispatch, def, slider: value }: HudProps) {
   const { slider } = def;
-  const fill = ((state.slider - slider.min) / (slider.max - slider.min || 1)) * 100;
+  const fill = ((value - slider.min) / (slider.max - slider.min || 1)) * 100;
   const followKeys = def.follow.length > 0 ? `keys 1–${def.follow.length + 1}` : "";
   return (
     <nav
@@ -170,12 +176,12 @@ function Controls({ state, dispatch, def }: HudProps) {
             min={slider.min}
             max={slider.max}
             step={slider.step}
-            value={state.slider}
+            value={value}
             style={{ "--fill": `${fill}%` } as CSSProperties}
             onChange={(e) => dispatch({ type: "setSlider", value: Number(e.target.value) })}
           />
           <output className={css.sliderValue} htmlFor="hud-slider">
-            {state.slider}
+            {value}
           </output>
         </div>
       </div>

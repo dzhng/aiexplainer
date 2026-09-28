@@ -1,0 +1,194 @@
+/**
+ * Chapter 12: quantization, a lower-resolution photo. The `full` model's weights rounded to
+ * 8 bits (`full-q8`, q8_0) take about half the bytes and still pick nearly the same words. The
+ * strip shows one real group of 32 weights at 16 and 8 bits; a magnifier zooms on the weight
+ * the rounding moves most, because at full size the difference is too small to see. Both
+ * machines continue the same prompt greedily. The failure: it is still one word per trip.
+ */
+import type { ChapterDef } from "../types.ts";
+
+/** The weights on the strip: one q8_0 group (32 values) of the first layer's query weights. */
+export const STRIP = { tensor: "layers.0.attn.wq", start: 0, count: 32 } as const;
+/** Words each machine adds to the prompt. */
+export const CONTINUE_WORDS = 6;
+
+export const quantization: ChapterDef = {
+  slug: "quantization",
+  title: "Quantization",
+  why: "Every trip still hauls every weight, and at 16 bits a number the cargo is heavy.",
+  model: "full-q8",
+  scene: "quantization",
+  caption: {
+    default: {
+      story: [
+        "A lower-resolution photo keeps the picture in half the space, and the same trick works on the machine's numbers.",
+        "Each weight is rounded to one of 255 levels, so the copy is half the size and still picks nearly the same words.",
+      ],
+      precisely:
+        "8-bit quantization (q8_0) stores each group of 32 weights as one 16-bit scale and 32 whole numbers from −127 to 127; each weight becomes scale × its number.",
+    },
+    byFollow: {
+      strip: {
+        story: [
+          "These bars are 32 real weights from this tiny model, first as stored at 16 bits, then rounded to 8.",
+          "At full size the rounding is too small to see, so the magnifier zooms in on one weight.",
+        ],
+        precisely:
+          "Each 8-bit number is round(w ÷ scale), where scale is the group's largest |w| ÷ 127, so no weight moves by more than half a step.",
+      },
+      crates: {
+        story: [
+          "The 8-bit copy's weights fill about half the crate.",
+          "Less to haul means a quicker trip, because the haul was the slow part.",
+        ],
+        precisely:
+          "This tiny model's 8-bit weights file is the measured share of the 16-bit one (the scales add a little). For Llama-3-8B the chip shows the weights at the slider's bytes per weight.",
+      },
+      machines: {
+        story: [
+          "Both machines continue the same story, and they pick the same next word almost every time.",
+          "The copy is not perfect, but its guesses stay very close.",
+        ],
+        precisely:
+          "On validation text the 8-bit copy's top next token matches the 16-bit model's at the agreement chip's rate; the KL chip is how far apart their whole next-token distributions are.",
+      },
+    },
+  },
+  stats: [
+    {
+      id: "llama-weights",
+      label: "Llama-3-8B weights at this precision",
+      format: "bytes",
+      scale: "Llama-3-8B",
+      value: { kind: "arith", fn: "weightBytes", args: { weightBytes: { slider: true } } },
+    },
+    {
+      id: "agreement",
+      label: "same top word as 16-bit",
+      format: "pct",
+      scale: "this tiny model",
+      value: { kind: "probe", probe: "q8-agreement" },
+    },
+    {
+      id: "kl",
+      label: "KL divergence (nats)",
+      format: "num",
+      scale: "this tiny model",
+      value: { kind: "probe", probe: "q8-kl" },
+    },
+  ],
+  follow: [
+    { id: "strip", label: "Weights", anchor: "strip" },
+    { id: "crates", label: "Size", anchor: "crates" },
+    { id: "machines", label: "Output", anchor: "machines" },
+  ],
+  slider: {
+    id: "bytes",
+    label: "Bytes per weight",
+    min: 1,
+    max: 2,
+    step: 1,
+    initial: 2,
+    loop: "bytes",
+  },
+  scenarios: [
+    { id: "once", label: "Once upon a", prompt: "Once upon a", probe: "q8-kl" },
+    {
+      id: "bird",
+      label: "A big bird who",
+      prompt: "Once upon a time, there was a big bird who",
+      probe: "q8-kl",
+    },
+  ],
+  views: ["whole", "exploded"],
+  labels: [
+    { anchor: "strip", analogy: "A strip of real weights", precise: "32 weights, one q8_0 group" },
+    { anchor: "lens", analogy: "Magnifier: one weight", precise: "One weight on the 8-bit grid" },
+    { anchor: "crates", analogy: "The cargo, 16-bit vs 8-bit", precise: "Weights file bytes" },
+    { anchor: "machines", analogy: "Two machines, one story", precise: "16-bit vs 8-bit copy" },
+  ],
+  loop: {
+    durationSec: 24,
+    inputs: ["Once upon a time, there was a big bird who"],
+    channels: {
+      /** Resolution: 0 the 16-bit weights, 1 the 8-bit ones (the strip and the magnifier). */
+      res: [
+        { t: 0, v: 0 },
+        { t: 3.5, v: 0 },
+        { t: 5, v: 1, ease: "inOut" },
+        { t: 23, v: 1 },
+        { t: 23.8, v: 0, ease: "inOut" },
+      ],
+      /** Bytes per weight: plays the slider, so the Llama chip halves with the crate. */
+      bytes: [
+        { t: 0, v: 2, ease: "step" },
+        { t: 7, v: 1, ease: "step" },
+      ],
+      /** The 8-bit crate: 0 absent, 1 at its measured size beside the 16-bit one. */
+      crate: [
+        { t: 0, v: 0 },
+        { t: 6, v: 0 },
+        { t: 7.5, v: 1, ease: "inOut" },
+        { t: 23.2, v: 1 },
+        { t: 23.8, v: 0, ease: "inOut" },
+      ],
+      /** Words each machine has added so far (one per trip). */
+      words: [
+        { t: 0, v: 0, ease: "step" },
+        { t: 10, v: 1, ease: "step" },
+        { t: 11.3, v: 2, ease: "step" },
+        { t: 12.6, v: 3, ease: "step" },
+        { t: 13.9, v: 4, ease: "step" },
+        { t: 15.2, v: 5, ease: "step" },
+        { t: 16.5, v: 6, ease: "step" },
+        { t: 23.6, v: 0, ease: "step" },
+      ],
+      /** The failure beat: the machines pulse once per word. */
+      trip: [
+        { t: 0, v: 0 },
+        { t: 18.5, v: 0 },
+        { t: 19.2, v: 1, ease: "inOut" },
+        { t: 22.8, v: 1 },
+        { t: 23.4, v: 0, ease: "inOut" },
+      ],
+    },
+    beats: [
+      { t: 0, id: "strip", note: "a strip of 32 real weights, stored at 16 bits", focus: "strip" },
+      {
+        t: 3.5,
+        id: "round",
+        note: "rounded to 8 bits: the bars barely move; the magnifier shows the snap",
+        focus: "lens",
+      },
+      {
+        t: 6,
+        id: "crate",
+        note: "the 8-bit crate is about half the 16-bit one; Llama-3-8B halves too",
+        focus: "crates",
+      },
+      {
+        t: 10,
+        id: "continue",
+        note: "both machines continue the same story, word by word",
+        focus: "machines",
+      },
+      {
+        t: 18.5,
+        id: "one-per-trip",
+        note: "lighter cargo, but still one word per trip",
+        focus: "machines",
+        tint: "focus",
+      },
+    ],
+  },
+  shot: "quant-bench",
+  help: {
+    sources: [
+      {
+        label: "llama.cpp q8_0 block format",
+        url: "https://github.com/ggml-org/llama.cpp/blob/master/ggml/src/ggml-common.h",
+      },
+    ],
+  },
+  ogTimeSec: 8,
+};

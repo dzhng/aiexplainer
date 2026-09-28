@@ -4,14 +4,21 @@
  * scene text the overlay draws. Each chapter names a scene builder; the builder creates its
  * parts once (a new `revision`) and then updates transforms and dynamics in place every frame.
  */
-import type { NextWord } from "@repo/llm";
 import type { FrameInput, SceneDesc } from "@repo/renderer";
 import type { ChapterDef, FollowId, SceneBuilderId, ViewMode } from "../chapters/types.ts";
 import type { TimelineState } from "../chapters/timeline.ts";
 import type { SceneTags } from "../hud/SceneTags.tsx";
-import { attention } from "./builders/attention.ts";
-import { autocomplete } from "./builders/autocomplete.ts";
+import { attention, type AttentionRun } from "./builders/attention.ts";
+import { autocomplete, type CountsRun } from "./builders/autocomplete.ts";
+import { embeddings } from "./builders/embeddings.ts";
+import { generation, type GenerationRun } from "./builders/generation.ts";
+import { mlp, type MlpRun } from "./builders/mlp.ts";
+import { residual, type ResidualRun } from "./builders/residual.ts";
+import { sampling, type LogitsRun } from "./builders/sampling.ts";
+import { stack, type StackRun } from "./builders/stack.ts";
 import { tokenizer } from "./builders/tokenizer.ts";
+import { batching } from "./builders/batching.ts";
+import { quantization } from "./builders/quantization.ts";
 import { withEnvironment } from "./environment.ts";
 import { nextRevision } from "./revision.ts";
 
@@ -19,52 +26,79 @@ import { nextRevision } from "./revision.ts";
 export interface SceneUi {
   follow: FollowId | null;
   slider: number;
+  /** Whether the reader moved the slider; until then a scene may play its own value for it. */
+  sliderSet: boolean;
   view: ViewMode;
   /** Text the reader typed (or a scenario's prompt); it replaces the loop's inputs. */
   text: string | null;
 }
 
-/** The chapter's model output for what the scene shows (`runtime/scene-run.ts`). */
+/**
+ * The chapter's model output for what the scene shows (`runtime/scene-run.ts`). Each scene's
+ * builder reads its own kind.
+ */
 export type SceneRun =
-  | {
-      kind: "counts";
-      /** One step per loop input (or one for typed text): the word and its real successors. */
-      steps: { word: string; next: NextWord[] }[];
-    }
-  | {
-      kind: "pieces";
-      /** Entries in the tokenizer's vocabulary: the box of shapes. */
-      vocab: number;
-      /**
-       * One step per loop input (or one for typed text): the text and its tokenizer pieces,
-       * each with its id, its text (a leading space included) and its length in bytes.
-       */
-      steps: { text: string; pieces: { id: number; text: string; bytes: number }[] }[];
-    }
-  | {
-      kind: "attention";
-      /** One step per loop input (or one for typed text). */
-      steps: AttentionStep[];
-    };
+  | CountsRun
+  | PiecesRun
+  | PinsRun
+  | LogitsRun
+  | MlpRun
+  | ResidualRun
+  | StackRun
+  | GenerationRun
+  | QuantizationRun
+  | AttentionRun;
 
-/** One prompt through a one-layer attention model, seen from its last token (the focus). */
-export interface AttentionStep {
-  /** Every token as text: `<bos>`, the prompt, then the words the model writes next. */
-  tokens: string[];
-  /** The focus token's index: the prompt's last. */
-  focus: number;
+/** Chapter 1's run (`runtime/runs/tokenizer.ts`). */
+export interface PiecesRun {
+  kind: "pieces";
+  /** Entries in the tokenizer's vocabulary: the box of shapes. */
+  vocab: number;
   /**
-   * The focus token's real attention weights over every token (layer 0, head 0); the causal
-   * mask makes every weight after the focus exactly 0.
+   * One step per loop input (or one for typed text): the text and its tokenizer pieces,
+   * each with its id, its text (a leading space included) and its length in bytes.
    */
-  weights: number[];
-  /** The model's top guess for the word after the focus, and its probability. */
-  guess: { token: string; p: number };
+  steps: { text: string; pieces: { id: number; text: string; bytes: number }[] }[];
+}
+
+/** Chapter 2's run (`runtime/runs/embeddings.ts`). */
+export interface PinsRun {
+  kind: "pins";
   /**
-   * How attention turned the focus token's vector toward `referent` (the token it draws the
-   * most from, other than itself): the angle between them before and after, in degrees.
+   * One step per loop input (or one for typed text): its tokens, each at its embedding's
+   * projection on the map (`scene/embed-map.ts`), and the cosine similarity of the first
+   * two tokens' embeddings when there are two.
    */
-  turn: { referent: number; before: number; after: number };
+  steps: {
+    text: string;
+    pins: { id: number; text: string; bytes: number; at: [number, number, number] }[];
+    cosine: number | null;
+  }[];
+}
+
+/** Chapter 12's run (`runtime/runs/quantization.ts`). */
+export interface QuantizationRun {
+  kind: "quantization";
+  /** The text both machines continue (the loop's input, or the reader's text). */
+  prompt: string;
+  /** Each machine's greedy words after it: the 16-bit `full` and its 8-bit copy. */
+  full: string[];
+  q8: string[];
+  /**
+   * One q8_0 group of weights: `full`'s stored 16-bit values, and `full-q8`'s `scale · q`
+   * with its scale and integers.
+   */
+  strip: {
+    tensor: string;
+    start: number;
+    count: number;
+    full: number[];
+    q8: number[];
+    scale: number;
+    q: number[];
+  };
+  /** The measured weights-file ratio, 8-bit ÷ 16-bit (the `q8-bytes` probe). */
+  byteRatio: number;
 }
 
 export interface SceneBuilder {
@@ -85,7 +119,15 @@ export interface SceneBuilder {
 export const SCENE_BUILDERS: Record<SceneBuilderId, SceneBuilder> = {
   autocomplete,
   tokenizer,
+  embeddings,
+  sampling,
   attention,
+  mlp,
+  residual,
+  stack,
+  generation,
+  batching,
+  quantization,
 };
 
 /** What one frame of a chapter's scene is: the renderer's input and the overlay's text. */

@@ -7,9 +7,11 @@ import { blockGeometry } from "../src/kit/block.ts";
 import { placeBrick } from "../src/kit/brick.ts";
 import { KIT, KIT_ENTRIES } from "../src/kit/catalog.ts";
 import { shadowGeometry } from "../src/kit/contact-shadow.ts";
-import type { Geometry } from "../src/kit/geometry.ts";
+import { faceAt } from "../src/kit/die.ts";
+import { PIN_PARTS, placePin } from "../src/kit/pins.ts";
 import { PIPE_SAMPLES, pipeEntries, pipePath } from "../src/kit/pipes.ts";
-import { tubeGeometry } from "../src/kit/tube.ts";
+import type { Geometry } from "../src/kit/geometry.ts";
+import { placeSegment, tubeGeometry } from "../src/kit/tube.ts";
 
 const at = (a: Float32Array, i: number): Vec3 => [a[i * 3]!, a[i * 3 + 1]!, a[i * 3 + 2]!];
 
@@ -54,6 +56,36 @@ test("tube: outward winding, capped ends, and a constant radius through a right-
   expect(Math.max(...corner)).toBeCloseTo(0.25 * Math.SQRT2, 3);
   expect(Math.min(...corner)).toBeCloseTo(0.25, 5);
   expect(g.bounds[3]).toBeCloseTo(2.25, 5);
+});
+
+test("placeSegment stretches the unit segment between two points without mirroring it", () => {
+  const cases: [Vec3, Vec3][] = [
+    [
+      [0, 0, 0],
+      [1, 2, 3],
+    ],
+    [
+      [1, 1, 1],
+      [1, 5, 1],
+    ],
+    [
+      [0, 2, 0],
+      [0.5, 0.4, 0.8],
+    ],
+  ];
+  for (const [from, to] of cases) {
+    const m = mat4.create();
+    placeSegment(m as unknown as number[], from, to, 0.1);
+    const start = vec3.transformMat4([0, 0, 0], [0, 0, 0], m);
+    const end = vec3.transformMat4([0, 0, 0], [0, 1, 0], m);
+    const rim = vec3.transformMat4([0, 0, 0], [1, 0, 0], m);
+    for (let a = 0; a < 3; a++) {
+      expect(start[a]!).toBeCloseTo(from[a]!, 6);
+      expect(end[a]!).toBeCloseTo(to[a]!, 6);
+    }
+    expect(vec3.distance(rim, from)).toBeCloseTo(0.1, 6);
+    expect(mat4.determinant(m)).toBeGreaterThan(0);
+  }
 });
 
 test("tube: every vertex scales about its ring's centreline point (widthScale)", () => {
@@ -301,4 +333,61 @@ test("contact shadow sits just above the floor under the subject's footprint, wi
   expect([x0, z0, x1, z1].map((v) => Math.round(v * 100) / 100)).toEqual([-1.3, -0.7, 1.3, 0.6]);
   expect(y0).toBeGreaterThan(0);
   expect(y0).toBeLessThan(0.01);
+});
+
+test("pins: each arrow runs from the origin exactly to its head, at its own thin radius", () => {
+  const origin: Vec3 = [0.1, 0.2, -0.3];
+  const head: Vec3 = [0.8, 0.9, 0.4];
+  const built = KIT.pins.build({
+    id: "p",
+    slot: 0,
+    heads: [head],
+    floor: 0,
+    origin,
+    headMaterial: "m",
+    needleMaterial: "m",
+    arrowMaterial: "m",
+  });
+  const arrow = built.parts[PIN_PARTS - 1]!;
+  const tip = vec3.transformMat4([0, 0, 0], [1, 0, 0], arrow.transform);
+  for (let a = 0; a < 3; a++) expect(tip[a]!).toBeCloseTo(head[a]!, 6);
+  // The cross-section axes are unit length: the tube's own radius is the arrow's.
+  expect(Math.hypot(arrow.transform[4]!, arrow.transform[5]!, arrow.transform[6]!)).toBeCloseTo(
+    1,
+    6,
+  );
+  // Half grown, it reaches halfway; parked pins go out of sight.
+  placePin(built.parts, 0, head, 0, origin, 0.5);
+  const half = vec3.transformMat4([0, 0, 0], [1, 0, 0], arrow.transform);
+  expect(half[0]!).toBeCloseTo((origin[0] + head[0]) / 2, 6);
+  placePin(built.parts, 0, null, 0, origin, 1);
+  expect(built.parts[0]!.transform[13]!).toBeLessThan(-10);
+});
+
+test("die: each face spans its share of the rim, and the face read is the one there", () => {
+  const shares = [0.5, 0.3, 0.2];
+  const built = KIT.die.build({
+    id: "d",
+    slot: 0,
+    center: [0, 1, 0],
+    radius: 0.3,
+    length: 0.5,
+    thickness: 0.04,
+    materials: ["a", "b", "c"],
+    staves: 6,
+    coreMaterial: "core",
+    shares,
+  });
+  // Stave k of face f sits at the middle of its step around the rim, from +y towards +z.
+  const centre = (f: number, k: number) => {
+    const t = built.parts[f * 6 + k]!.transform;
+    return Math.atan2(t[14]!, t[13]! - 1);
+  };
+  expect(centre(0, 0)).toBeCloseTo((0.5 * Math.PI * 2 * 0.5) / 6, 6);
+  // atan2 wraps past π: compare on the circle.
+  expect(Math.cos(centre(1, 0))).toBeCloseTo(Math.cos(Math.PI * 2 * (0.5 + 0.3 / 12)), 6);
+  // Reading straight up with face 0 starting there reads face 0; a quarter turn back, face 1.
+  expect(faceAt(shares, 0)).toBe(0);
+  expect(faceAt(shares, -Math.PI * 2 * 0.6)).toBe(1);
+  expect(faceAt(shares, 0, Math.PI * 2 * 0.9)).toBe(2);
 });

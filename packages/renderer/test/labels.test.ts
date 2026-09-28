@@ -90,6 +90,32 @@ test("a tube's capsule hides an anchor behind it, but not one the ray passes abo
   expect(placed.clear).toMatchObject({ visible: true });
 });
 
+test("a pipe stretched along its length keeps its radius as an occluder", () => {
+  // A unit segment (radius 1, 0 → +Y) stretched 4 m along X with radius 0.2, like `placeSegment`.
+  const pipe: Part = {
+    kind: "tube",
+    id: "pipe",
+    slot: 0,
+    material: "metal",
+    radius: 1,
+    path: [
+      [0, 0, 0],
+      [0, 1, 0],
+    ],
+    transform: [0, 0.2, 0, 0, 4, 0, 0, 0, 0, 0, 0.2, 0, -2, 0, 0, 1],
+  };
+  const [capsule] = sceneOccluders(
+    { revision: 1, parts: [pipe], anchors: [], assets: {} },
+    view,
+    testLook(),
+  );
+  expect(capsule).toMatchObject({ kind: "capsule", a: [-2, 0, 0], b: [2, 0, 0] });
+  expect((capsule as { radius: number }).radius).toBeCloseTo(0.2, 6);
+  const placed = place([pipe], [anchor("hidden", [0, 0, -1]), anchor("clear", [0, 0.6, -1])]);
+  expect(placed.hidden).toMatchObject({ visible: false, hiddenBy: "occluded" });
+  expect(placed.clear).toMatchObject({ visible: true });
+});
+
 test("a crowded lower-priority label takes the next free side", () => {
   const placed = place([], [anchor("minor", [0, 0, 0], 1), anchor("major", [0.05, 0, 0], 5)]);
   expect(placed.major).toMatchObject({ visible: true, side: "up-right" });
