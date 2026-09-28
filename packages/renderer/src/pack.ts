@@ -101,6 +101,7 @@ export const LookUniform = d
     flowSpacing: d.f32,
     flowDuty: d.f32,
     bakeWarm: d.vec3f,
+    poolStretch: d.f32,
     bakeCool: d.vec3f,
     capColor: d.vec3f,
   })
@@ -241,7 +242,7 @@ export function packLook(out: Float32Array, look: LookConfig): void {
   out[50] = look.flow.spacing;
   out[51] = look.flow.duty;
   packVec3(out, 52, look.room.bake.warm);
-  out[55] = 0;
+  out[55] = look.lights.pool.stretch;
   packVec3(out, 56, look.room.bake.cool);
   out[59] = 0;
   packVec3(out, 60, look.cutaway.cap);

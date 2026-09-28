@@ -19,6 +19,7 @@
  */
 import {
   KIT,
+  blockFootprint,
   lampCenter,
   panelSize,
   placeBar,
@@ -223,6 +224,10 @@ export const mlp: SceneBuilder = {
         slot: shadowSlot,
         bounds: panel.bounds,
         softness: 0.3,
+        // The panel stands on its two legs (`<id>.leg.{0,1}`).
+        feet: panel.parts
+          .filter((part) => part.id.startsWith(`${PANEL.id}.leg.`))
+          .map((leg) => blockFootprint(leg as BlockPart)),
       }),
       KIT.contactShadow.build({
         id: "readout.shadow",

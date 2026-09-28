@@ -5,19 +5,22 @@ the subject stands at the origin on the floor. The room is 18 m wide (x ±9), 16
 (y −11…+5) and 5.2 m tall, so orbiting keeps the camera inside it.
 
 - a tiled concrete floor with seams;
-- a back wall of bolted panels over a darker backing, with conduit and a strip light;
+- a back wall of bolted panels over a darker backing, with conduit and a strip light right of
+  the window (left of it the wall stays plain: the HUD's title sits over it);
 - a large window on the back wall, right of centre, showing a dim night skyline (sky card,
   distant dark buildings, lit windows) through glass;
 - a workbench with equipment and a stool under a pendant lamp (right), a whiteboard on the
-  right wall; shelving, an equipment rack with indicator LEDs and a desk with two dim
-  monitors (left); plants, crates, a coiled cable and a floor cable run;
-- wall strip lights either side of the window, and ceiling strip lights;
+  right wall; shelving stocked with binders, parts bins, equipment cases and a spare monitor,
+  an equipment rack with indicator LEDs and cases beside it, and a desk with two dim monitors
+  (left); plants, a coiled cable and a floor cable run;
+- ceiling strip lights;
 - outside, three rows of buildings at increasing distance (nearer rows darker, farther rows
   hazier), lit windows, and a faint glow along the horizon.
 
 The renderer has no shadows and no local lights, so the bake carries them: vertex
 colours (glTF COLOR_0) hold ambient occlusion (R) and where the pendant's warm light (G)
-and the strips' and window's cool light (B) fall. The look sets their colours and strengths.
+and the strips' and window's cool light (B) fall. The look sets their colours and
+strengths.
 Node and material names follow the look's material presets.
 """
 
@@ -103,15 +106,19 @@ side.append(common.grid("ceiling", (X1 - X0, Y1 - Y0), (0, (Y0 + Y1) / 2, HEIGHT
 side.append(common.grid("front", (X1 - X0, HEIGHT), (0, Y0, HEIGHT / 2), housing, 8, (-1.5708, 0, 0)))
 common.join("room.walls", side)
 
-# Conduit along the top of the back wall, and a drop to a junction box.
+# Conduit along the top of the back wall from the right wall, dropping beside the window to a
+# junction box. The back wall left of the window stays plain above the props (no conduit, no
+# light fittings): heroes look at that part of the wall from low down, right behind the HUD's
+# title, and any bright line or fitting there cuts through its text (checked on all 16 heroes).
+CONDUIT_X0 = -0.45
 conduit = [
-    common.cylinder("c0", 0.05, X1 - X0, (0, Y1 - 0.12, 4.9), metal, (0, 1.5708, 0)),
-    common.cylinder("c1", 0.035, X1 - X0, (0, Y1 - 0.12, 4.75), metal, (0, 1.5708, 0)),
-    common.cylinder("c2", 0.035, 4.4, (-6.6, Y1 - 0.12, 2.55), metal),
-    common.box("junction", (0.35, 0.14, 0.45), (-6.6, Y1 - 0.14, 0.6), metal, bevel=0.02),
+    common.cylinder("c0", 0.05, X1 - CONDUIT_X0, ((X1 + CONDUIT_X0) / 2, Y1 - 0.12, 4.9), metal, (0, 1.5708, 0)),
+    common.cylinder("c1", 0.035, X1 - CONDUIT_X0, ((X1 + CONDUIT_X0) / 2, Y1 - 0.12, 4.75), metal, (0, 1.5708, 0)),
+    common.cylinder("c2", 0.035, 4.1, (CONDUIT_X0, Y1 - 0.12, 2.75), metal),
+    common.box("junction", (0.3, 0.14, 0.4), (CONDUIT_X0, Y1 - 0.14, 0.6), metal, bevel=0.02),
 ]
 common.join("room.conduit", conduit)
-STRIPS = [(-4.6, 7.8), (7.0, 3.4)]  # centre x and length, either side of the window
+STRIPS = [(7.0, 3.4)]  # centre x and length, right of the window
 common.join("room.strip.housing", [common.box("sh", (n + 0.2, 0.14, 0.1), (x, Y1 - 0.16, 4.45), metal, bevel=0.01) for x, n in STRIPS])
 common.join("room.strip", [common.box("strip", (n, 0.03, 0.04), (x, Y1 - 0.24, 4.43), practical) for x, n in STRIPS])
 
@@ -201,10 +208,102 @@ shelf = [common.box("upright", (0.05, 0.5, 2.4), (SX + dx, SY, 1.2), metal) for 
 for z in (0.15, 0.8, 1.45, 2.1):
     shelf.append(common.box("board", (2.25, 0.5, 0.03), (SX, SY, z), housing))
 common.join("room.shelf", shelf)
-crates = []
-for i, (dx, z, s) in enumerate(((-0.6, 0.15, 0.4), (0.2, 0.15, 0.5), (-0.3, 0.8, 0.35), (0.6, 0.8, 0.3), (-0.5, 1.45, 0.45), (0.4, 2.1, 0.3))):
-    crates.append(common.box(f"crate{i}", (s, 0.4, s * 0.8), (SX + dx, SY, z + 0.015 + s * 0.4), housing, bevel=0.01))
-common.join("room.crates", crates)
+
+
+def case(x, y, z, size, body):
+    """A hard equipment case standing on z: a lid seam, a carry handle on top and two latches
+    on the front (the face toward −y)."""
+    sx, sy, sz = size
+    parts = [common.box("case", size, (x, y, z + sz / 2), body, bevel=0.02)]
+    parts.append(common.box("seam", (sx + 0.004, sy + 0.004, 0.012), (x, y, z + sz * 0.72), rubber))
+    for dx in (-sx * 0.3, sx * 0.3):
+        parts.append(common.box("latch", (0.05, 0.02, 0.06), (x + dx, y - sy / 2 - 0.008, z + sz * 0.72), metal, bevel=0.004))
+    for dx in (-0.07, 0.07):
+        parts.append(common.box("post", (0.02, 0.03, 0.035), (x + dx, y, z + sz + 0.017), rubber))
+    parts.append(common.box("grip", (0.18, 0.03, 0.02), (x, y, z + sz + 0.04), rubber, bevel=0.006))
+    return parts
+
+
+def binders(x0, y, z, count, seed):
+    """A row of ring binders from x0 rightward, spines toward −y, each with a finger hole and
+    a paper label; colours and widths follow a small hash, and the last one leans."""
+    import math
+    spines, labels, holes = [], [], []
+    x = x0
+    for k in range(count):
+        h = (seed + k * 7) % 5
+        width = 0.05 + 0.012 * (h % 3)
+        height = 0.3 + 0.012 * (h % 2)
+        mat = (binder, binder_alt, rubber, binder, housing)[h]
+        lean = 0.18 if k == count - 1 else 0.0
+        def at(up):
+            # A point `up` metres along the (leaning) spine from its foot.
+            return x + width / 2 + up * math.sin(lean), z + up * math.cos(lean)
+
+        bx, bz = at(height / 2)
+        b = common.box("binder", (width, 0.26, height), (bx, y, bz), mat, bevel=0.004)
+        lx, lz = at(height * 0.68)
+        l = common.box("label", (width * 0.62, 0.004, 0.07), (lx, y - 0.131, lz), paper)
+        ox, oz = at(height * 0.3)
+        o = common.cylinder("hole", 0.011, 0.01, (ox, y - 0.131, oz), rubber, (1.5708, 0, 0), 10)
+        for obj in (b, l, o):
+            obj.rotation_euler.y = lean
+        spines.append(b)
+        labels.append(l)
+        holes.append(o)
+        x += width + 0.004 + (0.06 if lean else 0)
+    return spines + labels + holes
+
+
+def bins(x0, y, z, cols, rows):
+    """Stackable parts bins: open-topped trays, lower at the front, with a label on each lip
+    and a few parts showing over it."""
+    parts = []
+    w, d, h = 0.16, 0.26, 0.12
+    for c in range(cols):
+        for r in range(rows):
+            x = x0 + c * (w + 0.008) + w / 2
+            zb = z + r * (h + 0.004)
+            parts.append(common.box("floor", (w, d, 0.012), (x, y, zb + 0.006), body_bin))
+            parts.append(common.box("back", (w, 0.012, h), (x, y + d / 2 - 0.006, zb + h / 2), body_bin))
+            for sx in (-1, 1):
+                parts.append(common.box("side", (0.01, d, h * 0.8), (x + sx * (w / 2 - 0.005), y, zb + h * 0.4), body_bin))
+            parts.append(common.box("lip", (w, 0.014, h * 0.55), (x, y - d / 2 + 0.007, zb + h * 0.275), body_bin))
+            parts.append(common.box("label", (w * 0.6, 0.004, 0.028), (x, y - d / 2 - 0.001, zb + h * 0.33), paper))
+            for k in range(2 + (c + r) % 2):
+                parts.append(common.cylinder("part", 0.018, 0.05, (x - 0.04 + k * 0.04, y + 0.02, zb + 0.06 + 0.012 * k), metal, (1.5708, 0, 0.4 * k), 8))
+    return parts
+
+
+def monitor(x, y, z):
+    """A spare flat monitor, switched off: a bezel over a dark screen, on a neck and a foot."""
+    return [
+        common.box("foot", (0.22, 0.16, 0.015), (x, y + 0.02, z + 0.008), housing, bevel=0.005),
+        common.box("neck", (0.05, 0.03, 0.14), (x, y + 0.05, z + 0.08), metal),
+        common.box("bezel", (0.46, 0.04, 0.29), (x, y + 0.02, z + 0.29), housing, bevel=0.008),
+        common.box("face", (0.42, 0.004, 0.25), (x, y - 0.001, z + 0.295), rubber),
+    ]
+
+
+binder = common.material("binder", (0.03, 0.05, 0.1), roughness=0.55)
+binder_alt = common.material("binderAlt", (0.09, 0.04, 0.035), roughness=0.55)
+paper = common.material("paper", (0.4, 0.4, 0.38), roughness=0.8)
+body_bin = common.material("bin", (0.04, 0.05, 0.08), roughness=0.6)
+FRONT = SY - 0.06  # shelf contents sit a little forward of the uprights' centre line
+store = []
+# Bottom board: a big equipment case and a stack of parts bins.
+store += case(SX - 0.55, FRONT, 0.165, (0.62, 0.36, 0.34), rubber)
+store += bins(SX + 0.02, FRONT, 0.165, 5, 2)
+# Second board: two runs of binders with a gap.
+store += binders(SX - 1.02, FRONT + 0.04, 0.815, 9, 1)
+store += binders(SX + 0.35, FRONT + 0.04, 0.815, 6, 4)
+# Third board: a spare monitor and a row of parts bins.
+store += monitor(SX - 0.6, FRONT, 1.465)
+store += bins(SX - 0.12, FRONT, 1.465, 5, 1)
+# Top board: one smaller case at the right end (the rest sits behind the HUD's title in the
+# attention chapters' heroes, so it stays clear).
+store += case(SX + 0.7, FRONT, 2.115, (0.44, 0.3, 0.2), housing)
+common.join("room.shelf.store", store)
 
 # Ceiling strip lights.
 ceiling = []
@@ -285,11 +384,8 @@ def plant(name, x, y, height):
 plant("room.plant", -1.7, 4.4, 1.3)
 plant("room.plant.b", 8.3, 4.2, 1.0)
 
-# Crates by the rack, and a coiled cable with a run along the floor to the back wall.
-crates2 = []
-for i, (x, y, z, s_) in enumerate(((-6.0, 3.6, 0.0, 0.55), (-5.95, 3.62, 0.55, 0.42), (-6.55, 3.7, 0.0, 0.4))):
-    crates2.append(common.box(f"crate{i}", (s_, s_ * 0.9, s_ * 0.8), (x, y, z + s_ * 0.4), housing, bevel=0.01))
-common.join("room.crates.rack", crates2)
+# Equipment cases by the rack, and a coiled cable with a run along the floor to the back wall.
+common.join("room.cases.rack", case(-6.0, 3.6, 0.0, (0.6, 0.42, 0.4), rubber) + case(-5.97, 3.62, 0.4, (0.46, 0.34, 0.3), housing) + case(-6.62, 3.7, 0.0, (0.4, 0.34, 0.46), housing))
 bpy.ops.mesh.primitive_torus_add(major_radius=0.32, minor_radius=0.025, major_segments=32, minor_segments=6, location=(3.9, 2.6, 0.03))
 coil = bpy.context.active_object
 coil.data.materials.append(rubber)

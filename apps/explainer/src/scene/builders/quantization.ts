@@ -15,7 +15,13 @@
  * `words` (words each machine has added), `trip` (the failure beat's pulse). Typed text or a
  * scenario shows everything at its end state; a moved slider picks 16- or 8-bit weights.
  */
-import { KIT, type BlockPart, type SceneAnchor, type SceneDesc } from "@repo/renderer";
+import {
+  KIT,
+  blockFootprint,
+  type BlockPart,
+  type SceneAnchor,
+  type SceneDesc,
+} from "@repo/renderer";
 import type { Vec3 } from "math";
 import { formatStat } from "../../chapters/format.ts";
 import type { SceneTags } from "../../hud/SceneTags.tsx";
@@ -130,6 +136,8 @@ export const quantization: SceneBuilder = {
           explode,
         ),
       );
+    const boardLegs = legs("board", SLOT.board, BOARD.x, BOARD.w, EXPLODE.board);
+    const lensLegs = legs("lens", SLOT.lens, LENS.x, LENS.w + 0.1, EXPLODE.lens);
     const board = [
       block(
         "board",
@@ -139,7 +147,7 @@ export const quantization: SceneBuilder = {
         [BOARD.w, BOARD.h, 0.06],
         EXPLODE.board,
       ),
-      ...legs("board", SLOT.board, BOARD.x, BOARD.w, EXPLODE.board),
+      ...boardLegs,
       block(
         "board.zero",
         SLOT.board,
@@ -168,7 +176,7 @@ export const quantization: SceneBuilder = {
         [LENS.w, LENS.h, 0.06],
         EXPLODE.lens,
       ),
-      ...legs("lens", SLOT.lens, LENS.x, LENS.w + 0.1, EXPLODE.lens),
+      ...lensLegs,
       ...Array.from({ length: LENS.lines }, (_, k) =>
         block(
           `lens.grid.${k}`,
@@ -197,7 +205,7 @@ export const quantization: SceneBuilder = {
       [MARKER.w, MARKER.h, 0.03],
       EXPLODE.lens,
     );
-    const machines = MACHINE.xs.flatMap((x, i) => [
+    const bodies = MACHINE.xs.map((x, i) =>
       block(
         `machine.${i}`,
         SLOT.machines,
@@ -206,6 +214,9 @@ export const quantization: SceneBuilder = {
         [MACHINE.w, MACHINE.h, MACHINE.d],
         EXPLODE.machines,
       ),
+    );
+    const machines = MACHINE.xs.flatMap((x, i) => [
+      bodies[i]!,
       block(
         `machine.lamp.${i}`,
         SLOT.lamps,
@@ -236,6 +247,8 @@ export const quantization: SceneBuilder = {
       slot: SLOT.shadow,
       bounds: [BOARD.x - BOARD.w / 2, 0, -0.4, MACHINE.xs[1] + MACHINE.w / 2, 0.1, 0.45],
       softness: 0.25,
+      // Each leg and each machine's base touches the floor.
+      feet: [...boardLegs, ...lensLegs, ...bodies].map(blockFootprint),
     });
     const parts = [
       ...shadow.parts,

@@ -3,12 +3,13 @@
  * from the subject's bounds, so machines stand on the floor instead of floating (there are
  * no real shadows). It is a flat quad whose per-vertex coverage (the geometry's `ao` lane)
  * falls off from a solid core to nothing at a rounded edge; it draws in the translucent
- * phase (depth read, no depth write) with a translucent `material`.
+ * phase (depth read, no depth write) with a translucent `material`. A subject on legs names
+ * its `feet`: each gets a tight footprint of its own, over a faint one under the whole body.
  */
 import type { Box3 } from "math/shapes";
-import type { ShadowPart } from "../frame-input.ts";
+import type { BlockPart, ShadowPart } from "../frame-input.ts";
 import type { Geometry } from "./geometry.ts";
-import type { KitCommon, KitPrimitive } from "./primitive.ts";
+import { unionBounds, type KitCommon, type KitPrimitive } from "./primitive.ts";
 
 /** Vertices per side of the quad; enough for a smooth falloff under interpolation. */
 const SIDE = 17;
@@ -50,37 +51,98 @@ export interface ContactShadowParams extends KitCommon {
   bounds: Box3;
   /** How far the soft edge reaches past the footprint, metres. */
   softness?: number;
+  /**
+   * Where the subject touches the floor (legs, posts, feet, wheels), as world boxes. Given
+   * these, each contact gets its own tight dark footprint (`<id>.<n>`), and the footprint
+   * under the whole body turns into a faint ambient darkening (`ambientMaterial`), so a table
+   * reads as four legs on the floor rather than one slab-shaped blob.
+   */
+  feet?: Box3[];
+  /** How far each foot's soft edge reaches past it, metres. */
+  footSoftness?: number;
   material?: string;
+  ambientMaterial?: string;
 }
 
-/** Lift off the floor so the shadow never z-fights it. */
+/** Where a floor-standing block (a leg, a post, a box) meets the floor: its own box. */
+export function blockFootprint(part: BlockPart): Box3 {
+  const t = part.transform;
+  const [x, y, z] = [t[12]!, t[13]!, t[14]!];
+  const [hx, hy, hz] = [t[0]! / 2, t[5]! / 2, t[10]! / 2];
+  return [x - hx, y - hy, z - hz, x + hx, y + hy, z + hz];
+}
+
+/** Lift off the floor so the shadow never z-fights it; feet sit a hair above the body's. */
 const LIFT = 0.004;
+const FOOT_LIFT = 0.006;
+
+function footprint(
+  id: string,
+  p: ContactShadowParams,
+  b: Box3,
+  soft: number,
+  y: number,
+  material: string,
+): ShadowPart {
+  const sx = b[3] - b[0] + 2 * soft;
+  const sz = b[5] - b[2] + 2 * soft;
+  return {
+    kind: "shadow",
+    id,
+    slot: p.slot,
+    material,
+    transform: [sx, 0, 0, 0, 0, 1, 0, 0, 0, 0, sz, 0, (b[0] + b[3]) / 2, y, (b[2] + b[5]) / 2, 1],
+    explode: p.explode,
+    cutaway: p.cutaway,
+    primitive: "contactShadow",
+  };
+}
 
 export const contactShadow: KitPrimitive<ContactShadowParams> = {
   build(p) {
-    const soft = p.softness ?? 0.35;
-    const b = p.bounds;
-    const sx = b[3] - b[0] + 2 * soft;
-    const sz = b[5] - b[2] + 2 * soft;
-    const cx = (b[0] + b[3]) / 2;
-    const cz = (b[2] + b[5]) / 2;
-    const y = b[1] + LIFT;
-    const part: ShadowPart = {
-      kind: "shadow",
-      id: p.id,
-      slot: p.slot,
-      material: p.material ?? "shadow",
-      transform: [sx, 0, 0, 0, 0, 1, 0, 0, 0, 0, sz, 0, cx, y, cz, 1],
-      explode: p.explode,
-      cutaway: p.cutaway,
-      primitive: "contactShadow",
-    };
+    const feet = p.feet ?? [];
+    const floor = p.bounds[1];
+    const shadow = p.material ?? "shadow";
+    const body = footprint(
+      p.id,
+      p,
+      p.bounds,
+      p.softness ?? 0.35,
+      floor + LIFT,
+      feet.length ? (p.ambientMaterial ?? "shadowAmbient") : shadow,
+    );
+    const contacts = feet.map((foot, i) =>
+      footprint(`${p.id}.${i}`, p, foot, p.footSoftness ?? 0.06, floor + FOOT_LIFT, shadow),
+    );
+    const parts = [body, ...contacts];
+    const bounds = unionBounds(
+      parts.map(
+        ({ transform: t }): Box3 => [
+          t[12]! - t[0]! / 2,
+          t[13]!,
+          t[14]! - t[10]! / 2,
+          t[12]! + t[0]! / 2,
+          t[13]!,
+          t[14]! + t[10]! / 2,
+        ],
+      ),
+    );
     return {
-      parts: [part],
-      bounds: [cx - sx / 2, y, cz - sz / 2, cx + sx / 2, y, cz + sz / 2],
+      parts,
+      bounds,
       anchors: [{ id: p.id, part: p.id, local: [0, 0, 0], priority: 0 }],
       explode: p.explode ?? [0, 0, 0],
     };
   },
-  example: () => ({ id: "contactShadow", slot: 0, bounds: [-1, 0, -0.5, 1, 1.2, 0.5] }),
+  example: () => ({
+    id: "contactShadow",
+    slot: 0,
+    bounds: [-1, 0, -0.5, 1, 1.2, 0.5],
+    feet: [
+      [-0.95, 0, -0.45, -0.85, 0.7, -0.35],
+      [0.85, 0, -0.45, 0.95, 0.7, -0.35],
+      [-0.95, 0, 0.35, -0.85, 0.7, 0.45],
+      [0.85, 0, 0.35, 0.95, 0.7, 0.45],
+    ],
+  }),
 };

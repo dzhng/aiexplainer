@@ -8,6 +8,16 @@ exports[`the scene is built from its declared primitives, in stable slots 1`] = 
     65,
   ],
   [
+    "shadow.0",
+    "shadow",
+    65,
+  ],
+  [
+    "shadow.1",
+    "shadow",
+    65,
+  ],
+  [
     "readout.shadow",
     "shadow",
     65,

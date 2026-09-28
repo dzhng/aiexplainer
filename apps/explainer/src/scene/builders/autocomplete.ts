@@ -26,6 +26,7 @@ import {
 } from "@repo/renderer";
 import type { NextWord } from "@repo/llm";
 import type { Mat4, Vec3 } from "math";
+import type { Box3 } from "math/shapes";
 import { share } from "../../chapters/format.ts";
 import type { SceneTags } from "../../hud/SceneTags.tsx";
 import type { SceneBuilder, SceneFrame } from "../build-frame.ts";
@@ -46,6 +47,8 @@ const SLOT_MARGIN = 0.03;
 const CARD = { width: 0.5, height: 0.12, depth: 0.02 };
 /** How far right of its resting place the card starts its slide, metres. */
 const CARD_TRAVEL = 1.4;
+/** The width (x) of each of the stand's feet in `counter_board.py`, metres. */
+const FOOT = 0.2;
 /** Extra glow on the tallest bar at the top of its flash. */
 const FLASH_GAIN = 3;
 
@@ -151,12 +154,21 @@ export const autocomplete: SceneBuilder = {
       size: [CARD.width, CARD.height, CARD.depth],
       explode: EXPLODE["board.rail"],
     });
-    // The board's own feet stand on the floor; the shadow grounds them (slot after the card).
+    // The board's own feet stand on the floor; the shadow grounds each (slot after the card).
+    // The stand's two feet are its x extremes, FOOT wide, and its full depth.
+    const stand = nodeBox(board, "board.stand");
+    const feet: Box3[] = [
+      [stand.min[0], 0, stand.min[2], stand.min[0] + FOOT, 0, stand.max[2]],
+      [stand.max[0] - FOOT, 0, stand.min[2], stand.max[0], 0, stand.max[2]],
+    ];
     const shadowKit = KIT.contactShadow.build({
       id: "shadow",
       slot: SLOTS + 2,
       bounds: boardKit.bounds,
       softness: 0.25,
+      feet,
+      // The feet are broad plates: a wider soft edge keeps them dark right along their sides.
+      footSoftness: 0.18,
     });
     const parts = [...shadowKit.parts, ...boardKit.parts, ...barsKit.parts, ...cardKit.parts];
     const housing = nodeBox(board, "board.housing");

@@ -118,3 +118,42 @@ the move's duration (2–3 s) and ease.
       loop starts at landing).
 - **Human checkpoint (implementer's call): accepted.** The before/after room shots and the
   arrival strip are listed above.
+
+## Polish pass (2026-09-27)
+
+The room items from the polish backlog, one visual variable each, judged on all 16 heroes
+(`/#N` at each chapter's OG time) before and after. Shots: `throwaway/shots/polish-before/`
+and `polish-room5/` (and `*-grid.png`, `*-tl.png`), the room in `polish-before/room-wide.png`
+→ `polish-after/room-wide.png` (shelf crops `room-wide-shelf.png`).
+
+- **Floor pool → pooled light.** The pool's edge is now a long, soft falloff (radius 0.8 m,
+  falloff 3.4 m) stretched 1.6× along x, the ceiling tubes' axis (`lights.pool.stretch`, a
+  new look field packed into the look uniform's spare lane). No hard disc; hero luminance
+  moves by at most 2.5/255. Subject-first stays green (chapter 0: subject 53.2 / 233.7
+  against room 35.8 / 86.2; chapter 8: 52.1 / 226.2 against 31.7 / 93.8).
+- **Shelf props.** The plain boxes are gone: ring binders (two runs, one leaning, paper
+  labels and finger holes), stackable parts bins with parts showing, hard equipment cases
+  (lid seam, latches, grip; also the three beside the rack), and a spare monitor. New room
+  presets `binder`, `binderAlt`, `paper`, `bin`, all dim and desaturated.
+- **Contact shadow per contact.** `contactShadow` takes `feet` (world boxes; `blockFootprint`
+  turns a floor-standing block into one): each gets a tight footprint, and the body's
+  footprint turns into a faint ambient one (`shadowAmbient`, opacity 0.35). Used by the
+  tables (chapters 1–3), the tally board's feet (0), the panel's legs (6) and the board, lens
+  and machines (12). Left as one blob, with reason: chapters 7, 9–11 and 13–15, whose
+  bodies sit on or near the floor (river, rail, bus body, desks, bays), where one soft
+  footprint is the right contact.
+- **Nothing busy behind the top-left HUD text.** The long bright horizontals left of the
+  window (the strip light and the two conduit runs) crossed the kicker or title in
+  chapters 6, 9, 10 and 13 (13 was struck through). The conduit now starts at the window
+  and drops beside it to its junction box, and the left strip light is gone. Tried and
+  dropped: a shorter strip (still under chapter 13's kicker) and wall sconces (under
+  chapters 0, 4, 5, 7 and 14's text). The top shelf keeps only a case at its right end.
+  Left as is: the plant's dark leaves behind chapters 1 and 3's titles (low contrast), a few
+  rack LEDs under chapters 4–5's second caption line, and shelf edges at chapter 2's top-left
+  corner, none crossing text.
+- **Critique (unprimed):** B (after) had fewer defects in 5 of 6 pairs and the sheet was a
+  tie. Fixed from it: the floor read flat (pool tightened), thin legs' pads read as round
+  blobs (default foot softness 0.12 → 0.06), the board's plates lacked contact (0.18 for
+  them), book stacks behind chapter 4's caption (removed). Left: the junction box beside the
+  window in chapter 1 (a wall fitting beside the title, not behind it) and the left back
+  wall reading plainer in `room-wide` (deliberate: it sits behind the HUD).
