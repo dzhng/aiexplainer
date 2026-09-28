@@ -14,7 +14,7 @@ test("a share page carries absolute link-preview metadata and redirects to its c
     '<meta property="og:image" content="https://example.test/media/autocomplete-card.jpg" />',
   );
   expect(html).toContain('<meta name="twitter:card" content="summary_large_image" />');
-  expect(html).toContain(`<meta property="og:title" content="0 · ${def.title}`);
+  expect(html).toContain(`<meta property="og:title" content="Intro · ${def.title}`);
   expect(html).toContain('<meta property="og:url" content="https://example.test/c/0/" />');
   expect(html).toContain('<meta http-equiv="refresh" content="0; url=/#0" />');
   expect(html).toContain('location.replace("/#0")');

@@ -13,7 +13,7 @@ import { mkdir } from "node:fs/promises";
 import path from "node:path";
 import { parseArgs } from "node:util";
 import { CHAPTERS } from "../src/chapters/index.ts";
-import { displayNumber } from "../src/chapters/ladder.ts";
+import { chapterBadge } from "../src/chapters/ladder.ts";
 import type { ChapterDef } from "../src/chapters/types.ts";
 import { SERIES_TITLE } from "../src/look/brand.ts";
 import { CARD_SIZE, mediaFor } from "../src/runtime/media.ts";
@@ -33,7 +33,7 @@ const escape = (text: string) => text.replace(/[&<>"']/g, (c) => `&#${c.charCode
 
 /** The share page for one chapter. */
 export function sharePage(def: ChapterDef, origin: string): string {
-  const title = `${displayNumber(def.slug)} · ${def.title} — ${SERIES_TITLE}`;
+  const title = `${chapterBadge(def.slug)} · ${def.title} — ${SERIES_TITLE}`;
   const target = `/${hashFor(def.slug)}`;
   const meta = {
     "og:type": "website",
@@ -44,7 +44,7 @@ export function sharePage(def: ChapterDef, origin: string): string {
     "og:image": `${origin}${mediaFor(def.slug).card}`,
     "og:image:width": String(CARD_SIZE.width),
     "og:image:height": String(CARD_SIZE.height),
-    "og:image:alt": `The machine from chapter ${displayNumber(def.slug)}: ${def.title}`,
+    "og:image:alt": `The machine from “${def.title}”`,
   };
   const twitter = {
     "twitter:card": "summary_large_image",

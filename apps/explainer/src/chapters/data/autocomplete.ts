@@ -1,26 +1,27 @@
 /**
- * Chapter 0: next-word guessing from word-pair counts. The example
- * words come from the `counts` model itself: "upon" is its top next word after "once", its
- * top-successor probe measures "a" after "upon", and "onse" is a misspelling it never kept.
- * The loop shows the rule twice (once → upon → a), then the failure that chapter 1 fixes. The
- * loop's inputs are whole texts, like the reader's: the rail shows each, and the machine looks
- * only at its last word.
+ * The intro (display number 0, shown as "Intro"): the job every model in the series does,
+ * guessing the next word, done the simplest way, from word-pair counts. It frames the deep
+ * dive rather than starting it. The example words come from the `counts` model itself: "upon"
+ * is its top next word after "once", its top-successor probe measures "a" after "upon", and
+ * "onse" is a misspelling it never kept. The loop shows the rule twice (once → upon → a), then
+ * the failure that chapter 1 fixes. The loop's inputs are whole texts, like the reader's: the
+ * rail shows each, and the machine looks only at its last word.
  */
 import type { ChapterDef } from "../types.ts";
 
 export const autocomplete: ChapterDef = {
   slug: "autocomplete",
-  title: "Word-pair counts",
-  why: "Start with the simplest thing that can guess the next word: remember what came next.",
+  title: "The job: guess the next word",
+  why: "Every model in this series does one thing: guess the next word. Here's the simplest possible way.",
   model: "counts",
   scene: "autocomplete",
   caption: {
     story: [
-      "Your phone's keyboard guesses your next word, and the simplest way to guess is to remember which word usually came next.",
-      "This machine read millions of children's stories and kept a tally for every pair of words that sat side by side.",
+      "Like your phone's keyboard, the simplest first try just remembers which word usually came next, tallied from millions of children's stories.",
+      "It stalls on any word it never saw, like “onse”, and the deep dive starts in chapter 1 by fixing that.",
     ],
     technical:
-      "For each word it knows, this tiny model keeps the 20 words that most often came right after it in TinyStories; each bar is one word's share of those kept counts.",
+      "For each word it knows, this tiny model keeps the 20 words that most often came right after it in TinyStories; each bar is one word's share of those kept counts. It reads only the last word, so a word outside its vocabulary has no counts and no prediction.",
   },
   stats: [
     {

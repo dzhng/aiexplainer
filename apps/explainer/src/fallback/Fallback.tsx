@@ -3,7 +3,7 @@
  * of the real app instead of the 3D machine, plus a way to open it on a desktop.
  */
 import { useState } from "react";
-import { displayNumber } from "../chapters/ladder.ts";
+import { chapterBadge } from "../chapters/ladder.ts";
 import type { ChapterDef } from "../chapters/types.ts";
 import { BrandMark, ShareIcon, XIcon } from "../hud/icons.tsx";
 import hud from "../hud/hud.module.css";
@@ -44,7 +44,7 @@ export function Fallback({ def, reason }: { def: ChapterDef; reason: Exclude<Sup
         </div>
         <p className={hud.series}>{SERIES_TITLE}</p>
         <h1 className={`${hud.title} ${css.title}`}>
-          <span className={hud.titleNum}>{displayNumber(def.slug)}</span>
+          <span className={hud.titleNum}>{chapterBadge(def.slug)}</span>
           {def.title}
         </h1>
       </header>
@@ -57,7 +57,7 @@ export function Fallback({ def, reason }: { def: ChapterDef; reason: Exclude<Sup
         muted
         loop
         playsInline
-        aria-label={`A recording of chapter ${displayNumber(def.slug)}: ${def.title}`}
+        aria-label={`A recording of “${def.title}”`}
       />
       <p className={css.why}>{def.why}</p>
       <div className={css.actions} data-crop="fallback:actions">

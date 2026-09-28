@@ -9,7 +9,7 @@
  */
 import type { ModelSource } from "@repo/llm";
 import { useRef, useState, type CSSProperties, type Dispatch, type ReactNode } from "react";
-import { LADDER, displayNumber } from "../chapters/ladder.ts";
+import { LADDER, chapterBadge, chapterName } from "../chapters/ladder.ts";
 import type { ChapterDef, SliderDef } from "../chapters/types.ts";
 import { BRAND_NAME, SERIES_TITLE, X_PROFILE } from "../look/brand.ts";
 import { sharePathFor, type Action, type AppState, type Chapters } from "../state/app-state.ts";
@@ -77,7 +77,7 @@ function TitlePanel({ state, dispatch, def, model, motion, slider }: HudProps) {
       </div>
       <p className={css.series}>{SERIES_TITLE}</p>
       <h1 className={css.title}>
-        <span className={css.titleNum}>{displayNumber(def.slug)}</span>
+        <span className={css.titleNum}>{chapterBadge(def.slug)}</span>
         {def.title}
       </h1>
       <p className={css.why}>{def.why}</p>
@@ -328,13 +328,14 @@ function Ladder({ state, dispatch, chapters }: HudProps) {
       data-intro="below"
       aria-label="Chapters"
     >
-      {LADDER.map((slug, n) => {
+      {LADDER.map((slug) => {
         const def = chapters[slug];
+        const badge = chapterBadge(slug);
         if (slug === state.chapter && def)
           return (
             <button key={slug} className={css.rung} aria-current="step" title={def.title}>
               <span className={css.rungDot} />
-              <span className={css.rungNum}>{n}</span>
+              <span className={css.rungNum}>{badge}</span>
               <span className={css.rungTitle}>{def.title}</span>
             </button>
           );
@@ -343,11 +344,13 @@ function Ladder({ state, dispatch, chapters }: HudProps) {
             key={slug}
             className={css.rung}
             disabled={!def}
-            title={def ? `${n} · ${def.title}` : `Chapter ${n} is coming soon`}
-            aria-label={def ? `Chapter ${n}: ${def.title}` : `Chapter ${n}, coming soon`}
+            title={def ? `${badge} · ${def.title}` : `${chapterName(slug)} is coming soon`}
+            aria-label={
+              def ? `${chapterName(slug)}: ${def.title}` : `${chapterName(slug)}, coming soon`
+            }
             onClick={() => dispatch({ type: "goto", chapter: slug })}
           >
-            {n}
+            {badge}
           </button>
         );
       })}

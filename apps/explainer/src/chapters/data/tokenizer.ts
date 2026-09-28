@@ -9,7 +9,7 @@ import type { ChapterDef } from "../types.ts";
 export const tokenizer: ChapterDef = {
   slug: "tokenizer",
   title: "Tokenizer",
-  why: "Chapter 0 had no row for a word it never saw, like “onse”. So stop storing whole words.",
+  why: "The intro's tally had no row for a word it never saw, like “onse”. So stop storing whole words.",
   model: "tokenizer",
   scene: "tokenizer",
   caption: {
