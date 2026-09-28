@@ -17,6 +17,7 @@ import { embeddings } from "./embeddings.ts";
 import { experts } from "./experts.ts";
 import { generation } from "./generation.ts";
 import { mlp } from "./mlp.ts";
+import { positions } from "./positions.ts";
 import { quantization } from "./quantization.ts";
 import { residual } from "./residual.ts";
 import { sampling } from "./sampling.ts";
@@ -45,6 +46,7 @@ export const STATIONS: readonly Station[] = [
   { def: tokenizer, label: "bricks", scale: 0.42 },
   { def: embeddings, label: "pins", scale: 0.42 },
   { def: attention, label: "pipes", scale: 0.38 },
+  { def: positions, label: "dials", scale: 0.38 },
   { def: mlp, label: "panel", scale: 0.28 },
   { def: experts, label: "bays", scale: 0.26 },
   { def: residual, label: "river", scale: 0.26 },
@@ -65,13 +67,13 @@ export const STATIONS: readonly Station[] = [
  */
 export const FLOOR = {
   columns: 5,
-  cell: [1.8, 1.8],
+  cell: [1.7, 1.75],
   center: [-0.3, 1.2],
-  minPitch: 0.45,
+  minPitch: 0.6,
 } as const;
 
 /** The tour's pacing, seconds: the wide opening, each move and hold, the return, the end. */
-export const TOUR = { open: 2.5, move: 0.5, hold: 0.95, back: 1.3, end: 3.2 } as const;
+export const TOUR = { open: 2, move: 0.45, hold: 1.15, back: 1.2, end: 2.4 } as const;
 
 const STOPS = STATIONS.length;
 const STEP = TOUR.move + TOUR.hold;
@@ -152,7 +154,7 @@ export const finished: ChapterDef = {
     },
     {
       id: "blocks",
-      label: "blocks in the line",
+      label: "blocks",
       format: "int",
       scale: "Llama-3-8B",
       value: { kind: "arith", fn: "layers", args: {} },
@@ -187,13 +189,13 @@ export const finished: ChapterDef = {
     beats: [
       { t: 0, id: "whole", note: "the whole machine: every part you added, in one room" },
       ...STATIONS.map(({ def }, n) => ({
-        t: arrivesAt(n) - TOUR.move,
+        t: arrivesAt(n),
         id: `stop-${def.slug}`,
         note: `stop ${n + 1}: ${def.title.toLowerCase()} pulses, with its own label`,
         focus: def.slug as AnchorId,
       })),
       {
-        t: RETURN_AT,
+        t: wholeAgainAt,
         id: "compare",
         note: "back to the whole machine: the chips set this tiny model against Llama-3-8B",
       },

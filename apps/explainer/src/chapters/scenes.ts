@@ -41,6 +41,7 @@ export const SCENE_ANCHORS = {
     "tokenizer",
     "embeddings",
     "attention",
+    "positions",
     "mlp",
     "experts",
     "residual",

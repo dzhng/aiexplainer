@@ -10,7 +10,7 @@ import { LOOP_SEC, validateChapter } from "../src/chapters/validate.ts";
 import { ARRIVAL_SEC } from "../src/runtime/arrival.ts";
 import { createTimelineState, evalTimeline } from "../src/chapters/timeline.ts";
 import { SCENE_BUILDERS, type FinishedRun, type SceneUi } from "../src/scene/build-frame.ts";
-import { stationOrigin } from "../src/scene/builders/finished.ts";
+import { routePath, stationOrigin } from "../src/scene/builders/finished.ts";
 import { shotPose } from "../src/scene/shots.ts";
 import { chapterRun, fixtureRun, frameAt, shippedModel } from "./scene-harness.ts";
 
@@ -21,7 +21,7 @@ const assets: SceneDesc["assets"] = {
   board: await prop("counter_board.glb"),
   bus: await prop("bus.glb"),
 };
-// Every frame here builds all thirteen stations, and one test runs every chapter's model.
+// Every frame here builds every station, and one test runs every chapter's model.
 setDefaultTimeout(60_000);
 const run = (await fixtureRun(finished)) as FinishedRun;
 const ui: SceneUi = { follow: null, slider: 1, sliderSet: false, view: "whole", text: null };
@@ -35,10 +35,10 @@ describe("the finished machine is the other chapters' scenes, composed", () => {
     for (const { def } of STATIONS) expect(CHAPTERS[def.slug]).toBe(def);
   });
 
-  test("its parts are exactly the union of each station's own builder's parts, placed", () => {
+  test("its parts are the union of each station's own builder's parts, placed, plus its route", () => {
     const t = settled(3);
     const whole = frameAt(finished, run, t, {}, assets).scene;
-    // No part of its own, and no part twice.
+    // Its only parts of its own are the route (a pipe and its pulses); no part is there twice.
     expect(new Set(whole.parts.map((p) => p.id)).size).toBe(whole.parts.length);
     let count = 0;
     STATIONS.forEach(({ def, scale }, n) => {
@@ -64,7 +64,10 @@ describe("the finished machine is the other chapters' scenes, composed", () => {
       });
       count += mine.length;
     });
-    expect(count).toBe(whole.parts.length);
+    expect(whole.parts.slice(count).map((p) => [p.id, p.primitive])).toEqual([
+      ["route", "tube"],
+      ["route.pulses", "tube"],
+    ]);
   });
 
   test("its kit is the other scenes' kit, and nothing else", () => {
@@ -149,6 +152,18 @@ describe("the tour", () => {
       expect(got.yaw).toBeCloseTo(wide.yaw, 9);
       expect(frameAt(finished, run, t, {}, assets).scene.anchors).toEqual([]);
     }
+  });
+
+  test("the route passes each station in tour order, on the floor", () => {
+    const path = routePath();
+    let from = 0;
+    STATIONS.forEach((_, n) => {
+      const at = stationOrigin(n);
+      const i = path.findIndex((p, k) => k >= from && p[0] === at[0] && p[2] > at[2]);
+      expect(i).toBeGreaterThanOrEqual(from);
+      from = i + 1;
+    });
+    for (const p of path) expect(p[1]).toBeLessThan(0.05);
   });
 
   test("the slider holds the tour on a station", () => {

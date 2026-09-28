@@ -70,8 +70,8 @@
     "fovDeg": 32.0
   },
   "finished-wide": {
-    "eye": [-2.7, 5.4, 8.4],
-    "target": [-2.3, 0.0, 0.7],
+    "eye": [-2.9, 5.7, 8.9],
+    "target": [-2.3, 0.0, 0.3],
     "fovDeg": 46.0
   },
   "attention-hero": {

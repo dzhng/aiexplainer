@@ -8,12 +8,14 @@
  * On top it adds only the tour: the station in view pulses (its emission breathes) while the
  * rest dim, only its scene text and its label show, and `tourPose` frames it with its own
  * chapter's shot, scaled down with it. Back on the wide shot, a wave of light runs through the
- * machine in tour order.
+ * machine in tour order. Its one part of its own is the route: a pipe along the floor from
+ * station to station in tour order, pulses flowing along it, so the stations read as one
+ * machine a word flows through.
  *
  * Each station's loop runs offset so that it plays its chapter's link-preview moment
  * (`ogTimeSec`) as the camera arrives. The slider holds the tour on one station.
  */
-import type { OrbitPose, Part, SceneAnchor, SceneDesc } from "@repo/renderer";
+import { KIT, type OrbitPose, type Part, type SceneAnchor, type SceneDesc } from "@repo/renderer";
 import type { Vec3 } from "math";
 import {
   FLOOR,
@@ -32,11 +34,25 @@ import { shotPose } from "../shots.ts";
 
 /** How bright the station in view breathes (× its own emission), and the others while it does. */
 const PULSE = { low: 1.3, high: 2.1, periodSec: 0.8 };
-const DIM = 0.3;
+const DIM = 0.15;
 /** The closing wave: each station's flash, and the delay from one station to the next. */
 const WAVE = { peak: 1.4, sec: 0.6, stagger: 0.12 };
 /** How near a whole stop the tour must be for that station to count as in view. */
 const IN_VIEW = 0.25;
+/**
+ * The route along the floor: its height, how far in front of each station's origin it runs,
+ * how far past a row's end it turns, its radius, its pulses' speed (spacings per second) and
+ * its brightness while the tour is at a stop.
+ */
+const ROUTE = {
+  y: 0.02,
+  front: 0.7,
+  turn: 0.95,
+  radius: 0.016,
+  speed: 1.2,
+  glow: 0.45,
+  atStop: 0.2,
+};
 
 const STOPS = STATIONS.length;
 
@@ -69,6 +85,29 @@ function stopPose(n: number): OrbitPose {
     distance: pose.distance * scale,
     fovY: pose.fovY,
   };
+}
+
+/** The route's centreline: in front of each station in tour order, round each row's end. */
+export function routePath(): Vec3[] {
+  const path: Vec3[] = [];
+  const at = (n: number, dx = 0): Vec3 => {
+    const o = stationOrigin(n);
+    return [o[0] + dx, ROUTE.y, o[2] + ROUTE.front];
+  };
+  for (let n = 0; n < STOPS; n++) {
+    const row = Math.floor(n / FLOOR.columns);
+    const way = row % 2 === 0 ? 1 : -1;
+    if (n === 0) path.push(at(0, -ROUTE.turn));
+    else if (n % FLOOR.columns === 0) {
+      // Round the end of the row above, then along to this row's first station.
+      const turnX = at(n - 1)[0] - way * ROUTE.turn;
+      path.push([turnX, ROUTE.y, at(n - 1)[2]], [turnX, ROUTE.y, at(n)[2]]);
+    }
+    path.push(at(n));
+  }
+  const lastWay = Math.floor((STOPS - 1) / FLOOR.columns) % 2 === 0 ? 1 : -1;
+  path.push(at(STOPS - 1, lastWay * ROUTE.turn));
+  return path;
 }
 
 let poses: OrbitPose[] | null = null;
@@ -111,6 +150,9 @@ interface Placed {
 
 interface Built {
   placed: Placed[];
+  /** The route's pipe and its pulses, after every station's parts. */
+  route: Part[];
+  routeSlot: number;
   /** Part id in a station → its id in the machine, cached so tag syncing allocates nothing. */
   ids: Map<string, string>;
 }
@@ -145,6 +187,7 @@ function assemble(scene: SceneDesc, b: Built): void {
     for (const [, copy] of p.copies) scene.parts.push(copy);
     p.revision = p.frame.input.scene.revision;
   }
+  scene.parts.push(...b.route);
   scene.revision = nextRevision();
 }
 
@@ -159,6 +202,8 @@ function place(out: number[], m: readonly number[], scale: number, origin: Vec3)
 
 /** The emission gain station `n` gets at this moment of the tour. */
 function gain(n: number, inView: number, stop: number, t: number): number {
+  // Between stops the rest stay dim; the station ahead brightens as the camera nears it.
+  if (inView < 0 && stop > 0.5 && stop < STOPS + 0.5) return n === Math.round(stop) - 1 ? 1 : DIM;
   if (inView >= 0) {
     if (n !== inView) return DIM;
     const since = Math.max(0, t - arrivesAt(n));
@@ -188,7 +233,7 @@ export function finishedScene(
     tagCount: STATIONS.reduce((n, s) => n + own(s).tagCount, 0),
 
     create(assets, revision) {
-      const b: Built = { placed: [], ids: new Map() };
+      const b: Built = { placed: [], route: [], routeSlot: 0, ids: new Map() };
       const tags: SceneTags = { anchors: [], text: [], emphasis: [] };
       let slotBase = 0;
       STATIONS.forEach((station, n) => {
@@ -238,6 +283,12 @@ export function finishedScene(
         tags.emphasis.push(...frame.tags.emphasis);
         b.placed.push(placed);
       });
+      b.routeSlot = slotBase;
+      const path = routePath();
+      b.route = [
+        { id: "route", material: "pipe", slot: slotBase, radius: ROUTE.radius },
+        { id: "route.pulses", material: "pulse", slot: slotBase + 1, radius: ROUTE.radius * 1.1 },
+      ].map((r) => KIT.tube.build({ ...r, path }).parts[0]!);
       const scene: SceneDesc = { revision, parts: [], anchors: [], assets };
       assemble(scene, b);
       scene.revision = revision;
@@ -294,6 +345,11 @@ export function finishedScene(
           scene.anchors.push(p.anchor);
         }
       });
+      const route = inView >= 0 ? ROUTE.atStop : ROUTE.glow;
+      for (const slot of [b.routeSlot, b.routeSlot + 1]) {
+        dynamics.intensity[slot] = route;
+        dynamics.flowPhase[slot] = tl.t * ROUTE.speed;
+      }
     },
 
     tourPose(def, tl, ui, out) {
