@@ -1,5 +1,5 @@
 /**
- * Where a chapter's recorded media lives (`public/media/`, written by `bun run media`): the
+ * Where a chapter's recorded media lives (`public/media/`, written by `bun run --cwd apps/explainer media`): the
  * fallback video and its poster (D29), and the 1200×630 link-preview image (D34).
  */
 import type { ChapterSlug } from "../chapters/ladder.ts";

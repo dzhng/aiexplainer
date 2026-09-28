@@ -28,7 +28,7 @@ test("the origin is SITE_URL, else the Vercel deployment, else vite preview", ()
   expect(siteOrigin({})).toBe("http://localhost:4173");
 });
 
-test("every written chapter has its recorded video, poster and card (run `bun run media`)", () => {
+test("every written chapter has its recorded video, poster and card (run `bun run --cwd apps/explainer media`)", () => {
   const publicDir = path.resolve(import.meta.dirname, "../public");
   for (const slug of writtenChapters(CHAPTERS)) {
     for (const file of Object.values(mediaFor(slug))) {
