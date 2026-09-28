@@ -250,7 +250,7 @@ function Ladder({ state, dispatch, chapters }: HudProps) {
             <button key={slug} className={css.rung} aria-current="step" title={def.title}>
               <span className={css.rungDot} />
               <span className={css.rungNum}>{n}</span>
-              {def.title}
+              <span className={css.rungTitle}>{def.title}</span>
             </button>
           );
         return (

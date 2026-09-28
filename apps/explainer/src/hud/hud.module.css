@@ -542,8 +542,23 @@
   padding: 5px 7px;
 }
 
+/*
+ * Narrower windows: centred, the ladder would run under the bottom-right corner (about 350px
+ * wide), so it starts at the left edge and stops short of the corner; the current chapter's
+ * name shortens (…) rather than wrap.
+ */
+@media (max-width: 1400px) {
+  .ladder {
+    left: 24px;
+    transform: none;
+    box-sizing: border-box;
+    max-width: calc(100vw - 24px - 370px - 16px);
+  }
+}
+
 .rung {
   position: relative;
+  flex: none;
   min-width: 22px;
   height: 30px;
   padding: 0 4px;
@@ -578,6 +593,8 @@
 }
 
 .rung[aria-current="step"] {
+  flex: 0 1 auto;
+  min-width: 0;
   display: inline-flex;
   align-items: center;
   gap: 8px;
@@ -602,6 +619,13 @@
   rotate: 45deg;
   background: var(--hud-accent);
   box-shadow: 0 0 8px var(--hud-accent);
+}
+
+.rungTitle {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .rungNum {
