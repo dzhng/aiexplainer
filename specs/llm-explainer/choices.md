@@ -452,3 +452,17 @@ standalone. Entries are appended per pass and consolidated when the spec closes.
   weight strip.** Verdict: sound; one path through `weightSlice`.
 - **Copy violation found at merge:** the chapter-12 chip label "KL divergence (nats)" is jargon
   (D2). Sent back for a plain relabel. Verdict: fix pending in lane D.
+
+## Slice 21 (chapter 3)
+
+- **The die is a barrel whose faces are the top six words plus "every other word", each face
+  exactly as wide around the rim as its probability at the current temperature.** The stop
+  angle comes from the seeded generator, so the landed face equals `sample()` (tested).
+  Verdict: sound.
+- **The loop's temperature channel drives the die until the reader moves the slider; the HUD
+  slider itself doesn't move during the demo, and a scene note shows the live temperature.**
+  Verdict: acceptable; lane D's later `SliderDef.loop` pattern could unify this in review.
+- **The chapter-3 fixture run is 353 kB, because it stores the full logits the honesty test
+  needs.** Verdict: acceptable.
+- **The failure beat: two stories ending in "it" roll the identical die** (the model sees only
+  one word). Verdict: sound.
