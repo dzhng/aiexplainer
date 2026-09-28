@@ -172,8 +172,9 @@ orbit are built by hand (`labels.ts`, `passes/bloom.ts`, `orbit.ts`).
 ## Amendments after release (2026-09-28)
 
 The human reviewed the live site and asked for five changes, then for three more the
-same day, then for the lesson flow (the last four items). Each landed as its own commit; the ledger entries are
-in [choices.md](choices.md) ("Amendments").
+same day, then for the lesson flow and for the words to be written on the machines (the
+last five items). Each landed as its own commit or commits; the ledger entries are in
+[choices.md](choices.md) ("Amendments").
 
 - **The label toggle says what it does, and "Precise" is "Technical".** "Add a
   description so people know what this does, rename precise to technical." The toggle
@@ -254,6 +255,23 @@ in [choices.md](choices.md) ("Amendments").
   are unchanged; `?lesson=brief|done` shoots the other states. This supersedes D12
   (free exploration first), D24 (the loop plays on arrival) and D32 (touching a control
   pauses the loop).
+- **The words are written on the machines** (2026-09-28). Looking at the intro's board,
+  where "period 49%", the rail's words and the "After “world”…" header floated over it:
+  "why aren't the text just on the whiteboard?" All scene text had been an HTML overlay
+  pinned to projected points: flat, never in perspective, never hidden. Now every word
+  that belongs to a part is drawn in the world on that part, by a kit primitive
+  (`kit/text.ts`) and a text pass in the renderer. It sits on a face of its part (a
+  board, card, brick, tile, stave, plate or floor), follows the part's rotation but not
+  its scale, and is hidden by whatever stands in front. Glyphs come from one signed
+  distance field atlas, built at startup from the self-hosted fonts, so letters stay
+  crisp at any distance. Their ink comes from new look tokens (chalk, ink, muted, sign).
+  The intro's header is printed on its plate, each slot's word on the panel above it
+  with its share riding the bar, and the rail's words on their cards. Every other
+  chapter moved its words the same way. A note with no surface to sit on faces the eye
+  from its place in the world. No scene text is HTML any more, and the overlay was
+  deleted. The pinned labels with leader lines stay HTML: they annotate the scene
+  rather than being part of it. The same change gave the builders an ambient clock
+  (`SceneFrame.ambientSec`), so flow pulses keep moving on the reader's turn.
 
 ## Principles
 
@@ -298,6 +316,7 @@ Each concept has exactly one owner. A second copy is a bug.
 | Camera matrices, `project()`, orbit pose math, occluders, label placement               | `packages/renderer` (`camera.ts`, `labels.ts`), on the CPU; GPU packing, labels, crops and picking all call them                                           |
 | The renderer boundary: `FrameInput`, `Renderer`, `FrameReceipt`                         | `packages/renderer/src/frame-input.ts`                                                                                                                     |
 | Kit primitives: geometry, bounds, anchors                                               | `packages/renderer/src/kit/`, one `build()` per primitive                                                                                                  |
+| Text in the world: the glyph atlas, text layout, a face turned into world directions    | `packages/renderer/src/text/` (`atlas.ts`, `layout.ts`, `sdf.ts`) and `kit/text.ts`; drawn by `passes/text.ts`                                             |
 | glTF parsing; tuple → `Float32Array` packing                                            | `packages/renderer/src/gltf.ts`; `pack.ts`                                                                                                                 |
 | Model manifest format and tensor names                                                  | `packages/llm/src/manifest.ts`, which emits a JSON Schema the Python exporter conforms to                                                                  |
 | Tokenizer runtime                                                                       | `packages/llm/src/tokenizer.ts`; the Python trainer writes its format                                                                                      |

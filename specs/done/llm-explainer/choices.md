@@ -19,8 +19,8 @@ post-release requests, 2026-09-28; see the README).
   provisionally.
 - **Acceptable, with a known cost** (12): trade-offs that shipped with a limit.
 - **Sound** (70): choices the agent stands behind with no reservation.
-- **Amendments** (19): choices made while landing the human's post-release requests,
-  each with its own verdict (3 defaults to confirm, 2 acceptable with a cost, 14 sound).
+- **Amendments** (37): choices made while landing the human's post-release requests,
+  each with its own verdict (7 defaults to confirm, 5 acceptable with a cost, 25 sound).
 
 ## Incidents and post-hoc selections
 
@@ -123,8 +123,9 @@ post-release requests, 2026-09-28; see the README).
    - Chapter 4: thin low-weight pipes cross back-row words at the hero angle (a
      projection effect), and during the word swap the pipes regrow instead of moving.
    - Chapter 5: the last clock dial washes out under bloom.
-   - Chapter 2: the noun cluster's word tags overlap at the hero angle, because those
-     are the words' real positions.
+   - Chapter 2: the noun cluster's pins crowd at the hero angle, because those are the
+     words' real positions; only the first word of each crowd is written (see
+     Amendments 33), and arrows passing in front of a word hide parts of it.
    - Chapter 3: on one frame, the word "comma" hides behind "period".
    - Chapter 14: some camera sweep angles are blocked by room geometry.
    - At some back angles, labels point at parts that are hidden.
@@ -521,11 +522,11 @@ Each entry carries a subject tag: [data], [arith], [app], [renderer], [scene],
     whole scene). When: slices 09, 10, 19 and 26–28.
 
 62. **[renderer] Labels try up-right, up-left, down-right, then down-left.** They take
-    the first side that avoids other labels, scene text, HUD panel rects and the screen
-    edge. Scene text (bar words, card words, tags) is a separate overlay with the same
-    placement code, so D18's label cap still holds; lower-ranked tags hide on collision.
-    Labels and tags snap to whole pixels, so captures are deterministic. When: slices 09,
-    10, 11 and 36.
+    the first side that avoids other labels, the scene's written text, HUD panel rects
+    and the screen edge. The written text is drawn in the world (Amendments 29), and the
+    renderer hands labels its screen boxes (`Renderer.textRects`), so D18's label cap
+    still holds. Labels snap to whole pixels, so captures are deterministic. When:
+    slices 09, 10, 11 and 36, and the amendments.
 
 63. **[renderer] The room is lit by baked vertex colours.** R is ambient occlusion,
     and G/B are baked warm and cool practical light tinted by
@@ -581,7 +582,7 @@ Each entry carries a subject tag: [data], [arith], [app], [renderer], [scene],
 
 ## Amendments
 
-The human's nine post-release requests (README, "Amendments after release") left these
+The human's ten post-release requests (README, "Amendments after release") left these
 choices to the implementation. Each names its verdict.
 
 1. **The story panel sits under the caption in the left column, not in a right-hand
@@ -620,9 +621,10 @@ choices to the implementation. Each names its verdict.
    machine reuses each station's own label, and "The tally board" was deleted. The bars
    label ("How often each word came next") names what the station does. Verdict: sound.
 
-7. **Scene tags have a style per tag.** `SceneTags.style` (`above`, `onPart`, `before`,
-   `heading`) replaced the `emphasis` flag, so the muted earlier words and the glowing
-   header each have one owner in `SceneTags.tsx`. Verdict: sound.
+7. **Scene text has a style per text.** Each `SceneText` names a look text token
+   (`chalk`, `ink`, `muted`, `sign` in `look.json`), so the muted earlier words and the
+   glowing header each have one owner, the look. The overlay's per-tag style that
+   first did this went with the overlay (29). Verdict: sound.
 
 8. **Where a display slider went, the scene shows its former default.** Chapters 0, 1,
    2, 6, 9 and 10 show all their content (10 bars, 16 bricks, 60 pins, 24 lamps, every
@@ -664,10 +666,10 @@ choices to the implementation. Each names its verdict.
 
 15. **The intro's earlier words sit on dim cards in a new `cardDim` material.** It is
     the palette's `metal` colour, matte, with no glow, so the pale lit card stays the
-    one word the machine reads. The word is centred on its card in muted ink (tag style
-    `dim`, which replaced `before`, whose only user was the intro). Each card's width
-    follows its word's length. The text sits a little above each card's middle, because
-    the rail's lip hides the card's lower edge. Verdict: sound.
+    one word the machine reads. The word is written on its card in the `muted` text
+    style. Each card's width follows its word's length at that text's size. The word
+    sits a little above each card's middle, because the rail's lip hides the card's
+    lower edge. Verdict: sound.
 
 16. **A long text keeps its end, and its first card reads "…".** The rail holds at most
     12 dim cards, and fewer if they run past its left end. Whole cards are dropped
@@ -724,10 +726,13 @@ choices to the implementation. Each names its verdict.
     holds still, so there is nothing to play; Replay lesson takes its place. Enter or
     Space presses Start on the brief, which also takes focus. Verdict: sound.
 
-26. **Flow pulses freeze on the reader's turn.** Pulses are driven by loop time inside the
-    scene builders, which this change did not touch, so holding `endSec` holds them. The
-    request allowed ambient motion to keep running; that needs a separate ambient clock
-    for the builders. Verdict: acceptable, with a known cost (a stiller scene).
+26. **Decorative motion keeps running on the reader's turn; the lesson holds.** Builders
+    get an ambient clock, `SceneFrame.ambientSec`: the stage's `FrameInput.timeSec` from
+    the one clock, so it holds or steps with a held or stepped capture. Flow pulses
+    (chapters 4, 5 and 7, and the finished machine's route) run on it, so they keep
+    moving while the scene holds `endSec`. Everything the lesson shows stays on loop
+    time, and so does a station's breathing in chapter 15, because it starts when the
+    tour arrives. Verdict: sound.
 
 27. **Next is pinned under the column; the panels above it scroll.** In a short window
     (chapters with a knob at 1200×800) the title and story panels scroll behind the faded
@@ -742,3 +747,77 @@ choices to the implementation. Each names its verdict.
     and `?lesson=done` shoot the other states; the harness's `--lesson <phase>` waits for
     a phase in real time, and `--ui` skips to the reader's turn first, as a reader must.
     Verdict: sound.
+
+29. **Words are drawn by the renderer from one signed distance field atlas.** The atlas is
+    built from the self-hosted fonts with Canvas2D once `document.fonts` has loaded them.
+    It rasterises printable ASCII up front and any other character on first use, 40 px
+    to the em with an 8 px field, into one 2048×1024 `r8unorm` texture from the
+    registry. A Felzenszwalb distance transform was written by hand (`text/sdf.ts`, with
+    a bun test on a disc) rather than adding `@mapbox/tiny-sdf`: it is 60 lines and
+    needs no new dependency. Letters are instanced quads in the colour pass after the
+    translucent geometry. They read depth, never write it, sit 3 mm off their face, and
+    their edges are one screen pixel wide (`fwidth`). A text follows its part's rotation
+    but not its scale, so a word on a growing bar never stretches. The text pass costs
+    at most ~0.5 ms of GPU time (interleaved on/off on the busiest scenes; whole frames
+    1.2–3.9 ms at 1440×900 on the dev Mac). Verdict: sound.
+
+30. **Glare never covers letters.** Dark ink on a glowing block was washed out by that
+    block's own bloom, which the HTML overlay never had. The text pass leaves 1 −
+    coverage in the HDR target's alpha, and the tonemap scales the added bloom by it.
+    Nearby glows no longer bleed over the letters, and a glowing sign's own light still
+    blooms around them. This is not physical (a real lens would flare over them); it is
+    chosen for reading. Verdict: sound.
+
+31. **Text is unlit ink.** A style's colour is its radiance: the scene's lights do not
+    shade it, so a word reads the same on a lit face and on one in shadow. Styles are
+    look tokens: `chalk` (light letters with a thin dark rim, for dark surfaces and
+    notes), `ink` (dark, for pale or glowing parts), `muted` (dim parts) and `sign`
+    (the display face, glowing, for a title plate). Verdict: acceptable, with a known cost
+    (printed words never darken in shadow).
+
+32. **No scene text is HTML any more; a note with no surface faces the eye.** Every word
+    that names a part is on that part. A note is printed on the surface of the thing it
+    talks about where one exists: a table edge, a plate, a housing, a map strip, a floor
+    or a new plate. Otherwise it stands in the world as a billboard facing the eye, still
+    in perspective and hidden by what stands in front. The billboards are chapter 2's
+    pin words (a pin head is too small to write on), chapter 4's guess and needle
+    angle, chapter 5's dial pair note, chapter 6's prompt (the arrow is a thin tube) and
+    teaser notes, chapter 7's prompt and river and knob notes (the stations' faces are
+    about 85 px wide at 1280×720), and chapter 12's "same word" note (it compares both
+    machines). With no exceptions left, the overlay was deleted. Verdict: acceptable,
+    with a known cost (a few notes float beside their machine rather than on it).
+
+33. **Crowded words yield in the renderer.** The overlay hid a tag that would overlap an
+    earlier one. That rule moved into the text pass as `SceneText.yields`: it tests exact
+    text boxes through the one camera, and the scene lists the most important words
+    first. A first cut inside chapter 2's builder had estimated boxes with its own
+    projection; it was replaced, because that was a second camera. Chapter 2's pins and
+    chapter 3's die faces yield. Verdict: sound.
+
+34. **A few props changed so their words have somewhere to sit.** Chapter 0's bars stop
+    a share's height below their slot's top, so the tallest bar's share fits above it.
+    Chapter 8's page is propped at 60° toward the camera, in `card` material, because
+    flat on the floor its text was unreadable. Chapter 10's note rack has a new header
+    plate for its arithmetic. Chapter 11's stop sign is larger (0.62×0.42 m) and stands
+    in front of its post. Verdict: a default for the human to confirm (they change the
+    props' look).
+
+35. **Some notes gained line breaks so they fit their surface; no numbers changed.**
+    Line breaks were added to chapter 1's box note, chapter 6's plinth title, chapter
+    11's crate and stop notes, chapter 12's crate ratio, and chapter 14's desk route.
+    Chapter 3's die words are one line. Chapter 12's joint "16-bit: … / 8-bit: …" note
+    became each machine's own story end, printed on that machine (`storyTail`). Tile and
+    brick words are trimmed of their leading space so they sit centred. Verdict: sound.
+
+36. **Occlusion is honest, even when it costs a word.** The request was for text that parts
+    in front can hide, and they do. Chapter 2's arrows cross some pin words at the hero
+    angle, and chapter 7's "Stations" label pin can sit on the prompt. Chapter 8's tile
+    words are about 7 px tall at 1280×720, and chapter 11's stop sign sits under the
+    left column; both are hero-camera limits that this change left alone. Verdict:
+    acceptable, with a known cost.
+
+37. **The intro prints each slot's word above it and its share on the bar.** The word is
+    printed on the panel strip above each slot, where a gauge's label would be, so it
+    never moves. The share rides just above its bar's top, in the plane of the bar's face
+    so the slot's walls never cut it. The rail's words are on their cards, and the
+    header on its plate in the glowing display face. Verdict: sound.
