@@ -125,7 +125,8 @@ async function runSpeculate(argv: string[]): Promise<void> {
       : round.drafted.length
         ? "all accepted"
         : "(no room left to guess)";
-    console.log(`kept ${kept.padEnd(28)} ${verdict.padEnd(34)} target adds ${show([round.next])}`);
+    const adds = round.next === null ? "nothing (<eos> ends the text)" : show([round.next]);
+    console.log(`kept ${kept.padEnd(28)} ${verdict.padEnd(34)} target adds ${adds}`);
   }
   console.log(`\n${show(result.tokens.slice(1))}`);
   const generated = result.tokens.length - prompt.length;

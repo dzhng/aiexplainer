@@ -43,7 +43,7 @@ describe("chapter 13's numbers equal their sources", () => {
         direct.rounds.map((r) => ({
           drafted: r.drafted.map(word),
           accepted: r.accepted,
-          next: word(r.next),
+          next: r.next === null ? null : word(r.next),
         })),
       );
     }
@@ -87,6 +87,12 @@ describe("chapter 13's scene", () => {
     expect(verdict[4]).toBe("added");
   });
 
+  test("a round whose kept guesses end the story shows no senior's word", () => {
+    const ended = { drafted: [" the", " end", "<eos>"], accepted: 3, next: null };
+    expect(roundView(ended, 1.25).states).toEqual(["accepted", "accepted", "accepted", "hidden"]);
+    expect(storyAfter([ended], 1)).toBe(" the end<eos>");
+  });
+
   test("the story is each round's kept guesses, then the senior's word", () => {
     expect(storyAfter(k4.rounds, 1)).toBe(k4.rounds[0]!.drafted.join("") + k4.rounds[0]!.next);
     const { frame } = frameAt(speculative, run, 10);
@@ -96,7 +102,7 @@ describe("chapter 13's scene", () => {
   test("the slider's k picks that run's rounds", () => {
     const { frame } = frameAt(speculative, run, 10, { slider: 2, sliderSet: true });
     const k2 = run.byK.find((r) => r.k === 2)!.rounds[0]!;
-    expect(frame.tags.text.slice(0, 3)).toEqual([...k2.drafted, k2.next]);
+    expect(frame.tags.text.slice(0, 3)).toEqual([...k2.drafted, k2.next!]);
   });
 
   test("the point lands by 10 s and the last beat is the failure", () => {

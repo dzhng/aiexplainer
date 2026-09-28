@@ -55,7 +55,8 @@ export function roundView(round: SpeculativeRun["byK"][number]["rounds"][number]
   const drafted = phase >= 1 ? k : Math.floor(phase * k + 1e-6);
   const verdict = phase >= 1.25;
   const states = Array.from({ length: k + 1 }, (_, i) => {
-    if (i === k) return verdict ? "added" : "hidden";
+    // A kept <eos> ended the story: the senior adds no word.
+    if (i === k) return verdict && round.next !== null ? "added" : "hidden";
     if (i >= drafted) return "hidden";
     if (!verdict) return "drafted";
     return i < round.accepted ? "accepted" : "rejected";
@@ -67,7 +68,7 @@ export function roundView(round: SpeculativeRun["byK"][number]["rounds"][number]
 export function storyAfter(rounds: SpeculativeRun["byK"][number]["rounds"], count: number) {
   return rounds
     .slice(0, count)
-    .flatMap((r) => [...r.drafted.slice(0, r.accepted), r.next])
+    .flatMap((r) => [...r.drafted.slice(0, r.accepted), r.next ?? ""])
     .join("");
 }
 
@@ -195,16 +196,19 @@ export const speculative: SceneBuilder = {
           ? ""
           : i < round.drafted.length
             ? round.drafted[i]!
-            : round.next;
+            : (round.next ?? "");
     }
     // The caption rides on the senior's word's own face, wherever it sits.
     const heavy = held ? 0 : (c.heavy ?? 0);
     if (view?.verdict && round && heavy < 0.5) {
       const all = round.accepted === round.drafted.length;
-      texts[TAG.added] = all ? "bonus: the senior's own word" : "the senior's correction";
-      frame.tags.anchors[TAG.added]!.part = faceId("draft", count - 1, "added");
-      texts[TAG.round] =
-        `round ${roundAt + 1}: kept ${round.accepted} of ${round.drafted.length}, plus the senior's word`;
+      const kept = `round ${roundAt + 1}: kept ${round.accepted} of ${round.drafted.length}`;
+      if (round.next === null) texts[TAG.round] = `${kept}, and the story ends`;
+      else {
+        texts[TAG.added] = all ? "bonus: the senior's own word" : "the senior's correction";
+        frame.tags.anchors[TAG.added]!.part = faceId("draft", count - 1, "added");
+        texts[TAG.round] = `${kept}, plus the senior's word`;
+      }
     } else if (round && heavy < 0.5) {
       texts[TAG.round] = `round ${roundAt + 1}: the junior drafts ${round.drafted.length} words`;
     }
