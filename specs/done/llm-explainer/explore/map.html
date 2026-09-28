@@ -55,7 +55,7 @@
 <main>
   <h1>How LLMs work, <span>from first principles</span></h1>
   <p class="lede">The explore map for <code>apps/explainer</code>, the first app in this monorepo. It covers all four quadrants: what's settled, what was decided and who decided it, the taste we extracted, and the landmines found. Walked on 2026-09-27. Implementation starts from this page.</p>
-  <p class="note" style="border:1px solid var(--open);border-radius:10px;padding:10px 12px;color:var(--open)"><b>Superseded for planning:</b> the build plan now lives in <code>specs/llm-explainer/README.md</code>. It adds D31–D41, resolves O1 and O4, and replaces this page's OPEN table, tweakable plan and kickoff prompt. The decisions D1–D30 on this page remain binding.</p>
+  <p class="note" style="border:1px solid var(--open);border-radius:10px;padding:10px 12px;color:var(--open)"><b>Superseded for planning:</b> the build plan now lives in <code>specs/done/llm-explainer/README.md</code>. It adds D31–D41, resolves O1 and O4, and replaces this page's OPEN table, tweakable plan and kickoff prompt. The decisions D1–D30 on this page remain binding.</p>
   <nav>
     <a href="#kk">1 · Known knowns</a><a href="#ku">2 · Known unknowns</a><a href="#uk">3 · Unknown knowns</a>
     <a href="#uu">4 · Unknown unknowns</a><a href="#ladder">Chapter ladder</a><a href="#confirm">Confirm before coding</a>
@@ -113,7 +113,7 @@
     <tr><td class="id">L1</td><td><b>Workspace layout:</b> <code>apps/explainer</code> (Vite + React), <code>packages/renderer</code> (TypeGPU), <code>packages/llm</code> (TS inference + Llama-3-8B arithmetic), <code>training/</code> (uv Python), <code>assets/blender/</code> (scripts → glTF).</td><td>Proposed and not objected to.</td><td><span class="tag t-terr">settled</span></td></tr>
   </table>
   <h3>OPEN</h3>
-  <p class="note" style="color:var(--open)">Superseded: see <code>specs/llm-explainer/README.md</code>.</p>
+  <p class="note" style="color:var(--open)">Superseded: see <code>specs/done/llm-explainer/README.md</code>.</p>
   <table>
     <tr><th>#</th><th>Question</th><th>Unblocked by</th></tr>
     <tr><td class="id">O1</td><td>TinyStories dataset licence: is it OK to train on and publish the weights?</td><td>Read the dataset card on Hugging Face before posting. If it isn't clear, pick another public-domain children's-story corpus.</td></tr>
@@ -179,7 +179,7 @@
       <dt>Evidence</dt><dd><code>python3 -c "import torch"</code> fails because torch isn't installed. <code>uv 0.12.10</code> is installed. npm: <code>typegpu@0.12.6</code> and <code>math@0.1.0</code> (pmndrs) are both young.</dd>
       <dt>Decision</dt><dd><b>D30:</b> <code>training/</code> is a uv project with pinned torch on MPS. <b>Exported weights are committed</b> (a few MB), so Vercel never trains. Pin exact versions of typegpu and math, and expect API churn.</dd></dl></div>
     <div class="card"><h4>11 · Formatter choked on mock HTML <span class="tag t-fixed">fixed</span></h4><dl>
-      <dt>Evidence</dt><dd><code>bun run format:check</code> failed on <code>specs/llm-explainer/explore/directions.html</code>.</dd>
+      <dt>Evidence</dt><dd><code>bun run format:check</code> failed on <code>specs/done/llm-explainer/explore/directions.html</code>.</dd>
       <dt>Fix</dt><dd>Added <code>specs/**/explore/**</code> to <code>.oxfmtrc.json</code> <code>ignorePatterns</code>. The check passes again.</dd></dl></div>
   </div>
 
@@ -219,7 +219,7 @@
 
   <!-- ============ plan ============ -->
   <h2 id="plan">Tweakable plan <small>judgment calls first; mechanical work last</small></h2>
-  <p class="note" style="color:var(--open)">Superseded: see <code>specs/llm-explainer/README.md</code>.</p>
+  <p class="note" style="color:var(--open)">Superseded: see <code>specs/done/llm-explainer/README.md</code>.</p>
   <details open><summary>Judgment calls: tweak these</summary>
     <ul class="tight">
       <li><b>On-screen numbering:</b> renumber to a contiguous <b>0–15</b> now that training is cut. <span class="opt">Alternative: keep the gap for a later training chapter.</span></li>
@@ -243,8 +243,8 @@
 
   <!-- ============ prompt ============ -->
   <h2 id="prompt">Kickoff prompt <small>paste to start the build</small></h2>
-  <p class="note" style="color:var(--open)">Superseded: see <code>specs/llm-explainer/README.md</code>.</p>
-  <div class="prompt"><button id="copy">Copy</button><pre id="p">/write-spec for the LLM explainer, using specs/llm-explainer/explore/map.html as the settled ground. Treat every D-number as a given, don't reopen them. Carry the OPEN items (O1–O5) and the "Confirm before coding" list into the spec.
+  <p class="note" style="color:var(--open)">Superseded: see <code>specs/done/llm-explainer/README.md</code>.</p>
+  <div class="prompt"><button id="copy">Copy</button><pre id="p">/write-spec for the LLM explainer, using specs/done/llm-explainer/explore/map.html as the settled ground. Treat every D-number as a given, don't reopen them. Carry the OPEN items (O1–O5) and the "Confirm before coding" list into the spec.
 
 Slice the full 16-chapter ladder into independently verifiable slices. Slice 1 is D14: chapter 0 built end to end (training → weights → packages/llm → renderer foundation with orbit camera, bloom and occluded labels → one Blender prop → reference-style React shell with the Night lab look → Vercel preview), plus the phone/no-WebGPU fallback page (D29).
 

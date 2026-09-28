@@ -1,4 +1,4 @@
-# Chapters 8-13: 4 layers, 4 query heads sharing 2 key/value heads (GQA, D36).
+# Chapters 8-10, 12, 13 and 15: 4 layers, 4 query heads sharing 2 key/value heads (GQA, D36).
 id = "full"
 
 [arch]

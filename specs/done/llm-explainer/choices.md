@@ -8,13 +8,16 @@ entry that a later pass replaced shows only where it ended up. The recorded deci
 Entries are grouped by verdict. Within each group, the ones the human is least likely
 to share come first. Each entry stands alone. "When" names the build slice where the
 choice was made; the slice files themselves are gone, and this ledger keeps what they
-decided.
+decided. Four named passes also appear: the **polish pass** (a visual pass over every
+chapter after all were built), the **whole-spec review** (a behaviour-neutral cleanup of
+duplicated code), the **Codex review** (an independent correctness review by a second
+agent), and the **close** (this final audit).
 
 - **Incidents and post-hoc selections** (7): things the human should know happened.
 - **Defaults for the human to confirm** (3): taste or identity calls held
   provisionally.
-- **Acceptable, with a known cost** (12): trade-offs that shipped with a limit.
-- **Sound** (72): choices the agent stands behind with no reservation.
+- **Acceptable, with a known cost** (13): trade-offs that shipped with a limit.
+- **Sound** (71): choices the agent stands behind with no reservation.
 
 ## Incidents and post-hoc selections
 
@@ -57,8 +60,8 @@ decided.
    Seed 11 out of 1–12 was chosen because its three rounds show all three outcomes: a
    bonus word, a correction and an early reject. The rounds themselves are real model
    output. The stat chips don't use this run; they show averages over 40 held-out stories.
-   Alternative declined: seed 1, which could show three look-alike rounds. The code
-   (`SPEC_RUN` in `chapters/data/speculative.ts`) and this entry record the pick. When:
+   The code (`SPEC_RUN` in `chapters/data/speculative.ts`) and this entry record the
+   pick. When:
    slice 33.
 
 5. **Chapter 8's prompt was chosen to show the effect.** The prompt is "One day, a little
@@ -84,14 +87,14 @@ decided.
 
 1. **The brand is a placeholder, and there is no favicon.** The brand slot shows the
    text wordmark "dzhng" next to a placeholder two-block mark (`BrandMark` in
-   `hud/icons.tsx`). Both HTML entries use an empty data-URI icon (`data:,`), which exists
+   `hud/icons.tsx`). The app, the lab and every share page use an empty data-URI icon (`data:,`), which exists
    only to stop the browser's automatic `/favicon.ico` request from logging a 404 (which
    the harness treats as a failure). The plan deferred brand art to the release slice,
    but none was made, so production ships the placeholder. Real brand art is a drop-in
    change to `BrandMark`, the favicon link and the link-preview cards. When: slices 01,
    04 and 04b.
 
-2. **The airsup reference frames are public.** The five airsup.ai frames in
+2. **The airsup reference frames are public.** The airsup.ai frames in this folder's
    `assets/reference/` were the visual standard the look was matched against. They
    became public when the human asked for a public GitHub repo. They are small, credited
    design references, but they are someone else's screenshots, so delete them if they
@@ -138,9 +141,10 @@ decided.
    instead of a probe made for them. When: slices 29 and 30, confirmed at close.
 
 5. **Chapter 15's tour gives each station 1.6 s.** The finished-machine chapter tours
-   16 stations in a 29.6 s loop, near the 30 s loop cap (D24). The busiest stations show
+   15 stations (one per earlier chapter) in a 29.6 s loop, near the 30 s loop cap (D24). The busiest stations show
    more text than 1.6 s allows. The stack station uses its wide shot instead of the hero
-   shot, so the whole assembly line fits. When: slice 35.
+   shot, so the whole assembly line fits. Each 1.6 s is a 0.45 s camera move plus a 1.15 s
+   hold. When: slice 35.
 
 6. **`bun run verify` only runs on a Mac and takes about 2 minutes.** It ends with the
    training tests, which train small models on Apple's MPS GPU backend and fail when MPS
@@ -173,9 +177,17 @@ decided.
 
 11. **Chapter 3 writes punctuation as words.** The die shows "period" and "comma"
     instead of "." and ",", because the bare marks were unreadably small. Cost: the long
-    words can overlap on one frame (see nit 2). When: slice 36.
+    words can overlap on one frame (see entry 2 in this group). When: slice 36.
 
-12. **The production `vercel.json` keeps a `/lab/*` rewrite.** Lab pages are only built
+12. **Only chapter 0 offers the Cutaway view.** The reference's view row is Whole,
+    Cutaway and Exploded, and the view code works for any part tagged to be clipped.
+    But only chapter 0's counter board has a housing to cut. Later scenes are built from
+    open kit parts (pipes, dials, tables, a bus with windows), where a cross-section
+    shows nothing new, so they offer Whole and Exploded, or Whole alone for the flat
+    table scenes (chapters 1–3) and the finished machine. `look.json` still carries an
+    unused chapter-11 cut plane. When: slices 13 and 19–35.
+
+13. **The production `vercel.json` keeps a `/lab/*` rewrite.** Lab pages are only built
     for previews (D40), but one `vercel.json` serves both targets, so in production the
     rewrite points at a file that doesn't exist and `/lab` returns a 404. It is harmless.
     When: slice 12.
@@ -233,8 +245,8 @@ Each entry carries a subject tag: [data], [arith], [app], [renderer], [scene],
    When: slice 24.
 
 9. **[scene] Chapter 12's fp16/int8 switch is the slider ("Bytes per weight").** Its
-   drift chip reads "how far its guesses drift" (the KL divergence is named only in the
-   help). Its two prompt chips are the `full-q8` prompts picked by measured KL. The
+   drift chip reads "how far its guesses drift" (its Precisely line and the help name it
+   as the KL divergence). Its two prompt chips are the `full-q8` prompts picked by measured KL. The
    weight strip reads raw tensor slices through one `weights` request (`weightSlice`).
    When: slice 32.
 
@@ -310,181 +322,183 @@ Each entry carries a subject tag: [data], [arith], [app], [renderer], [scene],
     not hot. The title is "Many readers, one assembly line". When: slice 28 and the
     polish pass.
 
-23. **[scene] Cutaway is left out of chapters 11–14.** Chapter 11's bus already has
-    windows, and a cross-section shows nothing new in 12–14. Whole and Exploded remain.
-    When: slices 31–34.
-
-24. **[data] The counts model keeps 20 successors for each of 8,192 words (1.84 MB).**
+23. **[data] The counts model keeps 20 successors for each of 8,192 words (1.84 MB).**
     99.9% of held-out words are in its vocabulary, and 71.9% of held-out next words are
     in the table; bigger tables gain little. Its probabilities are shares among the kept
     successors, not true corpus shares, because the contract requires probabilities that
     sum to 1; the chapter-0 copy says "kept counts". When: slice 02.
 
-25. **[data] Chapter 0's word splitter lives in the counts manifest.** The regex
+24. **[data] Chapter 0's word splitter lives in the counts manifest.** The regex
     `[a-z]+(?:'[a-z]+)*|[.!?]` after lowercasing is stored as `tokenizer.pattern` and
     `replace`, and a shared fixture pins that Python and TypeScript split alike. Commas
     and quotes are dropped. The chapter-0 probe prompt is the single word "upon" (p("a")
     = 0.999), because the counts model reads one word. When: slices 02 and 10.
 
-26. **[data] The shared vocabulary is 4,096 tokens.** Chapters 4–8 draw a pipe or
+25. **[data] The shared vocabulary is 4,096 tokens.** Chapters 4–8 draw a pipe or
     clock per token, so tokens should mostly be whole words. At 4,096, 99.3% of the 2,000
     most common words are one token; at 2,048 only 48.5% are. llama2.c also uses 4,096.
-    Byte-level BPE is trained once at 4,096 and truncated for the chapter-1 size sweep,
-    which a test proves equals training at the smaller size. When: slice 14.
+    When the trainer compares vocabulary sizes, it trains byte-level BPE once at
+    the largest size and truncates it for each smaller one, instead of retraining per
+    size (`choose_vocab_size`; a test checks truncation keeps the first merges). When: slice 14.
 
-27. **[data] The drafter is `drafter-64`.** Acceptance is Leviathan's β averaged over
+26. **[data] The drafter is `drafter-64`.** Acceptance is Leviathan's β averaged over
     teacher-forced held-out positions, and its cost is the ratio of parameter counts.
     On 40 held-out stories disjoint from selection, drafter-64 gets α 0.601 and an
     expected 1.24× speedup; drafter-96 accepts more (α 0.643) but its cost leaves 1.03×.
     drafter-96 was removed from the ladder (1.0 MB) and its parity fixture removed at
     close; its numbers stay here. When: slices 17, 33 and 36.
 
-28. **[data] The attention sum runs in a fixed order, highest score first.**
+27. **[data] The attention sum runs in a fixed order, highest score first.**
     Floating-point addition depends on order, and D35's "shuffling earlier words changes
     nothing" must hold bit for bit. When: slice 15.
 
-29. **[data] Every probe measures the shipped weights.** Probes run on the exported f16
+28. **[data] Every probe measures the shipped weights.** Probes run on the exported f16
     weights, and the D35 order probe runs on the TypeScript runtime, so what is measured
     is what ships. When: slice 17.
 
-30. **[data] Embeddings start from N(0, 0.02), GPT-2's initialisation.** With N(0, 1)
+29. **[data] Embeddings start from N(0, 0.02), GPT-2's initialisation.** With N(0, 1)
     and tied embeddings, training starts at a loss of about 30. The random-init fixtures
     were regenerated. When: slice 16.
 
-31. **[data] The trace records each layer's attention, MLP, router and both residual
+30. **[data] The trace records each layer's attention, MLP, router and both residual
     additions separately.** Each layer adds to the residual twice, and one record per
     layer would blur them. When: slice 15.
 
-32. **[data] The KV cache has its own module, and a cache smaller than the context is a
+31. **[data] The KV cache has its own module, and a cache smaller than the context is a
     ring.** `packages/llm/src/kvcache.ts` evicts the oldest positions. Tests check that
     cached equals uncached and that the ring equals a windowed reference. When: slice 30.
 
-33. **[data] `q8_0` is an f16 scale plus 32 int8 values per group.** TypeScript
+32. **[data] `q8_0` is an f16 scale plus 32 int8 values per group.** TypeScript
     dequantization matches Python bit for bit. When: slice 17.
 
-34. **[data] Chapter-1 evidence lives in its own `evidence.json`.** `tokenizer.json` has
+33. **[data] Chapter-1 evidence lives in its own `evidence.json`.** `tokenizer.json` has
     no manifest, and adding evidence to it would change its frozen hash. For the same
-    reason, all generated JSON (models, schemas, fixtures) is excluded from the formatter.
+    reason, the frozen generated JSON (models, schemas, training fixtures, probe prompts)
+    is excluded from the formatter.
     When: slices 02 and 14.
 
-35. **[data] Special tokens are added by id only.** `encode` never turns literal
+34. **[data] Special tokens are added by id only.** `encode` never turns literal
     "<bos>" or "<eos>" text into special tokens, and every prompt starts with `<bos>`
     (`promptTokens`). When: slices 14 and 15.
 
-36. **[data] Model tensors are 64-byte aligned and little-endian.** The word vocabulary is
+35. **[data] Model tensors are 64-byte aligned and little-endian.** The word vocabulary is
     a zero-padded u32 code-point tensor, so it fits the contract's dtypes. `loadModel` is
     async, because browsers only offer SHA-256 through the async `crypto.subtle`. When:
     slice 02.
 
-37. **[data] Training on MPS is checked to 1e-5, not bit for bit.** Apple's MPS backend
+36. **[data] Training on MPS is checked to 1e-5, not bit for bit.** Apple's MPS backend
     is not bit-deterministic across processes; CPU runs are. Trained parity fixtures keep
     every 16th logit plus the top 8 (about 100 kB each). When: slice 16.
 
-38. **[data] The forward pass is plain JavaScript loops.** The `full` model measured
-    2.9 ms per prompt token and 3.9 ms per cached token, far under the 50 ms budget.
+37. **[data] The forward pass is plain JavaScript loops.** A benchmark at twice
+    `full`'s width (d = 256, random weights) measured 2.9 ms per prompt token and 3.9 ms
+    per cached token, far under the 50 ms budget, so no GPU or WASM path was needed.
     When: slice 15.
 
-39. **[data] `rng.ts` (mulberry32) is the one source of seeded randomness.** It is
+38. **[data] `rng.ts` (mulberry32) is the one source of seeded randomness.** It is
     injected everywhere. When: slice 14.
 
-40. **[arith] Every production speed is a roofline ceiling.** A step costs
+39. **[arith] Every production speed is a roofline ceiling.** A step costs
     max(bytes ÷ bandwidth, FLOPs ÷ dense FLOP/s). FLOPs per token are 2 × matmul
     parameters plus attention (4 × layers × heads × head size × context), following
     kipply's inference arithmetic. Decode has a per-sequence and a whole-batch number,
     both with an optional precision. When: slice 18.
 
-41. **[arith] The MoE counterfactual is a named assumption, `llamaAsMoe()`.** Attention
+40. **[arith] The MoE counterfactual is a named assumption, `llamaAsMoe()`.** Attention
     and embeddings are shared, and each expert is a full copy of the MLPs. It is labelled
     hypothetical everywhere it appears. When: slice 18.
 
-42. **[arith] Units are branded types (`Bytes`, `Seconds`, `TokensPerSec`).**
+41. **[arith] Units are branded types (`Bytes`, `Seconds`, `TokensPerSec`).**
     Compile-time tests check that they cannot mix. When: slice 18.
 
-43. **[app] Numbers show 3 significant figures, with decimal SI bytes.** Examples:
-    "131 kB", "16.1 GB", "99.9%". Decimal matches the H100 spec sheet's "80 GB". Shares
-    never round to a false 0% or 100%; they show "<1%" or ">99%". Seconds and nats are
-    their own formats. When: slices 04, 11, 18 and 27.
+42. **[app] Chip numbers show 3 significant figures, with decimal SI bytes.**
+    Examples: "131 kB", "16.1 GB", "99.9%"; whole counts under a million are written in
+    full with grouping. Decimal matches the H100 spec sheet's "80 GB". Seconds and nats
+    are their own formats. Shares written in the scene never round to a false 0% or
+    100%; they show "<1%" or ">99%". When: slices 04, 11, 18 and 27.
 
-44. **[app] Stat chips bind to the slider or a probe (`ArithArg`).** A chip can feed the
+43. **[app] Stat chips bind to the slider or a probe (`ArithArg`).** A chip can feed the
     slider's value or a probe's value into a formula, so no number is typed in by hand
     (D25). `MODEL_METRICS` is the one owner of model metrics, and `validateChapter`
     rejects a model stat on a chapter with no model. When: slices 04 and 31.
 
-45. **[app] The loop plays the slider until the reader moves it.** `SliderDef.loop`
+44. **[app] The loop plays the slider until the reader moves it.** `SliderDef.loop`
     plus `AppState.sliderSet`: the HUD samples the loop channel at 10 Hz, and the first
-    reader input takes over, as D32 requires. Used by chapters 3, 11 and 12. When:
+    reader input takes over, as D32 requires. Used by chapters 3, 11, 12 and 15. When:
     slice 31.
 
-46. **[app] Only scene controls pause the loop.** Follow, the slider, a scenario and the
-    view pause it. Reading aids (Analogy/Precise, Precisely, help) only change text.
+45. **[app] Only scene controls pause the loop.** Follow, the slider, a scenario, the
+    view and typed text pause it. Reading aids (Analogy/Precise, Precisely, help) only change text.
     Arriving at a chapter resets its Follow, slider, scenario, view, Precisely and typed
     text; the label reading and help stay as the reader left them. A `loopEpoch` counter
-    restarts the loop, so the reducer stays pure. Keys: ←/→ step chapters, Space plays or
-    pauses, ? toggles help, Esc closes it. When: slice 04.
+    restarts the loop, so the reducer stays pure. Keys: ←/→ step chapters, 1–4 pick what to
+    follow, Space plays or pauses, ? toggles help, Esc closes it. When: slice 04.
 
-47. **[app] Chapter validation is hand-written, not zod.** Chapters are TypeScript, so
+46. **[app] Chapter validation is hand-written, not zod.** Chapters are TypeScript, so
     the compiler checks shapes. `validateChapter` checks what types cannot: loop length,
     caption budget, and unknown anchors, shots, colours, kit primitives and scales. It
     returns a list of problems. Timelines are cyclic: after the last keyframe, a value
     blends back to the first, so the loop seam is invisible (D24). When: slices 03 and 13.
 
-48. **[app] The tokenizer counts as a chapter "model".** A `LoadedTokenizer` is a
+47. **[app] The tokenizer counts as a chapter "model".** A `LoadedTokenizer` is a
     `ModelSource`, so stats, the HUD text box and runs treat chapter 1 like any other
     model chapter. The app hands the HUD only the model that matches the current chapter,
     which fixed a page error on ←/→. When: slice 19.
 
-49. **[app] The HUD is the holo-tactical game UI, taken whole (the human's pick).** Its
+48. **[app] The HUD is the holo-tactical game UI, taken whole (the human's pick).** Its
     cyan is a HUD-only `hud.accent`, so restyling the HUD can never change the scene.
     Chakra Petch (600 and 700 only) is used for headings, controls, chips and labels;
     body copy stays in Inter for legibility; numbers use JetBrains Mono. All are
     self-hosted, latin subset (plus Inter Greek for Σ), OFL-1.1. When: slices 04 and 04b.
 
-50. **[app] Labels are sentence case, not the mock's all caps.** Caps overflowed the
+49. **[app] Labels are sentence case, not the mock's all caps.** Caps overflowed the
     renderer's 220 px label box. When: slice 04b.
 
-51. **[app] HUD motion is brief and skippable.** Stat chips count up over 400 ms and
+50. **[app] HUD motion is brief and skippable.** Stat chips count up over 400 ms and
     then show the exact settled text. Panels slide in over 360 ms on arrival. A held
     or stepped clock, or a reader who asked for reduced motion, skips both. The help panel plate is opaque. When:
     slice 04b.
 
-52. **[app] TinyStories is credited once, in the help panel.** It covers every chapter,
+51. **[app] TinyStories is credited once, in the help panel.** It covers every chapter,
     so it isn't repeated per chapter. The help panel also gives each chip's source, and
     `help.notes` holds per-chapter disclosures. When: slices 04 and 20.
 
-53. **[app] Share copies the chapter's `/c/N/` link.** That page has per-chapter
-    link-preview metadata (D34). "Copy link" feature-detects the clipboard and falls back
-    to showing the link (`copyOrShow`). When: slice 12 and the Codex review.
+52. **[app] Share copies the chapter's `/c/N/` link.** That page has per-chapter
+    link-preview metadata (D34). Both copy buttons (the HUD's Share and the fallback page's
+    "Copy link") go through `copyOrShow`, which shows the link to copy by hand when there
+    is no clipboard or access is refused. When: slice 12, the Codex review, and the close
+    (the HUD had its own direct clipboard call until then).
 
-54. **[app] The harness drives the UI with real key presses.** The probe
+53. **[app] The harness drives the UI with real key presses.** The probe
     (`window.__explainer`) also exposes `goto` and `setUi` for the app, and `verify.ts`
     offers `--press` and `--ui`. When: slice 04.
 
-55. **[runtime] Each chapter's run is one file, `runtime/runs/<scene>.ts`.**
+54. **[runtime] Each model chapter's run is one file, `runtime/runs/<scene>.ts`.**
     `computeRun` dispatches through the `RUNS` table in `scene-run.ts`. The worker and
     the in-process session share one inference core, `createInference`. When: slices
     26–28.
 
-56. **[runtime] Every inference request names its model.** The worker keeps each loaded
+55. **[runtime] Every inference request names its model.** The worker keeps each loaded
     model by id and has no "current" model. `session.run` takes an options object
     (trace, window, model, mlpOff). Each run's calls are wrapped in `sessionScope`, so a
     superseded chapter's late replies are dropped. Cancel messages go only to
     generations. When: slices 26–28 and the Codex review.
 
-57. **[runtime] Speculative decoding stops at an accepted `<eos>` and checks context
+56. **[runtime] Speculative decoding stops at an accepted `<eos>` and checks context
     room before each round.** `speculativeStep` throws `RangeError` when the context is
     full. When: the Codex review.
 
-58. **[runtime] A GPU failure after a successful adapter probe shows the video
+57. **[runtime] A GPU failure after a successful adapter probe shows the video
     fallback.** `withGpu` destroys the partial GPU root, and `App.onUnsupported` switches
     to the fallback. When: the Codex review.
 
-59. **[runtime] The arrival move is a 2.5 s smoothstep from `room-wide` to the hero
+58. **[runtime] The arrival move is a 2.5 s smoothstep from `room-wide` to the hero
     shot.** The loop clock is paused until landing (D42). `?clock=step` lets the recorder
     advance frame by frame; `clockIsDriven` (held or stepped) skips HUD motion and the
     arrival move, because a looping video must not open with a one-off camera move. When:
     slices 11c and 12.
 
-60. **[renderer] Shaders are WGSL templates resolved by TypeGPU; pipelines are raw
+59. **[renderer] Shaders are WGSL templates resolved by TypeGPU; pipelines are raw
     WebGPU with every bind-group index pinned.** Structs come from the TypeGPU schemas,
     and frame encoding stays allocation-free. This departs from the renderer skill's "pin
     only group 0", which assumes TypeGPU-managed pipelines. Group 0 carries the frame and
@@ -492,69 +506,70 @@ Each entry carries a subject tag: [data], [arith], [app], [renderer], [scene],
     `LookConfig` is linear numbers only; the app's `look.ts` converts tokens. When:
     slices 05–09.
 
-61. **[renderer] Part transforms are per-frame data.** The renderer repacks instances
+60. **[renderer] Part transforms are per-frame data.** The renderer repacks instances
     every frame without allocating, and `revision` signals only a change in structure.
     `partWorld` applies Exploded and `partCut` decides Cutaway; nothing else applies
     them. When: slices 05, 10 and 13.
 
-62. **[renderer] Label occlusion is re-tested when a scene's layout changes.** A builder
+61. **[renderer] Label occlusion is re-tested when a scene's layout changes.** A builder
     bumps `SceneDesc.layout` when parts move, and the stage rebuilds occluders on a
     revision, layout or view change. Translucent parts never occlude, meshes are tested
     per triangle (node boxes were too coarse), cut parts stop occluding, and tube
     occluders ignore stretch along the path (a stretched unit tube had occluded the
     whole scene). When: slices 09, 10, 19 and 26–28.
 
-63. **[renderer] Labels try up-right, up-left, down-right, then down-left.** They take
+62. **[renderer] Labels try up-right, up-left, down-right, then down-left.** They take
     the first side that avoids other labels, scene text, HUD panel rects and the screen
     edge. Scene text (bar words, card words, tags) is a separate overlay with the same
     placement code, so D18's label cap still holds; lower-ranked tags hide on collision.
     Labels and tags snap to whole pixels, so captures are deterministic. When: slices 09,
     10, 11 and 36.
 
-64. **[renderer] The room is lit by baked vertex colours.** R is ambient occlusion,
+63. **[renderer] The room is lit by baked vertex colours.** R is ambient occlusion,
     and G/B are baked warm and cool practical light tinted by
     `look.room.practicals.*.spill`, because the renderer has no local lights and AO alone
     left the room black. The environment is drawn in its own slot, never as a part, so it
     never occludes labels. Its depth is read-only. `OrbitLimits.bounds` keeps the camera
     in the room. When: slices 07 and 11b.
 
-65. **[renderer] Specular reflects the room gradient analytically, and lights have an
+64. **[renderer] Specular reflects the room gradient analytically, and lights have an
     apparent size.** Metal and glass didn't read with direct light alone; this is a
     lightweight stand-in for image-based lighting. Glass has no diffuse term, and its
     absorption rises toward grazing angles. AgX tonemapping gets a saturation knob (1.25)
     so glows keep their colour. The human approved the look. When: slices 07–08.
 
-66. **[renderer] The floor light pool is a long soft falloff stretched 1.6× along the
+65. **[renderer] The floor light pool is a long soft falloff stretched 1.6× along the
     ceiling tubes (`lights.pool.stretch`).** It replaced a disc that read as a stage
     spotlight. The room's back wall left of the window stays plain, because the HUD title
     sits over it. When: the polish pass.
 
-67. **[renderer] Contact shadows are per foot for subjects on legs.** Solid-bodied
+66. **[renderer] Contact shadows are per foot for subjects on legs.** Solid-bodied
     subjects keep one soft blob. The shadow material's specular is 0, so it only
     darkens. When: slice 11c and the polish pass.
 
-68. **[renderer] Cutaway is a fragment-stage clip plane from `look.views.cutaway`.** Back
+67. **[renderer] Cutaway is a fragment-stage clip plane from `look.views.cutaway`.** Back
     faces seen through the cut are shaded as a hatched cap in the focus colour at 0.4
     gain. Discard and no-cull pipeline variants run only while cutting. Views ease over
     0.6 s. Coplanar faces are lifted 2 mm apart, because they z-fought in the cut. When:
     slice 13.
 
-69. **[renderer] Bloom starts at half resolution, with the mip count computed from the
+68. **[renderer] Bloom starts at half resolution, with the mip count computed from the
     frame size.** GPU timing is opt-in (`timing: true`, `receipt.gpuMs`). When: slices 08
     and 09.
 
-70. **[renderer] Tubes carry a per-vertex axis and flow coordinate, and identical tubes
+69. **[renderer] Tubes carry a per-vertex axis and flow coordinate, and identical tubes
     share one geometry.** Vertices are 48 bytes. The GPU scales the radius by
     `widthScale`, and a content-keyed cache lets repeated tubes (such as brick studs)
     instance. When: slices 19 and 22.
 
-71. **[renderer] Props export without UVs, and mesh materials bind by node name.** No
+70. **[renderer] Props export without UVs, and mesh materials bind by node name.** No
     UVs keeps Blender builds byte-reproducible. A mesh's material is the preset named by
-    its node name's last dotted segment, else the glTF material name. The counter board
+    a dotted segment of its node name (the last segment first), else the glTF material
+    name. The counter board
     became a tally board on two posts, because the first design read as a monitor. When:
     slice 06.
 
-72. **[deploy] Media is recorded locally and committed.** Vercel's builders have no
+71. **[deploy] Media is recorded locally and committed.** Vercel's builders have no
     WebGPU Chrome, so `bun run --cwd apps/explainer media` records under `public/media/`,
     and a test fails when a chapter has no media. The fallback video shows the scene only
     (the HUD is hidden but laid out), cropped to the safe rect, because at phone width

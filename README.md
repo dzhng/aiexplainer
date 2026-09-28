@@ -3,8 +3,8 @@
 "How LLMs work, from first principles": an interactive 3D explainer that starts from
 word-pair counts and adds one part per chapter until it reaches a production LLM. Every
 part is a machine drawn on the GPU and backed by a real tiny model trained for that
-chapter. Bun + Turborepo monorepo; the plan and its decisions live in
-[specs/llm-explainer](specs/llm-explainer/README.md).
+chapter. Bun + Turborepo monorepo; why it is built this way, and the decisions behind it,
+live in [specs/done/llm-explainer](specs/done/llm-explainer/README.md).
 
 ## Layout
 

@@ -8,7 +8,7 @@
  */
 import type { ChapterDef } from "../types.ts";
 
-/** The seeded runs the scene shows (the seed was picked from 1–12, see the slice record). */
+/** The seeded runs the scene shows (the seed was picked from 1–12, see specs/done/llm-explainer/choices.md). */
 export const SPEC_RUN = { seed: 11, temperature: 1, maxNewTokens: 16, maxK: 8 } as const;
 /**
  * The drafter's cost per token as a fraction of the target's: drafter-64's weights ÷ full's
