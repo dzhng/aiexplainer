@@ -46,3 +46,12 @@ export {
 } from "./kit/question-panel.ts";
 export { placePour, placeStretch, stretchSpan, type RiverParams } from "./kit/river.ts";
 export { placeKnob, type VolumeKnobParams } from "./kit/volume-knob.ts";
+export {
+  PARTS_PER_TILE,
+  draftTileCenter,
+  faceId,
+  setDraftTile,
+  type DraftStripParams,
+  type DraftTileState,
+} from "./kit/draft-strip.ts";
+export { TRIAGE_SLOTS, bayCenter, deskCenter, type TriageBaysParams } from "./kit/triage-bays.ts";

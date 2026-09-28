@@ -186,6 +186,26 @@
         "roughness": 0.75,
         "opacity": 1
       },
+      "draftAccepted": {
+        "color": "focus",
+        "emissive": "focus",
+        "metallic": 0,
+        "roughness": 0.4,
+        "opacity": 1
+      },
+      "draftRejected": {
+        "color": "#4d4f55",
+        "metallic": 0.1,
+        "roughness": 0.8,
+        "opacity": 1
+      },
+      "draftAdded": {
+        "color": "active",
+        "emissive": "active",
+        "metallic": 0,
+        "roughness": 0.4,
+        "opacity": 1
+      },
       "prompt": {
         "color": "metalDark",
         "emissive": "active",

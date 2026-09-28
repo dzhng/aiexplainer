@@ -50,7 +50,7 @@ export const quantization: ChapterDef = {
           "The copy is not perfect, but its guesses stay very close.",
         ],
         precisely:
-          "On validation text the 8-bit copy's top next token matches the 16-bit model's at the agreement chip's rate; the KL chip is how far apart their whole next-token distributions are.",
+          "On validation text the 8-bit copy's top next token matches the 16-bit model's at the agreement chip's rate; the drift chip is the KL divergence, in nats, between their whole next-token distributions.",
       },
     },
   },
@@ -71,7 +71,7 @@ export const quantization: ChapterDef = {
     },
     {
       id: "kl",
-      label: "KL divergence (nats)",
+      label: "how far its guesses drift",
       format: "num",
       scale: "this tiny model",
       value: { kind: "probe", probe: "q8-kl" },

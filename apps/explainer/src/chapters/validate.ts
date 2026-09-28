@@ -28,7 +28,7 @@ const FORMATS_FOR_UNIT: Record<ArithUnit, readonly StatFormat[]> = {
   bytes: ["bytes"],
   "tok/s": ["tok/s"],
   s: ["s"],
-  count: ["int", "x"],
+  count: ["int", "num", "x"],
 };
 
 const wordCount = (s: string) => s.trim().split(/\s+/).filter(Boolean).length;

@@ -13,6 +13,7 @@ import type {
   NextWord,
   ProbeResult,
   TransformerArch,
+  SpeculativeResult,
   WeightSlice,
 } from "@repo/llm";
 import { modelManifestUrl } from "./models.ts";
@@ -41,6 +42,16 @@ export interface GenerateRequest {
   window?: number;
 }
 
+/** Seeded speculative decoding: `drafter` guesses `k` tokens a round, `target` checks them. */
+export interface SpeculateRequest {
+  target: ModelId;
+  drafter: ModelId;
+  k: number;
+  maxNewTokens: number;
+  temperature: number;
+  seed: number;
+}
+
 export type WorkerRequest = { id: number } & (
   | { type: "load"; manifestUrl: string }
   | { type: "generate"; tokens: number[]; options: GenerateRequest }
@@ -49,6 +60,7 @@ export type WorkerRequest = { id: number } & (
   | { type: "nextWords"; word: string; k: number }
   | { type: "neighbours"; token: number; k: number }
   | { type: "weights"; tensor: string; start: number; count: number; model?: ModelId }
+  | { type: "speculate"; tokens: number[]; options: SpeculateRequest }
 );
 
 export type WorkerReply = { id: number } & (
@@ -75,6 +87,8 @@ export interface Session {
   nextWords(word: string, k: number): Promise<NextWord[]>;
   /** The loaded transformer's nearest tokens in its input embedding table. */
   neighbours(token: number, k: number): Promise<Neighbour[]>;
+  /** Speculative decoding on two loaded models (`speculate`), round by round. */
+  speculate(tokens: number[], options: SpeculateRequest): Promise<SpeculativeResult>;
   /** A run of a loaded model's stored weights (`weightSlice`), on `model` or the latest. */
   weights(tensor: string, start: number, count: number, model?: ModelId): Promise<WeightSlice>;
   /** Rejects the live request, if any, and drops its eventual reply. */
@@ -152,6 +166,9 @@ export function createSession(options: SessionOptions = {}): Session {
     },
     neighbours(token, k) {
       return send<Neighbour[]>({ id: nextId++, type: "neighbours", token, k });
+    },
+    speculate(tokens, options) {
+      return exclusive<SpeculativeResult>({ id: nextId++, type: "speculate", tokens, options });
     },
     weights(tensor, start, count, model) {
       return send<WeightSlice>({ id: nextId++, type: "weights", tensor, start, count, model });

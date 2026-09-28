@@ -1302,6 +1302,70 @@
       "value": 0.9996720692121126,
       "threshold": 0.9,
       "pass": true
+    },
+    {
+      "probe": "expert-usage-0",
+      "prompt": "",
+      "metric": "expert 0's share of routing slots on held-out tokens",
+      "value": 0.117919921875,
+      "threshold": 0.0625,
+      "pass": true
+    },
+    {
+      "probe": "expert-usage-1",
+      "prompt": "",
+      "metric": "expert 1's share of routing slots on held-out tokens",
+      "value": 0.1271209716796875,
+      "threshold": 0.0625,
+      "pass": true
+    },
+    {
+      "probe": "expert-usage-2",
+      "prompt": "",
+      "metric": "expert 2's share of routing slots on held-out tokens",
+      "value": 0.1272125244140625,
+      "threshold": 0.0625,
+      "pass": true
+    },
+    {
+      "probe": "expert-usage-3",
+      "prompt": "",
+      "metric": "expert 3's share of routing slots on held-out tokens",
+      "value": 0.12103271484375,
+      "threshold": 0.0625,
+      "pass": true
+    },
+    {
+      "probe": "expert-usage-4",
+      "prompt": "",
+      "metric": "expert 4's share of routing slots on held-out tokens",
+      "value": 0.1304473876953125,
+      "threshold": 0.0625,
+      "pass": true
+    },
+    {
+      "probe": "expert-usage-5",
+      "prompt": "",
+      "metric": "expert 5's share of routing slots on held-out tokens",
+      "value": 0.1203460693359375,
+      "threshold": 0.0625,
+      "pass": true
+    },
+    {
+      "probe": "expert-usage-6",
+      "prompt": "",
+      "metric": "expert 6's share of routing slots on held-out tokens",
+      "value": 0.1315765380859375,
+      "threshold": 0.0625,
+      "pass": true
+    },
+    {
+      "probe": "expert-usage-7",
+      "prompt": "",
+      "metric": "expert 7's share of routing slots on held-out tokens",
+      "value": 0.1243438720703125,
+      "threshold": 0.0625,
+      "pass": true
     }
   ]
 }
