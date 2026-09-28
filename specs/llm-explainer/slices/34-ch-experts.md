@@ -45,3 +45,15 @@ Every earlier slice.
 ## Feedback that would change this slice
 
 The analogy not landing for the human. Rework the copy and the beats; the model and seam stay the same.
+
+## Results (2026-09-27)
+
+- **Router choices are real:** one forward pass of `moe` on "Once upon a time, there was a little girl", tracing layer 1's router (`ROUTER_LAYER` 0, of 4) for the first 6 words after `<bos>`. "Once" → bays 6 and 5 (85% / 15%), " upon" → 5 and 6, " a" → 3 and 5, … The desk caption names the layer, so no claim is made about the other three.
+- **The histogram is the export gate's evidence.** The experts probe now also records each expert's share of routing slots as `expert-usage-<e>` (threshold: at least half an even share, so a collapsed expert fails); re-probed with `--probe-only`, the entropy evidence reproduced exactly (0.9997) and the shares are 11.8–13.2%, the same numbers as `scenarios.json`'s descriptions.
+- **Chips:** `params.total` (2.3 million, counted tensor by tensor) and `params.perToken` (1.12 million: all weights less the 6 idle experts' SwiGLU weights in each of 4 layers), new in `MODEL_METRICS` via `parameterCounts`; and `moeActiveParams` for Llama-3-8B under the named `llamaAsMoe` assumption (13.7 billion per word, hypothetical, labelled "per word, if its MLPs were 8 experts").
+- **No specialisation copy.** The probe's per-expert token kinds show no pattern worth naming, so the copy says only that every bay gets its share.
+- **Bay layout (delegated):** one row of 8 open booths with the desk at the front left, so each word's two copies walk across to their bays in plain view; each bay's lamp has its own dynamics slot.
+- **The slider picks the word** (1–6) and holds it routed; there is no failure beat (the last part before the finished machine); the last beat hands on to chapter 15.
+- **Kit: `triageBays`** (`packages/renderer/src/kit/triage-bays.ts`), with `bayCenter`, `deskCenter` and `TRIAGE_SLOTS`.
+- **Shots** (`throwaway/shots/34/`): `bays-turn-t{0,1,3}`, `app-t1`, `app-t6.5`, `app-t18`, `loop-strip`, `sweep-sheet`, `exploded`. The registry holds at 11 buffers / 77.7 MB across 10 round trips 14 → 13 → 14.
+- **screenshot-critique** (two unprimed passes): lamps now light for most of each word's 2.1 s (the copies leave the desk after 0.3 s), bays carry their numbers 1–8, the histogram has an even-share line (1 in 8) so "every bay gets its share" is readable against it, the waiting words leave once the histogram rises, and the Llama chip reads "per word, as 8 experts (hypothetical)". Left as is: the queue reads right to left (the next word stands nearest the desk).

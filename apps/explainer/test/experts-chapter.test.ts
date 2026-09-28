@@ -1,0 +1,73 @@
+import { describe, expect, test } from "bun:test";
+import {
+  evalArith,
+  forward,
+  parameterCounts,
+  probeResult,
+  promptTokens,
+  transformerModel,
+} from "@repo/llm";
+import { TRIAGE_SLOTS } from "@repo/renderer";
+import { shippedModel } from "../scripts/shipped.ts";
+import { ROUTED_TOKENS, ROUTER_LAYER, experts } from "../src/chapters/data/experts.ts";
+import { resolveStat } from "../src/chapters/stats.ts";
+import { validateChapter } from "../src/chapters/validate.ts";
+import type { ExpertsRun } from "../src/scene/build-frame.ts";
+import { chapterRun, frameAt } from "./scene-harness.ts";
+
+const moe = await shippedModel("moe");
+const run = (await chapterRun(experts)) as ExpertsRun;
+const lit = (intensity: Float32Array) =>
+  Array.from({ length: 8 }, (_, e) => e).filter((e) => intensity[TRIAGE_SLOTS.lamps + e]! > 0);
+
+describe("chapter 14's numbers equal their sources", () => {
+  test("each word's two bays and weights are the router's own, from the forward trace", () => {
+    const model = transformerModel(moe);
+    const ids = promptTokens(model.tokenizer, experts.loop.inputs![0]!);
+    const { trace } = forward(model, ids, { trace: { layers: [ROUTER_LAYER] } });
+    const router = trace!.layers[ROUTER_LAYER]!.router!;
+    expect(run.tokens).toHaveLength(ROUTED_TOKENS);
+    run.tokens.forEach((token, n) => {
+      const row = n + 1; // after <bos>
+      expect(token.text).toBe(model.tokenizer.decode([ids[row]!]));
+      expect(token.experts).toEqual(Array.from(router.experts.data.subarray(row * 2, row * 2 + 2)));
+      expect(token.weights).toEqual(Array.from(router.weights.data.subarray(row * 2, row * 2 + 2)));
+    });
+  });
+
+  test("the lit bays are exactly the word's two experts; the other six stay dark", () => {
+    for (let n = 0; n < ROUTED_TOKENS; n++) {
+      const { intensity } = frameAt(experts, run, 0, { slider: n + 1, sliderSet: true });
+      expect(lit(intensity)).toEqual([...run.tokens[n]!.experts].sort((a, b) => a - b));
+    }
+    // Between words, with the copies still at the desk, no bay is lit.
+    expect(lit(frameAt(experts, run, 0.2).intensity)).toEqual([]);
+  });
+
+  test("the usage histogram is the export gate's evidence", () => {
+    run.usage.forEach((share, e) =>
+      expect(share).toBe(probeResult(moe.manifest, `expert-usage-${e}`).value),
+    );
+    expect(run.usage.reduce((a, b) => a + b, 0)).toBeCloseTo(1, 6);
+  });
+
+  test("the chips: the tiny model's weights, its per-word share, and the named Llama assumption", () => {
+    const [total, perWord, llama] = experts.stats;
+    const counts = parameterCounts(moe);
+    expect(resolveStat(total, moe)).toBe(counts.total);
+    expect(resolveStat(perWord, moe)).toBe(counts.perToken);
+    // Six of eight experts' SwiGLU weights, in each of the 4 layers, sit idle for a token.
+    const arch = moe.manifest.kind === "transformer" ? moe.manifest.arch : null;
+    expect(counts.total - counts.perToken).toBe(4 * 6 * 3 * arch!.dModel * 128);
+    expect(resolveStat(llama, moe)).toBe(evalArith("moeActiveParams", { experts: 8, topK: 2 }));
+    expect(validateChapter(experts)).toEqual([]);
+  });
+});
+
+describe("chapter 14's loop", () => {
+  test("the point lands by 10 s; the last beat hands on to the finished machine", () => {
+    const beat = (id: string) => experts.loop.beats.find((b) => b.id === id)!.t;
+    expect(beat("route")).toBeLessThan(10);
+    expect(experts.loop.beats.at(-1)!.id).toBe("last-part");
+  });
+});

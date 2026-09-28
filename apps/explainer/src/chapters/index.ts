@@ -14,6 +14,8 @@ import { residual } from "./data/residual.ts";
 import { stack } from "./data/stack.ts";
 import { batching } from "./data/batching.ts";
 import { quantization } from "./data/quantization.ts";
+import { speculative } from "./data/speculative.ts";
+import { experts } from "./data/experts.ts";
 import type { ChapterSlug } from "./ladder.ts";
 import type { ChapterDef } from "./types.ts";
 import { validateChapter } from "./validate.ts";
@@ -31,6 +33,8 @@ export const CHAPTERS: Partial<Record<ChapterSlug, ChapterDef>> = {
   generation,
   batching,
   quantization,
+  speculative,
+  experts,
 };
 
 for (const [slug, def] of Object.entries(CHAPTERS)) {

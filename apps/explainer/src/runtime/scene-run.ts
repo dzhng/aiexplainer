@@ -15,6 +15,8 @@ import { embeddingsRun } from "./runs/embeddings.ts";
 import { generationRun } from "./runs/generation.ts";
 import { mlpRun } from "./runs/mlp.ts";
 import { quantizationRun } from "./runs/quantization.ts";
+import { speculativeRun } from "./runs/speculative.ts";
+import { expertsRun } from "./runs/experts.ts";
 import { residualRun } from "./runs/residual.ts";
 import { samplingRun } from "./runs/sampling.ts";
 import { stackRun } from "./runs/stack.ts";
@@ -29,7 +31,7 @@ export interface RunContext {
    * The inference worker, holding the chapter's model (and any other a run loads and names).
    * Requests run one after another: the session cancels a live request when a new one starts.
    */
-  session: Pick<Session, "load" | "run" | "generate" | "nextWords" | "weights">;
+  session: Pick<Session, "load" | "run" | "generate" | "nextWords" | "weights" | "speculate">;
 }
 
 /** Computes one scene's run for the loop's inputs, or for the reader's text alone. */
@@ -51,6 +53,8 @@ const RUNS: Partial<Record<SceneBuilderId, SceneRunFn>> = {
   stack: stackRun,
   generation: generationRun,
   quantization: quantizationRun,
+  speculative: speculativeRun,
+  experts: expertsRun,
 };
 
 /** The scene's run, or null for a chapter whose scene shows no model output. */

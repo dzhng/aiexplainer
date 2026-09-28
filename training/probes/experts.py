@@ -20,6 +20,7 @@ from probes.evidence import result
 from probes.text import decode, vocab
 
 ENTROPY_THRESHOLD = 0.9
+USAGE_FLOOR = 0.5  # × an even share: an expert below it has all but collapsed away
 
 
 def token_kind(piece: str) -> str:
@@ -52,6 +53,12 @@ def experts(model: Transformer) -> tuple[list[dict[str, Any]], list[str]]:
     entropy = float(-(usage * np.log(usage)).sum() / np.log(n))
     evidence = [
         result("expert-usage-entropy", "", "routing entropy ÷ log(experts) on held-out tokens", entropy, ENTROPY_THRESHOLD),
+    ]
+    # The usage histogram chapter 14 draws: each expert's share of routing slots. An expert
+    # passes while it takes at least half an even share (it has not collapsed away).
+    evidence += [
+        result(f"expert-usage-{e}", "", f"expert {e}'s share of routing slots on held-out tokens", usage[e], USAGE_FLOOR / n)
+        for e in range(n)
     ]
     descriptions = []
     for e in range(n):

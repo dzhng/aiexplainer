@@ -6,6 +6,8 @@ import { parseGlb } from "../src/gltf.ts";
 import { blockGeometry } from "../src/kit/block.ts";
 import { placeBrick } from "../src/kit/brick.ts";
 import { KIT, KIT_ENTRIES } from "../src/kit/catalog.ts";
+import { TRIAGE_SLOTS, bayCenter } from "../src/kit/triage-bays.ts";
+import { PARTS_PER_TILE, setDraftTile } from "../src/kit/draft-strip.ts";
 import { shadowGeometry } from "../src/kit/contact-shadow.ts";
 import { faceAt } from "../src/kit/die.ts";
 import { PIN_PARTS, placePin } from "../src/kit/pins.ts";
@@ -390,4 +392,33 @@ test("die: each face spans its share of the rim, and the face read is the one th
   expect(faceAt(shares, 0)).toBe(0);
   expect(faceAt(shares, -Math.PI * 2 * 0.6)).toBe(1);
   expect(faceAt(shares, 0, Math.PI * 2 * 0.9)).toBe(2);
+});
+
+test("draft strip: each tile shows exactly one face, the one for its state", () => {
+  const params = KIT.draftStrip.example({});
+  const { parts } = KIT.draftStrip.build(params);
+  expect(parts).toHaveLength(params.count * PARTS_PER_TILE);
+  const visible = (i: number) =>
+    parts
+      .slice(i * PARTS_PER_TILE, (i + 1) * PARTS_PER_TILE)
+      .filter((p) => p.transform[13]! > -1)
+      .map((p) => p.id);
+  expect(visible(0)).toEqual(["draft.0.accepted"]);
+  expect(visible(2)).toEqual(["draft.2.rejected"]);
+  expect(visible(3)).toEqual(["draft.3.added"]);
+  expect(visible(4)).toEqual(["draft.4"]);
+  setDraftTile(parts, 4, "hidden", [0, 1, 0], params.tile);
+  expect(visible(4)).toEqual([]);
+});
+
+test("triage bays: a booth and a lamp per bay, each lamp on its own slot, and a desk", () => {
+  const params = KIT.triageBays.example({});
+  const { parts } = KIT.triageBays.build(params);
+  const lamps = parts.filter((p) => p.id.endsWith(".lamp"));
+  expect(lamps.map((p) => p.slot)).toEqual(
+    Array.from({ length: params.bays }, (_, i) => params.slot + TRIAGE_SLOTS.lamps + i),
+  );
+  // Each lamp sits over its own bay.
+  lamps.forEach((lamp, i) => expect(lamp.transform[12]).toBeCloseTo(bayCenter(params, i)[0], 6));
+  expect(parts.filter((p) => p.id.endsWith(".desk"))).toHaveLength(1);
 });

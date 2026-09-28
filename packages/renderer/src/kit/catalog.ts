@@ -11,6 +11,8 @@ import { contactShadow } from "./contact-shadow.ts";
 import { dial } from "./dial.ts";
 import { flows } from "./flows.ts";
 import { die } from "./die.ts";
+import { draftStrip } from "./draft-strip.ts";
+import { triageBays } from "./triage-bays.ts";
 import { mesh } from "./mesh.ts";
 import { pipes } from "./pipes.ts";
 import { sealed } from "./sealed.ts";
@@ -36,6 +38,8 @@ export const KIT = {
   river,
   volumeKnob,
   die,
+  draftStrip,
+  triageBays,
 } as const;
 export type KitPrimitiveId = keyof typeof KIT;
 

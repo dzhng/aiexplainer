@@ -45,6 +45,8 @@ async function handle(
     }
     case "neighbours":
       return [inference.neighbours(request.token, request.k), []];
+    case "speculate":
+      return [inference.speculate(request.tokens, request.options), []];
     case "weights":
       return [inference.weights(request.tensor, request.start, request.count, request.model), []];
     case "nextWords":

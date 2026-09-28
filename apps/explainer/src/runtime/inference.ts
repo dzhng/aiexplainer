@@ -10,6 +10,8 @@ import {
   forward,
   generate,
   seededRng,
+  speculate,
+  type SpeculativeResult,
   type GenerateStep,
   nearestTokens,
   nextWords,
@@ -23,7 +25,7 @@ import {
   type Transformer,
   type WeightSlice,
 } from "@repo/llm";
-import type { GenerateRequest, ModelInfo, RunOptions } from "./session.ts";
+import type { GenerateRequest, ModelInfo, RunOptions, SpeculateRequest } from "./session.ts";
 
 type Held = { loaded: LoadedModel } & (
   | { kind: "transformer"; transformer: Transformer }
@@ -45,6 +47,8 @@ export interface Inference {
   ): Promise<GenerateStep[]>;
   nextWords(word: string, k: number): NextWord[];
   neighbours(token: number, k: number): Neighbour[];
+  /** Speculative decoding (`speculate`): `drafter` guesses, `target` checks; both loaded. */
+  speculate(tokens: number[], options: SpeculateRequest): SpeculativeResult;
   /** A run of a loaded model's stored weights (`weightSlice`), on `model` or the latest. */
   weights(tensor: string, start: number, count: number, model?: string): WeightSlice;
 }
@@ -101,6 +105,17 @@ export function createInference(): Inference {
     },
     neighbours(token, k) {
       return nearestTokens(transformer(current, "neighbours"), token, k);
+    },
+    speculate(tokens, { target, drafter, seed, ...rest }) {
+      return speculate(
+        transformer(target, "speculate"),
+        transformer(drafter, "speculate"),
+        tokens,
+        {
+          ...rest,
+          rng: seededRng(seed),
+        },
+      );
     },
     weights(tensor, start, count, model) {
       const id = model ?? current;
