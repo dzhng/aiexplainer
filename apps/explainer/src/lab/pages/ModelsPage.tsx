@@ -38,11 +38,11 @@ async function measure(model: ModelId, requested: string | null): Promise<Report
     const prompt = requested ?? Object.values(scenarios)[0]![0]!;
     const tokens = promptTokens(tokenizer, prompt);
     const lastLayer = (info.arch?.nLayers ?? 0) - 1;
-    const result = await session.run(
-      tokens,
-      lastLayer >= 0 ? { trace: { layers: [lastLayer] } } : undefined,
-    );
-    const neighbours = await session.neighbours(tokens.at(-1)!, 8);
+    const result = await session.run(tokens, {
+      model,
+      ...(lastLayer >= 0 ? { trace: { layers: [lastLayer] } } : {}),
+    });
+    const neighbours = await session.neighbours(model, tokens.at(-1)!, 8);
     return { info, tokens, result, neighbours, tokenizer, prompt };
   } finally {
     session.dispose();

@@ -1,8 +1,10 @@
 // The inference session (D38): a Web Worker running packages/llm, so a typed prompt
-// never blocks the controls. One request is live at a time: a new request, or
-// `cancel()`, rejects the previous one with `CancelledError`, and the worker's late
-// reply to it is dropped. (The worker finishes the stale computation; it is never
-// interrupted mid-forward, only ignored.)
+// never blocks the controls. Every request names the model it runs on. One request is
+// live at a time: a new request, or `cancel()`, rejects the previous one with
+// `CancelledError`, and the worker's late reply to it is dropped. (The worker stops a
+// cancelled generation at its next token; anything else finishes and is ignored.)
+// `sessionScope` ties a run's requests to its lifetime: once it ends, nothing it still
+// awaits can reach the worker again.
 import type {
   ForwardOptions,
   ForwardResult,
@@ -25,15 +27,15 @@ export interface ModelInfo {
   evidence: ProbeResult[];
 }
 
-/**
- * A forward pass's options, on the latest model loaded, or on `model` (any model this session
- * loaded earlier: a chapter that compares two models loads both, then names each).
- */
-export type RunOptions = Pick<ForwardOptions, "trace" | "window" | "mlpOff"> & { model?: ModelId };
+/** A model the session has loaded, by its manifest id (a shipped model's, or a lab fixture's). */
+export type HeldId = ModelManifest["id"];
 
-/** A seeded generation (`generate` in @repo/llm) on the latest model loaded, or on `model`. */
+/** A forward pass's options, on `model` (any model this session loaded earlier). */
+export type RunOptions = Pick<ForwardOptions, "trace" | "window" | "mlpOff"> & { model: HeldId };
+
+/** A seeded generation (`generate` in @repo/llm) on `model`. */
 export interface GenerateRequest {
-  model?: ModelId;
+  model: HeldId;
   seed: number;
   temperature: number;
   maxNewTokens: number;
@@ -44,8 +46,8 @@ export interface GenerateRequest {
 
 /** Seeded speculative decoding: `drafter` guesses `k` tokens a round, `target` checks them. */
 export interface SpeculateRequest {
-  target: ModelId;
-  drafter: ModelId;
+  target: HeldId;
+  drafter: HeldId;
   k: number;
   maxNewTokens: number;
   temperature: number;
@@ -56,10 +58,10 @@ export type WorkerRequest = { id: number } & (
   | { type: "load"; manifestUrl: string }
   | { type: "generate"; tokens: number[]; options: GenerateRequest }
   | { type: "cancel"; target: number }
-  | { type: "run"; tokens: number[]; options?: RunOptions }
-  | { type: "nextWords"; word: string; k: number }
-  | { type: "neighbours"; token: number; k: number }
-  | { type: "weights"; tensor: string; start: number; count: number; model?: ModelId }
+  | { type: "run"; tokens: number[]; options: RunOptions }
+  | { type: "nextWords"; model: HeldId; word: string; k: number }
+  | { type: "neighbours"; model: HeldId; token: number; k: number }
+  | { type: "weights"; tensor: string; start: number; count: number; model: HeldId }
   | { type: "speculate"; tokens: number[]; options: SpeculateRequest }
 );
 
@@ -76,21 +78,21 @@ export class CancelledError extends Error {
 }
 
 export interface Session {
-  /** Loads a shipped model by id, or any manifest by URL (lab fixtures), and makes it current. */
+  /** Loads a shipped model by id, or any manifest by URL (lab fixtures), once. */
   load(model: ModelId | URL): Promise<ModelInfo>;
-  run(tokens: number[], options?: RunOptions): Promise<ForwardResult>;
+  run(tokens: number[], options: RunOptions): Promise<ForwardResult>;
   /**
    * Writes up to `maxNewTokens` after `tokens`. The worker pauses between tokens, so `cancel()`
    * (or a newer request) stops a long generation part-way, not just its reply.
    */
   generate(tokens: number[], options: GenerateRequest): Promise<GenerateStep[]>;
-  nextWords(word: string, k: number): Promise<NextWord[]>;
-  /** The loaded transformer's nearest tokens in its input embedding table. */
-  neighbours(token: number, k: number): Promise<Neighbour[]>;
+  nextWords(model: HeldId, word: string, k: number): Promise<NextWord[]>;
+  /** A loaded transformer's nearest tokens in its input embedding table. */
+  neighbours(model: HeldId, token: number, k: number): Promise<Neighbour[]>;
   /** Speculative decoding on two loaded models (`speculate`), round by round. */
   speculate(tokens: number[], options: SpeculateRequest): Promise<SpeculativeResult>;
-  /** A run of a loaded model's stored weights (`weightSlice`), on `model` or the latest. */
-  weights(tensor: string, start: number, count: number, model?: ModelId): Promise<WeightSlice>;
+  /** A run of a loaded model's stored weights (`weightSlice`). */
+  weights(tensor: string, start: number, count: number, model: HeldId): Promise<WeightSlice>;
   /** Rejects the live request, if any, and drops its eventual reply. */
   cancel(): void;
   dispose(): void;
@@ -111,13 +113,14 @@ export function createSession(options: SessionOptions = {}): Session {
     { resolve: (value: never) => void; reject: (e: Error) => void }
   >();
   let nextId = 0;
-  let live: number | undefined;
+  /** The live request, and whether the worker can stop it part-way (a generation). */
+  let live: { id: number; stoppable: boolean } | undefined;
 
   worker.onmessage = ({ data }: MessageEvent<WorkerReply>) => {
     const request = pending.get(data.id);
     if (!request) return; // cancelled or superseded: a stale reply
     pending.delete(data.id);
-    if (live === data.id) live = undefined;
+    if (live?.id === data.id) live = undefined;
     if (data.ok) request.resolve(data.result as never);
     else request.reject(new Error(data.error));
   };
@@ -131,16 +134,17 @@ export function createSession(options: SessionOptions = {}): Session {
   const cancel = () => {
     if (live === undefined) return;
     // A generation still running stops at its next token; anything else just loses its reply.
-    worker.postMessage({ id: nextId++, type: "cancel", target: live } satisfies WorkerRequest);
-    pending.get(live)?.reject(new CancelledError());
-    pending.delete(live);
+    if (live.stoppable)
+      worker.postMessage({ id: nextId++, type: "cancel", target: live.id } satisfies WorkerRequest);
+    pending.get(live.id)?.reject(new CancelledError());
+    pending.delete(live.id);
     live = undefined;
   };
 
   /** A request that supersedes the live one. */
   const exclusive = <T>(request: WorkerRequest): Promise<T> => {
     cancel();
-    live = request.id;
+    live = { id: request.id, stoppable: request.type === "generate" };
     return send<T>(request);
   };
 
@@ -161,11 +165,11 @@ export function createSession(options: SessionOptions = {}): Session {
         options: generation,
       });
     },
-    nextWords(word, k) {
-      return exclusive<NextWord[]>({ id: nextId++, type: "nextWords", word, k });
+    nextWords(model, word, k) {
+      return exclusive<NextWord[]>({ id: nextId++, type: "nextWords", model, word, k });
     },
-    neighbours(token, k) {
-      return send<Neighbour[]>({ id: nextId++, type: "neighbours", token, k });
+    neighbours(model, token, k) {
+      return send<Neighbour[]>({ id: nextId++, type: "neighbours", model, token, k });
     },
     speculate(tokens, options) {
       return exclusive<SpeculativeResult>({ id: nextId++, type: "speculate", tokens, options });
@@ -179,6 +183,52 @@ export function createSession(options: SessionOptions = {}): Session {
       for (const request of pending.values()) request.reject(new CancelledError());
       pending.clear();
       worker.terminate();
+    },
+  };
+}
+
+/** The requests a scene run may make (`RunContext.session`). */
+export type RunSession = Pick<
+  Session,
+  "load" | "run" | "generate" | "nextWords" | "weights" | "speculate"
+>;
+
+/**
+ * One run's view of the session, for as long as the run is current. After `end()` every call,
+ * and every reply still on its way, rejects with `CancelledError`: a superseded run's async
+ * continuations stop instead of reaching the worker, and its live request is cancelled. A
+ * later run's requests are never touched.
+ */
+export function sessionScope(session: Session): { session: RunSession; end(): void } {
+  let ended = false;
+  let waiting = 0;
+  const guard =
+    <A extends unknown[], T>(call: (...args: A) => Promise<T>) =>
+    async (...args: A): Promise<T> => {
+      if (ended) throw new CancelledError();
+      waiting++;
+      try {
+        const result = await call(...args);
+        if (ended) throw new CancelledError();
+        return result;
+      } finally {
+        waiting--;
+      }
+    };
+  return {
+    session: {
+      load: guard(session.load),
+      run: guard(session.run),
+      generate: guard(session.generate),
+      nextWords: guard(session.nextWords),
+      weights: guard(session.weights),
+      speculate: guard(session.speculate),
+    },
+    end() {
+      if (ended) return;
+      ended = true;
+      // Whatever is live is this run's: runs never overlap, and the next starts after this ends.
+      if (waiting > 0) session.cancel();
     },
   };
 }

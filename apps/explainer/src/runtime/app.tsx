@@ -4,7 +4,7 @@
  * loop is `runtime/stage.ts`: clock → loop time (restarts on `loopEpoch`, advances only while
  * `playing`) → `evalTimeline` → `buildFrame` → `renderer.frame` → `placeLabels` → label refs.
  */
-import { sourceId, type ModelId, type ModelSource } from "@repo/llm";
+import { sourceId, type ModelSource } from "@repo/llm";
 import type { FrameInput, SceneDesc, ScreenRect } from "@repo/renderer";
 import { useEffect, useLayoutEffect, useReducer, useRef, useState } from "react";
 import { CHAPTERS } from "../chapters/index.ts";
@@ -36,7 +36,7 @@ import { ARRIVAL_SEC } from "./arrival.ts";
 import { LoopTime } from "./loop-time.ts";
 import { fetchModel } from "./models.ts";
 import { computeRun } from "./scene-run.ts";
-import { createSession, type Session } from "./session.ts";
+import { createSession, sessionScope, type Session } from "./session.ts";
 import { runStage, type Stage } from "./stage.ts";
 
 const reducer = (state: AppState, action: Action) => reduce(state, action, CHAPTERS);
@@ -118,7 +118,6 @@ export function App({ hud, hudMotion, clock, probe, debug, onReady, arrival }: A
   const [model, setModel] = useState<ModelSource | null>(null);
   const [run, setRun] = useState<SceneRun | null>(null);
   const [session] = useState<Session>(() => createSession());
-  const workerModel = useRef<{ id: ModelId; loaded: Promise<void> } | null>(null);
   const canvas = useRef<HTMLCanvasElement>(null);
   const labels = useRef<LabelsHandle>(null);
   const tags = useRef<SceneTagsHandle>(null);
@@ -182,17 +181,6 @@ export function App({ hud, hudMotion, clock, probe, debug, onReady, arrival }: A
     };
   }, [def.model]);
 
-  // Runs may load models of their own (the finished machine loads every chapter's): the worker
-  // answers on the latest one loaded, so every load, not only the chapter's, is tracked here.
-  const [tracked] = useState<Session>(() => ({
-    ...session,
-    load(id) {
-      const loaded = session.load(id);
-      if (!(id instanceof URL)) workerModel.current = { id, loaded: loaded.then(() => undefined) };
-      return loaded;
-    },
-  }));
-
   // The model state lands a render after the chapter changes: never hand one chapter's model to
   // another chapter's stats or run.
   const chapterModel = model !== null && sourceId(model) === def.model ? model : null;
@@ -209,23 +197,27 @@ export function App({ hud, hudMotion, clock, probe, debug, onReady, arrival }: A
     const model = chapterModel;
     // The run reads the chapter's model: wait until it has loaded.
     if (id === null || model === null) return;
+    // The run's requests live as long as this effect: a superseded run's late continuations
+    // are cancelled, never sent, so they cannot disturb the next run's.
+    const scope = sessionScope(session);
+    const run = async () => {
+      // The worker loads each model once; later loads resolve at once.
+      if (id !== "tokenizer") await scope.session.load(id);
+      return computeRun(def, text, { model, session: scope.session, source });
+    };
     let alive = true;
-    // The worker holds one trained model: load it only when the chapter's model changes.
-    if (id !== "tokenizer" && workerModel.current?.id !== id) void tracked.load(id);
-    const worker = id === "tokenizer" ? Promise.resolve() : workerModel.current!.loaded;
-    void worker
-      .then(() => computeRun(def, text, { model, session: tracked, source }))
-      .then(
-        (next) => alive && setRun(next),
-        (error: unknown) => {
-          if (error instanceof Error && error.name === "CancelledError") return;
-          throw error;
-        },
-      );
+    void run().then(
+      (next) => alive && setRun(next),
+      (error: unknown) => {
+        if (error instanceof Error && error.name === "CancelledError") return;
+        throw error;
+      },
+    );
     return () => {
       alive = false;
+      scope.end();
     };
-  }, [def, text, chapterModel, tracked]);
+  }, [def, text, chapterModel, session]);
 
   useEffect(() => () => session.dispose(), [session]);
 
