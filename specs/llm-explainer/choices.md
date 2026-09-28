@@ -524,3 +524,19 @@ standalone. Entries are appended per pass and consolidated when the spec closes.
 - **Polish items:** in chapter 4, front-row pipes cross back-row words and pipes regrow rather
   than move during the swap. In chapter 5, the pair angle is written but not drawn, the last
   dial washes out, and the hands unwind at the loop seam. Verdict: backlog.
+
+## Slice 30 (chapter 10)
+
+- **`packages/llm/src/kvcache.ts` owns the KV cache (moved out of `forward.ts`); a cache
+  smaller than the context is a ring that evicts old positions.** Tests: cached equals
+  uncached, and the ring equals a windowed reference. Verdict: sound.
+- **The sliding window shown is 4, because at 8, 6 and 5 this prompt's words don't change.**
+  With 4, the model writes "girl named Lily." instead of "boy named Tim.", and the caption says
+  this is not how Llama-3-8B runs. Verdict: sound, and honest.
+- **The memory chips use a new `kvBytesPerToken` metric (2.05 kB, this tiny model) against
+  arith (131 kB, Llama-3-8B).** Verdict: sound.
+- **GQA is shown as unshared notes that are then dropped.** Verdict: sound; it is the real
+  2-for-4 sharing.
+- **Polish items:** chapter 8's violet-plus-blue bloom runs hot, long words overhang their tiles
+  in chapters 9–10, chapter 7's river reads as a glass duct, and labels at back angles can point
+  at hidden parts. Verdict: backlog.
