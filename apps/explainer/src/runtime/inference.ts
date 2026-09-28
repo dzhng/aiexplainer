@@ -1,6 +1,7 @@
 /**
  * What the inference worker does, with no messaging: it holds every model it has loaded,
- * keyed by id, and answers requests against the latest one loaded (or a named one). The
+ * keyed by id, and answers each request on the model it names (there is no "current" model,
+ * so a late load from a superseded chapter cannot change what a request runs on). The
  * worker (`session.worker.ts`) wraps it in messages; `localSession` wraps it in-process for
  * tests and the fixture-run script, so both paths run the same code.
  */
@@ -25,7 +26,13 @@ import {
   type Transformer,
   type WeightSlice,
 } from "@repo/llm";
-import type { GenerateRequest, ModelInfo, RunOptions, SpeculateRequest } from "./session.ts";
+import type {
+  GenerateRequest,
+  HeldId,
+  ModelInfo,
+  RunOptions,
+  SpeculateRequest,
+} from "./session.ts";
 
 type Held = { loaded: LoadedModel } & (
   | { kind: "transformer"; transformer: Transformer }
@@ -33,8 +40,9 @@ type Held = { loaded: LoadedModel } & (
 );
 
 export interface Inference {
+  /** Fetches a model once (by manifest URL) and holds it under its id. */
   load(manifestUrl: URL): Promise<ModelInfo>;
-  run(tokens: number[], options?: RunOptions): ForwardResult;
+  run(tokens: number[], options: RunOptions): ForwardResult;
   /**
    * Runs a seeded generation, awaiting `pause()` between tokens; it stops early (returning what
    * it has) once `stopped()` says so.
@@ -45,55 +53,60 @@ export interface Inference {
     pause?: () => Promise<void>,
     stopped?: () => boolean,
   ): Promise<GenerateStep[]>;
-  nextWords(word: string, k: number): NextWord[];
-  neighbours(token: number, k: number): Neighbour[];
+  nextWords(model: HeldId, word: string, k: number): NextWord[];
+  neighbours(model: HeldId, token: number, k: number): Neighbour[];
   /** Speculative decoding (`speculate`): `drafter` guesses, `target` checks; both loaded. */
   speculate(tokens: number[], options: SpeculateRequest): SpeculativeResult;
-  /** A run of a loaded model's stored weights (`weightSlice`), on `model` or the latest. */
-  weights(tensor: string, start: number, count: number, model?: string): WeightSlice;
+  /** A run of a loaded model's stored weights (`weightSlice`). */
+  weights(tensor: string, start: number, count: number, model: HeldId): WeightSlice;
 }
 
 export function createInference(): Inference {
   const held = new Map<string, Held>();
-  const infos = new Map<string, ModelInfo>();
-  let current: string | undefined;
+  /** Each manifest URL's load, fetched once. */
+  const loads = new Map<string, Promise<ModelInfo>>();
 
-  const transformer = (id: string | undefined, what: string): Transformer => {
-    const model = id === undefined ? undefined : held.get(id);
-    if (model?.kind !== "transformer") throw new Error(`${what} needs a loaded transformer`);
+  const transformer = (id: HeldId, what: string): Transformer => {
+    const model = held.get(id);
+    if (model?.kind !== "transformer")
+      throw new Error(`${what} needs a loaded transformer (${id})`);
     return model.transformer;
   };
 
+  const fetchAndHold = async (manifestUrl: URL): Promise<ModelInfo> => {
+    const loaded = await fetchModel(manifestUrl);
+    const { manifest } = loaded;
+    if (!held.has(manifest.id))
+      held.set(
+        manifest.id,
+        manifest.kind === "transformer"
+          ? { kind: "transformer", loaded, transformer: transformerModel(loaded) }
+          : { kind: "counts", loaded, counts: countsModel(loaded) },
+      );
+    const info: ModelInfo = { id: manifest.id, kind: manifest.kind, evidence: manifest.evidence };
+    if (manifest.kind === "transformer") info.arch = manifest.arch;
+    return info;
+  };
+
   return {
-    async load(manifestUrl) {
-      const loaded = await fetchModel(manifestUrl);
-      const { manifest } = loaded;
-      if (!held.has(manifest.id)) {
-        held.set(
-          manifest.id,
-          manifest.kind === "transformer"
-            ? { kind: "transformer", loaded, transformer: transformerModel(loaded) }
-            : { kind: "counts", loaded, counts: countsModel(loaded) },
-        );
-        const info: ModelInfo = {
-          id: manifest.id,
-          kind: manifest.kind,
-          evidence: manifest.evidence,
-        };
-        if (manifest.kind === "transformer") info.arch = manifest.arch;
-        infos.set(manifest.id, info);
+    load(manifestUrl) {
+      let load = loads.get(manifestUrl.href);
+      if (!load) {
+        load = fetchAndHold(manifestUrl);
+        loads.set(manifestUrl.href, load);
+        // A failed fetch may succeed later: forget it.
+        load.catch(() => loads.delete(manifestUrl.href));
       }
-      current = manifest.id;
-      return infos.get(manifest.id)!;
+      return load;
     },
-    run(tokens, options = {}) {
+    run(tokens, options) {
       const { model, ...forwardOptions } = options;
-      return forward(transformer(model ?? current, "run"), tokens, forwardOptions);
+      return forward(transformer(model, "run"), tokens, forwardOptions);
     },
     async generate(tokens, options, pause, stopped) {
       const { model, seed, ...rest } = options;
       const steps: GenerateStep[] = [];
-      for (const step of generate(transformer(model ?? current, "generate"), tokens, {
+      for (const step of generate(transformer(model, "generate"), tokens, {
         ...rest,
         rng: seededRng(seed),
       })) {
@@ -103,8 +116,8 @@ export function createInference(): Inference {
       }
       return steps;
     },
-    neighbours(token, k) {
-      return nearestTokens(transformer(current, "neighbours"), token, k);
+    neighbours(model, token, k) {
+      return nearestTokens(transformer(model, "neighbours"), token, k);
     },
     speculate(tokens, { target, drafter, seed, ...rest }) {
       return speculate(
@@ -118,15 +131,43 @@ export function createInference(): Inference {
       );
     },
     weights(tensor, start, count, model) {
-      const id = model ?? current;
-      const entry = id === undefined ? undefined : held.get(id);
-      if (!entry) throw new Error(`weights needs a loaded model (${id ?? "none"})`);
+      const entry = held.get(model);
+      if (!entry) throw new Error(`weights needs a loaded model (${model})`);
       return weightSlice(entry.loaded, tensor, start, count);
     },
-    nextWords(word, k) {
-      const model = current === undefined ? undefined : held.get(current);
-      if (model?.kind !== "counts") throw new Error("nextWords needs a loaded counts model");
-      return nextWords(model.counts, word, k);
+    nextWords(model, word, k) {
+      const entry = held.get(model);
+      if (entry?.kind !== "counts")
+        throw new Error(`nextWords needs a loaded counts model (${model})`);
+      return nextWords(entry.counts, word, k);
+    },
+  };
+}
+
+/**
+ * Stop flags for the worker's cancellable requests (generations), held only while one runs: a
+ * cancel for a request that already finished, or never could stop, leaves nothing behind.
+ */
+export function stopFlags() {
+  const running = new Map<number, { stopped: boolean }>();
+  return {
+    /** Runs `op` as request `id`, handing it a check for whether `id` was told to stop. */
+    async during<T>(id: number, op: (stopped: () => boolean) => Promise<T>): Promise<T> {
+      const flag = { stopped: false };
+      running.set(id, flag);
+      try {
+        return await op(() => flag.stopped);
+      } finally {
+        running.delete(id);
+      }
+    },
+    stop(id: number) {
+      const flag = running.get(id);
+      if (flag) flag.stopped = true;
+    },
+    /** Requests currently running. */
+    get size() {
+      return running.size;
     },
   };
 }

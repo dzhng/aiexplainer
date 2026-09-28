@@ -142,6 +142,16 @@ export function specExpectedTokens(alpha: number, k: number): number {
   return (1 - alpha ** (k + 1)) / (1 - alpha);
 }
 
+/**
+ * The expected speedup of speculative decoding over plain decoding, drafting included: tokens
+ * per target pass (`specExpectedTokens`) divided by the cost of a round, k drafter passes at
+ * `cost` (the drafter's time per token ÷ the target's) plus the target's one pass.
+ * Leviathan et al. 2023, https://arxiv.org/abs/2211.17192, Theorem 3.8 (γ = k, c = cost).
+ */
+export function specSpeedup(alpha: number, k: number, cost: number): number {
+  return specExpectedTokens(alpha, k) / (cost * k + 1);
+}
+
 /** How many sequences of `contextLen` tokens fit in GPU memory beside the weights. */
 export function maxBatchByMemory(
   cfg: ModelConfig,

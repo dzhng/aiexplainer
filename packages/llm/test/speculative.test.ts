@@ -142,3 +142,52 @@ describe("speculative decoding on real models", () => {
     expect(Math.max(...secondRow.map((v, i) => Math.abs(v - second[i]!)))).toBeLessThan(1e-5);
   });
 });
+
+describe("speculative decoding stops where generation stops", () => {
+  /** The target with `eos` swapped for `token`, so a known greedy token ends the text. */
+  const endingAt = (token: number) => ({
+    ...target,
+    tokenizer: { ...target.tokenizer, special: { ...target.tokenizer.special, eos: token } },
+  });
+  const greedy = (model: typeof target, from: number[], n: number) =>
+    [...generate(model, from, { maxNewTokens: n, temperature: 0, rng: seededRng(0) })].map(
+      (s) => s.token,
+    );
+
+  test("an accepted <eos> in the draft ends the text: no later guesses, no bonus", () => {
+    const [first] = greedy(target, prompt, 1);
+    const model = endingAt(first!);
+    const result = speculate(model, model, prompt, {
+      k: 4,
+      maxNewTokens: 10,
+      temperature: 0,
+      rng: seededRng(1),
+    });
+    expect(result.tokens).toEqual([...prompt, first!]);
+    expect(result.rounds).toEqual([{ drafted: [first!], accepted: 1, next: null }]);
+  });
+
+  test("an <eos> accepted mid-draft keeps the tokens before it, as generate does", () => {
+    const [, , third] = greedy(target, prompt, 3);
+    const model = endingAt(third!);
+    const state = speculativeState(model, model, prompt);
+    const round = speculativeStep(model, model, state, { k: 4, temperature: 0, rng: seededRng(1) });
+    expect(state.tokens).toEqual([...prompt, ...greedy(model, prompt, 10)]);
+    expect(round).toEqual({ drafted: state.tokens.slice(prompt.length), accepted: 3, next: null });
+    // Both caches still hold every committed token but the last.
+    expect(state.targetKv.length).toBe(state.tokens.length - 1);
+    expect(state.draftKv.length).toBeLessThanOrEqual(state.tokens.length - 1);
+  });
+
+  test("it never writes past the context: a full prompt gets nothing, one short gets one", () => {
+    const { ctx } = target.arch;
+    const full = Array.from({ length: ctx }, (_, i) => prompt[i % prompt.length]!);
+    const options = { k: 4, maxNewTokens: 8, temperature: 1, rng: seededRng(3) };
+    expect(speculate(target, drafter, full, options).tokens).toEqual(full);
+    const short = full.slice(0, ctx - 1);
+    expect(speculate(target, drafter, short, options).tokens).toHaveLength(ctx);
+    expect(() =>
+      speculativeStep(target, drafter, speculativeState(target, drafter, full), options),
+    ).toThrow(RangeError);
+  });
+});

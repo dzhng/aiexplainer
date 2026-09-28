@@ -20,6 +20,6 @@ export const autocompleteRun: SceneRunFn = async (def, text, { model, session })
   const words = text === null ? (def.loop.inputs ?? []) : [typed.at(-1) ?? text.trim()];
   const steps: CountsRun["steps"] = [];
   for (const word of words)
-    steps.push({ word, next: await session.nextWords(word, def.slider.max) });
+    steps.push({ word, next: await session.nextWords(model.manifest.id, word, def.slider.max) });
   return { kind: "counts", steps };
 };

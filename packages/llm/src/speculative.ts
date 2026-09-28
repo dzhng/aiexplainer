@@ -21,8 +21,11 @@ export interface SpeculativeRound {
   drafted: number[];
   /** How many of `drafted` the target kept, from the front. */
   accepted: number;
-  /** The token the target added: a correction after a rejection, or a bonus after all k. */
-  next: number;
+  /**
+   * The token the target added: a correction after a rejection, or a bonus after all k. `null`
+   * when the kept guesses end in `<eos>`: the text is over, so the target adds nothing.
+   */
+  next: number | null;
 }
 
 export interface SpeculativeResult {
@@ -81,10 +84,16 @@ export function speculativeState(
   return { tokens: [...prompt], targetKv: createKvCache(target), draftKv: createKvCache(drafter) };
 }
 
+/** Tokens both models can still hold: the shorter context, less what is committed. */
+function space(target: Transformer, drafter: Transformer, state: SpeculativeState): number {
+  return Math.min(target.arch.ctx, drafter.arch.ctx) - state.tokens.length;
+}
+
 /**
- * One round: the drafter guesses up to `k` tokens (fewer near `room`'s end), the target checks
- * them in one pass, the kept guesses and the target's own token are committed, and both caches
- * roll back to the committed prefix.
+ * One round: the drafter guesses up to `k` tokens (fewer near `room`'s end or the context's,
+ * and none past its own `<eos>`), the target checks them in one pass, the kept guesses and the
+ * target's own token are committed, and both caches roll back to the committed prefix. A kept
+ * `<eos>` ends the text, so no token follows it. Throws if the context is already full.
  */
 export function speculativeStep(
   target: Transformer,
@@ -94,8 +103,10 @@ export function speculativeStep(
 ): SpeculativeRound {
   const { temperature, rng } = options;
   const { tokens, targetKv, draftKv } = state;
-  const ctx = Math.min(target.arch.ctx, drafter.arch.ctx);
-  const count = Math.max(0, Math.min(options.k, ctx - tokens.length - 1, options.room ?? Infinity));
+  const free = space(target, drafter, state);
+  if (free <= 0) throw new RangeError("speculative decoding: the context is full");
+  const count = Math.max(0, Math.min(options.k, free - 1, options.room ?? Infinity));
+  const eos = target.tokenizer.special.eos;
   const vocab = target.arch.vocab;
   const feed = (model: Transformer, kv: KvCache, extra: number[], allPositions: boolean) =>
     forward(model, [...tokens.slice(kv.length), ...extra], { kv, allPositions }).logits;
@@ -108,6 +119,7 @@ export function speculativeStep(
     const token = sample(probs, rng);
     drafted.push(token);
     q.push(probs);
+    if (token === eos) break;
     if (i + 1 < count) draftLogits = forward(drafter, [token], { kv: draftKv }).logits;
   }
 
@@ -116,9 +128,13 @@ export function speculativeStep(
   const p = Array.from({ length: drafted.length + 1 }, (_, i) =>
     probabilities(verify.subarray((firstRow + i) * vocab, (firstRow + i + 1) * vocab), temperature),
   );
-  const { accepted, next } = verifyDrafts(p, q, drafted, rng);
+  const verdict = verifyDrafts(p, q, drafted, rng);
+  const { accepted } = verdict;
+  // Only the last guess can be `<eos>`; kept, it ends the text and the bonus is never drawn.
+  const next = accepted > 0 && drafted[accepted - 1] === eos ? null : verdict.next;
 
-  tokens.push(...drafted.slice(0, accepted), next);
+  tokens.push(...drafted.slice(0, accepted));
+  if (next !== null) tokens.push(next);
   targetKv.length = Math.min(targetKv.length, tokens.length - 1);
   draftKv.length = Math.min(draftKv.length, tokens.length - 1);
   return { drafted, accepted, next };
@@ -131,14 +147,16 @@ export function speculate(
   options: SpeculativeOptions,
 ): SpeculativeResult {
   const eos = target.tokenizer.special.eos;
-  const ctx = Math.min(target.arch.ctx, drafter.arch.ctx);
   const state = speculativeState(target, drafter, prompt);
   const rounds: SpeculativeRound[] = [];
   const generated = () => state.tokens.length - prompt.length;
-  while (generated() < options.maxNewTokens && state.tokens.at(-1) !== eos) {
+  while (
+    generated() < options.maxNewTokens &&
+    state.tokens.at(-1) !== eos &&
+    space(target, drafter, state) > 0
+  ) {
     const room = options.maxNewTokens - generated() - 1;
     rounds.push(speculativeStep(target, drafter, state, { ...options, room }));
-    if (state.tokens.length >= ctx) break;
   }
   return { tokens: state.tokens, rounds };
 }

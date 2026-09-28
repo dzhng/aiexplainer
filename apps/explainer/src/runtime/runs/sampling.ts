@@ -19,7 +19,7 @@ export const samplingRun: SceneRunFn = async (def, text, { model, session }) => 
   const steps: LogitsRun["steps"] = [];
   for (const input of inputsOf(def, text)) {
     const tokens = promptTokens(tokenizer, input);
-    const { logits } = await session.run(tokens);
+    const { logits } = await session.run(tokens, { model: model.manifest.id });
     steps.push({
       text: input,
       last: tokenizer.decode([tokens.at(-1)!]),

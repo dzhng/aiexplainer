@@ -3,12 +3,19 @@
  * (`drafter-64`, O3) guesses k words; the target (`full`) checks them all in one pass, keeps
  * each with probability min(1, p/q), and adds its own word: a correction at the first
  * rejection, or a bonus when every guess was kept. The rounds are real (`speculate`, seeded);
- * the chips are the drafter's held-out probes and Leviathan et al.'s expected words per check.
+ * the chips are the drafter's held-out α and, at the slider's k, Leviathan et al.'s expected
+ * words per check and speedup.
  */
 import type { ChapterDef } from "../types.ts";
 
 /** The seeded runs the scene shows (the seed was picked from 1–12, see the slice record). */
 export const SPEC_RUN = { seed: 11, temperature: 1, maxNewTokens: 16, maxK: 8 } as const;
+/**
+ * The drafter's cost per token as a fraction of the target's: drafter-64's weights ÷ full's
+ * (323,776 ÷ 1,508,480), the cost ratio the drafter probe states. A test checks it against the
+ * shipped models and the probe's speedup at k = 4.
+ */
+export const DRAFT_COST = 323_776 / 1_508_480;
 /** Rounds the loop plays. */
 export const LOOP_ROUNDS = 3;
 
@@ -75,10 +82,18 @@ export const speculative: ChapterDef = {
     },
     {
       id: "speedup",
-      label: "faster overall, drafting included",
+      label: "speed vs no junior, drafting included",
       format: "x",
       scale: "this tiny model",
-      value: { kind: "probe", probe: "draft-speedup-heldout" },
+      value: {
+        kind: "arith",
+        fn: "specSpeedup",
+        args: {
+          alpha: { probe: "draft-acceptance-heldout" },
+          k: { slider: true },
+          cost: DRAFT_COST,
+        },
+      },
     },
   ],
   follow: [
