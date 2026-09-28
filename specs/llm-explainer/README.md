@@ -21,23 +21,15 @@ skim is 7 min 9 s.
 
 **Next pickup, in order:**
 
-1. The polish pass over the backlog below.
+1. ~~The polish pass~~ (done).
 2. The whole-spec review (refactor-clean → code-review → write-docs) over the full diff.
 3. Re-record all media (`bun run --cwd apps/explainer media`).
 4. Slice 36 (release candidate), then merge `llm-explainer` into `main` (production). The human authorized this (2026-09-27).
 5. Consolidate `choices.md`, then close-spec.
 
-**Polish backlog** (from the choices ledger; judge each at the whole-spec review):
-
-- the room's floor pool reads as a stage spotlight, the shelf props are plain boxes, the
-  contact shadow is one blob, and a ceiling rafter crosses the HUD kicker;
-- the Cutaway cap colour is flat and bright;
-- chapter 2's noun cluster overlaps its tags;
-- chapter 3's HUD slider doesn't move during the loop's temperature demo;
-- chapter 8's title wraps to three lines;
-- chapter 14's queue reads right to left;
-- chapter 4's pipes cross back-row words; chapter 5's hands unwind at the loop seam;
-- chapter 8's bloom runs hot; long words overhang tiles in chapters 9–10; chapter 7's river reads as a glass duct.
+**Polish pass: done** (see choices.md). Left for the release check: chapter 10's scene
+note sits under the controls panel, a lavender input bar floats beside chapter 8's HUD, and
+chapter 3's punctuation words are tiny.
 
 You are implementing this spec with [implement-spec](../../.agents/skills/implement-spec/SKILL.md).
 Work the slices in the order of the ladder below. Each slice file is a contract:

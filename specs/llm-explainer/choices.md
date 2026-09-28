@@ -569,3 +569,28 @@ standalone. Entries are appended per pass and consolidated when the spec closes.
   for the production target on Vercel, so `/c/N/` link-preview cards use the stable domain.
   The human disabled Vercel Authentication, so previews are public too. Verdict: the human's
   call; O5 is closed.
+
+## Polish pass
+
+- **The HUD's top-left corner stays clear of busy room geometry,** chosen over keeping the left
+  strip light and conduit. Trade-off: the left back wall reads plainer. Verdict: sound.
+- **The floor pool is a long soft falloff stretched 1.6× along the ceiling tubes
+  (`lights.pool.stretch`).** Verdict: sound; no more stage-spotlight disc.
+- **Contact shadows are per foot (`contactShadow` feet, `blockFootprint`)** for subjects on
+  legs. Solid-bodied subjects keep one blob. Verdict: sound.
+- **Scene-text bug fixed:** a style reset wiped every scene word's dark halo in all chapters.
+  The text is now pinned at the 1rem it always rendered at, not the `--text-sm` token the code
+  named. Verdict: sound; the approved look only gains the halo.
+- **Chapter 3's HUD slider now plays the loop's temperature (the `SliderDef.loop` pattern), and
+  `snapSlider` drops float residue.** Verdict: sound; it closes the slice-21 provisional entry.
+- **Chapter 8's title is "Many readers, one assembly line".** Its bloom was measured
+  (0.52–0.58% near-white vs about 1.05% elsewhere) and accepted as dense, not hot. Verdict:
+  sound.
+- **Chapter 7's river gets flowing currents (the kit's `flows`); chapter 5's hands shrink with
+  their words at the seam instead of unwinding; chapter 14's queue reads left to right; the
+  rail tiles in chapters 9–10 widen to 0.34 m.** Verdict: sound.
+- **Accepted:** chapter 4's thin low-weight pipes cross back-row words at the hero angle,
+  because of the projection. Verdict: sound, the reason is recorded.
+- **Left for the release check:** chapter 10's scene note sits under the controls panel, a
+  lavender input bar floats beside chapter 8's left HUD, and chapter 3's ":" and "," words are
+  tiny.
