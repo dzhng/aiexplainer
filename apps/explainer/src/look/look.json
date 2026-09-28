@@ -152,6 +152,27 @@
         "roughness": 0.6,
         "opacity": 1
       },
+      "dieA": {
+        "color": "#d6a53c",
+        "emissive": "focus",
+        "metallic": 0,
+        "roughness": 0.4,
+        "opacity": 1
+      },
+      "dieB": {
+        "color": "#e8e0c8",
+        "emissive": "focus",
+        "metallic": 0,
+        "roughness": 0.4,
+        "opacity": 1
+      },
+      "dieOther": {
+        "color": "#4a5070",
+        "emissive": "focus",
+        "metallic": 0.1,
+        "roughness": 0.5,
+        "opacity": 1
+      },
       "plate": {
         "color": "#1f2a4d",
         "metallic": 0.1,

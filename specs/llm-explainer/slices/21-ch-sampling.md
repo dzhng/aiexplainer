@@ -46,3 +46,30 @@ Every earlier slice.
 ## Feedback that would change this slice
 
 The analogy not landing for the human. Rework the copy and the beats; the model and seam stay the same.
+
+## Results (lane A, 2026-09-27)
+
+- **The die (kit `die`):** a barrel die, a drum lying on its side whose rim is split into faces,
+  each as wide around the rim as its probability (12 block staves per face, so the part list
+  never changes as the shares do). A roll stops at an angle, and the face under the reading
+  line is the result. The stop angle is `READING − 2π(r + turns)`, where `r` is the first
+  number from roll n's seeded generator. So the face read is exactly `sample(shares, rng)`,
+  and a uniformly random stop lands on each face as often as its share.
+- **Faces (delegated):** the top 6 words plus one "every other word" face. The score strip shows
+  the 12 highest logits, measured up from the vocabulary's mean logit.
+- **Temperature:** slider 0–2. While the reader leaves it at 1, the loop's `temperature`
+  channel drives the cold → hot demo; once moved, the slider does. The note reads the
+  temperature and the spread (entropy, bits) live from the model's logits. Known gap: the HUD
+  slider does not move during the loop demo.
+- **Loop (26 s):** "…there" is scored (bars rise); the top six light up and grow into the die;
+  it rolls and lands on "was" (76%) by 7.2 s; cold (0.2: "was" >99%) then hot (2.0: every
+  other word 74%); then "The cat sat on the mat. Then it" and "The dog ran away. Then it" roll
+  the identical die (the failure: one word back).
+- **Stats:** the sampling-peaked probe (28.2%), the vocabulary 4,096, Llama-3-8B 128,256.
+- **Run:** the worker's forward pass; the fixture stores the full logits (353 kB), so the
+  test can check face areas against `probabilities(logits, T)`.
+- **Checks:** kit turntable, hero, strip, sweep, typed state, registry equal after 10 in/out
+  gotos, `ch-sampling.test.ts` (face areas at T 0.3/1/2 equal `probabilities` for the top six
+  plus other; the landed face equals `sample()` with the held seed; the two "it" stories have
+  identical logits). One critique round: fixed floating face labels, the die hitting the
+  bars, washed-out bar glow, unreadable punctuation (now quoted), the missing prompt text.

@@ -12,6 +12,7 @@ import { autocomplete, type CountsRun } from "./builders/autocomplete.ts";
 import { embeddings } from "./builders/embeddings.ts";
 import { mlp, type MlpRun } from "./builders/mlp.ts";
 import { residual, type ResidualRun } from "./builders/residual.ts";
+import { sampling, type LogitsRun } from "./builders/sampling.ts";
 import { stack, type StackRun } from "./builders/stack.ts";
 import { tokenizer } from "./builders/tokenizer.ts";
 import { batching } from "./builders/batching.ts";
@@ -37,6 +38,7 @@ export type SceneRun =
   | CountsRun
   | PiecesRun
   | PinsRun
+  | LogitsRun
   | MlpRun
   | ResidualRun
   | StackRun
@@ -113,6 +115,7 @@ export const SCENE_BUILDERS: Record<SceneBuilderId, SceneBuilder> = {
   autocomplete,
   tokenizer,
   embeddings,
+  sampling,
   mlp,
   residual,
   stack,

@@ -14,6 +14,7 @@ import { embeddingsRun } from "./runs/embeddings.ts";
 import { mlpRun } from "./runs/mlp.ts";
 import { quantizationRun } from "./runs/quantization.ts";
 import { residualRun } from "./runs/residual.ts";
+import { samplingRun } from "./runs/sampling.ts";
 import { stackRun } from "./runs/stack.ts";
 import { tokenizerRun } from "./runs/tokenizer.ts";
 import type { Session } from "./session.ts";
@@ -40,6 +41,7 @@ const RUNS: Partial<Record<SceneBuilderId, SceneRunFn>> = {
   autocomplete: autocompleteRun,
   tokenizer: tokenizerRun,
   embeddings: embeddingsRun,
+  sampling: samplingRun,
   mlp: mlpRun,
   residual: residualRun,
   stack: stackRun,
