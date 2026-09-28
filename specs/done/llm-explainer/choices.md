@@ -11,13 +11,16 @@ choice was made; the slice files themselves are gone, and this ledger keeps what
 decided. Four named passes also appear: the **polish pass** (a visual pass over every
 chapter after all were built), the **whole-spec review** (a behaviour-neutral cleanup of
 duplicated code), the **Codex review** (an independent correctness review by a second
-agent), and the **close** (this final audit).
+agent), the **close** (this final audit), and the **amendments** (the human's
+post-release requests, 2026-09-28; see the README).
 
 - **Incidents and post-hoc selections** (7): things the human should know happened.
 - **Defaults for the human to confirm** (3): taste or identity calls held
   provisionally.
-- **Acceptable, with a known cost** (13): trade-offs that shipped with a limit.
-- **Sound** (71): choices the agent stands behind with no reservation.
+- **Acceptable, with a known cost** (12): trade-offs that shipped with a limit.
+- **Sound** (70): choices the agent stands behind with no reservation.
+- **Amendments** (12): choices made while landing the human's post-release requests,
+  each with its own verdict (2 defaults to confirm, 1 acceptable with a cost, 9 sound).
 
 ## Incidents and post-hoc selections
 
@@ -69,11 +72,13 @@ agent), and the **close** (this final audit).
    look at the same word, which hides the chapter's point that different heads look for
    different things. The output is still real (D25). When: slice 28.
 
-6. **Chapter 10's sliding window is 4 words, because larger windows change nothing
+6. **Chapter 10's loop shows a 4-word window, because larger windows change nothing
    here.** At window sizes 8, 6 and 5, this prompt's continuation doesn't change, so
-   there is nothing to see. At 4, the model writes "girl named Lily." instead of "boy
-   named Tim.". The caption says a window changes outputs and is not how Llama-3-8B
-   runs. When: slice 30.
+   the loop's demo uses 4, where the model writes "girl named Lily." instead of "boy
+   named Tim.". Since the amendments the window is also the chapter's knob (4–8 words or
+   all); each stop is a real generation, and at 5–8 the scene says the words stayed the
+   same. The caption says a window changes outputs and is not how Llama-3-8B runs.
+   When: slice 30 and the amendments.
 
 7. **Chapter 2 shows the best-case word pairs, and its map is fitted to them.** The 3D
    map shows 30 word pairs (the probe pairs whose partners are closest), and the 2D/3D
@@ -106,12 +111,13 @@ agent), and the **close** (this final audit).
 
 ## Acceptable, with a known cost
 
-1. **The HUD crowds the scene on screens about 1200 px wide.** From 1440 px up the
-   layout is as designed. Below 1400 px, the chapter ladder anchors left and stops short
-   of the corner, and the controls panel is capped to the space right of the title
-   column, with long scenario names cut short with "…". At about 1200 px the panels
-   still cover part of the scene. That is a follow-up, not a release blocker, because
-   the target is a desktop screen (D20) and small screens get the video. When: slice 36.
+1. **The left column tightens, then scrolls, in short windows.** Every control lives in
+   one left column under the caption (the amendments), so the scene keeps the whole
+   right side at any width. The cost is height. Below 920 px the column tightens (no
+   series line, a one-line title, snugger panels), and below 840 px the caption and
+   chips drop a size. So every chapter fits at 1440×900 and the fullest, chapter 3, at
+   1200×800. Shorter windows (1280×720) scroll the column, with a faded bottom edge as
+   the cue. The target is a desktop screen (D20). When: the amendments.
 
 2. **Some visual nits shipped.** Each was judged smaller than the cost of fixing it:
    - Chapter 4: thin low-weight pipes cross back-row words at the hero angle (a
@@ -122,7 +128,11 @@ agent), and the **close** (this final audit).
    - Chapter 3: on one frame, the word "comma" hides behind "period".
    - Chapter 14: some camera sweep angles are blocked by room geometry.
    - At some back angles, labels point at parts that are hidden.
-   - Chapter 0: from the hero angle, the Exploded view reads mostly as a shift in depth.
+   - Chapter 14's third stat chip overflows the 384 px column (its label and value run
+     past the edge). This predates the amendments.
+   - Chapter 0's "The only word it looks at" label sits over the bottoms of the last
+     few bars. Those bars are the near-zero shares, and the label's placement is
+     automatic (it avoids text, not bars).
 
    When: slices 13, 20, 25, 30 and 34, and the polish pass.
 
@@ -154,7 +164,7 @@ agent), and the **close** (this final audit).
 
 7. **Some per-frame work was left in place.** The whole-spec review collapsed about 20
    passes' duplicated helpers into single owners. It left alone a few per-frame
-   allocations (occluders during a view transition, some kit placement helpers), camera
+   allocations (some kit placement helpers), camera
    matrices computed twice per frame (once by the stage and once by the renderer), and
    shader and orbit constants kept in code (each with one owner). Every frame budget is
    met, and changing these would not have been behaviour-neutral. When: the whole-spec
@@ -179,15 +189,7 @@ agent), and the **close** (this final audit).
     instead of "." and ",", because the bare marks were unreadably small. Cost: the long
     words can overlap on one frame (see entry 2 in this group). When: slice 36.
 
-12. **Only chapter 0 offers the Cutaway view.** The reference's view row is Whole,
-    Cutaway and Exploded, and the view code works for any part tagged to be clipped.
-    But only chapter 0's counter board has a housing to cut. Later scenes are built from
-    open kit parts (pipes, dials, tables, a bus with windows), where a cross-section
-    shows nothing new, so they offer Whole and Exploded, or Whole alone for the flat
-    table scenes (chapters 1–3) and the finished machine. `look.json` still carries an
-    unused chapter-11 cut plane. When: slices 13 and 19–35.
-
-13. **The production `vercel.json` keeps a `/lab/*` rewrite.** Lab pages are only built
+12. **The production `vercel.json` keeps a `/lab/*` rewrite.** Lab pages are only built
     for previews (D40), but one `vercel.json` serves both targets, so in production the
     rewrite points at a file that doesn't exist and `/lab` returns a 404. It is harmless.
     When: slice 12.
@@ -245,7 +247,7 @@ Each entry carries a subject tag: [data], [arith], [app], [renderer], [scene],
    When: slice 24.
 
 9. **[scene] Chapter 12's fp16/int8 switch is the slider ("Bytes per weight").** Its
-   drift chip reads "how far its guesses drift" (its Precisely line and the help name it
+   drift chip reads "how far its guesses drift" (its Technical line and the help name it
    as the KL divergence). Its two prompt chips are the `full-q8` prompts picked by measured KL. The
    weight strip reads raw tensor slices through one `weights` request (`weightSlice`).
    When: slice 32.
@@ -270,7 +272,8 @@ Each entry carries a subject tag: [data], [arith], [app], [renderer], [scene],
 13. **[scene] Chapter 9's work counter adds each step's real fed token count (+10,
     +11, …).** The failure beat spells out the sum, and the Llama chips come from
     `rereadTokens` (32,896 tokens reread to write 256) and `maxContext`. It counts
-    operations, not time (D27). The slider is "Words to write" (1–6). The text-line
+    operations, not time (D27). The loop writes all six words (its slider was removed in
+    the amendments). The text-line
     helpers are exported from `builders/generation.ts` for chapter 10. When: slice 29.
 
 14. **[scene] Chapter 10 shows GQA as unshared notes that then drop away.** GQA
@@ -424,12 +427,12 @@ Each entry carries a subject tag: [data], [arith], [app], [renderer], [scene],
 
 44. **[app] The loop plays the slider until the reader moves it.** `SliderDef.loop`
     plus `AppState.sliderSet`: the HUD samples the loop channel at 10 Hz, and the first
-    reader input takes over, as D32 requires. Used by chapters 3, 11, 12 and 15. When:
-    slice 31.
+    reader input takes over, as D32 requires. Used by chapters 3, 10, 11 and 12. When:
+    slice 31 and the amendments.
 
-45. **[app] Only scene controls pause the loop.** Follow, the slider, a scenario, the
-    view and typed text pause it. Reading aids (Analogy/Precise, Precisely, help) only change text.
-    Arriving at a chapter resets its Follow, slider, scenario, view, Precisely and typed
+45. **[app] Only scene controls pause the loop.** Follow, the slider, a scenario and
+    typed text pause it. Reading aids (Analogy/Technical, the Technical line, help) only
+    change text. Arriving at a chapter resets its Follow, slider, scenario, Technical and typed
     text; the label reading and help stay as the reader left them. A `loopEpoch` counter
     restarts the loop, so the reducer stays pure. Keys: ←/→ step chapters, 1–4 pick what to
     follow, Space plays or pauses, ? toggles help, Esc closes it. When: slice 04.
@@ -508,13 +511,13 @@ Each entry carries a subject tag: [data], [arith], [app], [renderer], [scene],
 
 60. **[renderer] Part transforms are per-frame data.** The renderer repacks instances
     every frame without allocating, and `revision` signals only a change in structure.
-    `partWorld` applies Exploded and `partCut` decides Cutaway; nothing else applies
-    them. When: slices 05, 10 and 13.
+    GPU packing, labels, occluders and crops all read each part's own `transform`. When:
+    slices 05, 10 and the amendments.
 
 61. **[renderer] Label occlusion is re-tested when a scene's layout changes.** A builder
     bumps `SceneDesc.layout` when parts move, and the stage rebuilds occluders on a
-    revision, layout or view change. Translucent parts never occlude, meshes are tested
-    per triangle (node boxes were too coarse), cut parts stop occluding, and tube
+    revision or layout change. Translucent parts never occlude, meshes are tested
+    per triangle (node boxes were too coarse), and tube
     occluders ignore stretch along the path (a stretched unit tube had occluded the
     whole scene). When: slices 09, 10, 19 and 26–28.
 
@@ -547,29 +550,23 @@ Each entry carries a subject tag: [data], [arith], [app], [renderer], [scene],
     subjects keep one soft blob. The shadow material's specular is 0, so it only
     darkens. When: slice 11c and the polish pass.
 
-67. **[renderer] Cutaway is a fragment-stage clip plane from `look.views.cutaway`.** Back
-    faces seen through the cut are shaded as a hatched cap in the focus colour at 0.4
-    gain. Discard and no-cull pipeline variants run only while cutting. Views ease over
-    0.6 s. Coplanar faces are lifted 2 mm apart, because they z-fought in the cut. When:
-    slice 13.
-
-68. **[renderer] Bloom starts at half resolution, with the mip count computed from the
+67. **[renderer] Bloom starts at half resolution, with the mip count computed from the
     frame size.** GPU timing is opt-in (`timing: true`, `receipt.gpuMs`). When: slices 08
     and 09.
 
-69. **[renderer] Tubes carry a per-vertex axis and flow coordinate, and identical tubes
+68. **[renderer] Tubes carry a per-vertex axis and flow coordinate, and identical tubes
     share one geometry.** Vertices are 48 bytes. The GPU scales the radius by
     `widthScale`, and a content-keyed cache lets repeated tubes (such as brick studs)
     instance. When: slices 19 and 22.
 
-70. **[renderer] Props export without UVs, and mesh materials bind by node name.** No
+69. **[renderer] Props export without UVs, and mesh materials bind by node name.** No
     UVs keeps Blender builds byte-reproducible. A mesh's material is the preset named by
     a dotted segment of its node name (the last segment first), else the glTF material
     name. The counter board
     became a tally board on two posts, because the first design read as a monitor. When:
     slice 06.
 
-71. **[deploy] Media is recorded locally and committed.** Vercel's builders have no
+70. **[deploy] Media is recorded locally and committed.** Vercel's builders have no
     WebGPU Chrome, so `bun run --cwd apps/explainer media` records under `public/media/`,
     and a test fails when a chapter has no media. The fallback video shows the scene only
     (the HUD is hidden but laid out), cropped to the safe rect, because at phone width
@@ -582,3 +579,74 @@ Each entry carries a subject tag: [data], [arith], [app], [renderer], [scene],
     fallback, with a device line that differs by reason. `main` is Vercel's production
     branch, and a release is a merge into `main`; the lab entry is left out when
     `VERCEL_ENV=production` (D40). When: slices 01, 12 and 36.
+
+## Amendments
+
+The human's five post-release requests (README, "Amendments after release") left these
+choices to the implementation. Each names its verdict.
+
+1. **The story panel sits under the caption in the left column, not in a right-hand
+   column.** Every shot frames its machine centre-right, so a tall right column would
+   cover half of most scenes (chapter 0's board runs to x ≈ 1330 at 1440 px). The left
+   column already held the reading panels, so the story reads on straight after the
+   caption. Cost: height (see "The left column scrolls in short windows"). Verdict: a
+   default for the human to confirm.
+
+2. **The LIVE light is green, the room's own status-light colour.** A new HUD token,
+   `hud.live` (#4dff9a), is used only for the light and its word. Cyan was already
+   every control's colour, and amber marks scales and numbers. It pulses only when HUD
+   motion is allowed, so held-clock captures stay still. Verdict: a default for the
+   human to confirm.
+
+3. **Chapter 5's Try chips are the two orders of the dog/cat pair; the olive and pilot
+   pairs are no longer chips.** Each chip is one order of the measured pair, so flipping
+   between them shows different pipes and a different guess. The olive and pilot pairs
+   were only useful with the order slider, which is gone: as chips they showed their
+   first order only. They remain in the `rope` model's measured probe set. Verdict:
+   acceptable, with a known cost (two fewer examples).
+
+4. **The receipt never shows time.** The request allowed the browser's wall time "on
+   your device". It was left out: only `runtime/clock.ts` may read the wall clock, and a
+   number in milliseconds next to a model name reads as speed (D27). The receipt names
+   the model with numbers read off it: the words or pieces it knows, or its layers and
+   weights. Chapters 0 and 1 are never called language models. Verdict: sound.
+
+5. **Chapter 0's loop inputs are whole texts, like the reader's.** "once", "once upon",
+   "once upon a", then "onse" on its own as a fresh text. A test pins that each text
+   adds the model's own top pick for the last word (O2). The earlier words sit fixed on
+   the rail, so while the card slides out and back the text stays readable. Verdict:
+   sound.
+
+6. **Chapter 15's first station now shows chapter 0's bars label.** The finished
+   machine reuses each station's own label, and "The tally board" was deleted. The bars
+   label ("How often each word came next") names what the station does. Verdict: sound.
+
+7. **Scene tags have a style per tag.** `SceneTags.style` (`above`, `onPart`, `before`,
+   `heading`) replaced the `emphasis` flag, so the muted earlier words and the glowing
+   header each have one owner in `SceneTags.tsx`. Verdict: sound.
+
+8. **Where a display slider went, the scene shows its former default.** Chapters 0, 1,
+   2, 6, 9 and 10 show all their content (10 bars, 16 bricks, 60 pins, 24 lamps, every
+   written word). Chapter 4 writes the 3 widest shares. Chapter 7 writes the river and
+   knob numbers at station 3. Chapter 8 lights block 1, the one the hero shot frames.
+   Chapters 14 and 15 step through their loops. Verdict: sound.
+
+9. **Chapter 10's knob is the window, 4–8 words or "all".** `SliderDef.maxLabel` writes
+   "all" at the top stop (no window). The run generates once per stop through the
+   ring-cache path, and the scene says whether that window changed the words (at 5–8 it
+   did not). The loop plays the knob (`keep`: all, then 4, then all), so the HUD slider
+   moves with the loop's window beat. Verdict: sound.
+
+10. **Every knob carries a one-sentence hint.** `SliderDef.hint`, at most 12 words, is
+    written under the slider in the story panel. The validator checks it, and it also
+    rejects a chip bound to a slider in a chapter without one. Verdict: sound.
+
+11. **The label toggle moved into the story panel's foot.** Its caption reads "Labels"
+    and its tooltip reads "the everyday analogy or the technical term". The corner keeps
+    only Share and Follow on X, which are not scene controls. Verdict: sound.
+
+12. **The deleted view machinery took its GPU layout with it.** The frame uniform lost
+    its cut plane (192 → 176 bytes), the instance its `cut` (still 128 bytes, padded),
+    and the look uniform its cap colour (256 → 240 bytes). The packing tests hold the
+    new sizes. `partWorld` became each part's own `transform`, read directly. Verdict:
+    sound.

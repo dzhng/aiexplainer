@@ -38,7 +38,9 @@ production serving. This one is a progressive build (D4): every chapter shows th
 previous chapter's visible failure, adds one part, and shows that it now works better.
 The style reference is airsup.ai/rocket-engine: one dark room, a Follow row, a slider,
 a scenario row, Whole/Cutaway/Exploded views, pinned labels, and numbers whose source
-is stated in the help panel.
+is stated in the help panel. After release, readers found the extra controls confusing,
+so the view row and every slider that was not a real knob of the mechanism were removed
+(see [Amendments after release](#amendments-after-release-2026-09-28)).
 
 **Non-goals:** a training chapter (D8), 3D on phones or a WebGL fallback (D20, D29),
 running a production model in the browser, any server, localisation, and backward
@@ -96,15 +98,15 @@ The full wording and evidence are in [explore/map.html](explore/map.html).
 | D14 | Build chapter 0 end to end first.                                                                                              | no code needed (build order)                                                          |
 | L1  | Workspaces: `apps/explainer`, `packages/renderer`, `packages/llm`, `training/` (uv), `assets/blender/`.                        | the repo layout                                                                       |
 | D15 | The look is Night lab: dark navy studio, glowing violet and amber flows, bloom, glass and metal.                               | `look/look.json`, the bloom pass                                                      |
-| D16 | A tensor machine that behaves like the analogy; an Analogy/Precise toggle swaps label readings.                                | `LabelDef.analogy`/`precise`; `validateChapter` requires both                         |
-| D17 | Storyteller voice, then a "Precisely:" line.                                                                                   | caption copy                                                                          |
+| D16 | A tensor machine that behaves like the analogy; an Analogy/Technical toggle swaps label readings.                              | `LabelDef.analogy`/`technical`; `validateChapter` requires both                       |
+| D17 | Storyteller voice, then a "Technical" line.                                                                                    | caption copy                                                                          |
 | D18 | Label key parts only: at most 5 per chapter.                                                                                   | `validate.ts` `MAX_LABELS` (waived for the toured chapter, which shows one at a time) |
 | D19 | Made to post on X: deep links and link-preview images.                                                                         | `/#N`, `scripts/share.ts`, `public/media/`                                            |
 | D20 | Desktop only; small screens get the fallback page.                                                                             | `runtime/support.ts` `detectSupport`                                                  |
 | D21 | About 10 minutes to skim the ladder.                                                                                           | 16 loops plus 16 arrival moves come to about 7 minutes                                |
 | D22 | v1 is all 16 chapters.                                                                                                         | `chapters/index.ts`                                                                   |
 | D23 | Branded dzhng, with "Follow on X"; no airsup name or implied affiliation.                                                      | `look/brand.ts`                                                                       |
-| D24 | Each chapter plays a 20–30 s loop on arrival; captions are 2 sentences with "Precisely:" behind a click.                       | `validate.ts` (`LOOP_SEC`, `checkCaption`)                                            |
+| D24 | Each chapter plays a 20–30 s loop on arrival; captions are 2 sentences with "Technical" behind a click.                        | `validate.ts` (`LOOP_SEC`, `checkCaption`)                                            |
 | D25 | Nothing on screen is faked. Prompts are chosen by running the models; every number names its scale.                            | `chapters/stats.ts`, `STAT_SCALES` (`types.ts`); probes in `training/probes/`         |
 | D26 | The drafter is the smallest full-architecture model; the best measured acceptance wins.                                        | `training/configs/drafter-64.toml`                                                    |
 | D27 | Speed comes from Llama-3-8B arithmetic on a named GPU; browser timing is never shown as speed.                                 | chip values can only be model, arith or probe                                         |
@@ -166,6 +168,49 @@ orbit are built by hand (`labels.ts`, `passes/bloom.ts`, `orbit.ts`).
   (`packages/llm/src/scale/data/h100-sxm.json`).
 - **O5:** production is https://aiexplainer-red.vercel.app, with no custom domain.
 
+## Amendments after release (2026-09-28)
+
+The human reviewed the live site and asked for five changes. Each landed as its own
+commit; the ledger entries are in [choices.md](choices.md) ("Amendments").
+
+- **The label toggle says what it does, and "Precise" is "Technical".** "Add a
+  description so people know what this does, rename precise to technical." The toggle
+  is captioned "Labels" with a tooltip ("the everyday analogy or the technical term").
+  The caption's "Precisely" disclosure is the same concept, so it is "Technical" too,
+  and the code names follow with no aliases (`labelMode: "technical"`,
+  `LabelDef.technical`, `Caption.technical`). This amends D16, D17 and D24's wording.
+- **Chapter 0's board names its lookup and holds the whole text.** The empty header
+  strip reads "After “little”…", so the bars read as that word's row of the tally; the
+  rail shows the reader's whole text with the earlier words muted and the last word on
+  the lit card, the only word the machine looks at. The "The tally board" label was
+  deleted: it pointed at the whole board and confused the human. The loop's inputs are
+  whole texts ("once", "once upon", "once upon a", then "onse").
+- **Controls cleanup: only real knobs, and no view row.** "Why are these useful for the
+  user? it just seem like they make it more confusion with more buttons." A chapter's
+  slider is now optional, and stays only where it is a real knob of the mechanism:
+  temperature (3), riders (11), bytes per weight (12), draft length k (13), and chapter
+  10's new window (notes kept per block: 4–8 words or all, each stop a real
+  generation). The display sliders are gone and their scenes show their natural
+  content. Chapter 5's order swap is two Try chips. The Whole/Cutaway/Exploded row is
+  gone from every chapter, and the view machinery was deleted end to end (view state,
+  `FrameInput.view`, explode offsets, the cut plane, the hatched cap and its pipeline
+  variants). Chapter 8's pull-back (D5) is a camera move, not a view, and stays. This
+  retires the reference's "one slider per chapter, three views" control grammar.
+- **A real model is visibly running, and typing is the call to action.** "Make it
+  obvious … that you are running an actual LLM, and really encourage people to type
+  here." The text box leads with a LIVE light, says honestly what runs in the browser (a
+  word-pair counts model in chapter 0, the tokenizer in chapter 1, a tiny language
+  model from chapter 2 on), and after a run names the model with numbers read off it.
+  No time is shown (D27). Chapters without a model show no box.
+- **One story panel.** "Group ALL user interactions/controls together into one panel,
+  so it reads like a story top to bottom." Under the caption, in the left column: 1
+  type your own text, 2 or try an example, 3 turn the knob (with a one-line hint), 4
+  follow a part, then the label wording, play and help. Steps a chapter lacks are left
+  out and the numbers count what is shown. The top-right panel is gone, so the scene
+  keeps the right side; the safe rect is everything right of the column, and the
+  ladder centres between the column and the corner links. A right-hand column was
+  rejected because the shots frame the machines centre-right.
+
 ## Principles
 
 **Honesty is structural, not editorial.** Every number on screen comes from one of three
@@ -176,7 +221,7 @@ every chip names its scale ("this tiny model", "Llama-3-8B", "Llama-3-8B on H100
 shows the effect (D25). When an effect doesn't show, the chapter says so (D33).
 
 **The analogy leads; the precise claim is never replaced.** Captions are 2 storyteller
-sentences of at most 25 words each, with a "Precisely:" line behind one click;
+sentences of at most 25 words each, with a "Technical" line behind one click;
 `validateChapter` enforces the budget. These qualifiers are binding:
 
 - Chapter 4: attention weights _show_ what a word draws from; they are not proof of
@@ -203,27 +248,27 @@ stepped, so shots, videos and cards reproduce byte for byte.
 
 Each concept has exactly one owner. A second copy is a bug.
 
-| Concept                                                                                                               | Owner                                                                                                                                                      |
-| --------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| GPU device, capabilities, resource registry, frame targets, pass order, reverse-Z depth                               | `packages/renderer` (`device.ts`, `registry.ts`, `frame.ts`)                                                                                               |
-| Camera matrices, `project()`, orbit pose math, part world transform (explode and cutaway), occluders, label placement | `packages/renderer` (`camera.ts`, `labels.ts`), on the CPU; GPU packing, labels, crops and picking all call them                                           |
-| The renderer boundary: `FrameInput`, `Renderer`, `FrameReceipt`                                                       | `packages/renderer/src/frame-input.ts`                                                                                                                     |
-| Kit primitives: geometry, bounds, anchors, explode offsets                                                            | `packages/renderer/src/kit/`, one `build()` per primitive                                                                                                  |
-| glTF parsing; tuple → `Float32Array` packing                                                                          | `packages/renderer/src/gltf.ts`; `pack.ts`                                                                                                                 |
-| Model manifest format and tensor names                                                                                | `packages/llm/src/manifest.ts`, which emits a JSON Schema the Python exporter conforms to                                                                  |
-| Tokenizer runtime                                                                                                     | `packages/llm/src/tokenizer.ts`; the Python trainer writes its format                                                                                      |
-| Forward pass, trace, sampling, KV cache, speculative decoding, quantization                                           | `packages/llm/src/`                                                                                                                                        |
-| Production arithmetic and cited hardware/config constants                                                             | `packages/llm/src/scale/`                                                                                                                                  |
-| Seeded randomness                                                                                                     | `packages/llm/src/rng.ts`, injected everywhere                                                                                                             |
-| Model architecture and training                                                                                       | `training/model.py` with feature flags; each model is a config in `training/configs/`, not a fork                                                          |
-| The wall clock                                                                                                        | `apps/explainer/src/runtime/clock.ts`; a grep test rejects `performance.now`, `Date.now`, `new Date` and `Math.random` elsewhere in `src/` and `packages/` |
-| Scene-run inputs (prompt, inputs, transformer lookup)                                                                 | `apps/explainer/src/runtime/scene-run.ts`                                                                                                                  |
-| Inference                                                                                                             | `runtime/inference.ts` (`createInference`), shared by the worker and the in-process session; lifecycle in `runtime/session.ts`                             |
-| Chapter definitions, ladder order, copy, timelines                                                                    | `apps/explainer/src/chapters/`, validated by `validateChapter()`                                                                                           |
-| Look tokens; camera shots                                                                                             | `apps/explainer/src/look/look.json` (HUD CSS variables and the renderer's `LookConfig` come from it); `look/shots.json`                                    |
-| Domain → renderer adapter                                                                                             | `apps/explainer/src/scene/build-frame.ts` (pure)                                                                                                           |
-| Shared builder helpers                                                                                                | `scene/builders/parts.ts`, `table.ts`, `scene/ease.ts`, `scene/step.ts`                                                                                    |
-| Verification harness, named crops, layer masks                                                                        | `apps/explainer/scripts/harness.ts` and `verify.ts`, plus `src/lab/probe.ts`                                                                               |
+| Concept                                                                                 | Owner                                                                                                                                                      |
+| --------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| GPU device, capabilities, resource registry, frame targets, pass order, reverse-Z depth | `packages/renderer` (`device.ts`, `registry.ts`, `frame.ts`)                                                                                               |
+| Camera matrices, `project()`, orbit pose math, occluders, label placement               | `packages/renderer` (`camera.ts`, `labels.ts`), on the CPU; GPU packing, labels, crops and picking all call them                                           |
+| The renderer boundary: `FrameInput`, `Renderer`, `FrameReceipt`                         | `packages/renderer/src/frame-input.ts`                                                                                                                     |
+| Kit primitives: geometry, bounds, anchors                                               | `packages/renderer/src/kit/`, one `build()` per primitive                                                                                                  |
+| glTF parsing; tuple → `Float32Array` packing                                            | `packages/renderer/src/gltf.ts`; `pack.ts`                                                                                                                 |
+| Model manifest format and tensor names                                                  | `packages/llm/src/manifest.ts`, which emits a JSON Schema the Python exporter conforms to                                                                  |
+| Tokenizer runtime                                                                       | `packages/llm/src/tokenizer.ts`; the Python trainer writes its format                                                                                      |
+| Forward pass, trace, sampling, KV cache, speculative decoding, quantization             | `packages/llm/src/`                                                                                                                                        |
+| Production arithmetic and cited hardware/config constants                               | `packages/llm/src/scale/`                                                                                                                                  |
+| Seeded randomness                                                                       | `packages/llm/src/rng.ts`, injected everywhere                                                                                                             |
+| Model architecture and training                                                         | `training/model.py` with feature flags; each model is a config in `training/configs/`, not a fork                                                          |
+| The wall clock                                                                          | `apps/explainer/src/runtime/clock.ts`; a grep test rejects `performance.now`, `Date.now`, `new Date` and `Math.random` elsewhere in `src/` and `packages/` |
+| Scene-run inputs (prompt, inputs, transformer lookup)                                   | `apps/explainer/src/runtime/scene-run.ts`                                                                                                                  |
+| Inference                                                                               | `runtime/inference.ts` (`createInference`), shared by the worker and the in-process session; lifecycle in `runtime/session.ts`                             |
+| Chapter definitions, ladder order, copy, timelines                                      | `apps/explainer/src/chapters/`, validated by `validateChapter()`                                                                                           |
+| Look tokens; camera shots                                                               | `apps/explainer/src/look/look.json` (HUD CSS variables and the renderer's `LookConfig` come from it); `look/shots.json`                                    |
+| Domain → renderer adapter                                                               | `apps/explainer/src/scene/build-frame.ts` (pure)                                                                                                           |
+| Shared builder helpers                                                                  | `scene/builders/parts.ts`, `table.ts`, `scene/ease.ts`, `scene/step.ts`                                                                                    |
+| Verification harness, named crops, layer masks                                          | `apps/explainer/scripts/harness.ts` and `verify.ts`, plus `src/lab/probe.ts`                                                                               |
 
 Other rules that must keep holding:
 
@@ -264,8 +309,9 @@ Other rules that must keep holding:
   its cost leaves a 1.03× speedup against 1.24×.
 - **"Once upon a time…" for chapter 8.** Three of layer 0's four heads look at the same
   word, which hides the point that heads differ.
-- **Sliding windows of 8, 6 and 5 for chapter 10.** On this prompt, none changes the
-  output.
+- **Sliding windows of 8, 6 and 5 as chapter 10's demo.** On this prompt, none changes
+  the output, so the loop shows 4. They survive as stops on chapter 10's window knob,
+  where the scene says so ("here it still writes …").
 - **A blue-gradient backdrop.** It became a shared lab room at the human's request.
   Ambient occlusion alone left the room black, so the room's vertex colours also bake
   warm and cool practical light.
@@ -286,7 +332,8 @@ Other rules that must keep holding:
   (from the post's video and page, fetched 2026-09-27). They set the template: a dark
   room, one machine, the control grammar, pinned labels, and the Cutaway and Exploded
   views. The views were compared against `airsup-cutaway-follow.jpg` and
-  `airsup-exploded.jpg`. Only the look and feel carry over; none of the tech does (D10).
+  `airsup-exploded.jpg`, then removed after release (see the amendments). Only the look
+  and feel carry over; none of the tech does (D10).
 - **[explore/directions.html](explore/directions.html)**: the same attention scene in 4
   looks, 3 levels of literalness, 3 voices and 3 label densities. The human picked the
   Night lab look (D15), a tensor machine that behaves like the analogy (D16), the
@@ -302,7 +349,8 @@ Other rules that must keep holding:
 
 ## Open follow-ups
 
-- The HUD panels crowd the scene on screens about 1200 px wide.
+- In windows shorter than about 800 px (1280×720) the left column scrolls, and its
+  bottom edge fades.
 - The brand mark is a placeholder, and there is no favicon.
 - The small visual nits listed in [choices.md](choices.md) ("Acceptable, with a known
   cost").
