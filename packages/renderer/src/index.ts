@@ -45,3 +45,4 @@ export {
 } from "./kit/question-panel.ts";
 export { placePour, placeStretch, stretchSpan, type RiverParams } from "./kit/river.ts";
 export { placeKnob, type VolumeKnobParams } from "./kit/volume-knob.ts";
+export { noteCenter, noteSlot, placeNote, rackSize, type NoteRackParams } from "./kit/note-rack.ts";

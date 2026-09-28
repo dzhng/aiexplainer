@@ -18,6 +18,8 @@ export const SCENE_ANCHORS = {
   stack: ["readers", "words", "block", "line"],
   /** Chapter 9: the machine, the text's rail, and the work counter. */
   generation: ["machine", "rail", "counter"],
+  /** Chapter 10: the note rack, the machine, and the text's rail. */
+  "kv-cache": ["rack", "machine", "rail"],
   /** Chapter 11: the bus, its riders, the weight crates on its roof, and the stop where extras wait. */
   batching: ["bus", "riders", "crates", "stop"],
   /** Chapter 12: the weight strip, the magnifier, the two crates and the two machines. */
@@ -36,6 +38,7 @@ export const SCENE_KIT: Record<keyof typeof SCENE_ANCHORS, readonly string[]> = 
   residual: ["block", "tube", "river", "volumeKnob", "contactShadow"],
   stack: ["block", "tube", "contactShadow"],
   generation: ["block", "tube", "bars", "contactShadow"],
+  "kv-cache": ["block", "tube", "noteRack", "contactShadow"],
   batching: ["mesh", "block", "contactShadow"],
   quantization: ["block", "contactShadow"],
 };

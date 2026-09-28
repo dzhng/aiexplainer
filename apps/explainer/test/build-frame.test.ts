@@ -6,12 +6,7 @@ import { shippedContext } from "../scripts/shipped.ts";
 import { autocomplete } from "../src/chapters/data/autocomplete.ts";
 import { createTimelineState, evalTimeline } from "../src/chapters/timeline.ts";
 import { SCENE_KIT } from "../src/chapters/scenes.ts";
-import {
-  buildFrame,
-  createSceneFrame,
-  type SceneRun,
-  type SceneUi,
-} from "../src/scene/build-frame.ts";
+import { buildFrame, createSceneFrame, type SceneUi } from "../src/scene/build-frame.ts";
 import { share } from "../src/scene/builders/autocomplete.ts";
 import { computeRun as runFor } from "../src/runtime/scene-run.ts";
 import type { CountsRun } from "../src/scene/builders/autocomplete.ts";
