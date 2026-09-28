@@ -7,7 +7,7 @@ import { clamp } from "math";
 import type { Mat3, Mat4, Vec3 } from "math";
 import { d } from "typegpu";
 import type { CameraMatrices } from "./camera.ts";
-import type { CutPlane, LookConfig, MaterialLook } from "./frame-input.ts";
+import type { CutPlane, FrameInput, LookConfig, MaterialLook } from "./frame-input.ts";
 import type { Geometry } from "./kit/geometry.ts";
 
 export const FrameUniform = d
@@ -74,6 +74,23 @@ export const MATERIAL_BYTES = 48;
 
 /** Per part slot: intensity, width scale, flow phase (cycles), unused. */
 export const DYNAMICS_BYTES_PER_SLOT = 16;
+
+/**
+ * Packs each slot's dynamics, defaulting slots the frame leaves out; the environment's own
+ * slot glows at its look intensity, whatever the chapter animates.
+ */
+export function packDynamics(
+  dyn: FrameInput["dynamics"],
+  slotCount: number,
+  environmentSlot: number | undefined,
+  out: Float32Array,
+): void {
+  for (let slot = 0; slot < slotCount; slot++) {
+    out[slot * 4] = slot === environmentSlot ? 1 : (dyn.intensity[slot] ?? 0);
+    out[slot * 4 + 1] = dyn.widthScale[slot] ?? 1;
+    out[slot * 4 + 2] = dyn.flowPhase[slot] ?? 0;
+  }
+}
 
 export const Light = d.struct({ direction: d.vec3f, radiance: d.vec3f }).$name("Light");
 

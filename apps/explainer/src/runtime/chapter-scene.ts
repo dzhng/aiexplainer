@@ -4,7 +4,7 @@
  * The app (with its HUD and loop clock) and `/lab/scene/<slug>` (held time, fixture run)
  * both use it, so a scene reviewed in the lab is the scene the app draws.
  */
-import { parseGlb, type FrameInput, type OrbitPose, type SceneDesc } from "@repo/renderer";
+import { copyPose, createPose, parseGlb, type FrameInput, type SceneDesc } from "@repo/renderer";
 import { createTimelineState, evalTimeline, type TimelineState } from "../chapters/timeline.ts";
 import type { ChapterDef } from "../chapters/types.ts";
 import {
@@ -94,7 +94,7 @@ export function chapterScene(
   let views: ViewTransition | null = null;
   let lastSec = motionClock.now();
   // The reader's camera, kept while a pull-back eases away from it.
-  const held: OrbitPose = { target: [0, 0, 0], yaw: 0, pitch: 0, distance: 1, fovY: 1 };
+  const held = createPose();
   return {
     frame,
     input,
@@ -126,12 +126,7 @@ export function chapterScene(
       const pull = def.pullBack ? (tl.channels[def.pullBack.channel] ?? 0) : 0;
       if (def.pullBack && pull > 0) {
         const from = stageInput.camera;
-        held.target = [from.target[0], from.target[1], from.target[2]];
-        held.yaw = from.yaw;
-        held.pitch = from.pitch;
-        held.distance = from.distance;
-        held.fovY = from.fovY;
-        arrivalPose(held, shotPose(def.pullBack.shot), pull, from);
+        arrivalPose(copyPose(held, from), shotPose(def.pullBack.shot), pull, from);
       }
       // A tour drives the camera from the loop, stop by stop.
       if (!def.tour || !steer || !builder.tourPose) return false;

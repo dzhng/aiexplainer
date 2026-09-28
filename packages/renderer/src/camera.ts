@@ -33,6 +33,46 @@ export function createCameraMatrices(): CameraMatrices {
   };
 }
 
+/** A pose to write into: the origin, from one unit away. */
+export function createPose(): OrbitPose {
+  return { target: [0, 0, 0], yaw: 0, pitch: 0, distance: 1, fovY: 1 };
+}
+
+export function copyPose(out: OrbitPose, from: OrbitPose): OrbitPose {
+  out.target[0] = from.target[0];
+  out.target[1] = from.target[1];
+  out.target[2] = from.target[2];
+  out.yaw = from.yaw;
+  out.pitch = from.pitch;
+  out.distance = from.distance;
+  out.fovY = from.fovY;
+  return out;
+}
+
+/** The unit direction from `pose`'s target to its eye. */
+export function orbitDirection(pose: OrbitPose, out: Vec3): Vec3 {
+  const cp = Math.cos(pose.pitch);
+  out[0] = cp * Math.sin(pose.yaw);
+  out[1] = Math.sin(pose.pitch);
+  out[2] = cp * Math.cos(pose.yaw);
+  return out;
+}
+
+/** The orbit pose that looks from `eye` at `target` (the inverse of `orbitEye`). */
+export function orbitPoseAt(eye: Vec3, target: Vec3, fovY: number): OrbitPose {
+  const dx = eye[0] - target[0];
+  const dy = eye[1] - target[1];
+  const dz = eye[2] - target[2];
+  const distance = Math.hypot(dx, dy, dz);
+  return {
+    target: [target[0], target[1], target[2]],
+    yaw: Math.atan2(dx, dz),
+    pitch: Math.asin(dy / distance),
+    distance,
+    fovY,
+  };
+}
+
 export function orbitEye(pose: OrbitPose, out: Vec3): Vec3 {
   const cp = Math.cos(pose.pitch);
   out[0] = pose.target[0] + pose.distance * cp * Math.sin(pose.yaw);

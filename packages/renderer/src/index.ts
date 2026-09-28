@@ -2,8 +2,12 @@ export * from "./frame-input.ts";
 export { probeAdapter, type AdapterReport } from "./device.ts";
 export {
   cameraMatrices,
+  copyPose,
+  createPose,
   createCameraMatrices,
   createProjected,
+  orbitDirection,
+  orbitPoseAt,
   partCut,
   partWorld,
   project,

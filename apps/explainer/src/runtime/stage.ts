@@ -5,6 +5,7 @@
  * page run through it; it also installs the probe's `receipt`, `labels` and scene crops.
  */
 import {
+  copyPose,
   cameraMatrices,
   createCameraMatrices,
   createRenderer,
@@ -162,13 +163,7 @@ export async function runStage(o: StageOptions): Promise<Stage | null> {
     if (moving) orbit.jumpTo(moving);
     const current = orbit.update(now - last);
     last = now;
-    pose.target[0] = current.target[0];
-    pose.target[1] = current.target[1];
-    pose.target[2] = current.target[2];
-    pose.yaw = current.yaw;
-    pose.pitch = current.pitch;
-    pose.distance = current.distance;
-    pose.fovY = current.fovY;
+    copyPose(pose, current);
     o.pose?.(pose, now);
     input.timeSec = now;
     input.viewport.width = canvas.clientWidth;

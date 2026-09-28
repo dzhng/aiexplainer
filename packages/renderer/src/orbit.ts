@@ -2,7 +2,9 @@
  * Orbit, zoom and pan, as a pure state machine: pointer and wheel events in, a damped
  * `OrbitPose` out. No DOM access, so it is driven the same way by the app and by tests.
  */
+import type { Vec3 } from "math";
 import type { Box3 } from "math/shapes";
+import { copyPose, createPose, orbitDirection } from "./camera.ts";
 import type { OrbitPose } from "./frame-input.ts";
 
 export interface OrbitLimits {
@@ -45,27 +47,13 @@ export interface OrbitPointer {
   shiftKey?: boolean;
 }
 
-function copyPose(out: OrbitPose, from: OrbitPose): OrbitPose {
-  out.target[0] = from.target[0];
-  out.target[1] = from.target[1];
-  out.target[2] = from.target[2];
-  out.yaw = from.yaw;
-  out.pitch = from.pitch;
-  out.distance = from.distance;
-  out.fovY = from.fovY;
-  return out;
-}
-
-function clonePose(pose: OrbitPose): OrbitPose {
-  return copyPose({ target: [0, 0, 0], yaw: 0, pitch: 0, distance: 1, fovY: 1 }, pose);
-}
-
 export class OrbitController {
   /** Where the camera is heading. */
   readonly goal: OrbitPose;
   /** Where the camera is; approaches `goal` in `update`. */
   readonly pose: OrbitPose;
   #drag: { pointerId: number; x: number; y: number; pan: boolean } | null = null;
+  #direction: Vec3 = [0, 0, 0];
   /** The distance the user asked for; `goal.distance` is it, shortened to stay in `bounds`. */
   #wanted: number;
 
@@ -73,10 +61,10 @@ export class OrbitController {
     pose: OrbitPose,
     readonly limits: OrbitLimits = DEFAULT_ORBIT_LIMITS,
   ) {
-    this.goal = clonePose(pose);
+    this.goal = copyPose(createPose(), pose);
     this.#wanted = pose.distance;
     this.#clamp();
-    this.pose = clonePose(this.goal);
+    this.pose = copyPose(createPose(), this.goal);
   }
 
   get dragging(): boolean {
@@ -162,16 +150,11 @@ export class OrbitController {
     if (!b) return;
     const t = pose.target;
     for (let i = 0; i < 3; i++) t[i] = Math.min(b[i + 3]!, Math.max(b[i]!, t[i]!));
-    const cp = Math.cos(pose.pitch);
-    // The unit direction from target to eye (as `orbitEye`), and how far it can go.
+    // How far the eye can go from the target along its view ray.
+    const direction = orbitDirection(pose, this.#direction);
     let reach = pose.distance;
     for (let i = 0; i < 3; i++) {
-      const dir =
-        i === 0
-          ? cp * Math.sin(pose.yaw)
-          : i === 1
-            ? Math.sin(pose.pitch)
-            : cp * Math.cos(pose.yaw);
+      const dir = direction[i]!;
       if (dir > 1e-6) reach = Math.min(reach, (b[i + 3]! - t[i]!) / dir);
       else if (dir < -1e-6) reach = Math.min(reach, (b[i]! - t[i]!) / dir);
     }

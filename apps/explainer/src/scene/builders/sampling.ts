@@ -21,6 +21,7 @@
 import {
   faceAt,
   KIT,
+  orbitDirection,
   placeBar,
   placeDie,
   type BarSlot,
@@ -146,6 +147,8 @@ interface Built {
   /** The probabilities, recomputed only when the step or the temperature changes. */
   probs: { step: LogitsStep | null; t: number; values: ArrayLike<number> };
   motion: number;
+  /** Scratch: the camera's direction from its target. */
+  eye: Vec3;
 }
 
 const built = new WeakMap<SceneDesc, Built>();
@@ -262,6 +265,7 @@ export const sampling: SceneBuilder = {
       },
       probs: { step: null, t: Number.NaN, values: [] },
       motion: 0,
+      eye: [0, 0, 0],
     });
     return { scene, tags };
   },
@@ -345,8 +349,7 @@ export const sampling: SceneBuilder = {
 
     // Face words, each on its face's stave nearest the camera, shown only when that stave
     // turns toward it.
-    const eyeY = Math.sin(camera.pitch);
-    const eyeZ = Math.cos(camera.pitch) * Math.cos(camera.yaw);
+    const [, eyeY, eyeZ] = orbitDirection(camera, b.eye);
     const toEye = Math.atan2(eyeZ, eyeY);
     const turn = 2 * Math.PI;
     let start = pose.angle;

@@ -3,7 +3,7 @@
  * and eases in to the chapter's hero shot, so the reader sees the room first. The stage
  * (`stage.ts`) drives it: any orbit input cancels it, and the loop clock starts when it ends.
  */
-import type { OrbitPose } from "@repo/renderer";
+import { createPose, type OrbitPose } from "@repo/renderer";
 import { smoothstep } from "../scene/ease.ts";
 
 /** How long the arrival move takes, seconds (part of the ladder's skim time, D21). */
@@ -27,7 +27,7 @@ export function arrivalPose(from: OrbitPose, to: OrbitPose, t: number, out: Orbi
 
 /** One move in progress: where it goes, from where, and when it started (clock seconds). */
 export class Arrival {
-  #pose: OrbitPose = { target: [0, 0, 0], yaw: 0, pitch: 0, distance: 1, fovY: 1 };
+  #pose = createPose();
   #start: number | null = null;
   #done = false;
 

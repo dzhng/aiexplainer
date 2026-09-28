@@ -24,6 +24,7 @@ import {
 } from "./frame-input.ts";
 import {
   DYNAMICS_BYTES_PER_SLOT,
+  packDynamics,
   FRAME_UNIFORM_BYTES,
   FrameUniform,
   Instance,
@@ -279,14 +280,12 @@ export async function createRenderer(
       // Part transforms are per-frame data (bars grow, cards slide); repacking is allocation-free.
       packInstances(s.compiled, input.view, s.instanceF32, s.instanceU32);
       device.queue.writeBuffer(s.instances, 0, s.instanceF32);
-      const dyn = input.dynamics;
-      for (let slot = 0; slot < s.compiled.slotCount; slot++) {
-        // The environment's own slot glows at its look intensity, whatever the chapter animates.
-        s.dynamicsData[slot * 4] =
-          slot === s.compiled.environmentSlot ? 1 : (dyn.intensity[slot] ?? 0);
-        s.dynamicsData[slot * 4 + 1] = dyn.widthScale[slot] ?? 1;
-        s.dynamicsData[slot * 4 + 2] = dyn.flowPhase[slot] ?? 0;
-      }
+      packDynamics(
+        input.dynamics,
+        s.compiled.slotCount,
+        s.compiled.environmentSlot,
+        s.dynamicsData,
+      );
       device.queue.writeBuffer(s.dynamics, 0, s.dynamicsData);
 
       const t = targets.value!;
