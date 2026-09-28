@@ -62,6 +62,8 @@ const TEXT = { face: 0.062, bar: 0.068, card: 0.08, prompt: 0.064, note: 0.058 }
 const FACE_ARC = 1;
 /** Air at either end of a face's words, along the drum, metres. */
 const FACE_MARGIN = 0.06;
+/** How far face words keep from the reading line, metres (beyond their own height). */
+const LINE_CLEAR = 0.03;
 /** The bars' words: the baselines of the two staggered rows, metres above the table. */
 const BAR_WORD_ROWS = [0.03, 0.115] as const;
 /** Air between two words of one row, metres (they are two bars apart). */
@@ -251,6 +253,8 @@ export const sampling: SceneBuilder = {
           face: "top",
           size: TEXT.face,
           style: f < WORD_FACES ? "ink" : "chalk",
+          // Narrow neighbouring faces: the likelier word (listed first) keeps the room.
+          yields: true,
         }),
       ),
       // Stencilled across the foot of each lit bar's front, in two staggered rows so
@@ -422,6 +426,14 @@ export const sampling: SceneBuilder = {
             ? STAVES - 1
             : 0;
       const phi = start + ((k + 0.5) / STAVES) * span;
+      // The reading line stands just off the rim and would cut words under it: slide them
+      // across their stave (its local z runs round the drum) until they clear it.
+      const fromLine = wrapAngle(phi - READING);
+      const clearance = (TEXT.face + LINE_CLEAR) / pose.radius;
+      const slide =
+        Math.abs(fromLine) < clearance ? (Math.sign(fromLine) || 1) * clearance - fromLine : 0;
+      const staveWidth = 2 * pose.radius * Math.tan(Math.min(span / STAVES / 2, 1.2));
+      written.faces[f]!.local[2] = (slide * pose.radius) / staveWidth;
       start += span;
       const onFace = written.faces[f]!;
       onFace.part = b.staveIds[f]![k]!;
@@ -446,6 +458,11 @@ export const sampling: SceneBuilder = {
     }
   },
 };
+
+/** An angle folded into (−π, π]. */
+function wrapAngle(a: number): number {
+  return a - 2 * Math.PI * Math.ceil((a - Math.PI) / (2 * Math.PI));
+}
 
 function spreadNote(temperature: number, probs: ArrayLike<number>): string {
   return `temperature ${temperature.toFixed(1)}: spread (entropy) ${entropyBits(probs).toFixed(1)} bits`;
