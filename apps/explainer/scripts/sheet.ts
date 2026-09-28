@@ -7,14 +7,19 @@
  *   bun run --cwd apps/explainer sheet --variable 'part:board*' --chapters all
  *   bun run --cwd apps/explainer sheet --variable panel:tl --chapters autocomplete --t 5.4
  *   bun run --cwd apps/explainer sheet --variable full --chapters all        # the whole frame
+ *   bun run --cwd apps/explainer sheet --variable og --chapters all          # the link-preview cards
+ *
+ * `og` shoots nothing: it tiles the recorded cards (`public/media/<slug>-card.jpg`) four to a
+ * row at 600 px wide, the size a feed shows them, into `throwaway/shots/sheet/og.png`.
  */
 import { mkdir, rm } from "node:fs/promises";
 import path from "node:path";
 import { parseArgs } from "node:util";
 import { CHAPTERS } from "../src/chapters/index.ts";
 import { displayNumber, type ChapterSlug } from "../src/chapters/ladder.ts";
+import { CARD_SIZE, mediaFor } from "../src/runtime/media.ts";
 import { writtenChapters } from "../src/state/app-state.ts";
-import { FFMPEG, repoRoot as repo, run } from "./harness.ts";
+import { FFMPEG, appRoot, repoRoot as repo, run } from "./harness.ts";
 
 const { values: args } = parseArgs({
   options: {
@@ -41,6 +46,26 @@ if (slugs.length === 0) throw new Error("no chapters to shoot");
 const name = args.variable.replace(/[^a-z0-9]+/gi, "-").replace(/^-|-$/g, "") || "sheet";
 const outDir = path.join(repo, "throwaway/shots/sheet");
 await mkdir(outDir, { recursive: true });
+
+if (args.variable === "og") {
+  const sheet = path.join(outDir, "og.png");
+  const width = 600;
+  const height = Math.round((width * CARD_SIZE.height) / CARD_SIZE.width);
+  const columns = Math.min(4, slugs.length);
+  const cards = slugs.map((slug) => path.join(appRoot, "public", mediaFor(slug).card));
+  const inputs = cards.flatMap((file) => ["-i", file]);
+  const scaled = cards.map((_, i) => `[${i}]scale=${width}:${height}[t${i}]`).join(";");
+  const layout = cards.map(
+    (_, i) => `${(i % columns) * width}_${Math.floor(i / columns) * height}`,
+  );
+  const joined =
+    cards.length === 1
+      ? `${scaled};[t0]copy`
+      : `${scaled};${cards.map((_, i) => `[t${i}]`).join("")}xstack=inputs=${cards.length}:layout=${layout.join("|")}:fill=black`;
+  run([FFMPEG, "-loglevel", "error", "-y", ...inputs, "-filter_complex", joined, sheet]);
+  console.log(`sheet ${path.relative(repo, sheet)} (${cards.length} cards)`);
+  process.exit(0);
+}
 
 const tiles: string[] = [];
 for (const slug of slugs) {
