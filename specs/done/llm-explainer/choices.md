@@ -19,8 +19,8 @@ post-release requests, 2026-09-28; see the README).
   provisionally.
 - **Acceptable, with a known cost** (12): trade-offs that shipped with a limit.
 - **Sound** (70): choices the agent stands behind with no reservation.
-- **Amendments** (12): choices made while landing the human's post-release requests,
-  each with its own verdict (2 defaults to confirm, 1 acceptable with a cost, 9 sound).
+- **Amendments** (19): choices made while landing the human's post-release requests,
+  each with its own verdict (3 defaults to confirm, 2 acceptable with a cost, 14 sound).
 
 ## Incidents and post-hoc selections
 
@@ -430,12 +430,11 @@ Each entry carries a subject tag: [data], [arith], [app], [renderer], [scene],
     reader input takes over, as D32 requires. Used by chapters 3, 10, 11 and 12. When:
     slice 31 and the amendments.
 
-45. **[app] Only scene controls pause the loop.** Follow, the slider, a scenario and
+45. **[app] Only scene controls pause the loop.** The slider, a scenario and
     typed text pause it. Reading aids (Analogy/Technical, the Technical line, help) only
-    change text. Arriving at a chapter resets its Follow, slider, scenario, Technical and typed
+    change text. Arriving at a chapter resets its slider, scenario, Technical and typed
     text; the label reading and help stay as the reader left them. A `loopEpoch` counter
-    restarts the loop, so the reducer stays pure. Keys: ←/→ step chapters, 1–4 pick what to
-    follow, Space plays or pauses, ? toggles help, Esc closes it. When: slice 04.
+    restarts the loop, so the reducer stays pure. Keys: ←/→ step chapters, Space plays or pauses, ? toggles help, Esc closes it. When: slice 04.
 
 46. **[app] Chapter validation is hand-written, not zod.** Chapters are TypeScript, so
     the compiler checks shapes. `validateChapter` checks what types cannot: loop length,
@@ -582,7 +581,7 @@ Each entry carries a subject tag: [data], [arith], [app], [renderer], [scene],
 
 ## Amendments
 
-The human's five post-release requests (README, "Amendments after release") left these
+The human's eight post-release requests (README, "Amendments after release") left these
 choices to the implementation. Each names its verdict.
 
 1. **The story panel sits under the caption in the left column, not in a right-hand
@@ -650,3 +649,44 @@ choices to the implementation. Each names its verdict.
     and the look uniform its cap colour (256 → 240 bytes). The packing tests hold the
     new sizes. `partWorld` became each part's own `transform`, read directly. Verdict:
     sound.
+
+13. **The per-part captions went with Follow, and only binding text was kept.** Each
+    chapter had up to three extra captions, one per part, with their own Technical
+    lines. They were deleted with Follow. Two pieces moved into default captions:
+    chapter 10's qualifier (the sliding window changes outputs and is not how
+    Llama-3-8B runs) and its grouped-query line, and the intro's one-word context
+    (an unseen word has no counts, so no prediction). The rest of the per-part
+    technical detail is gone. Verdict: acceptable, with a known cost (less technical
+    depth per part).
+
+14. **Keys 1–4 are free, and nothing took them.** `actionForKey` no longer needs the
+    chapter. Rebinding the keys (to chapters, say) was not asked for. Verdict: sound.
+
+15. **The intro's earlier words sit on dim cards in a new `cardDim` material.** It is
+    the palette's `metal` colour, matte, with no glow, so the pale lit card stays the
+    one word the machine reads. The word is centred on its card in muted ink (tag style
+    `dim`, which replaced `before`, whose only user was the intro). Each card's width
+    follows its word's length. The text sits a little above each card's middle, because
+    the rail's lip hides the card's lower edge. Verdict: sound.
+
+16. **A long text keeps its end, and its first card reads "…".** The rail holds at most
+    12 dim cards, and fewer if they run past its left end. Whole cards are dropped
+    rather than faded, so every visible word stays readable. Verdict: sound.
+
+17. **In the loop, the word the text just gained unfolds on its dim card.** The lit card
+    still slides out and back in. As the new last word slides in, the word it replaced
+    grows onto its dim card beside it, so "once" becomes "once upon" on the rail. A
+    fresh text ("onse") clears the dim cards while the lit card is away. Verdict: sound.
+
+18. **"Intro" is only a label: addresses keep the display number.** `chapterBadge` and
+    `chapterName` in `ladder.ts` own the on-screen name. `/#0` and `/c/0/` are
+    unchanged, and so are chapters 1–15, because posted links are permanent (D31). The
+    fallback video's accessible name and the share card's image alt text now name the
+    chapter's title instead of a number. Verdict: sound.
+
+19. **The intro's copy names chapter 1 as where the deep dive starts.** The caption's
+    second sentence reads "It stalls on any word it never saw, like the misspelt “onse”,
+    and the deep dive starts in chapter 1 by fixing that." Chapter 1's why-line now says
+    "The intro's tally" instead of "Chapter 0". The phone-keyboard analogy (the chapters
+    table) stays in the first sentence. Verdict: a default for the human to confirm
+    (copy taste).

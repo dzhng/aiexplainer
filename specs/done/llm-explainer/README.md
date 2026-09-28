@@ -39,8 +39,8 @@ previous chapter's visible failure, adds one part, and shows that it now works b
 The style reference is airsup.ai/rocket-engine: one dark room, a Follow row, a slider,
 a scenario row, Whole/Cutaway/Exploded views, pinned labels, and numbers whose source
 is stated in the help panel. After release, readers found the extra controls confusing,
-so the view row and every slider that was not a real knob of the mechanism were removed
-(see [Amendments after release](#amendments-after-release-2026-09-28)).
+so the view row, the Follow row and every slider that was not a real knob of the
+mechanism were removed (see [Amendments after release](#amendments-after-release-2026-09-28)).
 
 **Non-goals:** a training chapter (D8), 3D on phones or a WebGL fallback (D20, D29),
 running a production model in the browser, any server, localisation, and backward
@@ -49,12 +49,13 @@ compatibility (the project is greenfield: hard cutovers, no shims).
 ## Chapters
 
 Chapter ids are slugs. The display number is the chapter's index in
-`chapters/ladder.ts` (D31), and deep links use it (`/#4`). The explore map numbers the
+`chapters/ladder.ts` (D31), and deep links use it (`/#4`). The first rung is the intro:
+on screen it reads "Intro", and its address stays `/#0`. The explore map numbers the
 chapters 0–8 and then 10–16, because it kept a gap for the cut training chapter.
 
 | #   | Slug           | Adds                          | Analogy                                    | Model                          |
 | --- | -------------- | ----------------------------- | ------------------------------------------ | ------------------------------ |
-| 0   | `autocomplete` | Word-pair counts              | Phone autocomplete                         | `counts`                       |
+| 0   | `autocomplete` | Intro: word-pair counts       | Phone autocomplete                         | `counts`                       |
 | 1   | `tokenizer`    | Tokenizer                     | Lego bricks from a fixed box               | the shared tokenizer           |
 | 2   | `embeddings`   | Embeddings                    | Pins on a map                              | `embed` (its input half)       |
 | 3   | `sampling`     | Output + sampling             | Loaded dice                                | `embed`                        |
@@ -125,7 +126,7 @@ orbit are built by hand (`labels.ts`, `passes/bloom.ts`, `orbit.ts`).
 
 | #   | Decision                                                                                                                                                                                           | Why                                                                                                              |
 | --- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
-| D31 | On screen, chapters are numbered 0–15 by ladder index. Code uses slugs. Deep links use the display number.                                                                                         | Links become permanent once posted, so the numbering had to be fixed before the first post.                      |
+| D31 | Chapters are numbered 0–15 by ladder index; 0 reads "Intro" on screen (amended). Code uses slugs. Deep links use the display number.                                                               | Links become permanent once posted, so the numbering had to be fixed before the first post.                      |
 | D32 | Arriving at a chapter restarts its loop. Any scene control pauses it, and ▶ resumes it. There is no idle auto-resume.                                                                              | Free exploration (D12) and auto-play (D24) needed a rule; the scene must not move under a reader's hand.         |
 | D33 | If a model fails its probe after bounded retries, the chapter still gets a loop that shows the honest result and says so.                                                                          | A chapter with no effect still has to show something, and it must not fake one.                                  |
 | D34 | Each chapter has a static `/c/<N>/index.html` with its own link-preview metadata, which redirects to `/#N`.                                                                                        | Crawlers ignore URL fragments, so `/#N` alone can't carry per-chapter preview images. Amends D29.                |
@@ -170,8 +171,9 @@ orbit are built by hand (`labels.ts`, `passes/bloom.ts`, `orbit.ts`).
 
 ## Amendments after release (2026-09-28)
 
-The human reviewed the live site and asked for five changes. Each landed as its own
-commit; the ledger entries are in [choices.md](choices.md) ("Amendments").
+The human reviewed the live site and asked for five changes, then for three more the
+same day (the last three items). Each landed as its own commit; the ledger entries are
+in [choices.md](choices.md) ("Amendments").
 
 - **The label toggle says what it does, and "Precise" is "Technical".** "Add a
   description so people know what this does, rename precise to technical." The toggle
@@ -181,10 +183,10 @@ commit; the ledger entries are in [choices.md](choices.md) ("Amendments").
   `LabelDef.technical`, `Caption.technical`). This amends D16, D17 and D24's wording.
 - **Chapter 0's board names its lookup and holds the whole text.** The empty header
   strip reads "After “little”…", so the bars read as that word's row of the tally; the
-  rail shows the reader's whole text with the earlier words muted and the last word on
-  the lit card, the only word the machine looks at. The "The tally board" label was
-  deleted: it pointed at the whole board and confused the human. The loop's inputs are
-  whole texts ("once", "once upon", "once upon a", then "onse").
+  rail shows the reader's whole text with the earlier words muted (later, dim cards; see
+  below) and the last word on the lit card, the only word the machine looks at. The "The
+  tally board" label was deleted: it pointed at the whole board and confused the human.
+  The loop's inputs are whole texts ("once", "once upon", "once upon a", then "onse").
 - **Controls cleanup: only real knobs, and no view row.** "Why are these useful for the
   user? it just seem like they make it more confusion with more buttons." A chapter's
   slider is now optional, and stays only where it is a real knob of the mechanism:
@@ -204,12 +206,34 @@ commit; the ledger entries are in [choices.md](choices.md) ("Amendments").
   No time is shown (D27). Chapters without a model show no box.
 - **One story panel.** "Group ALL user interactions/controls together into one panel,
   so it reads like a story top to bottom." Under the caption, in the left column: 1
-  type your own text, 2 or try an example, 3 turn the knob (with a one-line hint), 4
-  follow a part, then the label wording, play and help. Steps a chapter lacks are left
-  out and the numbers count what is shown. The top-right panel is gone, so the scene
-  keeps the right side; the safe rect is everything right of the column, and the
-  ladder centres between the column and the corner links. A right-hand column was
-  rejected because the shots frame the machines centre-right.
+  type your own text, 2 or try an example, 3 turn the knob (with a one-line hint), then
+  the label wording, play and help. (A fourth step, "follow a part", was removed later
+  the same day; see below.) Steps a chapter lacks are left out and the numbers count
+  what is shown. The top-right panel is gone, so the scene keeps the right side; the
+  safe rect is everything right of the column, and the ladder centres between the
+  column and the corner links. A right-hand column was rejected because the shots frame
+  the machines centre-right.
+- **No "Follow a part".** "Remove the follow stuff - clicking on it doesn't even do
+  anything (or even if it does, I don't notice it)." Follow only swapped the caption for
+  a per-part one, so it read as a dead button. It was deleted end to end: the story
+  panel's step (the other steps renumber), `ChapterDef.follow`, the per-part captions (a
+  chapter now has one caption), the state, keys 1–4, the probe hook and the validator
+  rules. Nothing replaces it; clickable labels were not requested. Chapter 10's binding
+  qualifier lived only in a per-part caption, so it moved into that chapter's Technical
+  line.
+- **The intro's rail holds the text as cards.** "I would expect this 'hello world this'
+  to be actually on the board." Every earlier word is now a dim card on the rail, and
+  the last word stays on the lit card. A text too long for the rail keeps its end, and
+  its first card reads "…". This replaces the muted words that were drawn in front of
+  the rail.
+- **Chapter 0 is the intro, not the start of the deep dive.** "Frame it as an intro
+  chapter, not starting the actual deep dive." It is titled "The job: guess the next
+  word", and its why-line says every model in the series guesses the next word. Its
+  caption calls word-pair counts the simplest first try and ends on the "onse" failure
+  that chapter 1 fixes. On screen it reads "Intro": in the title badge, the ladder, the
+  fallback page and the share-card title. Addresses keep the display number, so `/#0`
+  and `/c/0/` still open it, and chapters 1–15 keep their numbers. This amends D31's
+  on-screen wording.
 
 ## Principles
 
