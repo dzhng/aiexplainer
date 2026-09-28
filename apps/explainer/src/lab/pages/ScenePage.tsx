@@ -59,7 +59,13 @@ export function ScenePage({ slug, reading, debug, clock, probe, onReady }: Scene
       view: asked && def.views.includes(asked) ? asked : (def.views[0] ?? "whole"),
       text: null,
     };
-    const scene = chapterScene(def, assets, () => ({ def, ui, run, loopTime: clock.now() }));
+    const scene = chapterScene(def, assets, () => ({
+      def,
+      ui,
+      run,
+      loopTime: clock.now(),
+      steer: true,
+    }));
     // Filmstrips burn the loop's beat in under each frame.
     probe.beat = scene.beat;
     // `?yaw=<degrees>` turns the camera around the shot's target: a label sweep's azimuths.
@@ -73,7 +79,12 @@ export function ScenePage({ slug, reading, debug, clock, probe, onReady }: Scene
           clock,
           probe,
           debug,
-          update: scene.update,
+          // A tour steers the camera after `pose` runs, so turn its pose too.
+          update: (input) => {
+            const steered = scene.update(input);
+            if (steered) input.camera.yaw += yaw;
+            return steered;
+          },
           pose: (pose) => {
             pose.yaw += yaw;
           },

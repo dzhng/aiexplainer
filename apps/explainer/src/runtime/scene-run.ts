@@ -7,7 +7,7 @@
  */
 import type { ModelSource } from "@repo/llm";
 import type { SceneBuilderId } from "../chapters/scenes.ts";
-import type { ChapterDef } from "../chapters/types.ts";
+import type { ChapterDef, ChapterModelId } from "../chapters/types.ts";
 import type { SceneRun } from "../scene/build-frame.ts";
 import { attentionRun } from "./runs/attention.ts";
 import { autocompleteRun } from "./runs/autocomplete.ts";
@@ -18,6 +18,7 @@ import { mlpRun } from "./runs/mlp.ts";
 import { quantizationRun } from "./runs/quantization.ts";
 import { speculativeRun } from "./runs/speculative.ts";
 import { expertsRun } from "./runs/experts.ts";
+import { finishedRun } from "./runs/finished.ts";
 import { residualRun } from "./runs/residual.ts";
 import { samplingRun } from "./runs/sampling.ts";
 import { stackRun } from "./runs/stack.ts";
@@ -33,6 +34,11 @@ export interface RunContext {
    * Requests run one after another: the session cancels a live request when a new one starts.
    */
   session: Pick<Session, "load" | "run" | "generate" | "nextWords" | "weights" | "speculate">;
+  /**
+   * Any shipped model on the main thread, loaded once and kept (a run that shows other
+   * chapters' output, the finished machine's, needs their models too).
+   */
+  source(id: ChapterModelId): Promise<ModelSource>;
 }
 
 /** Computes one scene's run for the loop's inputs, or for the reader's text alone. */
@@ -57,6 +63,7 @@ const RUNS: Partial<Record<SceneBuilderId, SceneRunFn>> = {
   quantization: quantizationRun,
   speculative: speculativeRun,
   experts: expertsRun,
+  finished: finishedRun,
 };
 
 /** The scene's run, or null for a chapter whose scene shows no model output. */

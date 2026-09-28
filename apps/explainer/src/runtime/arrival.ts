@@ -5,6 +5,9 @@
  */
 import type { OrbitPose } from "@repo/renderer";
 
+/** How long the arrival move takes, seconds (part of the ladder's skim time, D21). */
+export const ARRIVAL_SEC = 2.5;
+
 /** Ease in and out (smoothstep): at rest at both ends, without a long stall at the start. */
 export function easeInOut(t: number): number {
   const x = Math.min(1, Math.max(0, t));

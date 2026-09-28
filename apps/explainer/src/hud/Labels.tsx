@@ -79,6 +79,10 @@ export const Labels = forwardRef<
     ref,
     () => ({
       update(placements) {
+        // A label whose anchor left the scene (a tour's earlier stop) is not placed: hide it.
+        for (const [id, node] of nodes.current)
+          if (node.style.visibility !== "hidden" && !placements.some((p) => p.id === id))
+            node.style.visibility = "hidden";
         for (const p of placements) {
           const node = nodes.current.get(p.id);
           if (!node) continue;

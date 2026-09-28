@@ -54,6 +54,13 @@ export interface ChapterDef {
    */
   pullBack?: { shot: ShotId; channel: ChannelId };
   /**
+   * A camera tour of the scene (the finished machine): loop channel `channel` counts stops,
+   * fractional while the camera moves, and the scene builder (`SceneBuilder.tourPose`) places
+   * the camera for each until the reader takes it. Only the stop in view shows its label, so
+   * a toured chapter may list a label per stop: the cap (D18) holds for what is on screen.
+   */
+  tour?: { channel: ChannelId };
+  /**
    * `notes` say how the scene itself was made where that is not obvious (e.g. a projection
    * computed offline); the help panel lists them under the chapter's numbers.
    */

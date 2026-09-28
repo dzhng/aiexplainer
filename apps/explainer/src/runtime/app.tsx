@@ -31,6 +31,7 @@ import { actionForKey } from "../state/keys.ts";
 import css from "./app.module.css";
 import { chapterScene, loadSceneAssets, type ChapterScene } from "./chapter-scene.ts";
 import type { Clock } from "./clock.ts";
+import { ARRIVAL_SEC } from "./arrival.ts";
 import { LoopTime } from "./loop-time.ts";
 import { fetchModel } from "./models.ts";
 import { computeRun } from "./scene-run.ts";
@@ -95,13 +96,24 @@ export interface AppProps {
   arrival: boolean;
 }
 
-/** How long the arrival move takes, seconds. */
-const ARRIVAL_SEC = 2.5;
-
 export function App({ hud, hudMotion, clock, probe, debug, onReady, arrival }: AppProps) {
   const [state, dispatch] = useReducer(reducer, undefined, startState);
   const def = CHAPTERS[state.chapter]!;
+  // Every shipped model the main thread fetched, kept for the session: the chapter's (the HUD's
+  // stats read it) and any other a run asks for (the finished machine reads every chapter's).
   const models = useRef(new Map<ChapterModelId, ModelSource>());
+  const fetching = useRef(new Map<ChapterModelId, Promise<ModelSource>>());
+  const [source] = useState(() => (id: ChapterModelId) => {
+    let fetched = fetching.current.get(id);
+    if (!fetched) {
+      fetched = fetchModel(id).then((loaded) => {
+        models.current.set(id, loaded);
+        return loaded;
+      });
+      fetching.current.set(id, fetched);
+    }
+    return fetched;
+  });
   const [model, setModel] = useState<ModelSource | null>(null);
   const [run, setRun] = useState<SceneRun | null>(null);
   const [session] = useState<Session>(() => createSession());
@@ -152,7 +164,7 @@ export function App({ hud, hudMotion, clock, probe, debug, onReady, arrival }: A
     }
   };
 
-  // The chapter's model: fetched once, then kept for the session (the HUD's stats read it).
+  // The chapter's model, for the HUD's stats and the scene's run.
   useEffect(() => {
     const id = def.model;
     const cached = id === null ? null : models.current.get(id);
@@ -162,14 +174,22 @@ export function App({ hud, hudMotion, clock, probe, debug, onReady, arrival }: A
     }
     let alive = true;
     setModel(null);
-    void fetchModel(id).then((loaded) => {
-      models.current.set(id, loaded);
-      if (alive) setModel(loaded);
-    });
+    void source(id).then((loaded) => alive && setModel(loaded));
     return () => {
       alive = false;
     };
   }, [def.model]);
+
+  // Runs may load models of their own (the finished machine loads every chapter's): the worker
+  // answers on the latest one loaded, so every load, not only the chapter's, is tracked here.
+  const [tracked] = useState<Session>(() => ({
+    ...session,
+    load(id) {
+      const loaded = session.load(id);
+      if (!(id instanceof URL)) workerModel.current = { id, loaded: loaded.then(() => undefined) };
+      return loaded;
+    },
+  }));
 
   // The model state lands a render after the chapter changes: never hand one chapter's model to
   // another chapter's stats or run.
@@ -189,11 +209,10 @@ export function App({ hud, hudMotion, clock, probe, debug, onReady, arrival }: A
     if (id === null || model === null) return;
     let alive = true;
     // The worker holds one trained model: load it only when the chapter's model changes.
-    if (id !== "tokenizer" && workerModel.current?.id !== id)
-      workerModel.current = { id, loaded: session.load(id).then(() => undefined) };
+    if (id !== "tokenizer" && workerModel.current?.id !== id) void tracked.load(id);
     const worker = id === "tokenizer" ? Promise.resolve() : workerModel.current!.loaded;
     void worker
-      .then(() => computeRun(def, text, { model, session }))
+      .then(() => computeRun(def, text, { model, session: tracked, source }))
       .then(
         (next) => alive && setRun(next),
         (error: unknown) => {
@@ -204,14 +223,26 @@ export function App({ hud, hudMotion, clock, probe, debug, onReady, arrival }: A
     return () => {
       alive = false;
     };
-  }, [def, text, chapterModel, session]);
+  }, [def, text, chapterModel, tracked]);
 
   useEffect(() => () => session.dispose(), [session]);
+
+  // Every prop loaded so far, shared with the scene: each chapter's arrive before it draws.
+  const [assets] = useState<SceneDesc["assets"]>(() => ({}));
+  useEffect(() => {
+    void loadSceneAssets(def, assets);
+  }, [def, assets]);
+
+  // The reader took the camera from a tour (by orbiting): it stays theirs until the chapter's
+  // loop restarts or they pick a stop with the slider.
+  const cameraTaken = useRef(false);
+  useEffect(() => {
+    cameraTaken.current = false;
+  }, [def, state.loopEpoch, state.slider]);
 
   // The stage: one renderer and frame loop for the app's lifetime.
   useEffect(() => {
     let alive = true;
-    const assets: SceneDesc["assets"] = {};
     const loopTime = new LoopTime();
     const first = live.current.def;
     const scene = (sceneRef.current = chapterScene(first, assets, () => {
@@ -226,6 +257,7 @@ export function App({ hud, hudMotion, clock, probe, debug, onReady, arrival }: A
           s.loopEpoch,
           s.playing && !(stage.current?.arriving() ?? false),
         ),
+        steer: !cameraTaken.current && !(stage.current?.arriving() ?? true),
       };
     }));
     void loadSceneAssets(first, assets)
@@ -238,6 +270,9 @@ export function App({ hud, hudMotion, clock, probe, debug, onReady, arrival }: A
           probe,
           debug,
           update: scene.update,
+          onOrbitInput: () => {
+            cameraTaken.current = true;
+          },
           labels: labels.current,
           tags: { layer: tags.current, current: () => scene.frame.tags },
           obstacles: () => panelRects.current,

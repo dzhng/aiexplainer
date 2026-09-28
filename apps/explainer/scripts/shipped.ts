@@ -40,10 +40,15 @@ export function shipped(id: ChapterModelId): Promise<ModelSource> {
 
 /**
  * What `computeRun` needs for a chapter, in-process: its shipped model on "the main thread",
- * and a `localSession` (the worker's own code) holding it.
+ * and a `localSession` (the worker's own code) holding it. Other models load on request, once.
  */
 export async function shippedContext(id: ChapterModelId): Promise<RunContext> {
   const session = localSession(pathToFileURL(`${modelsDir}/`));
   if (id !== "tokenizer") await session.load(id);
-  return { model: await shipped(id), session };
+  const sources = new Map<ChapterModelId, Promise<ModelSource>>();
+  const source = (other: ChapterModelId) => {
+    if (!sources.has(other)) sources.set(other, shipped(other));
+    return sources.get(other)!;
+  };
+  return { model: await source(id), session, source };
 }

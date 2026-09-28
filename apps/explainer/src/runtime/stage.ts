@@ -32,7 +32,7 @@ import type { SceneTags, SceneTagsHandle } from "../hud/SceneTags.tsx";
 import type { ProbeApi } from "../lab/probe.ts";
 import { roomOrbitLimits } from "../scene/environment.ts";
 import type { Clock } from "./clock.ts";
-import { Arrival } from "./arrival.ts";
+import { ARRIVAL_SEC, Arrival } from "./arrival.ts";
 import { bindOrbit } from "./orbit-input.ts";
 
 export interface StageOptions {
@@ -46,8 +46,13 @@ export interface StageOptions {
   onReady: () => void;
   /** Debug layers and bloom, e.g. from `?emissive=0&bloom=0`. */
   debug?: FrameInput["debug"];
-  /** Runs before each frame is drawn; mutates `input` (scene, transforms, dynamics, view). */
-  update?: (input: FrameInput, timeSec: number) => void;
+  /**
+   * Runs before each frame is drawn; mutates `input` (scene, transforms, dynamics, view).
+   * Returning true means it steered the camera: the orbit continues from `input.camera`.
+   */
+  update?: (input: FrameInput, timeSec: number) => boolean | void;
+  /** The reader pressed or scrolled on the canvas (took the camera). */
+  onOrbitInput?: () => void;
   /** Adjusts the drawn camera from the orbit pose each frame (e.g. a turntable). */
   pose?: (pose: OrbitPose, timeSec: number) => void;
   /** The label layer to drive, for the scene's anchors. */
@@ -100,7 +105,10 @@ export async function runStage(o: StageOptions): Promise<Stage | null> {
 
   const { canvas } = o;
   let arrival: Arrival | null = null;
-  const unbind = bindOrbit(canvas, orbit, () => arrival?.cancel());
+  const unbind = bindOrbit(canvas, orbit, () => {
+    arrival?.cancel();
+    o.onOrbitInput?.();
+  });
   const resizeObserver = new ResizeObserver(() => renderer.resize());
   resizeObserver.observe(canvas);
 
@@ -166,7 +174,7 @@ export async function runStage(o: StageOptions): Promise<Stage | null> {
     input.viewport.width = canvas.clientWidth;
     input.viewport.height = canvas.clientHeight;
     input.viewport.dpr = devicePixelRatio;
-    o.update?.(input, now);
+    if (o.update?.(input, now) === true) orbit.jumpTo(input.camera);
     receipt = renderer.frame(input);
     placeAll();
     if (++frames === 2) o.onReady();
@@ -194,7 +202,7 @@ export async function runStage(o: StageOptions): Promise<Stage | null> {
       arrival?.cancel();
       orbit.jumpTo(target);
     },
-    arrive(target, from, durationSec = 2.5) {
+    arrive(target, from, durationSec = ARRIVAL_SEC) {
       arrival?.cancel();
       arrival = from ? new Arrival(from, target, durationSec) : null;
       orbit.jumpTo(from ?? target);
