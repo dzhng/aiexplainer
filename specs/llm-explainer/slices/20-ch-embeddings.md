@@ -45,3 +45,28 @@ Every earlier slice.
 ## Feedback that would change this slice
 
 The analogy not landing for the human. Rework the copy and the beats; the model and seam stay the same.
+
+## Results (lane A, 2026-09-27)
+
+- **Map data:** `scripts/embed-map.ts` writes `src/scene/embed-map.json` offline: the 30
+  neighbour-probe pairs (60 words, the cap) whose partners are nearest by the probe's own
+  cosine measure, and a PCA fitted to those 60 real `tok_emb` rows (`scripts/pca.ts`, Jacobi
+  eigenvectors). Fitting to the pinned rows (not all 4,096) was measured: it keeps pairs
+  tighter on the map (pair/mean distance 0.30 vs 0.37). Across and into the map are the first
+  two directions; a pin's height is the third. The help panel says so (`help.notes`, new).
+- **Arrows start at the origin's shadow** (the all-zeros embedding projected with the same
+  basis), so each arrow is exactly its vector's projection.
+- **Kit:** `pins` (needle block, unit-tube head, unit-tube arrow; `placePin`). Arrows carry their
+  own radius so label occlusion sees them as thin tubes.
+- **Loop (24 s):** chapter 1's bricks fly in and become the “cat” and “kitten” pins (3.4 s); they
+  light up with their cosine 0.90 from the model (5 s); arrows grow (9.6–12 s); the pins sink,
+  “it” flies in, every other arrow fades and the note says “it” gets one pin in every sentence
+  (the failure). Typed words are looked up with a leading space (as mid-sentence); up to 8.
+- **Stats:** 64 directions (new `dModel` metric), Llama-3-8B 4,096 (`ARITH.hidden`), and the
+  neighbour probe (96.7%).
+- **Checks:** kit turntable, hero, strip, 12-azimuth sweep, typed state, registry equal after 10
+  in/out gotos, `ch-embeddings.test.ts` (basis re-fit equals the stored one; every pin equals its
+  row's projection; pairs are probe pairs; cosine equals `nearestTokens`). Two critique rounds:
+  fixed labels occluded by the heads' own capsules, a reverse-flying brick, weak pair glow,
+  notes clipped under the title panel, arrow clutter in the failure beat. Still busy: the
+  noun cluster's words overlap at the hero angle (inherent to 60 real positions).

@@ -1,8 +1,8 @@
 /**
  * The model output a chapter's scene shows: the loop's inputs, or the reader's text in their
  * place, run through the chapter's model. Anything that runs a network goes to the inference
- * worker (D38); table lookups (chapter 1's tokenizer) read the model the main thread already
- * holds for the HUD's stats. Each scene that shows model output has one run function
+ * worker (D38); table lookups (chapter 0's word rule, chapter 1's tokenizer, chapter 2's
+ * embedding rows) read the model the main thread already holds for the HUD's stats. Each scene that shows model output has one run function
  * (`runs/<scene>.ts`); this picks it. The run's shape is the scene builder's.
  */
 import type { ModelSource } from "@repo/llm";
@@ -10,6 +10,7 @@ import type { SceneBuilderId } from "../chapters/scenes.ts";
 import type { ChapterDef } from "../chapters/types.ts";
 import type { SceneRun } from "../scene/build-frame.ts";
 import { autocompleteRun } from "./runs/autocomplete.ts";
+import { embeddingsRun } from "./runs/embeddings.ts";
 import { mlpRun } from "./runs/mlp.ts";
 import { residualRun } from "./runs/residual.ts";
 import { stackRun } from "./runs/stack.ts";
@@ -37,6 +38,7 @@ export type SceneRunFn = (
 const RUNS: Partial<Record<SceneBuilderId, SceneRunFn>> = {
   autocomplete: autocompleteRun,
   tokenizer: tokenizerRun,
+  embeddings: embeddingsRun,
   mlp: mlpRun,
   residual: residualRun,
   stack: stackRun,

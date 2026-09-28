@@ -7,6 +7,7 @@ import { blockGeometry } from "../src/kit/block.ts";
 import { placeBrick } from "../src/kit/brick.ts";
 import { KIT, KIT_ENTRIES } from "../src/kit/catalog.ts";
 import { shadowGeometry } from "../src/kit/contact-shadow.ts";
+import { PIN_PARTS, placePin } from "../src/kit/pins.ts";
 import type { Geometry } from "../src/kit/geometry.ts";
 import { placeSegment, tubeGeometry } from "../src/kit/tube.ts";
 
@@ -198,4 +199,33 @@ test("contact shadow sits just above the floor under the subject's footprint, wi
   expect([x0, z0, x1, z1].map((v) => Math.round(v * 100) / 100)).toEqual([-1.3, -0.7, 1.3, 0.6]);
   expect(y0).toBeGreaterThan(0);
   expect(y0).toBeLessThan(0.01);
+});
+
+test("pins: each arrow runs from the origin exactly to its head, at its own thin radius", () => {
+  const origin: Vec3 = [0.1, 0.2, -0.3];
+  const head: Vec3 = [0.8, 0.9, 0.4];
+  const built = KIT.pins.build({
+    id: "p",
+    slot: 0,
+    heads: [head],
+    floor: 0,
+    origin,
+    headMaterial: "m",
+    needleMaterial: "m",
+    arrowMaterial: "m",
+  });
+  const arrow = built.parts[PIN_PARTS - 1]!;
+  const tip = vec3.transformMat4([0, 0, 0], [1, 0, 0], arrow.transform);
+  for (let a = 0; a < 3; a++) expect(tip[a]!).toBeCloseTo(head[a]!, 6);
+  // The cross-section axes are unit length: the tube's own radius is the arrow's.
+  expect(Math.hypot(arrow.transform[4]!, arrow.transform[5]!, arrow.transform[6]!)).toBeCloseTo(
+    1,
+    6,
+  );
+  // Half grown, it reaches halfway; parked pins go out of sight.
+  placePin(built.parts, 0, head, 0, origin, 0.5);
+  const half = vec3.transformMat4([0, 0, 0], [1, 0, 0], arrow.transform);
+  expect(half[0]!).toBeCloseTo((origin[0] + head[0]) / 2, 6);
+  placePin(built.parts, 0, null, 0, origin, 1);
+  expect(built.parts[0]!.transform[13]!).toBeLessThan(-10);
 });

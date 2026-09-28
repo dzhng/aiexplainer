@@ -8,6 +8,8 @@ export const SCENE_ANCHORS = {
   autocomplete: ["board", "bars", "rail"],
   /** Chapter 1: the bricks on show, the ids on them, the box of shapes, and the text's row. */
   tokenizer: ["bricks", "ids", "box", "text"],
+  /** Chapter 2: the map, a word's pin, the arrows, the origin, and your text's pin. */
+  embeddings: ["map", "pins", "arrows", "origin", "text"],
   /** Chapter 6: the question panel, the token arrow, the readout bars, the no-river teaser. */
   mlp: ["panel", "arrow", "readout", "teaser"],
   /** Chapter 7: the stations, the river under them, their volume knobs, the best guess. */
@@ -23,6 +25,7 @@ export const SCENE_ANCHORS = {
 export const SCENE_KIT: Record<keyof typeof SCENE_ANCHORS, readonly string[]> = {
   autocomplete: ["mesh", "bars", "block", "contactShadow"],
   tokenizer: ["block", "brick", "contactShadow"],
+  embeddings: ["block", "pins", "brick", "contactShadow"],
   mlp: ["questionPanel", "tube", "block", "bars", "contactShadow"],
   residual: ["block", "tube", "river", "volumeKnob", "contactShadow"],
   stack: ["block", "tube", "contactShadow"],

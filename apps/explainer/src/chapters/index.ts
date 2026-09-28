@@ -3,6 +3,7 @@
  * written are absent; the ladder (`ladder.ts`) still numbers them.
  */
 import { autocomplete } from "./data/autocomplete.ts";
+import { embeddings } from "./data/embeddings.ts";
 import { tokenizer } from "./data/tokenizer.ts";
 import { mlp } from "./data/mlp.ts";
 import { residual } from "./data/residual.ts";
@@ -14,6 +15,7 @@ import { validateChapter } from "./validate.ts";
 export const CHAPTERS: Partial<Record<ChapterSlug, ChapterDef>> = {
   autocomplete,
   tokenizer,
+  embeddings,
   mlp,
   residual,
   stack,

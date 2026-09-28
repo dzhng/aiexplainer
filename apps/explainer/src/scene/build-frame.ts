@@ -9,6 +9,7 @@ import type { ChapterDef, FollowId, SceneBuilderId, ViewMode } from "../chapters
 import type { TimelineState } from "../chapters/timeline.ts";
 import type { SceneTags } from "../hud/SceneTags.tsx";
 import { autocomplete, type CountsRun } from "./builders/autocomplete.ts";
+import { embeddings } from "./builders/embeddings.ts";
 import { mlp, type MlpRun } from "./builders/mlp.ts";
 import { residual, type ResidualRun } from "./builders/residual.ts";
 import { stack, type StackRun } from "./builders/stack.ts";
@@ -28,7 +29,7 @@ export interface SceneUi {
  * The chapter's model output for what the scene shows (`runtime/scene-run.ts`). Each scene's
  * builder reads its own kind.
  */
-export type SceneRun = CountsRun | PiecesRun | MlpRun | ResidualRun | StackRun;
+export type SceneRun = CountsRun | PiecesRun | PinsRun | MlpRun | ResidualRun | StackRun;
 
 /** Chapter 1's run (`runtime/runs/tokenizer.ts`). */
 export interface PiecesRun {
@@ -40,6 +41,21 @@ export interface PiecesRun {
    * each with its id, its text (a leading space included) and its length in bytes.
    */
   steps: { text: string; pieces: { id: number; text: string; bytes: number }[] }[];
+}
+
+/** Chapter 2's run (`runtime/runs/embeddings.ts`). */
+export interface PinsRun {
+  kind: "pins";
+  /**
+   * One step per loop input (or one for typed text): its tokens, each at its embedding's
+   * projection on the map (`scene/embed-map.ts`), and the cosine similarity of the first
+   * two tokens' embeddings when there are two.
+   */
+  steps: {
+    text: string;
+    pins: { id: number; text: string; bytes: number; at: [number, number, number] }[];
+    cosine: number | null;
+  }[];
 }
 
 export interface SceneBuilder {
@@ -60,6 +76,7 @@ export interface SceneBuilder {
 export const SCENE_BUILDERS: Record<SceneBuilderId, SceneBuilder> = {
   autocomplete,
   tokenizer,
+  embeddings,
   mlp,
   residual,
   stack,

@@ -48,6 +48,13 @@ export const ARITH = {
     describe: "entries in its tokenizer's vocabulary, from the published config",
     compute: () => cfg.vocab,
   }),
+  hidden: entry({
+    args: [],
+    unit: "count",
+    scale: "Llama-3-8B",
+    describe: "numbers in each token's embedding (its hidden size), from the published config",
+    compute: () => cfg.hidden,
+  }),
   layers: entry({
     args: [],
     unit: "count",

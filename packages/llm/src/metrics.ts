@@ -18,6 +18,14 @@ export const MODEL_METRICS = {
     describe: "entries in the model's vocabulary",
     read: vocabSize,
   },
+  dModel: {
+    describe: "numbers in each token's embedding: the directions its arrow can point in",
+    read: (model) => {
+      if (!("manifest" in model) || model.manifest.kind !== "transformer")
+        throw new Error("dModel needs a transformer");
+      return model.manifest.arch.dModel;
+    },
+  },
   context: {
     describe: "the longest text the model reads at once, in tokens, from its shape",
     read: (model) => transformerArch(model).ctx,

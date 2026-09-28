@@ -391,3 +391,18 @@ standalone. Entries are appended per pass and consolidated when the spec closes.
   a protected preview. Releasing to production is the deliberate act of merging into `main`,
   which is the human's call (O5, slice 36). Why: linking defaulted production to
   `llm-explainer`, which would have made every push a production deploy. Verdict: sound.
+
+## Slice 20 (chapter 2)
+
+- **The PCA display projection is fitted to the 60 pinned rows, not all 4,096.** Measured: it
+  keeps pairs tighter (pair/mean distance 0.30 vs 0.37). The help panel discloses it via a new
+  `ChapterDef.help.notes`. Verdict: sound; honest, because it is disclosed.
+- **The pinned words are the 30 probe pairs whose partners are nearest by the probe's own cosine
+  measure.** Verdict: acceptable, but these are the best-case pairs; the chip (96.7% partner
+  nearer than a random word) states the average honestly.
+- **Height is the third PCA direction, and arrows start at the zero vector's projection.**
+  Verdict: sound.
+- **Typed words are looked up with a leading space (as mid-sentence), up to 8.** Verdict: sound.
+- **The table is a shared `builders/table.ts` for chapters 1–3.** Verdict: sound.
+- **The noun cluster overlaps its word tags at the hero angle, because those are the real
+  positions.** Verdict: polish item for the whole-spec review.
