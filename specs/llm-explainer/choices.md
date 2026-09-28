@@ -513,3 +513,14 @@ standalone. Entries are appended per pass and consolidated when the spec closes.
 - **Cutaway is omitted in chapters 11–14; a section adds nothing there.** Verdict: sound.
 - **Polish nits left:** chapter 14's queue reads right to left, some sweep azimuths are blocked
   by room geometry, and a ceiling rafter crosses the HUD kicker (house-wide).
+
+## Slice 25 (chapter 5)
+
+- **Clock hands turn by position × pair 5's real RoPE angle (about 22° a word), not the slowest
+  pair.** Why: pair 5 needs no visibility scaling, so there is nothing to disclose. Verdict:
+  sound; it amends the slice's default.
+- **The shown difference between orders (7.45%) equals the probe value to 1e-12; the guess
+  differs ("dog" 32% vs "cat" 30%).** Verdict: sound.
+- **Polish items:** in chapter 4, front-row pipes cross back-row words and pipes regrow rather
+  than move during the swap. In chapter 5, the pair angle is written but not drawn, the last
+  dial washes out, and the hands unwind at the loop seam. Verdict: backlog.
