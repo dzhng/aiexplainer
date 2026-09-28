@@ -53,5 +53,6 @@ test("textureBytes counts samples and the whole mip chain", () => {
   expect(textureBytes({ size: [4, 4], format: "rgba16float", mipLevelCount: 3 })).toBe(
     (16 + 4 + 1) * 8,
   );
-  expect(() => textureBytes({ size: [1, 1], format: "r8unorm" })).toThrow();
+  expect(textureBytes({ size: [8, 2], format: "r8unorm" })).toBe(16);
+  expect(() => textureBytes({ size: [1, 1], format: "r32float" })).toThrow();
 });

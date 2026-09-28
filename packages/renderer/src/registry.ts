@@ -10,6 +10,7 @@ import type { RegistryStats } from "./frame-input.ts";
 
 const BYTES_PER_TEXEL: Partial<Record<GPUTextureFormat, number>> = {
   rgba16float: 8,
+  r8unorm: 1,
   depth32float: 4,
   rgba8unorm: 4,
   bgra8unorm: 4,

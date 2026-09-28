@@ -68,6 +68,30 @@ export const Material = d
   .$name("Material");
 export const MATERIAL_BYTES = 48;
 
+/**
+ * One laid-out glyph (`text/layout.ts`): its quad relative to its text's origin (em: left,
+ * bottom, right, top), its atlas uv (left, top, right, bottom) and the text it belongs to.
+ */
+export const TextGlyph = d.struct({ quad: d.vec4f, uv: d.vec4f, item: d.u32 }).$name("TextGlyph");
+export const TEXT_GLYPH_BYTES = 48;
+
+/**
+ * One text as placed this frame: its origin (w: opacity), the world vectors one em along
+ * its lines and up its lines (zero hides it), and its style's light. `outline.w` is the
+ * outline's width in distance-field units (0.5 is the letter's own edge).
+ */
+export const TextItem = d
+  .struct({
+    origin: d.vec4f,
+    right: d.vec4f,
+    up: d.vec4f,
+    color: d.vec4f,
+    emissive: d.vec4f,
+    outline: d.vec4f,
+  })
+  .$name("TextItem");
+export const TEXT_ITEM_BYTES = 96;
+
 /** Per part slot: intensity, width scale, flow phase (cycles), unused. */
 export const DYNAMICS_BYTES_PER_SLOT = 16;
 

@@ -50,6 +50,15 @@ export function testLook(): LookConfig {
         emissive: [0, 0, 0],
       },
     },
+    text: {
+      ink: {
+        family: "Inter, sans-serif",
+        weight: 600,
+        color: [0.9, 0.9, 1],
+        emissive: [0, 0, 0],
+        outline: { color: [0, 0, 0], width: 0.1 },
+      },
+    },
     tonemap: { exposure: 1, saturation: 1 },
     bloom: { threshold: 1, knee: 0.5, intensity: 0.1, radius: 1 },
     flow: { spacing: 0.25, duty: 0.4 },

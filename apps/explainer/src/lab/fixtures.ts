@@ -8,6 +8,7 @@ import {
   type Part,
   type SceneAnchor,
   type SceneDesc,
+  type SceneText,
 } from "@repo/renderer";
 import type { LabelDef } from "../chapters/types.ts";
 import { lookConfig, type MaterialToken } from "../look/look.ts";
@@ -22,6 +23,8 @@ export interface FixtureJson {
   assets?: Record<string, string>;
   parts: Part[];
   anchors?: SceneAnchor[];
+  /** Words written on the parts (`kit/text.ts`). */
+  text?: SceneText[];
   /** Fixture label text, one per anchor (the product's comes from `ChapterDef.labels`). */
   labels?: LabelDef[];
   /** Stands the fixture in the product's lab room, as every chapter scene is. */
@@ -92,6 +95,7 @@ export async function loadFixture(name: string): Promise<LabScene> {
     assets,
     fixture.anchors,
   );
+  input.scene.text = structuredClone(fixture.text);
   if (fixture.environment) withEnvironment(input.scene);
   return { look: lookConfig(fixture.materials), input, labels: fixture.labels };
 }

@@ -1,0 +1,114 @@
+{
+  "camera": { "target": [0, 0.7, 0], "yaw": 0.45, "pitch": 0.3, "distance": 5.2, "fovY": 0.75 },
+  "materials": {
+    "pale": { "color": "ink", "roughness": 0.7, "opacity": 1 },
+    "dark": { "color": "metalDark", "roughness": 0.5, "opacity": 1 },
+    "amber": { "color": "focus", "emissive": "focus", "opacity": 1 }
+  },
+  "parts": [
+    {
+      "kind": "block",
+      "id": "floor",
+      "slot": 0,
+      "material": "floor",
+      "transform": [6, 0, 0, 0, 0, 0.1, 0, 0, 0, 0, 4, 0, 0, -0.05, 0, 1]
+    },
+    {
+      "kind": "block",
+      "id": "card",
+      "slot": 1,
+      "material": "pale",
+      "transform": [1.4, 0, 0, 0, 0, 0.8, 0, 0, 0, 0, 0.8, 0, -0.9, 0.4, 0, 1]
+    },
+    {
+      "kind": "block",
+      "id": "turned",
+      "slot": 2,
+      "material": "dark",
+      "transform": [0.866, 0, -0.5, 0, 0, 1, 0, 0, 0.5, 0, 0.866, 0, 1.0, 0.5, -0.2, 1]
+    },
+    {
+      "kind": "block",
+      "id": "post",
+      "slot": 3,
+      "material": "dark",
+      "transform": [0.12, 0, 0, 0, 0, 1.6, 0, 0, 0, 0, 0.12, 0, -0.6, 0.8, 0.75, 1]
+    },
+    {
+      "kind": "block",
+      "id": "lamp",
+      "slot": 4,
+      "material": "amber",
+      "transform": [0.3, 0, 0, 0, 0, 0.3, 0, 0, 0, 0, 0.3, 0, 0.1, 1.8, -0.6, 1]
+    }
+  ],
+  "text": [
+    {
+      "id": "front",
+      "part": "card",
+      "local": [0, 0.1, 0.5],
+      "face": "front",
+      "lift": 0.003,
+      "size": 0.2,
+      "style": "ink",
+      "align": [0.5, 0.5],
+      "text": "front face"
+    },
+    {
+      "id": "top",
+      "part": "card",
+      "local": [0, 0.5, 0],
+      "face": "top",
+      "lift": 0.003,
+      "size": 0.16,
+      "style": "ink",
+      "align": [0.5, 0.5],
+      "text": "top"
+    },
+    {
+      "id": "side",
+      "part": "card",
+      "local": [0.5, 0, 0],
+      "face": "right",
+      "lift": 0.003,
+      "size": 0.14,
+      "style": "ink",
+      "align": [0.5, 0.5],
+      "text": "side"
+    },
+    {
+      "id": "turned",
+      "part": "turned",
+      "local": [0, 0, 0.5],
+      "face": "front",
+      "lift": 0.003,
+      "size": 0.16,
+      "style": "chalk",
+      "align": [0.5, 0.5],
+      "maxWidth": 0.85,
+      "text": "turned 30°, shrunk\nto fit its face"
+    },
+    {
+      "id": "floor",
+      "part": "floor",
+      "local": [0, 0.5, 0.3],
+      "face": "top",
+      "lift": 0.003,
+      "size": 0.18,
+      "style": "chalk",
+      "align": [0.5, 0.5],
+      "text": "written on the floor"
+    },
+    {
+      "id": "billboard",
+      "part": "lamp",
+      "local": [0, 0.5, 0],
+      "face": "camera",
+      "lift": 0.003,
+      "size": 0.16,
+      "style": "sign",
+      "align": [0.5, 1.2],
+      "text": "faces the eye"
+    }
+  ]
+}

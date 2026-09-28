@@ -3,6 +3,7 @@
  * the renderer draws exactly that and reports a `FrameReceipt`. Nothing else crosses.
  */
 import type { Mat4, Vec3 } from "math";
+import type { CameraMatrices, ScreenRect } from "./camera.ts";
 import type { MeshAsset } from "./gltf.ts";
 
 /** Linear-light RGB, as handed over by the app's look module (never sRGB). */
@@ -84,6 +85,49 @@ export interface SceneAnchor {
   priority: number;
 }
 
+/**
+ * Which face of its part a text is written on, in the part's own axes: `front` is +z, `top`
+ * +y (read from the front), `right` +x. `camera` turns it to face the eye (a billboard), for
+ * text with no surface to lie on.
+ */
+export type TextFace = "front" | "back" | "top" | "bottom" | "left" | "right" | "camera";
+
+/**
+ * Words drawn in the world on a part (`kit/text.ts`): placed at `local` through the part's
+ * transform, laid on `face` in the part's rotation but never stretched by its scale, and
+ * hidden by whatever stands in front of them.
+ */
+export interface SceneText {
+  id: string;
+  /** The part it is written on; may change every frame (the words ride another part). */
+  part: string;
+  /** In the part's local space; the text sits `lift` metres off it along the face's normal. */
+  local: Vec3;
+  face: TextFace;
+  lift: number;
+  /** The font size (em) in metres. */
+  size: number;
+  /** A look text style (`LookConfig.text`); may change every frame (the words change ink). */
+  style: string;
+  /**
+   * Where `local` sits on the text's box: [0, 0] its top-left corner, [0.5, 0.5] its middle
+   * (the box's top is the first line's cap height, its bottom the last line's baseline).
+   * Lines align within the box by `align[0]`.
+   */
+  align: [number, number];
+  /** The text shrinks so its widest line fits, metres; omitted, it never shrinks. */
+  maxWidth?: number;
+  /** Updated in place every frame; a newline breaks the line and "" draws nothing. */
+  text: string;
+  /** 0–1, updated in place (fades); 1 when omitted. */
+  opacity?: number;
+  /**
+   * Hidden while its screen box overlaps an earlier yielding text's (the scene lists the
+   * most important first), so crowded words (pins on a map) show the first of each crowd.
+   */
+  yields?: boolean;
+}
+
 export interface SceneDesc {
   /**
    * Bump when the scene's structure changes (parts added or removed, materials, geometry);
@@ -97,6 +141,11 @@ export interface SceneDesc {
   layout?: number;
   parts: Part[];
   anchors: SceneAnchor[];
+  /**
+   * Words written on parts; their `text`, `style`, `part`, `local`, `maxWidth` and `opacity`
+   * may change every frame.
+   */
+  text?: SceneText[];
   /** Parsed props (`parseGlb`), loaded by the app. */
   assets: Record<AssetId, MeshAsset>;
   /**
@@ -118,7 +167,7 @@ export interface FrameDynamics {
 }
 
 /** Bits of `FrameInput.debug.layers`; a cleared bit hides that layer. */
-export const Layer = { emissive: 1, flows: 2 } as const;
+export const Layer = { emissive: 1, flows: 2, text: 4 } as const;
 
 export interface FrameInput {
   timeSec: number;
@@ -165,6 +214,19 @@ export interface MaterialLook {
   specular?: number;
 }
 
+/** One text style: its face and its letters' light (unlit by the scene, like printed ink). */
+export interface TextStyleLook {
+  /** The CSS font family list and weight the glyphs are rasterised in. */
+  family: string;
+  weight: number;
+  /** The letters' radiance, linear. */
+  color: LinearRgb;
+  /** Added radiance, scaled by the emissive layer (so bloom picks it up); zero for ink. */
+  emissive: LinearRgb;
+  /** A rim around each letter, `width` em wide (0 for none), so it reads over busy parts. */
+  outline: { color: LinearRgb; width: number };
+}
+
 export interface LightLook {
   /** Unit vector from the scene toward the light. */
   direction: Vec3;
@@ -207,6 +269,8 @@ export interface LookConfig {
   ambient: LinearRgb;
   /** Presets bound by name: kit parts name one, prop nodes by their name's segments. */
   materials: Record<string, MaterialLook>;
+  /** Text styles by name (`SceneText.style`). */
+  text: Record<string, TextStyleLook>;
   /** `saturation` is AgX's look saturation: 1 is the base look, higher keeps glows coloured. */
   tonemap: { exposure: number; saturation: number };
   /** Flow pulses: world-space gap from one pulse to the next, and the lit share of that gap. */
@@ -222,8 +286,19 @@ export interface LookConfig {
   };
 }
 
+/** A text's screen box, CSS pixels. */
+export interface TextRect extends ScreenRect {
+  id: string;
+}
+
 export interface Renderer {
   frame(input: FrameInput): FrameReceipt;
+  /**
+   * The screen box (CSS pixels, through `camera`) of each text drawn last frame, with its
+   * `SceneText.id`, for labels to keep clear of and for crops; text drawing nothing is left
+   * out. `out` is refilled with boxes the renderer reuses (valid until the next frame).
+   */
+  textRects(camera: CameraMatrices, out: TextRect[]): TextRect[];
   /** Re-reads the canvas size and rebuilds the size-dependent targets. */
   resize(): void;
   /** Swaps in new look numbers (materials, room); the scene re-uploads on the next frame. */

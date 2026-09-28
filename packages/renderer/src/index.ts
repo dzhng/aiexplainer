@@ -51,6 +51,7 @@ export { sealedPaths, type SealedParams } from "./kit/sealed.ts";
 export type { FlowsParams } from "./kit/flows.ts";
 export { placeHand, type DialParams } from "./kit/dial.ts";
 export { placeSegment, UNIT_SEGMENT, type TubeParams } from "./kit/tube.ts";
+export { text, TEXT_LIFT, type TextParams } from "./kit/text.ts";
 export {
   lampCenter,
   panelSize,

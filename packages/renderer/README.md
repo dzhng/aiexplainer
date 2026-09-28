@@ -10,8 +10,8 @@ land here.
 ## Owners
 
 - **Frame orchestration.** `frame.ts` is the one frame function. It encodes every pass
-  in order: depth prepass, colour (backdrop, opaque, translucent), bloom, tonemap. A new
-  pass goes there, not beside it. `renderer.ts` updates each resource at its own
+  in order: depth prepass, colour (backdrop, opaque, translucent, text), bloom, tonemap.
+  A new pass goes there, not beside it. `renderer.ts` updates each resource at its own
   frequency and uploads only what changed.
 - **Resources.** Every buffer and texture comes from a scope of `registry.ts`. A
   size-dependent resource lives in a slot that is rebuilt and swapped in whole.
@@ -30,6 +30,17 @@ land here.
 - **Labels.** `labels.ts` places labels on the CPU. It projects anchors with the same
   `project` and hides them behind the scene's own shapes by casting rays, never by
   reading pixels back. Label text never reaches the renderer, only anchor ids.
+- **Text in the world.** Words that belong to a part are drawn on it, not over the page:
+  a `SceneText` names its part, a point in the part's space and a face, and is drawn in
+  perspective and hidden by whatever stands in front. `text/atlas.ts` owns every glyph: it
+  rasterises the page's own fonts with Canvas2D and stores each glyph once as a signed
+  distance field (`text/sdf.ts`) in one atlas texture. `text/layout.ts` lays text out, and
+  `kit/text.ts` owns how a face becomes directions in the world. The text pass
+  (`passes/text.ts`) draws instanced glyph quads after the translucent geometry. It reads
+  depth and never writes it, and turns distance into coverage one screen pixel wide.
+  Glyphs are laid out only when a text changes, and placements are packed every frame
+  without allocating. Label pins stay HTML: they annotate the scene, they are not part of
+  it.
 - **Props.** `gltf.ts` is a deliberately small GLB reader for the repo's own Blender
   props. Anything it does not support throws, so an asset never half-loads.
 
@@ -46,5 +57,7 @@ allocating. A scene that needs a new shape adds a primitive here with its own la
 ## Verification
 
 Pure CPU pieces are covered by bun tests: packing layouts, camera, labels, orbit, the
-registry, scene compilation and the kit. Rendered output is checked in a real browser on
-the hardware GPU by the app's harness ([apps/explainer](../../apps/explainer/README.md#verification)).
+registry, scene compilation, the kit, and text (layout, atlas packing, distance fields and
+placement). Rendered output is checked in a real browser on the hardware GPU by the app's
+harness ([apps/explainer](../../apps/explainer/README.md#verification)); `/lab/renderer?fixture=text`
+shows text on every kind of face, a billboard, and a post hiding a word.

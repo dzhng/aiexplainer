@@ -8,7 +8,7 @@ import { calibScene } from "./calib.ts";
 import { loadFixture } from "./fixtures.ts";
 import { kitScene } from "./kit.ts";
 import { installProbe } from "./probe.ts";
-import { measureBloom, sceneFixture } from "./perf.ts";
+import { measureToggle, sceneFixture, TOGGLES, type Toggle } from "./perf.ts";
 import { registryBaseline } from "./registry-baseline.ts";
 import { tokensScene } from "./tokens.ts";
 import { AdapterPage } from "./pages/AdapterPage.tsx";
@@ -108,7 +108,9 @@ switch (route) {
     const fixture = scene
       ? sceneFixture(scene, Number(params.get("t") ?? 0))
       : loadFixture(params.get("fixture") ?? "board-room");
-    measureBloom(canvas, probe, fixture)
+    const toggle = params.get("toggle") ?? "bloom";
+    if (!Object.hasOwn(TOGGLES, toggle)) throw new Error(`perf: no toggle "${toggle}"`);
+    measureToggle(canvas, probe, fixture, toggle as Toggle)
       .catch((error) => probe.errors.push(String(error)))
       .finally(markReady);
     break;

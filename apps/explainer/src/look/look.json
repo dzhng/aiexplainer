@@ -358,6 +358,34 @@
       }
     }
   },
+  "text": {
+    "chalk": {
+      "face": "ui",
+      "weight": 600,
+      "color": "ink",
+      "gain": 1.6,
+      "outline": { "color": "bgDeep", "width": 0.08 }
+    },
+    "ink": {
+      "face": "ui",
+      "weight": 600,
+      "color": "bgDeep",
+      "gain": 1
+    },
+    "muted": {
+      "face": "ui",
+      "weight": 600,
+      "color": "#8fb3c9",
+      "gain": 1.5
+    },
+    "sign": {
+      "face": "display",
+      "weight": 700,
+      "color": "#5ee6ff",
+      "gain": 1,
+      "glow": 1
+    }
+  },
   "bloom": {
     "threshold": 1.6,
     "knee": 0.6,

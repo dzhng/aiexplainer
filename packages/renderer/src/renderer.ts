@@ -1,8 +1,9 @@
 /**
  * `createRenderer`: owns the device, the registry and the resources, and updates each at its
  * own frequency — targets on resize, the scene (the environment room included) on `revision`
- * change, look numbers on `setLook`, and instances (part transforms), camera and dynamics
- * every frame. Drawing itself is `encodeFrame`.
+ * change, look numbers on `setLook`, glyphs when a text changes (the atlas once, growing as
+ * new characters appear), and instances (part transforms), text placements, camera and
+ * dynamics every frame. Drawing itself is `encodeFrame`.
  */
 import { d, type TgpuBuffer, type TgpuRoot, type TgpuSampler, type TgpuTextureView } from "typegpu";
 import type { AnyData } from "typegpu/data";
@@ -14,6 +15,7 @@ import {
   type FrameLook,
   type FrameScene,
   type FrameTargets,
+  type FrameText,
 } from "./frame.ts";
 import {
   Layer,
@@ -36,6 +38,9 @@ import {
   packFrame,
   packLook,
   packMaterial,
+  TEXT_GLYPH_BYTES,
+  TextGlyph,
+  TextItem,
   Vertex,
   VERTEX_BYTES,
 } from "./pack.ts";
@@ -47,15 +52,21 @@ import {
   describeBloomChain,
 } from "./passes/bloom.ts";
 import { createGeometryPipelines } from "./passes/geometry.ts";
+import { createTextPipeline, TextPacker, textLayout } from "./passes/text.ts";
 import { createTonemapPipeline, postLayout } from "./passes/tonemap.ts";
 import { DEPTH_FORMAT, frameLayout, HDR_FORMAT, SAMPLE_COUNT, sceneLayout } from "./pipeline.ts";
 import { Registry, type Scope } from "./registry.ts";
 import { compileScene, packInstances, type CompiledScene } from "./scene.ts";
+import { ATLAS_SIZE, GlyphAtlas, loadFonts } from "./text/atlas.ts";
 import { FrameTimer } from "./timing.ts";
+
+/** The smallest glyph buffer, glyphs; it doubles from here when the texts need more. */
+const MIN_GLYPHS = 256;
 
 interface SceneResources extends FrameScene {
   revision: number;
   compiled: CompiledScene;
+  text: TextPacker;
   instances: GPUBuffer;
   instanceF32: Float32Array<ArrayBuffer>;
   instanceU32: Uint32Array;
@@ -65,6 +76,14 @@ interface SceneResources extends FrameScene {
 
 interface LookResources extends FrameLook {
   look: LookConfig;
+}
+
+/** The scene's text buffers, sized for `capacity` glyphs; rebuilt with the scene or to grow. */
+interface TextResources extends FrameText {
+  packer: TextPacker;
+  capacity: number;
+  glyphBuffer: GPUBuffer;
+  itemBuffer: GPUBuffer;
 }
 
 function upload(root: TgpuRoot, buffer: TgpuBuffer<AnyData>, data: ArrayBufferView<ArrayBuffer>) {
@@ -153,7 +172,53 @@ function buildLook(
   return { scope, value };
 }
 
-function buildScene(root: TgpuRoot, registry: Registry, input: FrameInput, look: LookConfig) {
+/** Buffers for `packer`'s texts and room for `capacity` glyphs, with the glyphs uploaded. */
+function buildText(
+  root: TgpuRoot,
+  registry: Registry,
+  packer: TextPacker,
+  atlas: TgpuTextureView<d.WgslTexture2d<d.F32>>,
+  linear: TgpuSampler,
+) {
+  const scope = registry.scope();
+  let capacity = MIN_GLYPHS;
+  while (capacity < packer.glyphCount) capacity *= 2;
+  const glyphs = scope.buffer(d.arrayOf(TextGlyph, capacity)).$usage("storage");
+  const items = scope
+    .buffer(d.arrayOf(TextItem, Math.max(1, packer.items.length)))
+    .$usage("storage");
+  const value: TextResources = {
+    packer,
+    capacity,
+    glyphs: packer.glyphCount,
+    glyphBuffer: root.unwrap(glyphs),
+    itemBuffer: root.unwrap(items),
+    bindGroup: root.unwrap(root.createBindGroup(textLayout, { glyphs, items, atlas, linear })),
+  };
+  uploadGlyphs(root.device, value);
+  return { scope, value };
+}
+
+function uploadGlyphs(device: GPUDevice, text: TextResources): void {
+  const { packer } = text;
+  text.glyphs = packer.glyphCount;
+  if (packer.glyphCount > 0)
+    device.queue.writeBuffer(
+      text.glyphBuffer,
+      0,
+      packer.glyphData,
+      0,
+      (packer.glyphCount * TEXT_GLYPH_BYTES) / 4,
+    );
+}
+
+function buildScene(
+  root: TgpuRoot,
+  registry: Registry,
+  input: FrameInput,
+  look: LookConfig,
+  atlas: GlyphAtlas,
+) {
   const compiled = compileScene(input.scene, look);
   const scope = registry.scope();
   const { vertexBuffer, indexBuffer } = uploadGeometry(
@@ -184,6 +249,7 @@ function buildScene(root: TgpuRoot, registry: Registry, input: FrameInput, look:
   const value: SceneResources = {
     revision: input.scene.revision,
     compiled,
+    text: new TextPacker(input.scene, look, atlas),
     bindGroup: root.unwrap(bindGroup),
     indexBuffer: root.unwrap(indexBuffer),
     draws: compiled.draws,
@@ -221,13 +287,15 @@ async function buildRenderer(
 ): Promise<Renderer> {
   const { root, device, caps } = gpu;
   const context = root.configureContext({ canvas, format: caps.canvasFormat, alphaMode: "opaque" });
-  const [geometry, background, bloom, tonemap] = await Promise.all([
+  const [geometry, background, bloom, tonemap, text] = await Promise.all([
     createGeometryPipelines(root),
     createBackgroundPipeline(root),
     createBloomPipelines(root),
     createTonemapPipeline(root, caps.canvasFormat),
+    createTextPipeline(root),
+    loadFonts(Object.values(initialLook.text)),
   ]);
-  const pipelines = { geometry, background, bloom, tonemap };
+  const pipelines = { geometry, background, bloom, tonemap, text };
   const linear = root.createSampler({
     magFilter: "linear",
     minFilter: "linear",
@@ -241,10 +309,14 @@ async function buildRenderer(
   const timer = options.timing && caps.timestampQuery ? new FrameTimer(device, fixed) : undefined;
   const frameData = new Float32Array(FRAME_UNIFORM_BYTES / 4);
   const gpuFrameUniform = root.unwrap(frameUniform);
+  const atlasTexture = fixed.texture({ size: ATLAS_SIZE, format: "r8unorm" }).$usage("sampled");
+  const atlas = new GlyphAtlas(device, root.unwrap(atlasTexture));
+  const atlasView = atlasTexture.createView(d.texture2d(d.f32));
 
   const targets = registry.slot<FrameTargets>();
   const lookSlot = registry.slot<LookResources>();
   const scene = registry.slot<SceneResources>();
+  const textSlot = registry.slot<TextResources>();
   const camera = createCameraMatrices();
   const receipt: FrameReceipt = {
     drawCalls: 0,
@@ -284,10 +356,18 @@ async function buildRenderer(
       const look = lookSlot.value!;
       let s = scene.value;
       if (!s || s.revision !== input.scene.revision) {
-        const built = buildScene(root, registry, input, look.look);
+        const built = buildScene(root, registry, input, look.look, atlas);
         scene.swap(built.scope, built.value);
         s = built.value;
       }
+      // Glyphs are laid out when a text changes; buffers follow the scene, or grow to fit.
+      const glyphsChanged = s.text.layout();
+      let text = textSlot.value;
+      if (!text || text.packer !== s.text || s.text.glyphCount > text.capacity) {
+        const built = buildText(root, registry, s.text, atlasView, linear);
+        textSlot.swap(built.scope, built.value);
+        text = built.value;
+      } else if (glyphsChanged) uploadGlyphs(device, text);
       // Part transforms are per-frame data (bars grow, cards slide); repacking is allocation-free.
       packInstances(s.compiled, s.instanceF32, s.instanceU32);
       device.queue.writeBuffer(s.instances, 0, s.instanceF32);
@@ -316,12 +396,23 @@ async function buildRenderer(
         flows,
       );
       device.queue.writeBuffer(gpuFrameUniform, 0, frameData);
+      s.text.place(camera);
+      device.queue.writeBuffer(text.itemBuffer, 0, s.text.itemData);
 
       const swapchain = context.getCurrentTexture().createView();
-      encodeFrame(device, swapchain, pipelines, t, s, look, bloomOn, receipt, timer);
+      const drawnText = layers & Layer.text ? text : null;
+      encodeFrame(device, swapchain, pipelines, t, s, drawnText, look, bloomOn, receipt, timer);
       receipt.gpuMs = timer?.lastMs ?? null;
       registry.stats(receipt.registry);
       return receipt;
+    },
+    textRects(camera, out) {
+      const s = scene.value;
+      if (!s || registry.disposed) {
+        out.length = 0;
+        return out;
+      }
+      return s.text.rects(camera, out);
     },
     resize,
     setLook,

@@ -1,12 +1,13 @@
 /**
  * `/lab/perf?fixture=board-room`, or `/lab/perf?scene=<slug>&t=<loop time>` for a chapter's
  * scene on its fixture run (the camera at its shot, or its tour's pose): whole-frame GPU time
- * with bloom on vs off, interleaved in short alternating blocks on one renderer so machine load
- * hits both equally. Readback lags a few frames, so each block's first frames are dropped.
- * Results go to `probe.results`, which `verify.ts` prints; judging them against the budget is
- * the reader's call.
+ * with a feature on vs off (`&toggle=bloom`, the default, or `&toggle=text` for the written
+ * text), interleaved in short alternating blocks on one renderer so machine load hits both
+ * equally. Readback lags a few frames, so each block's first frames are dropped. Results go
+ * to `probe.results`, which `verify.ts` prints; judging them against the budget is the
+ * reader's call.
  */
-import { createRenderer, type FrameInput, type SceneDesc } from "@repo/renderer";
+import { createRenderer, Layer, type FrameInput, type SceneDesc } from "@repo/renderer";
 import { CHAPTERS } from "../chapters/index.ts";
 import type { ChapterSlug } from "../chapters/ladder.ts";
 import { createTimelineState, evalTimeline } from "../chapters/timeline.ts";
@@ -51,10 +52,18 @@ function median(values: number[]): number {
   return sorted[Math.floor(sorted.length / 2)] ?? Number.NaN;
 }
 
-export async function measureBloom(
+/** The features `/lab/perf` can toggle, and the debug settings for each state. */
+export const TOGGLES = {
+  bloom: (on: boolean): FrameInput["debug"] => ({ bloom: on }),
+  text: (on: boolean): FrameInput["debug"] => ({ layers: on ? ~0 : ~Layer.text }),
+};
+export type Toggle = keyof typeof TOGGLES;
+
+export async function measureToggle(
   canvas: HTMLCanvasElement,
   probe: ProbeApi,
   scene: Promise<LabScene>,
+  toggle: Toggle,
 ) {
   const { look, input } = await scene;
   const renderer = await createRenderer(canvas, look, { timing: true });
@@ -63,15 +72,14 @@ export async function measureBloom(
     ...input,
     timeSec: 0,
     viewport: { width: canvas.clientWidth, height: canvas.clientHeight },
-    debug: { bloom: true },
   };
   const samples: Record<"on" | "off", number[]> = { on: [], off: [] };
   for (let block = 0; block < BLOCKS; block++) {
-    const bloom = block % 2 === 0;
-    frame.debug = { bloom };
+    const on = block % 2 === 0;
+    frame.debug = TOGGLES[toggle](on);
     for (let i = 0; i < FRAMES_PER_BLOCK; i++) {
       const { gpuMs } = renderer.frame(frame);
-      if (i >= SETTLE_FRAMES && gpuMs !== null) samples[bloom ? "on" : "off"].push(gpuMs);
+      if (i >= SETTLE_FRAMES && gpuMs !== null) samples[on ? "on" : "off"].push(gpuMs);
       await nextFrame();
     }
   }
@@ -80,7 +88,8 @@ export async function measureBloom(
   const off = median(samples.off);
   probe.results = {
     size: [canvas.width, canvas.height],
-    medianMs: { bloomOn: on, bloomOff: off, delta: on - off },
+    toggle,
+    medianMs: { on, off, delta: on - off },
     samples: { on: samples.on.length, off: samples.off.length },
   };
   if (!(samples.on.length && samples.off.length))

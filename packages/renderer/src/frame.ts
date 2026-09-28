@@ -2,7 +2,7 @@
  * The one frame function. Every pass is encoded here, in this order:
  *   1. depth prepass: opaque geometry, no fragment stage;
  *   2. colour pass into 4× MSAA rgba16float — backdrop, opaque
- *      (depth `equal`), then translucent (depth read-only); the pass end resolves into
+ *      (depth `equal`), then translucent, then text (both depth read-only); the pass end resolves into
  *      the HDR target;
  *   3. bloom: prefilter, downsample and upsample through the mip chain (skippable);
  *   4. tonemap from the resolved HDR target plus bloom to the swapchain.
@@ -20,6 +20,7 @@ export interface FramePipelines {
   background: GPURenderPipeline;
   bloom: BloomPipelines;
   tonemap: GPURenderPipeline;
+  text: GPURenderPipeline;
 }
 
 /** Size-dependent targets and the pass descriptors that point at them. */
@@ -37,6 +38,12 @@ export interface FrameScene {
   bindGroup: GPUBindGroup;
   indexBuffer: GPUBuffer;
   draws: Draw[];
+}
+
+/** The scene's text: its bind group (glyphs, placed texts, atlas) and how many glyphs to draw. */
+export interface FrameText {
+  bindGroup: GPUBindGroup;
+  glyphs: number;
 }
 
 /** Look-dependent bindings: group 0 (camera + look). */
@@ -76,6 +83,7 @@ export function encodeFrame(
   pipelines: FramePipelines,
   targets: FrameTargets,
   scene: FrameScene,
+  text: FrameText | null,
   look: FrameLook,
   bloom: boolean,
   receipt: FrameReceipt,
@@ -103,6 +111,13 @@ export function encodeFrame(
   drawGeometry(colour, scene.draws, false, receipt);
   colour.setPipeline(pipelines.geometry.translucent);
   drawGeometry(colour, scene.draws, true, receipt);
+  if (text && text.glyphs > 0) {
+    colour.setPipeline(pipelines.text);
+    colour.setBindGroup(1, text.bindGroup);
+    colour.draw(6, text.glyphs);
+    receipt.drawCalls += 1;
+    receipt.triangles += 2 * text.glyphs;
+  }
   colour.end();
 
   if (bloom) {

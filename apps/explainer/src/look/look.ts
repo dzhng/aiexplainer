@@ -4,7 +4,7 @@
  * the renderer only ever sees them converted to linear. Every number is checked here, where
  * it is loaded.
  */
-import type { LightLook, LinearRgb, LookConfig, MaterialLook } from "@repo/renderer";
+import type { LightLook, LinearRgb, LookConfig, MaterialLook, TextStyleLook } from "@repo/renderer";
 import raw from "./look.json";
 
 export type PaletteToken = keyof typeof raw.palette;
@@ -25,6 +25,20 @@ export interface MaterialToken {
   specular?: number;
   /** Shows only moving flow pulses (`flow`), in its emissive colour; needs opacity < 1. */
   pulses?: boolean;
+}
+
+/**
+ * A scene text style: a HUD type face and weight, and the letters' colour × `gain` as their
+ * radiance. `glow` adds that colour × `glow` as emission (bloom picks it up); `outline` rims
+ * each letter, `width` em wide.
+ */
+export interface TextToken {
+  face: "ui" | "display" | "mono";
+  weight: number;
+  color: ColourValue;
+  gain: number;
+  glow?: number;
+  outline?: { color: ColourValue; width: number };
 }
 
 interface LightToken {
@@ -70,6 +84,8 @@ export interface LookTokens {
     /** Renderer material presets, bound by name (meshes by node name). */
     presets: Record<string, MaterialToken>;
   };
+  /** Scene text styles, by the name a `SceneText` uses. */
+  text: Record<string, TextToken>;
   /** Bloom knobs (Jimenez 2014 / LearnOpenGL physically based bloom). */
   bloom: { threshold: number; knee: number; intensity: number; radius: number };
   /**
@@ -240,6 +256,23 @@ function roomMaterials(room: LookTokens["room"]): Record<string, MaterialLook> {
   return materials;
 }
 
+function textStyle(name: string, t: TextToken): TextStyleLook {
+  const scale = (c: Rgb, k: number) => c.map((v) => v * k) as Rgb;
+  const base = colour(t.color);
+  const width = t.outline?.width ?? 0;
+  if (!(width >= 0 && width <= 0.2))
+    throw new Error(`look: text.${name}.outline.width ${width} is not in [0, 0.2] em`);
+  if (!(t.weight >= 100 && t.weight <= 900))
+    throw new Error(`look: text.${name}.weight ${t.weight} is not a font weight`);
+  return {
+    family: look.type[t.face],
+    weight: t.weight,
+    color: scale(base, positive(`text.${name}.gain`, t.gain)),
+    emissive: t.glow === undefined ? [0, 0, 0] : scale(base, positive(`text.${name}.glow`, t.glow)),
+    outline: { color: t.outline ? colour(t.outline.color) : [0, 0, 0], width },
+  };
+}
+
 function light(name: string, l: LightToken): LightLook {
   const [x = 0, y = 0, z = 0] = l.direction;
   const length = Math.hypot(x, y, z);
@@ -296,6 +329,9 @@ export function lookConfig(extraMaterials: Record<string, MaterialToken> = {}): 
     },
     ambient: colour(ambient.color).map((c) => c * ambient.intensity) as LinearRgb,
     materials,
+    text: Object.fromEntries(
+      Object.entries(look.text).map(([name, t]) => [name, textStyle(name, t)]),
+    ),
     tonemap: {
       exposure: positive("tonemap.exposure", tonemap.exposure),
       saturation: positive("tonemap.saturation", tonemap.saturation),

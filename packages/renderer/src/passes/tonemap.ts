@@ -79,8 +79,10 @@ fn fs(@builtin(position) position: vec4f) -> @location(0) vec4f {
   let viewport = frameLayout.$.frame.viewport;
   let uv = position.xy * viewport.zw;
   let bloom = textureSampleLevel(postLayout.$.bloom, postLayout.$.linear, uv, 0.0).rgb;
-  let hdr = textureLoad(postLayout.$.hdr, vec2i(position.xy), 0).rgb
-    + bloom * look.bloomIntensity * frameLayout.$.frame.debug.y;
+  // The scene's alpha is 1 − written text's coverage: glare from nearby glows never covers
+  // the letters (their own light still blooms around them).
+  let scene = textureLoad(postLayout.$.hdr, vec2i(position.xy), 0);
+  let hdr = scene.rgb + bloom * look.bloomIntensity * frameLayout.$.frame.debug.y * scene.a;
   // 0 at the centre, 1 at the corners.
   let r = length(uv * 2.0 - 1.0) * 0.70710678;
   let vignette = 1.0 - look.vignetteStrength * smoothstep(look.vignetteRadius, 1.0, r);

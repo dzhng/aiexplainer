@@ -1,9 +1,10 @@
 /**
  * `/lab/registry`: the browser registry-baseline test. Count and bytes must return to the
- * baseline after 10 resizes, a look (pipeline-resource) rebuild and 3 scene resets, and to
- * zero after dispose. Failures land in `probe.errors`, which fails the harness.
+ * baseline after 10 resizes, a look (pipeline-resource) rebuild, a text that outgrows the glyph
+ * buffer and 3 scene resets, and to zero after dispose. Failures land in `probe.errors`, which
+ * fails the harness.
  */
-import { createRenderer, type FrameInput, type RegistryStats } from "@repo/renderer";
+import { createRenderer, text, type FrameInput, type RegistryStats } from "@repo/renderer";
 import { d, tgpu } from "typegpu";
 import { loadFixture } from "./fixtures.ts";
 import type { ProbeApi } from "./probe.ts";
@@ -36,8 +37,18 @@ export async function registryBaseline(canvas: HTMLCanvasElement, probe: ProbeAp
   const { look, input } = await loadFixture("board-room");
   const renderer = await createRenderer(canvas, look);
   if ("unsupported" in renderer) throw new Error(renderer.unsupported);
+  // A word on the board, so the text buffers are part of the baseline.
+  const word = text({
+    id: "word",
+    part: "board",
+    local: [0, 2.06, 0.1],
+    size: 0.1,
+    style: "chalk",
+    text: "baseline",
+  });
   const frameInput: FrameInput = {
     ...input,
+    scene: { ...input.scene, text: [word] },
     timeSec: 0,
     viewport: { width: 800, height: 500 },
   };
@@ -57,6 +68,12 @@ export async function registryBaseline(canvas: HTMLCanvasElement, probe: ProbeAp
   setSize(800, 500);
   renderer.setLook(look);
   stats();
+  // A text too long for the glyph buffer grows it; the next scene reset sizes it back down.
+  word.text = "x".repeat(2000);
+  const grown = stats();
+  if (!(grown.bytes > baseline.bytes))
+    probe.errors.push(`a 2000-glyph text did not grow the glyph buffer: ${JSON.stringify(grown)}`);
+  word.text = "baseline";
   for (let i = 0; i < 3; i++) {
     frameInput.scene = { ...frameInput.scene, revision: frameInput.scene.revision + 1 };
     stats();

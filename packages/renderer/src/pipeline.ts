@@ -42,6 +42,16 @@ export const PREMULTIPLIED_BLEND: GPUBlendState = {
   alpha: { srcFactor: "one", dstFactor: "one-minus-src-alpha", operation: "add" },
 };
 
+/**
+ * Written text: premultiplied colour, and the HDR target's alpha (1 wherever the scene is
+ * drawn: every earlier blend keeps it there) left at 1 − the letters' coverage, so the
+ * tonemap can keep bloom off the letters.
+ */
+export const TEXT_BLEND: GPUBlendState = {
+  color: PREMULTIPLIED_BLEND.color,
+  alpha: { srcFactor: "zero", dstFactor: "one-minus-src-alpha", operation: "add" },
+};
+
 export interface PipelineSpec {
   label: string;
   /** Layouts in group-index order. */
