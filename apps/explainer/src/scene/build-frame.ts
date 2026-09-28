@@ -11,6 +11,7 @@ import type { TimelineState } from "../chapters/timeline.ts";
 import type { SceneTags } from "../hud/SceneTags.tsx";
 import { autocomplete } from "./builders/autocomplete.ts";
 import { embeddings } from "./builders/embeddings.ts";
+import { sampling } from "./builders/sampling.ts";
 import { tokenizer } from "./builders/tokenizer.ts";
 import { withEnvironment } from "./environment.ts";
 
@@ -52,6 +53,21 @@ export type SceneRun =
         pins: { id: number; text: string; bytes: number; at: [number, number, number] }[];
         cosine: number | null;
       }[];
+    }
+  | {
+      kind: "logits";
+      /**
+       * One step per loop input (or one for typed text): the prompt, its last token (the only
+       * one this model reads), the forward pass's next-token scores over the whole vocabulary,
+       * their mean, and the highest-scoring tokens in order.
+       */
+      steps: {
+        text: string;
+        last: string;
+        logits: number[];
+        meanLogit: number;
+        top: { id: number; text: string; logit: number }[];
+      }[];
     };
 
 export interface SceneBuilder {
@@ -73,6 +89,7 @@ export const SCENE_BUILDERS: Record<SceneBuilderId, SceneBuilder> = {
   autocomplete,
   tokenizer,
   embeddings,
+  sampling,
 };
 
 /** What one frame of a chapter's scene is: the renderer's input and the overlay's text. */

@@ -7,6 +7,7 @@ import { blockGeometry } from "../src/kit/block.ts";
 import { placeBrick } from "../src/kit/brick.ts";
 import { KIT, KIT_ENTRIES } from "../src/kit/catalog.ts";
 import { shadowGeometry } from "../src/kit/contact-shadow.ts";
+import { faceAt } from "../src/kit/die.ts";
 import { PIN_PARTS, placePin } from "../src/kit/pins.ts";
 import type { Geometry } from "../src/kit/geometry.ts";
 import { tubeGeometry } from "../src/kit/tube.ts";
@@ -198,4 +199,32 @@ test("pins: each arrow runs from the origin exactly to its head, at its own thin
   expect(half[0]!).toBeCloseTo((origin[0] + head[0]) / 2, 6);
   placePin(built.parts, 0, null, 0, origin, 1);
   expect(built.parts[0]!.transform[13]!).toBeLessThan(-10);
+});
+
+test("die: each face spans its share of the rim, and the face read is the one there", () => {
+  const shares = [0.5, 0.3, 0.2];
+  const built = KIT.die.build({
+    id: "d",
+    slot: 0,
+    center: [0, 1, 0],
+    radius: 0.3,
+    length: 0.5,
+    thickness: 0.04,
+    materials: ["a", "b", "c"],
+    staves: 6,
+    coreMaterial: "core",
+    shares,
+  });
+  // Stave k of face f sits at the middle of its step around the rim, from +y towards +z.
+  const centre = (f: number, k: number) => {
+    const t = built.parts[f * 6 + k]!.transform;
+    return Math.atan2(t[14]!, t[13]! - 1);
+  };
+  expect(centre(0, 0)).toBeCloseTo((0.5 * Math.PI * 2 * 0.5) / 6, 6);
+  // atan2 wraps past π: compare on the circle.
+  expect(Math.cos(centre(1, 0))).toBeCloseTo(Math.cos(Math.PI * 2 * (0.5 + 0.3 / 12)), 6);
+  // Reading straight up with face 0 starting there reads face 0; a quarter turn back, face 1.
+  expect(faceAt(shares, 0)).toBe(0);
+  expect(faceAt(shares, -Math.PI * 2 * 0.6)).toBe(1);
+  expect(faceAt(shares, 0, Math.PI * 2 * 0.9)).toBe(2);
 });

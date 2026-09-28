@@ -7,6 +7,7 @@
  */
 import {
   countsModel,
+  promptTokens,
   transformerModel,
   type LoadedModel,
   type ModelSource,
@@ -14,6 +15,7 @@ import {
 } from "@repo/llm";
 import type { ChapterDef } from "../chapters/types.ts";
 import type { SceneRun } from "../scene/build-frame.ts";
+import { SCORE_BARS } from "../scene/builders/sampling.ts";
 import { MAX_PINNED_INPUT, projectRow } from "../scene/embed-map.ts";
 import type { Session } from "./session.ts";
 
@@ -21,7 +23,7 @@ export interface RunContext {
   /** The chapter's model on the main thread (the same one the HUD's stats read). */
   model: ModelSource;
   /** The inference worker, holding the chapter's model. Requests run one after another. */
-  session: Pick<Session, "nextWords">;
+  session: Pick<Session, "nextWords" | "run">;
 }
 
 /** Each counts model's word rule, decoded once (the vocabulary is thousands of words). */
@@ -88,7 +90,36 @@ export async function computeRun(
       });
       return { kind: "pins", steps };
     }
+    case "sampling": {
+      // The forward pass runs in the worker: next-token scores after each prompt's last token.
+      if (!("manifest" in model) || !model.tokenizer) throw new Error("sampling needs `embed`");
+      const { tokenizer } = model;
+      const steps: Extract<SceneRun, { kind: "logits" }>["steps"] = [];
+      for (const input of inputsOf(def, text)) {
+        const tokens = promptTokens(tokenizer, input);
+        const { logits } = await ctx.session.run(tokens);
+        steps.push({
+          text: input,
+          last: tokenizer.decode([tokens.at(-1)!]),
+          logits: Array.from(logits),
+          meanLogit: logits.reduce((sum, l) => sum + l, 0) / logits.length,
+          top: topScores(logits, SCORE_BARS).map((id) => ({
+            id,
+            text: tokenizer.decode([id]),
+            logit: logits[id]!,
+          })),
+        });
+      }
+      return { kind: "logits", steps };
+    }
   }
+}
+
+/** The ids of the `k` highest scores, highest first. */
+function topScores(logits: ArrayLike<number>, k: number): number[] {
+  return Array.from({ length: logits.length }, (_, i) => i)
+    .sort((a, b) => logits[b]! - logits[a]!)
+    .slice(0, k);
 }
 
 /** Each loaded transformer's weights as f32, decoded once. */

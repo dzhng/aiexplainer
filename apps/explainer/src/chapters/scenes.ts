@@ -10,6 +10,8 @@ export const SCENE_ANCHORS = {
   tokenizer: ["bricks", "ids", "box", "text"],
   /** Chapter 2: the map, a word's pin, the arrows, the origin, and your text's pin. */
   embeddings: ["map", "pins", "arrows", "origin", "text"],
+  /** Chapter 3: the die, the score strip, and the word on the card. */
+  sampling: ["die", "scores", "word"],
 } as const satisfies Record<string, readonly string[]>;
 
 /**
@@ -20,6 +22,7 @@ export const SCENE_KIT: Record<keyof typeof SCENE_ANCHORS, readonly string[]> = 
   autocomplete: ["mesh", "bars", "block", "contactShadow"],
   tokenizer: ["block", "brick", "contactShadow"],
   embeddings: ["block", "pins", "brick", "contactShadow"],
+  sampling: ["block", "bars", "die", "contactShadow"],
 };
 
 export type SceneBuilderId = keyof typeof SCENE_ANCHORS;
