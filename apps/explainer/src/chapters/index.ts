@@ -6,6 +6,7 @@ import { autocomplete } from "./data/autocomplete.ts";
 import { embeddings } from "./data/embeddings.ts";
 import { tokenizer } from "./data/tokenizer.ts";
 import { mlp } from "./data/mlp.ts";
+import { generation } from "./data/generation.ts";
 import { residual } from "./data/residual.ts";
 import { stack } from "./data/stack.ts";
 import type { ChapterSlug } from "./ladder.ts";
@@ -19,6 +20,7 @@ export const CHAPTERS: Partial<Record<ChapterSlug, ChapterDef>> = {
   mlp,
   residual,
   stack,
+  generation,
 };
 
 for (const [slug, def] of Object.entries(CHAPTERS)) {
