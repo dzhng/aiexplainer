@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import {
   evalArith,
+  parameterCounts,
   probeResult,
   promptTokens,
   seededRng,
@@ -8,7 +9,7 @@ import {
   transformerModel,
 } from "@repo/llm";
 import { shippedContext, shippedModel } from "../scripts/shipped.ts";
-import { SPEC_RUN, speculative } from "../src/chapters/data/speculative.ts";
+import { DRAFT_COST, SPEC_RUN, speculative } from "../src/chapters/data/speculative.ts";
 import { resolveStat, statSource } from "../src/chapters/stats.ts";
 import { validateChapter } from "../src/chapters/validate.ts";
 import { computeRun } from "../src/runtime/scene-run.ts";
@@ -43,23 +44,32 @@ describe("chapter 13's numbers equal their sources", () => {
         direct.rounds.map((r) => ({
           drafted: r.drafted.map(word),
           accepted: r.accepted,
-          next: word(r.next),
+          next: r.next === null ? null : word(r.next),
         })),
       );
     }
     expect(run.byK.map((r) => r.k)).toEqual([1, 2, 3, 4, 5, 6, 7, 8]);
   });
 
-  test("the chips: held-out α and speedup probes, and Leviathan's expected words at the slider's k", () => {
-    const [alpha, perCheck, speedup] = speculative.stats;
+  test("the chips: held-out α, and Leviathan's expected words at the slider's k", () => {
+    const [alpha, perCheck] = speculative.stats;
     expect(resolveStat(alpha, drafter)).toBe(probe("draft-acceptance-heldout"));
-    expect(resolveStat(speedup, drafter)).toBe(probe("draft-speedup-heldout"));
     for (let k = 1; k <= 8; k++)
       expect(resolveStat(perCheck, drafter, k)).toBe(
         evalArith("specExpectedTokens", { alpha: probe("draft-acceptance-heldout"), k }),
       );
     expect(statSource(perCheck, drafter)).toContain("drafter-64");
     expect(validateChapter(speculative)).toEqual([]);
+  });
+
+  test("the speedup chip follows the slider's k, and at k = 4 it is the drafter probe's speedup", () => {
+    const speedup = speculative.stats.find((s) => s.id === "speedup")!;
+    // The cost ratio is the models' weight ratio, as the probe computes it.
+    expect(DRAFT_COST).toBe(parameterCounts(drafter).total / parameterCounts(full).total);
+    expect(resolveStat(speedup, drafter, 4)).toBeCloseTo(probe("draft-speedup-heldout"), 12);
+    const byK = [1, 2, 4, 8].map((k) => resolveStat(speedup, drafter, k));
+    expect(new Set(byK).size).toBe(byK.length);
+    expect(statSource(speedup, drafter)).toContain("k from the slider");
   });
 
   test("the loop's three rounds show a bonus, a mid-draft correction and an early rejection", () => {
@@ -87,6 +97,12 @@ describe("chapter 13's scene", () => {
     expect(verdict[4]).toBe("added");
   });
 
+  test("a round whose kept guesses end the story shows no senior's word", () => {
+    const ended = { drafted: [" the", " end", "<eos>"], accepted: 3, next: null };
+    expect(roundView(ended, 1.25).states).toEqual(["accepted", "accepted", "accepted", "hidden"]);
+    expect(storyAfter([ended], 1)).toBe(" the end<eos>");
+  });
+
   test("the story is each round's kept guesses, then the senior's word", () => {
     expect(storyAfter(k4.rounds, 1)).toBe(k4.rounds[0]!.drafted.join("") + k4.rounds[0]!.next);
     const { frame } = frameAt(speculative, run, 10);
@@ -96,7 +112,7 @@ describe("chapter 13's scene", () => {
   test("the slider's k picks that run's rounds", () => {
     const { frame } = frameAt(speculative, run, 10, { slider: 2, sliderSet: true });
     const k2 = run.byK.find((r) => r.k === 2)!.rounds[0]!;
-    expect(frame.tags.text.slice(0, 3)).toEqual([...k2.drafted, k2.next]);
+    expect(frame.tags.text.slice(0, 3)).toEqual([...k2.drafted, k2.next!]);
   });
 
   test("the point lands by 10 s and the last beat is the failure", () => {

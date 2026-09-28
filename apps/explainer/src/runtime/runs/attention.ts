@@ -60,14 +60,17 @@ export async function attentionStep(
   let guess: AttentionStep["guess"] | undefined;
   let probs: Float64Array | undefined;
   for (let k = 0; k < FUTURE_WORDS; k++) {
-    const { logits } = await session.run(ids);
+    const { logits } = await session.run(ids, { model: model.manifest.id });
     const next = argmax(logits);
     probs ??= probabilities(logits, 1);
     guess ??= { token: tokenizer.decode([next]), p: probs[next]! };
     ids.push(next);
   }
   // Every token traced: the focus row's weights, and the vectors before and after attention.
-  const { trace } = await session.run(ids, { trace: { heads: [0], layers: [0] } });
+  const { trace } = await session.run(ids, {
+    model: model.manifest.id,
+    trace: { heads: [0], layers: [0] },
+  });
   const attn = trace?.layers[0]?.attn;
   if (!attn) throw new Error("the attention trace is missing");
   const keys = attn.weights.shape[2]!;

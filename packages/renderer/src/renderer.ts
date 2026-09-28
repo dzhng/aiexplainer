@@ -7,7 +7,7 @@
 import { d, type TgpuBuffer, type TgpuRoot, type TgpuSampler, type TgpuTextureView } from "typegpu";
 import type { AnyData } from "typegpu/data";
 import { cameraMatrices, createCameraMatrices } from "./camera.ts";
-import { initGpu } from "./device.ts";
+import { withGpu, type Gpu } from "./device.ts";
 import {
   describePasses,
   encodeFrame,
@@ -201,13 +201,24 @@ export interface RendererOptions {
   timing?: boolean;
 }
 
-export async function createRenderer(
+/**
+ * The renderer on its own GPU device, or why there is none (no adapter, a refused device, or
+ * a setup failure, after which the device is released): the caller shows the fallback.
+ */
+export function createRenderer(
   canvas: HTMLCanvasElement,
   initialLook: LookConfig,
   options: RendererOptions = {},
 ): Promise<Renderer | { unsupported: string }> {
-  const gpu = await initGpu();
-  if ("unsupported" in gpu) return gpu;
+  return withGpu((gpu) => buildRenderer(gpu, canvas, initialLook, options));
+}
+
+async function buildRenderer(
+  gpu: Gpu,
+  canvas: HTMLCanvasElement,
+  initialLook: LookConfig,
+  options: RendererOptions,
+): Promise<Renderer> {
   const { root, device, caps } = gpu;
   const context = root.configureContext({ canvas, format: caps.canvasFormat, alphaMode: "opaque" });
   const [geometry, background, bloom, tonemap] = await Promise.all([

@@ -24,17 +24,19 @@ import { residualRun } from "./runs/residual.ts";
 import { samplingRun } from "./runs/sampling.ts";
 import { stackRun } from "./runs/stack.ts";
 import { tokenizerRun } from "./runs/tokenizer.ts";
-import type { Session } from "./session.ts";
+import type { RunSession } from "./session.ts";
 
 /** What a run may ask of the chapter's model and the inference session. */
 export interface RunContext {
   /** The chapter's model on the main thread (the same one the HUD's stats read). */
   model: ModelSource;
   /**
-   * The inference worker, holding the chapter's model (and any other a run loads and names).
-   * Requests run one after another: the session cancels a live request when a new one starts.
+   * The inference worker, holding the chapter's model (and any other a run loads). Every
+   * request names its model. Requests run one after another: the session cancels a live
+   * request when a new one starts, and the app scopes each run (`sessionScope`), so a
+   * superseded run stops at its next request.
    */
-  session: Pick<Session, "load" | "run" | "generate" | "nextWords" | "weights" | "speculate">;
+  session: RunSession;
   /**
    * Any shipped model on the main thread, loaded once and kept (a run that shows other
    * chapters' output, the finished machine's, needs their models too).

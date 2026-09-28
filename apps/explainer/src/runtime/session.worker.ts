@@ -1,20 +1,19 @@
 // The inference worker (D38): answers requests in order with `createInference`. Its only
 // client is session.ts, which owns cancellation and drops stale replies.
 import type { ForwardTrace } from "@repo/llm";
-import { createInference } from "./inference.ts";
+import { createInference, stopFlags } from "./inference.ts";
 import type { WorkerReply, WorkerRequest } from "./session.ts";
 
 declare const self: Worker;
 
 const inference = createInference();
-/** Generations told to stop (by request id); checked between tokens. */
-const cancelled = new Set<number>();
+const stops = stopFlags();
 /** A macrotask break, so a `cancel` message can arrive between tokens. */
 const breather = () => new Promise<void>((resolve) => setTimeout(resolve, 0));
 
 self.onmessage = async ({ data }: MessageEvent<WorkerRequest>) => {
   if (data.type === "cancel") {
-    cancelled.add(data.target);
+    stops.stop(data.target);
     return;
   }
   try {
@@ -36,21 +35,21 @@ async function handle(
       const result = inference.run(request.tokens, request.options);
       return [result, [result.logits.buffer, ...traceBuffers(result.trace)]];
     }
-    case "generate": {
-      const steps = await inference.generate(request.tokens, request.options, breather, () =>
-        cancelled.has(request.id),
-      );
-      cancelled.delete(request.id);
-      return [steps, []];
-    }
+    case "generate":
+      return [
+        await stops.during(request.id, (stopped) =>
+          inference.generate(request.tokens, request.options, breather, stopped),
+        ),
+        [],
+      ];
     case "neighbours":
-      return [inference.neighbours(request.token, request.k), []];
+      return [inference.neighbours(request.model, request.token, request.k), []];
     case "speculate":
       return [inference.speculate(request.tokens, request.options), []];
     case "weights":
       return [inference.weights(request.tensor, request.start, request.count, request.model), []];
     case "nextWords":
-      return [inference.nextWords(request.word, request.k), []];
+      return [inference.nextWords(request.model, request.word, request.k), []];
   }
 }
 

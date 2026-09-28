@@ -131,9 +131,10 @@ export interface SpeculativeRun {
   prompt: string;
   /**
    * The seeded rounds for each k the slider offers: the drafter's guessed words, how many the
-   * target kept from the front, and the target's own word (a correction, or a bonus).
+   * target kept from the front, and the target's own word (a correction, or a bonus; `null`
+   * when a kept `<eos>` ended the story).
    */
-  byK: { k: number; rounds: { drafted: string[]; accepted: number; next: string }[] }[];
+  byK: { k: number; rounds: { drafted: string[]; accepted: number; next: string | null }[] }[];
 }
 
 /** Chapter 12's run (`runtime/runs/quantization.ts`). */

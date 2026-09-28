@@ -30,7 +30,7 @@ export const speculativeRun: SceneRunFn = async (def, text, { model, session }) 
       rounds: rounds.map((r) => ({
         drafted: r.drafted.map(word),
         accepted: r.accepted,
-        next: word(r.next),
+        next: r.next === null ? null : word(r.next),
       })),
     });
   }

@@ -20,6 +20,7 @@ import {
   prefillSeconds,
   ridge,
   specExpectedTokens,
+  specSpeedup,
   weightBytes,
   type ArithFnName,
   type Bytes,
@@ -83,6 +84,16 @@ describe("specExpectedTokens (Leviathan et al. 2023, Equation 1)", () => {
     expect(specExpectedTokens(1, 4)).toBe(5);
     expect(specExpectedTokens(1 - 1e-9, 4)).toBeCloseTo(5, 6);
     expect(specExpectedTokens(0, 4)).toBe(1);
+  });
+});
+
+describe("specSpeedup (Leviathan et al. 2023, Theorem 3.8)", () => {
+  test("a free drafter speeds up by the tokens per pass; one as slow as the target never pays", () => {
+    expect(specSpeedup(0.8, 4, 0)).toBe(specExpectedTokens(0.8, 4));
+    // Always rejected, the k drafter passes are pure overhead.
+    expect(specSpeedup(0, 4, 0.25)).toBe(1 / 2);
+    // A drafter as costly as the target cannot win even when always right.
+    expect(specSpeedup(1, 4, 1)).toBe(1);
   });
 });
 
@@ -161,6 +172,7 @@ describe("the arithmetic registry", () => {
   const sample: Record<string, number> = {
     alpha: 0.8,
     k: 4,
+    cost: 0.2,
     batch: 8,
     // Short enough that decode still reaches compute-bound (`computeBoundBatch` is finite).
     contextLen: 256,

@@ -15,6 +15,7 @@ import {
   prefillSeconds,
   ridge,
   specExpectedTokens,
+  specSpeedup,
   weightBytes,
 } from "./arith.ts";
 import { H100_SXM, LLAMA_3_8B } from "./constants.ts";
@@ -157,6 +158,14 @@ export const ARITH = {
     scale: null,
     describe: "tokens per target pass with k drafted tokens (Leviathan et al. 2023, Eq. 1)",
     compute: (a) => specExpectedTokens(a.alpha, a.k),
+  }),
+  specSpeedup: entry({
+    args: ["alpha", "k", "cost"],
+    unit: "count",
+    scale: null,
+    describe:
+      "speedup with k drafted tokens, drafting included, at the drafter's cost ratio (Leviathan et al. 2023, Thm. 3.8)",
+    compute: (a) => specSpeedup(a.alpha, a.k, a.cost),
   }),
   moeActiveParams: entry({
     args: ["experts", "topK"],
