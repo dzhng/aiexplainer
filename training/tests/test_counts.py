@@ -6,7 +6,7 @@ import numpy as np
 import pytest
 
 import counts
-from paths import FIXTURES_DIR, MODELS_DIR
+from paths import FIXTURES_DIR, MODELS_DIR, STORY_SEPARATOR
 from schemas import validate
 
 FIXTURES = FIXTURES_DIR
@@ -39,7 +39,7 @@ def test_exact_counts_on_the_fixture_corpus():
 
 
 def test_counting_in_many_ranges_matches_one_pass(monkeypatch: pytest.MonkeyPatch):
-    whole = counts.count_stories(CORPUS.read_text().split(counts.STORY_SEPARATOR))
+    whole = counts.count_stories(CORPUS.read_text().split(STORY_SEPARATOR))
     monkeypatch.setattr(counts, "CHUNK_BYTES", 40)
     assert len(counts.story_ranges(CORPUS)) == 4
     split = counts.count_file(CORPUS)

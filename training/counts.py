@@ -30,12 +30,11 @@ from pathlib import Path
 import numpy as np
 
 import export
-from paths import MODELS_DIR, TRAIN_FILE, VALID_FILE
+from paths import MODELS_DIR, STORY_SEPARATOR, TRAIN_FILE, VALID_FILE
 from probes import counts as counts_probes
 
 OUT_DIR = MODELS_DIR / "counts"
 
-STORY_SEPARATOR = "<|endoftext|>"
 # How text becomes words. Exported into the manifest, so the app splits typed text the same way.
 WORDS_TOKENIZER = {
     "kind": "words",

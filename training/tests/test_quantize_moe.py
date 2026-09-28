@@ -61,7 +61,7 @@ def test_moe_export_gate_passes_a_spread_router():
     with torch.no_grad():
         model.layers[0].moe.router.weight.normal_(0, 1.0)
     tokens = np.random.default_rng(0).integers(0, 4096, 10_000).astype(np.uint16)
-    assert train.moe_export_gate(model, tokens) >= train.MOE_ENTROPY_GATE
+    assert train.moe_export_gate(model, tokens) >= train.ENTROPY_THRESHOLD
 
 
 def test_balance_loss_is_one_when_uniform_and_grows_when_routing_concentrates():

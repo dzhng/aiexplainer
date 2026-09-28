@@ -38,9 +38,8 @@ def story_batches(path: Path) -> Iterator[list[str]]:
         yield batch
 
 
-def encode_stories(stories: list[str], hf=None) -> np.ndarray:
+def encode_stories(stories: list[str], hf) -> np.ndarray:
     """`<bos> story <eos>` for each story, concatenated."""
-    hf = hf or shared_tokenizer()
     special = json.loads(tokenizer.TOKENIZER_FILE.read_text())["special"]
     parts = []
     for encoding in hf.encode_batch(stories, add_special_tokens=False):

@@ -19,8 +19,15 @@ from probes.common import validation_windows
 from probes.evidence import result
 from probes.text import decode, vocab
 
+# The export gate too (`train.moe_export_gate`): usage entropy must reach this share of log(experts).
 ENTROPY_THRESHOLD = 0.9
 USAGE_FLOOR = 0.5  # × an even share: an expert below it has all but collapsed away
+
+
+def usage_entropy_ratio(usage: np.ndarray) -> float:
+    """Entropy of the experts' shares of routing slots, as a share of log(experts)."""
+    nonzero = usage[usage > 0]
+    return float(-(nonzero * np.log(nonzero)).sum() / np.log(len(usage)))
 
 
 def token_kind(piece: str) -> str:
@@ -50,7 +57,7 @@ def experts(model: Transformer) -> tuple[list[dict[str, Any]], list[str]]:
             first_choice[expert][token_kind(pieces[token])] += 1
             first_tokens[expert][token] += 1
     usage = slots / slots.sum()
-    entropy = float(-(usage * np.log(usage)).sum() / np.log(n))
+    entropy = usage_entropy_ratio(usage)
     evidence = [
         result("expert-usage-entropy", "", "routing entropy ÷ log(experts) on held-out tokens", entropy, ENTROPY_THRESHOLD),
     ]

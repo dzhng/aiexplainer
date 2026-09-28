@@ -29,6 +29,8 @@ import data
 import export
 from model import Arch, Mlp, Transformer, load_exported
 from paths import FIXTURES_DIR, MODELS_DIR
+from probes.common import story_starts
+from probes.experts import ENTROPY_THRESHOLD, usage_entropy_ratio
 from probes.models import run_probes
 
 TRAINED_FIXTURES_DIR = FIXTURES_DIR / "trained"
@@ -94,7 +96,6 @@ def windows(tokens: np.ndarray, offsets: np.ndarray, ctx: int, device: str) -> t
 
 
 MOE_BALANCE_WEIGHT = 1e-2  # Switch Transformer's α
-MOE_ENTROPY_GATE = 0.9  # expert usage entropy must reach this share of log(experts)
 
 
 class ExportGateError(RuntimeError):
@@ -123,16 +124,11 @@ def expert_usage(model: Transformer, tokens: np.ndarray, windows_: int = 32) -> 
     return counts / counts.sum()
 
 
-def usage_entropy_ratio(usage: np.ndarray) -> float:
-    nonzero = usage[usage > 0]
-    return float(-(nonzero * np.log(nonzero)).sum() / np.log(len(usage)))
-
-
 def moe_export_gate(model: Transformer, tokens: np.ndarray) -> float:
     """Refuse to export a collapsed router: usage entropy must reach 0.9 · log(experts)."""
     ratio = usage_entropy_ratio(expert_usage(model, tokens))
-    if ratio < MOE_ENTROPY_GATE:
-        raise ExportGateError(f"expert usage entropy is {ratio:.3f} of log(experts), below {MOE_ENTROPY_GATE}")
+    if ratio < ENTROPY_THRESHOLD:
+        raise ExportGateError(f"expert usage entropy is {ratio:.3f} of log(experts), below {ENTROPY_THRESHOLD}")
     return ratio
 
 
@@ -199,8 +195,7 @@ def parity_fixture(model: Transformer, valid_tokens: np.ndarray, seed: int) -> d
     """Torch logits for 20 validation prompts, at every `PARITY_LOGIT_STRIDE`-th vocab entry
     plus the top 8, for the TypeScript trained-model parity test."""
     rng = np.random.default_rng(seed)
-    bos = 0
-    starts = np.flatnonzero(valid_tokens[: len(valid_tokens) - PARITY_PROMPT_TOKENS] == bos)
+    starts = story_starts(valid_tokens, PARITY_PROMPT_TOKENS)
     prompts = []
     for start in rng.choice(starts, size=PARITY_PROMPTS, replace=False):
         length = int(rng.integers(4, PARITY_PROMPT_TOKENS))

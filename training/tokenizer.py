@@ -28,7 +28,7 @@ from typing import Any
 
 from tokenizers import Tokenizer, decoders, models, pre_tokenizers, trainers
 
-from paths import FIXTURES_DIR, MODELS_DIR, TRAIN_FILE, VALID_FILE
+from paths import FIXTURES_DIR, MODELS_DIR, STORY_SEPARATOR, TRAIN_FILE, VALID_FILE
 from probes import tokenizer as tokenizer_probes
 
 OUT_DIR = MODELS_DIR / "tokenizer"
@@ -36,7 +36,6 @@ TOKENIZER_FILE = OUT_DIR / "tokenizer.json"
 EVIDENCE_FILE = OUT_DIR / "evidence.json"
 PARITY_FILE = FIXTURES_DIR / "tokenizer.parity.json"
 
-STORY_SEPARATOR = "<|endoftext|>"
 SPECIAL_TOKENS = {"bos": "<bos>", "eos": "<eos>"}
 BASE_VOCAB = len(SPECIAL_TOKENS) + 256
 CANDIDATE_SIZES = range(2048, 4096 + 1, 256)

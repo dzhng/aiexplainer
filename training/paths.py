@@ -7,6 +7,8 @@ REPO_DIR = TRAINING_DIR.parent
 DATA_DIR = TRAINING_DIR / "data"  # gitignored: raw TinyStories and its token streams
 TRAIN_FILE = DATA_DIR / "TinyStoriesV2-GPT4-train.txt"
 VALID_FILE = DATA_DIR / "TinyStoriesV2-GPT4-valid.txt"
+# What separates one story from the next in both files.
+STORY_SEPARATOR = "<|endoftext|>"
 FIXTURES_DIR = TRAINING_DIR / "fixtures"
 # Every shipped model: apps/explainer/public/models/<id>/ (committed, D30).
 MODELS_DIR = REPO_DIR / "apps/explainer/public/models"
