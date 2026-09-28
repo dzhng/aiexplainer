@@ -30,6 +30,11 @@ export const batching: ChapterDef = {
     technical:
       "Batching decodes one next token for each of many sequences in a single step, reading the weights once for all of them; prefill reads a whole prompt in one step the same way.",
   },
+  brief: [
+    "Even with its notes, every new word hauls all the model's weights, its learned numbers, to the GPU's arithmetic.",
+    "Think of a bus: a trip costs about the same with one rider or a hundred.",
+    "Watch the seats fill and the total climb while each trip barely slows.",
+  ],
   stats: [
     {
       id: "rider-speed",
@@ -88,6 +93,7 @@ export const batching: ChapterDef = {
   ],
   loop: {
     durationSec: 24,
+    endSec: 22.4,
     channels: {
       /** The crates: 0 lifted clear above the roof, 1 resting on the rack. */
       crates: [

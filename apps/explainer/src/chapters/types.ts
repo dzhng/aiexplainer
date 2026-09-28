@@ -36,6 +36,11 @@ export interface ChapterDef {
   model: ChapterModelId | null;
   scene: SceneBuilderId;
   caption: Caption;
+  /**
+   * The lesson's brief (`state/lesson.ts`): 2 or 3 storyteller sentences on a card before the
+   * lesson plays, saying what it is about and what to watch for. The intro's sets up the series.
+   */
+  brief: string[];
   stats: [StatChip, StatChip, StatChip];
   /**
    * The chapter's one knob, only where it is a real knob of the mechanism (temperature, batch
@@ -153,9 +158,18 @@ export interface Beat {
   tint?: PaletteToken;
 }
 
-/** The arrival loop (D24). It wraps at `durationSec`, and interpolation wraps with it. */
+/**
+ * The chapter's loop. The lesson plays it once, from 0 to `endSec`, then holds `endSec` for the
+ * reader's turn; the recorded video loops the whole of it, so time wraps at `durationSec` and
+ * interpolation wraps with it.
+ */
 export interface Timeline {
   durationSec: number;
+  /**
+   * Where the lesson's one pass ends: the moment its point is on screen, which the scene holds
+   * while the reader takes over. What follows only brings the loop back to its start.
+   */
+  endSec: number;
   /**
    * What the loop feeds the chapter's model, in order (chapter 0: the words that land on the
    * rail). The app runs the real model on each; the scene's channels pick which one shows.

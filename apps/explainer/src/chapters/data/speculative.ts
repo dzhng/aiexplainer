@@ -27,6 +27,11 @@ export const speculative: ChapterDef = {
     technical:
       "Speculative decoding: a small drafter model guesses k tokens; the target model scores all of them in one forward pass and keeps each with probability min(1, p/q), so the output has exactly the target's distribution.",
   },
+  brief: [
+    "Lighter cargo helps, but each trip still brings back just one word.",
+    "Here a junior writer, a small quick model, drafts a few words, and the senior checks the whole draft in one read.",
+    "Watch which drafted words the senior keeps for free, and where it steps in with its own.",
+  ],
   stats: [
     {
       id: "alpha",
@@ -88,6 +93,7 @@ export const speculative: ChapterDef = {
   ],
   loop: {
     durationSec: 24,
+    endSec: 23.2,
     inputs: ["Once upon a time, there was a little"],
     channels: {
       /** Which round is on the strip (0, 1, 2). */

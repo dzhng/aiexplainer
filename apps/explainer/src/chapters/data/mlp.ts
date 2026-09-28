@@ -20,6 +20,11 @@ export const mlp: ChapterDef = {
     technical:
       "This is the MLP (multilayer perceptron): each neuron scores the arrow with silu(w1·x)·(w3·x), and w2 adds every neuron's own direction, scaled by its score, back onto the arrow. A lot of what the model knows is stored here.",
   },
+  brief: [
+    "Attention gathers clues from other words, but nothing yet works anything out from them.",
+    "Here each word's clues pass a panel of yes/no questions, the model's neurons.",
+    "Watch the questions that answer yes push toward the next word, and see the guess weaken when the brightest switch off.",
+  ],
   stats: [
     {
       id: "questions",
@@ -55,6 +60,7 @@ export const mlp: ChapterDef = {
   ],
   loop: {
     durationSec: 22,
+    endSec: 20,
     inputs: ["Once upon a"],
     channels: {
       /** The arrow slides in from the left, then out again before the seam. */

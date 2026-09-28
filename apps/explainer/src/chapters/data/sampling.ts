@@ -22,6 +22,11 @@ export const sampling: ChapterDef = {
     technical:
       "Each score (logit) is the dot product of the current word's vector with every word's output vector. Softmax turns scores into probabilities, and sampling draws one word in proportion to them.",
   },
+  brief: [
+    "A map of words is not yet a guess.",
+    "Here the last word scores every word the machine knows, and the scores load a die that picks the next one.",
+    "Watch the die roll, see a knob called temperature make it safer or wilder, and notice it still reads only the last word.",
+  ],
   stats: [
     {
       id: "top-share",
@@ -82,6 +87,7 @@ export const sampling: ChapterDef = {
   ],
   loop: {
     durationSec: 26,
+    endSec: 25.2,
     inputs: [
       "Once upon a time, there",
       "The cat sat on the mat. Then it",

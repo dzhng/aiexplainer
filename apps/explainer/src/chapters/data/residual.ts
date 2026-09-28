@@ -20,6 +20,11 @@ export const residual: ChapterDef = {
     technical:
       "The river is the residual stream: each block adds its output to x instead of replacing it (x ← x + block(x)). The knob is RMSNorm: each block reads x divided by its root-mean-square size.",
   },
+  brief: [
+    "Chain a few panels one after another and the word's arrow fades out after the first.",
+    "This lesson runs a river past them instead, and each one pours in what it worked out.",
+    "Watch the signal die without the river, then carry through with it.",
+  ],
   stats: [
     {
       id: "loss-without",
@@ -59,6 +64,7 @@ export const residual: ChapterDef = {
   ],
   loop: {
     durationSec: 20,
+    endSec: 18.4,
     inputs: ["Once upon a time, there was a little"],
     channels: {
       /** No river: the signal travels pipe by pipe and dies after the first station. */

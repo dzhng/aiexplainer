@@ -20,6 +20,11 @@ export const tokenizer: ChapterDef = {
     technical:
       "A tokenizer splits text into tokens, pieces from a fixed vocabulary, and stores each as its id. This one is byte-pair encoding (BPE), learned from TinyStories by repeatedly merging the most common pair of neighbouring pieces.",
   },
+  brief: [
+    "The intro's machine had nothing to say about a word it never saw.",
+    "Here it stops storing whole words and builds every text from a fixed box of word pieces, like toy bricks.",
+    "Watch a misspelt word snap into bricks, then notice what the bricks still can't tell apart.",
+  ],
   stats: [
     {
       id: "vocab",
@@ -65,6 +70,7 @@ export const tokenizer: ChapterDef = {
   ],
   loop: {
     durationSec: 24,
+    endSec: 22.4,
     inputs: ["onse", "It was a birdcage!", "The cat and the kitten."],
     channels: {
       /** Which loop input is on show; it changes only while no brick is. */

@@ -28,6 +28,11 @@ export const positions: ChapterDef = {
     technical:
       "RoPE (rotary position embedding): before the dot products, each query and key is rotated pair by pair by an angle proportional to its position, so a score depends on how far apart two words are. A hand shows one pair's real angle in this tiny model: position × 10000^(−10/96), about 22° per word. With one attention layer and no positions, shuffling the earlier words doesn't change the prediction; with RoPE it does.",
   },
+  brief: [
+    "Chapter 4's machine gave the same guess however the words were ordered.",
+    "This lesson gives every word a clock hand, turned further for each place it sits along the sentence.",
+    "Watch two words swap places, and the pipes and the guess change with them.",
+  ],
   stats: [
     {
       id: "order-change",
@@ -60,6 +65,7 @@ export const positions: ChapterDef = {
   ],
   loop: {
     durationSec: 24,
+    endSec: 22,
     inputs: [...ORDER_PROMPTS],
     channels: {
       /** Which order the scene shows. */

@@ -4,6 +4,7 @@ import type { Timeline } from "../src/chapters/types.ts";
 
 const loop: Timeline = {
   durationSec: 20,
+  endSec: 18,
   channels: {
     ramp: [
       { t: 2, v: 1 },

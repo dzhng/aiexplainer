@@ -22,6 +22,11 @@ export const stack: ChapterDef = {
     technical:
       "Multi-head attention: 4 heads per layer, each with its own query, key and value weights; this tiny model stacks 4 layers (blocks), each attention then MLP, on the residual stream.",
   },
+  brief: [
+    "One reader looking once still leaves the machine unsure.",
+    "Here each block gets four readers that look back for different things, and blocks stack like an assembly line.",
+    "Watch the camera pull back to show the whole line, and notice that one pass still writes just one word.",
+  ],
   stats: [
     {
       id: "readers",
@@ -67,6 +72,7 @@ export const stack: ChapterDef = {
   ],
   loop: {
     durationSec: 23,
+    endSec: 21.6,
     inputs: ["One day, a little bird was looking for"],
     channels: {
       tokens: [

@@ -1,7 +1,7 @@
 /**
  * `validateChapter(def)` returns every way a chapter breaks the contract (empty when valid).
  * Chapters are TypeScript data, so the compiler checks shapes; this checks what types can't:
- * the copy budget (README Copy rules), the loop budget (D24), the caps (D18), and that every
+ * the copy budget (README Copy rules) for the caption and the lesson brief, the loop budget (D24), the caps (D18), and that every
  * anchor, shot, colour token and kit primitive exists (the frozen vocabulary).
  */
 import { ARITH, arithProblems, type ArithUnit } from "@repo/llm";
@@ -20,6 +20,7 @@ import {
 
 export const LOOP_SEC = { min: 20, max: 30 } as const;
 const MAX_SENTENCE_WORDS = 25;
+const BRIEF_SENTENCES = { min: 2, max: 3 } as const;
 const MAX_HINT_WORDS = 12;
 const MAX_LABELS = 5;
 
@@ -35,19 +36,35 @@ const wordCount = (s: string) => s.trim().split(/\s+/).filter(Boolean).length;
 /** A sentence end followed by more text means the string holds more than one sentence. */
 const holdsTwoSentences = (s: string) => /[.!?]["'”’)]*\s+\S/.test(s.trim());
 
+/** Each of `sentences` is one sentence of at most 25 words (the copy rules). */
+function checkSentences(what: string, sentences: readonly string[], problems: string[]) {
+  for (const [i, sentence] of sentences.entries()) {
+    if (!sentence?.trim()) problems.push(`${what}: sentence ${i + 1} is empty`);
+    else if (holdsTwoSentences(sentence))
+      problems.push(`${what}: sentence ${i + 1} holds more than one sentence`);
+    else if (wordCount(sentence) > MAX_SENTENCE_WORDS)
+      problems.push(
+        `${what}: sentence ${i + 1} has ${wordCount(sentence)} words (max ${MAX_SENTENCE_WORDS})`,
+      );
+  }
+}
+
 function checkCaption(caption: Caption, problems: string[]) {
   if (!Array.isArray(caption.story) || caption.story.length !== 2)
     problems.push("caption: story must be exactly 2 sentences");
-  for (const [i, sentence] of (caption.story ?? []).entries()) {
-    if (!sentence?.trim()) problems.push(`caption: sentence ${i + 1} is empty`);
-    else if (holdsTwoSentences(sentence))
-      problems.push(`caption: sentence ${i + 1} holds more than one sentence`);
-    else if (wordCount(sentence) > MAX_SENTENCE_WORDS)
-      problems.push(
-        `caption: sentence ${i + 1} has ${wordCount(sentence)} words (max ${MAX_SENTENCE_WORDS})`,
-      );
-  }
+  checkSentences("caption", caption.story ?? [], problems);
   if (!caption.technical?.trim()) problems.push("caption: missing technical line");
+}
+
+/** The lesson's brief: 2 or 3 sentences, each within the caption's budget. */
+function checkBrief(brief: readonly string[] | undefined, problems: string[]) {
+  if (
+    !Array.isArray(brief) ||
+    brief.length < BRIEF_SENTENCES.min ||
+    brief.length > BRIEF_SENTENCES.max
+  )
+    problems.push(`brief: must be ${BRIEF_SENTENCES.min}–${BRIEF_SENTENCES.max} sentences`);
+  checkSentences("brief", brief ?? [], problems);
 }
 
 function checkLoop(def: ChapterDef, loop: Timeline, problems: string[]) {
@@ -74,6 +91,8 @@ function checkLoop(def: ChapterDef, loop: Timeline, problems: string[]) {
     if (beat.tint !== undefined && !isPaletteToken(beat.tint))
       problems.push(`beat ${beat.id}: unknown colour token ${beat.tint}`);
   });
+  if (!(loop.endSec > 0 && loop.endSec <= d))
+    problems.push(`loop: the lesson's end ${loop.endSec} s is outside the loop`);
   if (!inLoop(def.ogTimeSec)) problems.push(`ogTimeSec ${def.ogTimeSec} is outside the loop`);
 }
 
@@ -91,6 +110,7 @@ export function validateChapter(
   if (!def.why?.trim()) problems.push("missing why-line");
 
   checkCaption(def.caption, problems);
+  checkBrief(def.brief, problems);
 
   // A tour shows one stop's label at a time; everywhere else every label can show at once.
   if (def.labels.length > MAX_LABELS && !def.tour)

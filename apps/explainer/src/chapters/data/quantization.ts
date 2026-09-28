@@ -26,6 +26,11 @@ export const quantization: ChapterDef = {
     technical:
       "8-bit quantization (q8_0) stores each group of 32 weights as one 16-bit scale and 32 whole numbers from −127 to 127; each weight becomes scale × its number.",
   },
+  brief: [
+    "Every trip still hauls every weight, and at 16 bits a number the cargo is heavy.",
+    "Like a lower-resolution photo, rounding each number keeps the picture in half the space.",
+    "Watch the weights snap to 8 bits, the crate shrink, and both machines still pick nearly the same words.",
+  ],
   stats: [
     {
       id: "llama-weights",
@@ -80,6 +85,7 @@ export const quantization: ChapterDef = {
   ],
   loop: {
     durationSec: 24,
+    endSec: 22.8,
     inputs: ["Once upon a time, there was a big bird who"],
     channels: {
       /** Resolution: 0 the 16-bit weights, 1 the 8-bit ones (the strip and the magnifier). */

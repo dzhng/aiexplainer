@@ -45,6 +45,11 @@ export const attention: ChapterDef = {
     technical:
       "Attention: the last token asks a question (its query), every token offers a label (its key), and their dot products, through a softmax, become weights that add up to 1. Each pipe's width is one weight of this tiny one-layer model. Weights show what a word draws from; they are not proof of meaning.",
   },
+  brief: [
+    "So far the machine reads only the last word, so it loses a name from earlier in the story.",
+    "Attention gives every earlier word a pipe into the last word, wider the more that word is drawn on.",
+    "Watch the widest pipe reach back to Mia's name, then see what happens when two words swap places.",
+  ],
   stats: [
     {
       id: "recall",
@@ -77,6 +82,7 @@ export const attention: ChapterDef = {
   ],
   loop: {
     durationSec: 30,
+    endSec: 27.8,
     // Name recall first; then the failure: the same short sentence twice, "dog" and "cat"
     // swapped, the last words fixed.
     inputs: [RECALL_PROMPTS.mia, ...ORDER_PROMPTS],

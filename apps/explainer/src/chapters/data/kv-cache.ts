@@ -24,6 +24,11 @@ export const kvCache: ChapterDef = {
     technical:
       "The KV cache: every layer stores each position's attention keys and values once; a new token computes only its own and attends over the cached ones. Here 4 query heads share 2 key/value heads (grouped-query attention). The knob's sliding window attends to the last N positions only; it changes outputs and is not how Llama-3-8B runs.",
   },
+  brief: [
+    "Rereading the whole text for every new word wastes work.",
+    "Here the machine pins sticky notes about each word to a rack, and later words read the notes instead.",
+    "Watch the rack fill, then see what changes when it keeps only the last few words' notes.",
+  ],
   stats: [
     {
       id: "tiny-notes",
@@ -79,6 +84,7 @@ export const kvCache: ChapterDef = {
   ],
   loop: {
     durationSec: 26,
+    endSec: 25.2,
     inputs: ["Once upon a time, there was a little"],
     channels: {
       /** Steps done and the live step's phase, 3 s a word: the first pass writes the notes. */
