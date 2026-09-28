@@ -33,6 +33,9 @@ Work the slices in the order of the ladder below. Each slice file is a contract:
   whenever the slice names a target.
 - Record any decision the slice did not delegate in [choices.md](choices.md).
 
+To find code by what it does ("where is the label occlusion computed?"), use `jg`
+([jevgrep skill](../../.agents/skills/jevgrep/SKILL.md)) before grepping by hand.
+
 Before you start any GPU slice, read [the renderer skill](../../.agents/skills/renderer/SKILL.md).
 Before you write any on-screen copy, read [Copy rules](#copy-rules).
 
