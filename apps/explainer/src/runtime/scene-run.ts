@@ -47,6 +47,7 @@ const RUNS: Partial<Record<SceneBuilderId, SceneRunFn>> = {
   embeddings: embeddingsRun,
   sampling: samplingRun,
   attention: attentionRun,
+  positions: attentionRun,
   mlp: mlpRun,
   residual: residualRun,
   stack: stackRun,

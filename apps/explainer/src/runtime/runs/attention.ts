@@ -7,22 +7,50 @@
  * model reads exactly what the scene shows.
  */
 import { promptTokens, type LoadedModel } from "@repo/llm";
-import { FUTURE_WORDS, MAX_TOKENS, type AttentionStep } from "../../scene/builders/attention.ts";
+import {
+  CLOCK_PAIR,
+  FUTURE_WORDS,
+  MAX_TOKENS,
+  reorderFrom,
+  type AttentionStep,
+} from "../../scene/builders/attention.ts";
 import type { RunContext, SceneRunFn } from "../scene-run.ts";
 
 export const attentionRun: SceneRunFn = async (def, text, { model, session }) => {
   if (!("manifest" in model)) throw new Error("an attention scene needs a transformer");
+  // A scenario can hold two orders of the same words, "first / second".
+  const prompts = text === null ? (def.loop.inputs ?? []) : text.split(" / ");
   const steps: AttentionStep[] = [];
-  for (const prompt of text === null ? (def.loop.inputs ?? []) : [text])
-    steps.push(await attentionStep(session, model, prompt));
-  return { kind: "attention", steps };
+  const next: Float64Array[] = [];
+  for (const prompt of prompts) {
+    const { step, probs } = await attentionStep(session, model, prompt);
+    steps.push(step);
+    next.push(probs);
+  }
+  const { manifest } = model;
+  if (manifest.kind !== "transformer" || manifest.arch.positions !== "rope")
+    return { kind: "attention", steps };
+  const { arch } = manifest;
+  // RoPE turns pair i of each head by position × ropeTheta^(−2i / headDim).
+  const headDim = arch.dModel / arch.nHeads;
+  const radPerToken = Math.pow(arch.ropeTheta, (-2 * CLOCK_PAIR) / headDim);
+  const reordered = steps.length === 2 && reorderFrom(steps[0]!, steps[1]!) !== null;
+  const change = reordered ? totalVariation(next[0]!, next[1]!) : null;
+  return { kind: "attention", steps, positions: { radPerToken, change } };
 };
+
+/** Half the summed absolute difference of two distributions: how much of one must move. */
+export function totalVariation(p: ArrayLike<number>, q: ArrayLike<number>): number {
+  let sum = 0;
+  for (let i = 0; i < p.length; i++) sum += Math.abs(p[i]! - q[i]!);
+  return sum / 2;
+}
 
 export async function attentionStep(
   session: Pick<RunContext["session"], "run">,
   model: LoadedModel,
   prompt: string,
-): Promise<AttentionStep> {
+): Promise<{ step: AttentionStep; probs: Float64Array }> {
   const tokenizer = model.tokenizer;
   if (!tokenizer) throw new Error(`${model.manifest.id}: an attention scene needs a tokenizer`);
   const all = promptTokens(tokenizer, prompt);
@@ -30,10 +58,12 @@ export async function attentionStep(
   const ids = all.length > room ? [all[0]!, ...all.slice(1 - room)] : all;
   const focus = ids.length - 1;
   let guess: AttentionStep["guess"] | undefined;
+  let probs: Float64Array | undefined;
   for (let k = 0; k < FUTURE_WORDS; k++) {
     const { logits } = await session.run(ids);
     const next = argmax(logits);
-    guess ??= { token: tokenizer.decode([next]), p: softmaxAt(logits, next) };
+    probs ??= softmax(logits);
+    guess ??= { token: tokenizer.decode([next]), p: probs[next]! };
     ids.push(next);
   }
   // Every token traced: the focus row's weights, and the vectors before and after attention.
@@ -48,7 +78,7 @@ export async function attentionStep(
   const d = attn.residual.residualIn.shape[1]!;
   const row = (t: { data: Float32Array }, i: number) => t.data.subarray(i * d, (i + 1) * d);
   const target = row(attn.residual.residualIn, referent);
-  return {
+  const step: AttentionStep = {
     tokens: ids.map((id) => tokenizer.decode([id])),
     focus,
     weights,
@@ -59,6 +89,7 @@ export async function attentionStep(
       after: angleDeg(row(attn.residual.sum, focus), target),
     },
   };
+  return { step, probs: probs! };
 }
 
 function argmax(values: ArrayLike<number>): number {
@@ -67,13 +98,15 @@ function argmax(values: ArrayLike<number>): number {
   return best;
 }
 
-/** softmax(logits)[i], summed in f64. */
-function softmaxAt(logits: ArrayLike<number>, i: number): number {
+/** softmax(logits), summed in f64. */
+function softmax(logits: ArrayLike<number>): Float64Array {
   let max = -Infinity;
   for (let j = 0; j < logits.length; j++) max = Math.max(max, logits[j]!);
+  const out = new Float64Array(logits.length);
   let sum = 0;
-  for (let j = 0; j < logits.length; j++) sum += Math.exp(logits[j]! - max);
-  return Math.exp(logits[i]! - max) / sum;
+  for (let j = 0; j < logits.length; j++) sum += out[j] = Math.exp(logits[j]! - max);
+  for (let j = 0; j < out.length; j++) out[j]! /= sum;
+  return out;
 }
 
 /** The angle between two vectors, in degrees. */
