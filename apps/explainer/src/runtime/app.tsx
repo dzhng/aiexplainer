@@ -11,10 +11,9 @@ import { CHAPTERS } from "../chapters/index.ts";
 import type { ChapterDef, ChapterModelId } from "../chapters/types.ts";
 import { Hud } from "../hud/Hud.tsx";
 import { Labels, type LabelsHandle } from "../hud/Labels.tsx";
-import { SceneTagsLayer, type SceneTagsHandle } from "../hud/SceneTags.tsx";
 import type { ProbeApi } from "../lab/probe.ts";
 import { lookConfig } from "../look/look.ts";
-import { SCENE_BUILDERS, type SceneRun, type SceneUi } from "../scene/build-frame.ts";
+import type { SceneRun, SceneUi } from "../scene/build-frame.ts";
 import type { ShotId } from "../chapters/types.ts";
 import { shotPose } from "../scene/shots.ts";
 import {
@@ -121,7 +120,6 @@ export function App(props: AppProps) {
   const [session] = useState<Session>(() => createSession());
   const canvas = useRef<HTMLCanvasElement>(null);
   const labels = useRef<LabelsHandle>(null);
-  const tags = useRef<SceneTagsHandle>(null);
   const stage = useRef<Stage | null>(null);
   const sceneRef = useRef<ChapterScene | null>(null);
   // A loop that plays the slider (`SliderDef.loop`) shows its value in the HUD, sampled at
@@ -273,7 +271,6 @@ export function App(props: AppProps) {
             cameraTaken.current = true;
           },
           labels: labels.current,
-          tags: { layer: tags.current, current: () => scene.frame.tags },
           obstacles: () => panelRects.current,
           onReady: () => {
             // Ready once the scene shows real model output (or has none to wait for).
@@ -358,7 +355,6 @@ export function App(props: AppProps) {
     <main className={css.stage}>
       <canvas ref={canvas} className={css.canvas} data-layer="canvas" />
       <Labels ref={labels} labels={def.labels} reading={state.labelMode} />
-      <SceneTagsLayer ref={tags} count={SCENE_BUILDERS[def.scene].tagCount} />
       {hud && (
         <Hud
           state={state}

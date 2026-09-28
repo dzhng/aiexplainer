@@ -8,7 +8,7 @@
 import type { ChapterDef } from "../types.ts";
 
 /**
- * The arithmetic's inputs, shared by the chips and the scene's tags: bf16 weights and KV
+ * The arithmetic's inputs, shared by the chips and the scene's text: bf16 weights and KV
  * cache, and short conversations (16 tokens so far), so the KV reads stay small and the knee
  * sits near the GPU's ridge.
  */

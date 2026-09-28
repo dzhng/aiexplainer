@@ -18,7 +18,7 @@ import {
   type AttentionRun,
 } from "../src/scene/builders/attention.ts";
 import { shippedContext, shippedModel } from "../scripts/shipped.ts";
-import { frameAt } from "./scene-harness.ts";
+import { frameAt, texts } from "./scene-harness.ts";
 import { formatStat } from "../src/chapters/format.ts";
 
 const models = path.resolve(import.meta.dirname, "../public/models");
@@ -85,7 +85,7 @@ describe("chapter 5: clock hands turned by position", () => {
       run.positions!.change!,
       12,
     );
-    const text = frameAt(positions, run, 16).frame.tags.text.join("\n");
+    const text = texts(frameAt(positions, run, 16).scene).join("\n");
     expect(text).toContain(formatStat(run.positions!.change!, "pct"));
   });
 
@@ -93,13 +93,13 @@ describe("chapter 5: clock hands turned by position", () => {
     const pair = swappedPair(run.steps)!;
     expect(pair.map((i) => run.steps[0]!.tokens[i])).toEqual([" dog", " cat"]);
     const degrees = Math.round(((pair[1] - pair[0]) * run.positions!.radPerToken * 180) / Math.PI);
-    const text = frameAt(positions, run, 9).frame.tags.text;
+    const text = texts(frameAt(positions, run, 9).scene);
     expect(text).toContain(`“dog” and “cat”: 3 places, ${degrees}° apart`);
   });
 
   test("the failure beat: the mix is only an average", () => {
-    expect(frameAt(positions, run, 21).frame.tags.text).toContain(AVERAGE_NOTE);
-    expect(frameAt(positions, run, 16).frame.tags.text).not.toContain(AVERAGE_NOTE);
+    expect(texts(frameAt(positions, run, 21).scene)).toContain(AVERAGE_NOTE);
+    expect(texts(frameAt(positions, run, 16).scene)).not.toContain(AVERAGE_NOTE);
   });
 
   test("the scene builds only from its declared primitives; the point lands by 10 s", () => {

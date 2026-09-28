@@ -1,5 +1,5 @@
 /**
- * Chapter 2's scene, built from the kit (`block`, `pins`, `brick`, `contactShadow`): a map on
+ * Chapter 2's scene, built from the kit (`block`, `pins`, `brick`, `contactShadow`, `text`): a map on
  * a work table with a pin stuck in it for each pinned word. A pin stands where its word's
  * embedding (its row of the `embed` model's table) falls on the map's three directions: the
  * first two across the map, the third as the pin's height (`scene/embed-map.ts`, computed
@@ -22,10 +22,11 @@ import {
   type Part,
   type SceneAnchor,
   type SceneDesc,
+  type SceneText,
+  text,
   PARKED_Y,
 } from "@repo/renderer";
 import type { Vec3 } from "math";
-import type { SceneTags } from "../../hud/SceneTags.tsx";
 import type { SceneBuilder, SceneFrame, PinsRun } from "../build-frame.ts";
 import { stepAt } from "../step.ts";
 import { EMBED_MAP, MAX_PINNED_INPUT, ORIGIN, type Vec3Tuple } from "../embed-map.ts";
@@ -49,6 +50,17 @@ const ARROW_GLOW = 0.12;
 const PIN_GLOW = 1;
 /** Just above a pin head (in its unit-tube space), clear of the head itself for occlusion. */
 const ABOVE: Vec3 = [0, 2.5, 0];
+/**
+ * Font sizes (em), metres: the input's words, the background pins' words, a flying brick's
+ * face and the note printed on the map.
+ */
+const TEXT = { input: 0.09, pin: 0.07, brick: 0.055, note: 0.085 };
+/** A pin's word sits this far over its head, in its own cap heights (1 would touch it). */
+const PIN_WORD_RISE = 1.5;
+/** The note's line on the map, metres in front of its centre: across the map's empty front. */
+const NOTE_Z = 1.2;
+/** Air either side of a brick face's word, metres. */
+const BRICK_MARGIN = 0.02;
 
 const BACKGROUND = EMBED_MAP.pins.length;
 const LABELLED_PIN = Math.max(
@@ -88,7 +100,17 @@ interface Built {
   input: Part[];
   bricks: Record<Colour, { parts: Part[]; slot: number }[]>;
   anchors: Record<"pins" | "arrows" | "text", SceneAnchor>;
-  tagOf: { input: number; brick: number; background: number; note: number };
+  /**
+   * What is written: each input pin's word and each background pin's word (on a small sign
+   * turned to the eye just over its head), each flying brick's face, and the note printed on
+   * the map.
+   */
+  text: {
+    input: SceneText[];
+    background: SceneText[];
+    bricks: Record<Colour, SceneText[]>;
+    note: SceneText;
+  };
   scratch: {
     head: Vec3;
     hover: Vec3;
@@ -146,8 +168,6 @@ function mapParts(): Part[] {
 
 export const embeddings: SceneBuilder = {
   assets: {},
-  // The input pins' words, the bricks' faces, the background pins' words, one note.
-  tagCount: MAX_PINNED_INPUT + COLOURS.length * MAX_PINNED_INPUT + BACKGROUND + 1,
 
   create(assets, revision) {
     const pinField = (id: string, slot: number, heads: Vec3[], arrowSlot?: number) =>
@@ -220,54 +240,65 @@ export const embeddings: SceneBuilder = {
       // The map's front-left corner.
       { id: "map", part: "map", local: [0.3, 0.5, 0.4], priority: 0 },
     ];
-    const scene: SceneDesc = { revision, parts, anchors: sceneAnchors, assets };
-
-    const above = ABOVE;
-    const tagOf = {
-      note: 0,
-      input: 1,
-      brick: 1 + MAX_PINNED_INPUT,
-      background: 1 + MAX_PINNED_INPUT + COLOURS.length * MAX_PINNED_INPUT,
+    // A pin's word stands just over its head, turned to the eye: the head is too small to
+    // write on, and a word lying on the map would sit apart from its raised head.
+    const pinWord = (id: string, part: string, size: number) =>
+      text({
+        id,
+        part,
+        local: [0, 1, 0],
+        face: "camera",
+        size,
+        style: "chalk",
+        align: [0.5, PIN_WORD_RISE],
+        // Where pins crowd, a word that would cover one already shown (the input's first) waits.
+        yields: true,
+      });
+    const written: Built["text"] = {
+      input: Array.from({ length: MAX_PINNED_INPUT }, (_, i) =>
+        pinWord(`word.${i}`, `word.${i}.head`, TEXT.input),
+      ),
+      background: EMBED_MAP.pins.map((_, i) => pinWord(`pin.${i}`, `pin.${i}.head`, TEXT.pin)),
+      bricks: {} as Built["text"]["bricks"],
+      // The note is printed on the map itself, across its empty front.
+      note: text({
+        id: "note",
+        part: "map",
+        local: [0, 0.5, NOTE_Z / MAP.size[2]],
+        face: "top",
+        size: TEXT.note,
+        style: "chalk",
+        maxWidth: MAP.size[0] - 0.6,
+      }),
     };
-    const tags: SceneTags = {
-      anchors: [
-        // The note first: it outranks every word it could overlap. High over the map's centre,
-        // clear of the pins and of the title panel.
-        { id: "note", part: "map", local: [0.05, 38, -0.05] as Vec3, priority: 0 },
-        ...Array.from({ length: MAX_PINNED_INPUT }, (_, i) => ({
-          id: `word.${i}`,
-          part: `word.${i}.head`,
-          local: above,
-          priority: 0,
-        })),
-        ...COLOURS.flatMap((colour) =>
-          bricks[colour].map((b) => ({
-            id: `face.${b.parts[0]!.id}`,
-            part: b.parts[0]!.id,
-            local: [0, 0, 0.5] as Vec3,
-            priority: 0,
-          })),
-        ),
-        ...EMBED_MAP.pins.map((_, i) => ({
-          id: `pin.${i}`,
-          part: `pin.${i}.head`,
-          local: above,
-          priority: 0,
-        })),
+    for (const colour of COLOURS)
+      written.bricks[colour] = bricks[colour].map((b) =>
+        text({
+          id: `face.${b.parts[0]!.id}`,
+          part: b.parts[0]!.id,
+          local: [0, 0, 0.5],
+          size: TEXT.brick,
+          style: "ink",
+        }),
+      );
+    const scene: SceneDesc = {
+      revision,
+      parts,
+      anchors: sceneAnchors,
+      assets,
+      text: [
+        written.note,
+        ...written.input,
+        ...COLOURS.flatMap((colour) => written.bricks[colour]),
+        ...written.background,
       ],
-      text: [],
-      style: [],
     };
-    tags.text = tags.anchors.map(() => "");
-    tags.style = tags.anchors.map((_, i) =>
-      i >= tagOf.brick && i < tagOf.background ? "onPart" : "above",
-    );
     built.set(scene, {
       background,
       input,
       bricks,
       anchors,
-      tagOf,
+      text: written,
       scratch: {
         head: [0, 0, 0],
         hover: [0, 0, 0],
@@ -276,7 +307,7 @@ export const embeddings: SceneBuilder = {
       },
       motion: { fly: -1, arrows: -1, sink: -1, step: null },
     });
-    return { scene, tags };
+    return scene;
   },
 
   update(frame: SceneFrame, _def, tl, ui, run) {
@@ -300,15 +331,16 @@ export const embeddings: SceneBuilder = {
       for (const brick of b.bricks[colour]) placeBrick(brick.parts, PARKED);
     for (let c = 0; c < COLOURS.length; c++)
       for (let i = 0; i < MAX_PINNED_INPUT; i++) {
-        frame.tags.text[b.tagOf.brick + c * MAX_PINNED_INPUT + i] = "";
+        b.text.bricks[COLOURS[c]!][i]!.text = "";
         dynamics.intensity[BRICK_SLOT + c * MAX_PINNED_INPUT + i] = 0;
       }
     const rowWidth = inputs.length * (BRICK_UNIT * 2 + HOVER.gap);
     for (let i = 0; i < MAX_PINNED_INPUT; i++) {
       const pin = inputs[i];
+      const word = b.text.input[i]!;
       if (!pin) {
         placePin(b.input, i, null, MAP_TOP, ORIGIN_POINT, 0);
-        frame.tags.text[b.tagOf.input + i] = "";
+        word.text = "";
         continue;
       }
       mapPoint(pin.at, head);
@@ -318,7 +350,7 @@ export const embeddings: SceneBuilder = {
       const flight = clamp((u - 0.25) / (LANDED - 0.25), 0, 1);
       const landed = u >= LANDED && sink < 0.98;
       placePin(b.input, i, landed ? head : null, MAP_TOP, ORIGIN_POINT, arrows);
-      frame.tags.text[b.tagOf.input + i] = landed ? pin.text.trim() : "";
+      word.text = landed ? pin.text.trim() : "";
       dynamics.intensity[INPUT_SLOT + i] = Math.max(ARROW_GLOW, PIN_GLOW * pair);
       if (u > 0 && u < LANDED && sink === 0) {
         const c = COLOURS.indexOf(colourOf(pin));
@@ -332,8 +364,9 @@ export const embeddings: SceneBuilder = {
         placement.unit = BRICK_UNIT * (1 - 0.7 * e) * Math.min(1, u / 0.1);
         placement.length = 2;
         placeBrick(brick.parts, placement);
-        frame.tags.text[b.tagOf.brick + c * MAX_PINNED_INPUT + used[c]! - 1] =
-          flight < 0.3 ? pin.text.trim() : "";
+        const face = b.text.bricks[COLOURS[c]!][used[c]! - 1]!;
+        face.text = flight < 0.3 ? pin.text.trim() : "";
+        face.maxWidth = placement.length * placement.unit - BRICK_MARGIN;
       }
     }
 
@@ -346,12 +379,13 @@ export const embeddings: SceneBuilder = {
       const shown = !covered;
       const grow = arrows * (1 - focus);
       placePin(b.background, i, shown ? BACKGROUND_HEADS[i]! : null, MAP_TOP, ORIGIN_POINT, grow);
-      frame.tags.text[b.tagOf.background + i] = shown ? EMBED_MAP.pins[i]!.word : "";
+      const word = b.text.background[i]!;
+      word.text = shown ? EMBED_MAP.pins[i]!.word : "";
       dynamics.intensity[BACKGROUND_SLOT + i] = 0;
     }
     dynamics.intensity[ARROW_SLOT] = ARROW_GLOW;
     dynamics.intensity[ORIGIN_SLOT] = 1;
-    frame.tags.text[b.tagOf.note] = typed ? "" : noteFor(tl.channels, step);
+    b.text.note.text = typed ? "" : noteFor(tl.channels, step);
 
     // Labels: "your text" rides the first input pin while it is down; otherwise it hides.
     // (a parked brick: the late pool's last one, which only an eighth rare word would fly).

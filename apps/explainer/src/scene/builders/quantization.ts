@@ -1,5 +1,5 @@
 /**
- * Chapter 12's scene, built from the kit (`block`, `contactShadow`): a board showing one real
+ * Chapter 12's scene, built from the kit (`block`, `contactShadow`, `text`): a board showing one real
  * group of 32 weights as signed bars, a magnifier beside it on the weight the rounding moves
  * most, and two machines, 16-bit and 8-bit, each carrying its weights as a crate on its roof,
  * continuing the same prompt.
@@ -18,12 +18,13 @@
 import {
   KIT,
   blockFootprint,
+  text,
   type BlockPart,
   type SceneAnchor,
   type SceneDesc,
+  type SceneText,
 } from "@repo/renderer";
 import { formatStat } from "../../chapters/format.ts";
-import type { SceneTags } from "../../hud/SceneTags.tsx";
 import type { QuantizationRun, SceneBuilder, SceneFrame } from "../build-frame.ts";
 import { box } from "./parts.ts";
 
@@ -76,15 +77,63 @@ function put(t: number[], size: readonly number[], center: readonly number[]) {
   t[14] = center[2]!;
 }
 
+/**
+ * Font sizes (em), metres: the strip board's caption, the magnifier's readout, each machine's
+ * name and story, the note comparing the stories, and the 8-bit crate's byte share.
+ */
+const TEXT = { caption: 0.085, lens: 0.075, label: 0.085, story: 0.075, note: 0.075, ratio: 0.08 };
+/** The caption's middle, this far below the board's top (in the margin over the bars), metres. */
+const CAPTION_DROP = 0.06;
+/** On a machine's front (unit block): its name above the lamp, its story below it. */
+const LABEL_Y = 0.36;
+const STORY_Y = -0.2;
+/** A machine's story: at most this many lines of about this many characters, its end kept. */
+const STORY_LINES = 3;
+const STORY_CHARS = 12;
+
+/**
+ * The end of `story` in at most `lines` lines of about `chars` characters, broken between
+ * words; "…" starts it when its beginning did not fit.
+ */
+export function storyTail(story: string, chars: number, lines: number): string {
+  const words = story.trim().split(/\s+/);
+  const out: string[] = [];
+  let line = "";
+  for (let i = words.length - 1; i >= 0; i--) {
+    const next = line ? `${words[i]} ${line}` : words[i]!;
+    if (next.length <= chars || !line) {
+      line = next;
+      continue;
+    }
+    if (out.length + 1 === lines) {
+      out.unshift(`…${line}`);
+      return out.join("\n");
+    }
+    out.unshift(line);
+    line = words[i]!;
+  }
+  out.unshift(line);
+  return out.join("\n");
+}
+
+interface Texts {
+  board: SceneText;
+  lens: SceneText;
+  /** 16-bit, then 8-bit. */
+  labels: SceneText[];
+  stories: SceneText[];
+  same: SceneText;
+  ratio: SceneText;
+}
+
 interface Built {
   bars: BlockPart[];
   marker: BlockPart;
   ghost: BlockPart;
   crate8: BlockPart;
+  text: Texts;
 }
 const built = new WeakMap<SceneDesc, Built>();
-
-const TAG = { words: 0, board: 1, lens: 2, c16: 3, c8: 4, ratio: 5 } as const;
 /** Dynamics slots: board 0, bars 1…32, then the rest one each. */
 const SLOT = {
   board: 0,
@@ -104,7 +153,6 @@ const crateY = (h: number) => MACHINE.h + h / 2;
 
 export const quantization: SceneBuilder = {
   assets: {},
-  tagCount: 6,
 
   create(assets, revision) {
     const legs = (id: string, slot: number, x: number, w: number) =>
@@ -213,34 +261,76 @@ export const quantization: SceneBuilder = {
       { id: "crates", part: "crate.16", local: [-0.5, 0.3, 0.5], priority: 2 },
       { id: "machines", part: "machine.1", local: [0.5, -0.38, 0.5], priority: 3 },
     ];
-    const scene: SceneDesc = { revision, parts, anchors, assets };
-    built.set(scene, { bars, marker, ghost, crate8 });
-    const tags: SceneTags = {
-      anchors: [
-        // Above both crates, between the machines.
-        {
-          id: "words",
-          part: "crate.16",
-          local: [((MACHINE.xs[1] - MACHINE.xs[0]) * 0.85) / CRATE.w, 0.62, 0],
-          priority: 0,
-        },
-        { id: "board", part: "board", local: [0, 0.56, 0.5], priority: 0 },
-        { id: "lens", part: "lens", local: [0, 0.56, 0.5], priority: 0 },
-        { id: "c16", part: "machine.0", local: [0, -0.3, 0.5], priority: 0 },
-        { id: "c8", part: "machine.1", local: [0, -0.3, 0.5], priority: 0 },
-        // Just above the 8-bit crate, which grows from the machine's roof.
-        { id: "ratio", part: "crate.8", local: [0, 0.5, 0.5], priority: 0 },
+    // Each text sits on the part it describes: the caption in the strip board's top margin,
+    // the readout along the magnifier's top edge (too long for its narrow face), each
+    // machine's name and story on its front, the byte share on the 8-bit crate. The comparison
+    // of the two stories belongs to neither machine: it stands above them, facing the eye.
+    const machineText = (id: string, machine: number, y: number, size: number, maxWidth?: number) =>
+      text({
+        id,
+        part: `machine.${machine}`,
+        local: [0, y, 0.5],
+        size,
+        style: "chalk",
+        maxWidth,
+      });
+    const texts: Texts = {
+      board: text({
+        id: "board",
+        part: "board",
+        local: [0, (BOARD.h / 2 - CAPTION_DROP) / BOARD.h, 0.5],
+        size: TEXT.caption,
+        style: "chalk",
+        maxWidth: BOARD.w - 0.15,
+      }),
+      lens: text({
+        id: "lens",
+        part: "lens",
+        local: [0, 0.5, 0.5],
+        size: TEXT.lens,
+        style: "chalk",
+        align: [0.5, 1.25],
+      }),
+      labels: [
+        machineText("label.16", 0, LABEL_Y, TEXT.label),
+        machineText("label.8", 1, LABEL_Y, TEXT.label),
       ],
-      text: Array.from({ length: 6 }, () => ""),
-      style: ["above", "above", "above", "above", "above", "above"],
+      stories: [
+        machineText("story.16", 0, STORY_Y, TEXT.story, MACHINE.w - 0.08),
+        machineText("story.8", 1, STORY_Y, TEXT.story, MACHINE.w - 0.08),
+      ],
+      same: text({
+        id: "same",
+        part: "crate.16",
+        local: [(MACHINE.xs[1] - MACHINE.xs[0]) / 2 / CRATE.w, 0.5, 0],
+        face: "camera",
+        size: TEXT.note,
+        style: "chalk",
+        align: [0.5, 1.4],
+      }),
+      ratio: text({
+        id: "ratio",
+        part: "crate.8",
+        local: [0, 0, 0.5],
+        size: TEXT.ratio,
+        style: "chalk",
+        maxWidth: CRATE.w - 0.06,
+      }),
     };
-    return { scene, tags };
+    const scene: SceneDesc = {
+      revision,
+      parts,
+      anchors,
+      assets,
+      text: [texts.board, texts.lens, ...texts.labels, ...texts.stories, texts.same, texts.ratio],
+    };
+    built.set(scene, { bars, marker, ghost, crate8, text: texts });
+    return scene;
   },
 
   update(frame: SceneFrame, _def, tl, ui, run) {
     const { scene, dynamics } = frame.input;
-    const { bars, marker, ghost, crate8 } = built.get(scene)!;
-    const texts = frame.tags.text;
+    const { bars, marker, ghost, crate8, text: texts } = built.get(scene)!;
     const typed = ui.text !== null;
     const c = tl.channels;
     const res = typed || ui.sliderSet ? (ui.slider === 1 ? 1 : 0) : (c.res ?? 0);
@@ -248,7 +338,7 @@ export const quantization: SceneBuilder = {
     const words = typed ? Infinity : Math.round(c.words ?? 0);
     const trip = typed ? 0 : (c.trip ?? 0);
     if (run?.kind !== "quantization") {
-      texts.fill("");
+      for (const t of scene.text!) t.text = "";
       return;
     }
     const { strip } = run;
@@ -286,19 +376,19 @@ export const quantization: SceneBuilder = {
     dynamics.intensity[SLOT.lamps] = 0.35 + trip * TRIP_GAIN;
 
     const shown = wordsShown(run, words);
-    const tail = run.prompt.length > 16 ? `…${run.prompt.slice(-14)}` : run.prompt;
     const n = shown.full.length;
-    const note = trip > 0.5 ? " · still one word per trip" : "";
-    texts[TAG.words] =
-      n > 0
-        ? `16-bit: ${tail}${shown.full.join("")}\n 8-bit: ${tail}${shown.q8.join("")}\nsame word ${shown.same} of ${n}${note}`
-        : `${tail}…`;
-    texts[TAG.board] =
+    // Each machine's front shows the end of its own story; before any word, the prompt's.
+    [shown.full, shown.q8].forEach((added, m) => {
+      const story = `${run.prompt}${added.join("")}${n > 0 ? "" : "…"}`;
+      texts.stories[m]!.text = storyTail(story, STORY_CHARS, STORY_LINES);
+    });
+    const note = trip > 0.5 ? "\nstill one word per trip" : "";
+    texts.same.text = n > 0 ? `same word ${shown.same} of ${n}${note}` : "";
+    texts.board.text =
       res < 0.5 ? "32 real weights, stored at 16 bits" : "the same weights, rounded to 8 bits";
-    texts[TAG.lens] =
-      `one weight, zoomed ×${Math.round(lensZoom(strip))}\none line = one 8-bit step`;
-    texts[TAG.c16] = "16-bit";
-    texts[TAG.c8] = "8-bit";
-    texts[TAG.ratio] = crate > 0.5 ? `${formatStat(run.byteRatio, "pct")} of the bytes` : "";
+    texts.lens.text = `one weight, zoomed ×${Math.round(lensZoom(strip))}\none line = one 8-bit step`;
+    texts.labels[0]!.text = "16-bit";
+    texts.labels[1]!.text = "8-bit";
+    texts.ratio.text = crate > 0.5 ? `${formatStat(run.byteRatio, "pct")}\nof the bytes` : "";
   },
 };

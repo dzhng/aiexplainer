@@ -17,15 +17,16 @@ import {
   KIT,
   placeBar,
   placeSegment,
+  text,
   type BarSlot,
   type BlockPart,
   type Part,
+  type SceneText,
   type SceneAnchor,
   type SceneDesc,
   type TubePart,
 } from "@repo/renderer";
 import type { Vec3 } from "math";
-import type { SceneTags } from "../../hud/SceneTags.tsx";
 import type { SceneBuilder, SceneFrame } from "../build-frame.ts";
 import { box, segment } from "./parts.ts";
 import { smoothstep } from "../ease.ts";
@@ -63,6 +64,39 @@ const tileY = LINE.rail.y + 0.1 + LINE.rail.tile[1] / 2;
 /** Phases within one step (fractions of it). */
 export const PHASE = { sweep: 0.5, run: 0.7 };
 
+/** The new word's card. */
+export const CARD_SIZE: Vec3 = [0.5, 0.2, 0.06];
+
+/**
+ * Font sizes (em), metres: a word on its rail tile, the new word on its card, and the scene's
+ * readouts and notes (chapters 9 and 10 share the rail, the card and their sizes).
+ */
+export const TEXT = { tile: 0.1, card: 0.12, readout: 0.13, note: 0.1 };
+
+/** The words written on the rail's tiles and on the new word's card, in dark ink. */
+export function railText(): { words: SceneText[]; card: SceneText } {
+  return {
+    words: Array.from({ length: RAIL_SLOTS }, (_, i) =>
+      text({
+        id: `word.${i}`,
+        part: `word.${i}`,
+        local: [0, 0, 0.5],
+        size: TEXT.tile,
+        style: "ink",
+        maxWidth: LINE.rail.tile[0] - 0.03,
+      }),
+    ),
+    card: text({
+      id: "card",
+      part: "card",
+      local: [0, 0, 0.5],
+      size: TEXT.card,
+      style: "ink",
+      maxWidth: CARD_SIZE[0] - 0.06,
+    }),
+  };
+}
+
 interface Built {
   tiles: BlockPart[];
   feeds: TubePart[];
@@ -71,6 +105,7 @@ interface Built {
   counter: BlockPart;
   counterSlot: BarSlot;
   slots: { feeds: number; bands: number; counter: number };
+  text: { words: SceneText[]; card: SceneText; counter: SceneText; note: SceneText };
 }
 
 const built = new WeakMap<SceneDesc, Built>();
@@ -154,8 +189,8 @@ export function placeCard(card: BlockPart, flying: number, to?: Vec3) {
     return;
   }
   const k = smoothstep(flying);
-  t[0] = 0.5;
-  t[5] = 0.2;
+  t[0] = CARD_SIZE[0];
+  t[5] = CARD_SIZE[1];
   t[12] = LINE.birth[0] + (to[0] - LINE.birth[0]) * k;
   t[13] = LINE.birth[1] + (to[1] - LINE.birth[1]) * k + Math.sin(Math.PI * k) * 0.5;
   t[14] = LINE.birth[2] + (to[2] - LINE.birth[2]) * k;
@@ -173,13 +208,11 @@ export function placeTile(tile: BlockPart, i: number, shown: number, at?: Vec3) 
 
 export const generation: SceneBuilder = {
   assets: {},
-  // A word per rail slot, the new word's card, the counter, and the failure note.
-  tagCount: RAIL_SLOTS + 3,
 
   create(assets, revision) {
     const line = buildLine(0);
     let slot = line.next;
-    const card = box("card", slot++, "card", LINE.birth, [0.5, 0.2, 0.06]);
+    const card = box("card", slot++, "card", LINE.birth, CARD_SIZE);
     const counterSlot: BarSlot = {
       x: LINE.counter.x,
       z: LINE.counter.z,
@@ -214,7 +247,38 @@ export const generation: SceneBuilder = {
       { id: "rail", part: "rail", local: [-0.4, -0.5, 0.5], priority: 2 },
       { id: "counter", part: "counter.track", local: [0.5, 0.3, 0.5], priority: 3 },
     ];
-    const scene: SceneDesc = { revision, parts, anchors, assets };
+    const rail = railText();
+    const texts: Built["text"] = {
+      ...rail,
+      // The count stands on the counter's glass tower, just above its top: the tower is too
+      // narrow to hold it.
+      counter: text({
+        id: "counter",
+        part: "counter.track",
+        local: [0, 0.5, 0.5],
+        size: TEXT.readout,
+        style: "chalk",
+        align: [0.5, 1.4],
+      }),
+      // The sum stands just above the machine's top edge (clear of its label's dot): it is
+      // what the machine did.
+      note: text({
+        id: "note",
+        part: "machine",
+        local: [0, 0.5, 0.5],
+        size: TEXT.note,
+        style: "chalk",
+        align: [0.5, 1.5],
+        maxWidth: LINE.machine.size[0],
+      }),
+    };
+    const scene: SceneDesc = {
+      revision,
+      parts,
+      anchors,
+      assets,
+      text: [...texts.words, texts.card, texts.counter, texts.note],
+    };
     const b: Built = {
       tiles: line.tiles,
       feeds: line.feeds,
@@ -223,26 +287,11 @@ export const generation: SceneBuilder = {
       counter,
       counterSlot,
       slots: { feeds: line.slots.feeds, bands: line.slots.bands, counter: counterBar },
+      text: texts,
     };
     built.set(scene, b);
-    pose(b, { step: GENERATION_STEPS, failure: 0, fade: 1 }, null, null, null);
-    const tags: SceneTags = {
-      anchors: [
-        ...Array.from({ length: RAIL_SLOTS }, (_, i) => ({
-          id: `word.${i}`,
-          part: `word.${i}`,
-          local: [0, 0, 0.5] as Vec3,
-          priority: 0,
-        })),
-        { id: "card", part: "card", local: [0, 0, 0.5], priority: 0 },
-        { id: "counter", part: "counter.track", local: [0, 0.5, 0.5], priority: 0 },
-        { id: "note", part: "machine", local: [0, 0.5, 0.5], priority: 0 },
-      ],
-      text: Array.from({ length: RAIL_SLOTS + 3 }, () => ""),
-      // Words are written on their tiles, in dark ink.
-      style: [...Array.from({ length: RAIL_SLOTS + 1 }, () => "onPart" as const), "above", "above"],
-    };
-    return { scene, tags };
+    pose(b, { step: GENERATION_STEPS, failure: 0, fade: 1 }, null, null, false);
+    return scene;
   },
 
   update(frame: SceneFrame, _def, tl, ui, run) {
@@ -255,13 +304,7 @@ export const generation: SceneBuilder = {
           fade: tl.channels.fade ?? 1,
         };
     const data = run?.kind === "generation" ? run : null;
-    pose(
-      built.get(frame.input.scene)!,
-      state,
-      data,
-      frame.input.dynamics.intensity,
-      frame.tags.text,
-    );
+    pose(built.get(frame.input.scene)!, state, data, frame.input.dynamics.intensity, true);
   },
 };
 
@@ -286,7 +329,7 @@ function pose(
   state: Pose,
   data: GenerationRun | null,
   intensity: Float32Array | null,
-  text: string[] | null,
+  write: boolean,
 ): void {
   const prompt = data?.tokens.length ?? 10;
   const steps = data?.steps ?? [];
@@ -330,21 +373,21 @@ function pose(
   placeBar(b.counter.transform, b.counterSlot, (work / totalWork) * LINE.counter.max);
   if (intensity) intensity[b.slots.counter] = 0.9 + 0.6 * state.failure;
 
-  if (!text) return;
+  if (!write) return;
+  const text = b.text;
   for (let i = 0; i < RAIL_SLOTS; i++) {
     const shown = b.tiles[i]!.transform[0]! > 0.01;
     const word = i < prompt ? data?.tokens[i] : steps[i - prompt]?.word;
-    text[i] = shown && word ? tokenLabel(word) : "";
+    text.words[i]!.text = shown && word ? tokenLabel(word) : "";
   }
-  const card = flying >= 0 && done < total ? steps[done]!.word.trim() : "";
-  text[RAIL_SLOTS] = card;
+  text.card.text = flying >= 0 && done < total ? steps[done]!.word.trim() : "";
   // The live step's own cost beside the total: it is one more token every time.
   const cost = done < total && live > 0 ? steps[done]!.fed : 0;
-  text[RAIL_SLOTS + 1] = data
+  text.counter.text = data
     ? `tokens read: ${Math.round(work).toLocaleString("en-US")}${cost ? `\n(+${cost} for this word)` : ""}`
     : "";
   const sums = steps.slice(0, total).map((s) => s.fed);
-  text[RAIL_SLOTS + 2] =
+  text.note.text =
     data && state.failure > 0.5
       ? `every word rereads everything:\n${sums.join(" + ")} = ${sums.reduce((a, c) => a + c, 0)}`
       : "";

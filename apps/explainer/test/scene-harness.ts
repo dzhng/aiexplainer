@@ -2,7 +2,7 @@
  * Shared helpers for chapter scene tests: a chapter's run through the same in-process
  * context the fixture script uses, and its frame at a loop time.
  */
-import type { SceneDesc } from "@repo/renderer";
+import type { SceneDesc, SceneText } from "@repo/renderer";
 import path from "node:path";
 import { shippedContext } from "../scripts/shipped.ts";
 import { createTimelineState, evalTimeline } from "../src/chapters/timeline.ts";
@@ -18,6 +18,18 @@ import {
 } from "../src/scene/build-frame.ts";
 
 export { shippedModel } from "../scripts/shipped.ts";
+
+/** Every text written in the scene, in the scene's order ("" where nothing is written). */
+export function texts(scene: SceneDesc): string[] {
+  return (scene.text ?? []).map((t) => t.text);
+}
+
+/** The text written as `id`; throws if the scene has no such text. */
+export function textOf(scene: SceneDesc, id: string): SceneText {
+  const found = scene.text?.find((t) => t.id === id);
+  if (!found) throw new Error(`no scene text "${id}"`);
+  return found;
+}
 
 /** A chapter's run as the app computes it, for its loop inputs or `text`. */
 export async function chapterRun(def: ChapterDef, text: string | null = null): Promise<SceneRun> {

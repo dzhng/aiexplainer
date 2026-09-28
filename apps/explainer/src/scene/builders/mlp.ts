@@ -26,16 +26,17 @@ import {
   placeBar,
   placePush,
   placeSegment,
+  text,
   type BarSlot,
   type BlockPart,
   type Part,
   type QuestionPanelParams,
   type SceneAnchor,
   type SceneDesc,
+  type SceneText,
   type TubePart,
 } from "@repo/renderer";
 import type { Vec3 } from "math";
-import type { SceneTags } from "../../hud/SceneTags.tsx";
 import type { SceneBuilder, SceneFrame } from "../build-frame.ts";
 import { share } from "../../chapters/format.ts";
 import { box, segment } from "./parts.ts";
@@ -100,6 +101,12 @@ const PUSH_GLOW = { min: 0.2, span: 0.9, against: 0.06 };
 const TEASER = { panels: 4, z: 1.7, x0: -2.2, step: 0.8, size: [0.36, 0.44, 0.08] as Vec3 };
 const TEASER_SINK = 0.6;
 
+/**
+ * Font sizes (em), metres: the prompt over the arrow, each bar's reading over its track, the
+ * title on the plinth's front (two lines, to fill it), and the teaser's notes.
+ */
+const TEXT = { prompt: 0.1, readout: 0.09, title: 0.1, teaser: 0.1 };
+
 /** The arrow's pieces: the stretch into the panel, one per lamp column, the stretch out. */
 const ARROW_PIECES = LAMP_COLS + 2;
 
@@ -112,6 +119,8 @@ interface Built {
   panels: BlockPart[];
   links: TubePart[];
   slots: { arrow: number; bars: number; links: number };
+  /** The prompt, the two bars' readouts, the readout's title, and the teaser's two notes. */
+  text: SceneText[];
 }
 
 const built = new WeakMap<SceneDesc, Built>();
@@ -141,8 +150,6 @@ function pieceSpan(i: number): [number, number] {
 
 export const mlp: SceneBuilder = {
   assets: {},
-  // The prompt, the two readout bars, the readout's title, and the teaser's two notes.
-  tagCount: 6,
 
   create(assets, revision) {
     const panel = KIT.questionPanel.build(PANEL);
@@ -249,7 +256,59 @@ export const mlp: SceneBuilder = {
       { id: "readout", part: "readout.0", local: [-0.5, 0.15, 0.5], priority: 2 },
       { id: "teaser", part: "teaser.0", local: [0, 0.5, 0.5], priority: 1 },
     ];
-    const scene: SceneDesc = { revision, parts, anchors, assets };
+    // The prompt stands over the arrow's incoming stretch, facing the eye (the tube has no
+    // face to write on); the title is printed on the plinth's front, and each bar's reading
+    // just over the top of its glass track, in the track's face; the teaser's notes stand
+    // over its first and after its last small panel.
+    const texts: SceneText[] = [
+      text({
+        id: "prompt",
+        part: "arrow",
+        local: [0, 0.7, 0],
+        face: "camera",
+        size: TEXT.prompt,
+        style: "chalk",
+        align: [0.5, 1.6],
+      }),
+      ...[0, 1].map((i) =>
+        text({
+          id: i === 0 ? "bar.on" : "bar.off",
+          part: `readout.track.${i}`,
+          local: [0, 0.5, 0.5],
+          size: TEXT.readout,
+          style: "chalk",
+          align: [0.5, 1.25],
+          maxWidth: READOUT.gap - 0.06,
+        }),
+      ),
+      text({
+        id: "readout.title",
+        part: "readout.plinth",
+        local: [0, 0, 0.5],
+        size: TEXT.title,
+        style: "chalk",
+        maxWidth: plinth.transform[0]! - 0.06,
+      }),
+      text({
+        id: "teaser.note",
+        part: "teaser.0",
+        local: [-0.5, 0.5, 0.5],
+        face: "camera",
+        size: TEXT.teaser,
+        style: "chalk",
+        align: [0, 1.3],
+      }),
+      text({
+        id: "teaser.end",
+        part: `teaser.${TEASER.panels - 1}`,
+        local: [0.5, 0.5, 0.5],
+        face: "camera",
+        size: TEXT.teaser,
+        style: "chalk",
+        align: [0, 1.3],
+      }),
+    ];
+    const scene: SceneDesc = { revision, parts, anchors, assets, text: texts };
     const b: Built = {
       pushes: panel.parts.filter((p) => p.id.startsWith("panel.push.")) as TubePart[],
       arrow,
@@ -259,29 +318,12 @@ export const mlp: SceneBuilder = {
       panels,
       links,
       slots: { arrow: arrowSlot, bars: barsSlot, links: linksSlot },
+      text: texts,
     };
     built.set(scene, b);
     // Built at full reach, so the label occluders match what the loop mostly shows.
     pose(b, BUILT_POSE, null, null, null);
-    const tags: SceneTags = {
-      anchors: [
-        // Most of the way along the arrow's incoming stretch.
-        { id: "prompt", part: "arrow", local: [-1.05, 0.7, 0], priority: 0 },
-        { id: "bar.on", part: "readout.0", local: [0, 0.5, 0.5], priority: 0 },
-        { id: "bar.off", part: "readout.1", local: [0, 0.5, 0.5], priority: 0 },
-        { id: "readout.title", part: "readout.plinth", local: [0, -0.5, 0.5], priority: 0 },
-        { id: "teaser.note", part: "teaser.0", local: [0, 0.5, 0.5], priority: 0 },
-        {
-          id: "teaser.end",
-          part: `teaser.${TEASER.panels - 1}`,
-          local: [0.5, 0.5, 0.5],
-          priority: 0,
-        },
-      ],
-      text: Array.from({ length: 6 }, () => ""),
-      style: Array.from({ length: 6 }, () => "above"),
-    };
-    return { scene, tags };
+    return scene;
   },
 
   update(frame: SceneFrame, _def, tl, ui, run) {
@@ -300,7 +342,7 @@ export const mlp: SceneBuilder = {
     };
     const b = built.get(frame.input.scene)!;
     const data = run?.kind === "mlp" ? run : null;
-    pose(b, state, data, frame.input.dynamics.intensity, frame.tags.text);
+    pose(b, state, data, frame.input.dynamics.intensity, b.text);
   },
 };
 
@@ -338,7 +380,7 @@ function pose(
   state: Pose,
   data: MlpRun | null,
   intensity: Float32Array | null,
-  text: string[] | null,
+  texts: SceneText[] | null,
 ): void {
   const { arrowIn, pushes, teaser, teaserFlow } = state;
   // Lamps: the run's lamps in neuron order; the slider keeps the most active `shown`.
@@ -420,15 +462,23 @@ function pose(
     intensity[b.slots.bars] = 0.8 * state.onBar;
     intensity[b.slots.bars + 1] = 0.8 * state.offBar;
   }
-  if (!text) return;
+  if (!texts) return;
   const answer = data ? `“${data.answer.trim()}”` : "";
-  text[0] = data && arrowIn > 0.05 ? `“${data.prompt}”` : "";
-  text[1] = data && withAll > 0 ? `all lamps on\n${answer} ${share(data.p)}` : "";
-  text[2] =
+  const [prompt, on, off, title, note, end] = texts as [
+    SceneText,
+    SceneText,
+    SceneText,
+    SceneText,
+    SceneText,
+    SceneText,
+  ];
+  prompt.text = data && arrowIn > 0.05 ? `“${data.prompt}”` : "";
+  on.text = data && withAll > 0 ? `all lamps on\n${answer} ${share(data.p)}` : "";
+  off.text =
     data && withoutTop > 0 ? `${data.offCount} brightest off\n${answer} ${share(data.pOff)}` : "";
-  text[3] = data && state.onBar > 0 ? `chance the next word is ${answer}` : "";
-  text[4] = teaser > 0.6 ? "4 panels in a row, nothing else" : "";
+  title.text = data && state.onBar > 0 ? `chance the next\nword is ${answer}` : "";
+  note.text = teaser > 0.6 ? "4 panels in a row, nothing else" : "";
   const left = fade.at(-1) ?? 0;
-  text[5] =
+  end.text =
     teaser > 0.6 && teaserFlow > 0.95 ? `arrow left: ${left === 0 ? "0%" : share(left)}` : "";
 }

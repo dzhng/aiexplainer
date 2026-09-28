@@ -15,7 +15,7 @@ import { validateChapter } from "../src/chapters/validate.ts";
 import { computeRun } from "../src/runtime/scene-run.ts";
 import type { SpeculativeRun } from "../src/scene/build-frame.ts";
 import { roundView, storyAfter } from "../src/scene/builders/speculative.ts";
-import { frameAt } from "./scene-harness.ts";
+import { frameAt, textOf, texts } from "./scene-harness.ts";
 
 const drafter = await shippedModel("drafter-64");
 const full = await shippedModel("full");
@@ -106,16 +106,35 @@ describe("chapter 13's scene", () => {
     expect(storyAfter([ended], 1)).toBe(" the end<eos>");
   });
 
+  test("each word is written on its tile's showing face, in that face's ink", () => {
+    // Round 2's verdict: a rejection, then the senior's correction.
+    const { scene } = frameAt(speculative, run, 8);
+    const round = k4.rounds[1]!;
+    for (let i = 0; i < round.drafted.length; i++) {
+      const kept = i < round.accepted;
+      expect(textOf(scene, `tile.${i}`)).toMatchObject({
+        text: round.drafted[i]!.trim(),
+        part: `draft.${i}.${kept ? "accepted" : "rejected"}`,
+        style: kept ? "ink" : "muted",
+      });
+    }
+    const added = textOf(scene, `tile.${round.drafted.length}`);
+    expect(added.part).toBe(`draft.${round.drafted.length}.added`);
+    expect(textOf(scene, "added").part).toBe(added.part);
+    expect(textOf(scene, "senior").text).toContain(`kept ${round.accepted} of 4`);
+  });
+
   test("the story is each round's kept guesses, then the senior's word", () => {
     expect(storyAfter(k4.rounds, 1)).toBe(k4.rounds[0]!.drafted.join("") + k4.rounds[0]!.next);
-    const { frame } = frameAt(speculative, run, 10);
-    expect(frame.tags.text.find((t) => t.includes(storyAfter(k4.rounds, 1)))).toBeDefined();
+    const { scene } = frameAt(speculative, run, 10);
+    expect(textOf(scene, "story").text).toContain(storyAfter(k4.rounds, 1));
   });
 
   test("the slider's k picks that run's rounds", () => {
-    const { frame } = frameAt(speculative, run, 10, { slider: 2, sliderSet: true });
+    const { scene } = frameAt(speculative, run, 10, { slider: 2, sliderSet: true });
     const k2 = run.byK.find((r) => r.k === 2)!.rounds[0]!;
-    expect(frame.tags.text.slice(0, 3)).toEqual([...k2.drafted, k2.next!]);
+    // Each word is written on its tile, trimmed so it sits centred.
+    expect(texts(scene).slice(0, 3)).toEqual([...k2.drafted, k2.next!].map((w) => w.trim()));
   });
 
   test("the point lands by 10 s and the last beat is the failure", () => {

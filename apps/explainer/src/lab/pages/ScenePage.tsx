@@ -11,9 +11,8 @@ import { CHAPTERS } from "../../chapters/index.ts";
 import type { ChapterSlug } from "../../chapters/ladder.ts";
 import { Labels, type LabelsHandle } from "../../hud/Labels.tsx";
 import type { LabelMode } from "../../state/app-state.ts";
-import { SceneTagsLayer, type SceneTagsHandle } from "../../hud/SceneTags.tsx";
 import { lookConfig } from "../../look/look.ts";
-import { defaultUi, SCENE_BUILDERS } from "../../scene/build-frame.ts";
+import { defaultUi } from "../../scene/build-frame.ts";
 import { chapterScene, loadSceneAssets } from "../../runtime/chapter-scene.ts";
 import type { Clock } from "../../runtime/clock.ts";
 import { runStage } from "../../runtime/stage.ts";
@@ -33,7 +32,6 @@ export function ScenePage({ slug, reading, debug, clock, probe, onReady }: Scene
   const def = CHAPTERS[slug as ChapterSlug];
   const canvas = useRef<HTMLCanvasElement>(null);
   const labels = useRef<LabelsHandle>(null);
-  const tags = useRef<SceneTagsHandle>(null);
 
   useEffect(() => {
     if (!def) {
@@ -77,7 +75,6 @@ export function ScenePage({ slug, reading, debug, clock, probe, onReady }: Scene
             pose.yaw += yaw;
           },
           labels: labels.current,
-          tags: { layer: tags.current, current: () => scene.frame.tags },
           onReady,
         }),
       )
@@ -103,7 +100,6 @@ export function ScenePage({ slug, reading, debug, clock, probe, onReady }: Scene
         style={{ position: "fixed", inset: 0, width: "100vw", height: "100vh", display: "block" }}
       />
       {reading && <Labels ref={labels} labels={def.labels} reading={reading} />}
-      <SceneTagsLayer ref={tags} count={SCENE_BUILDERS[def.scene].tagCount} />
     </>
   );
 }

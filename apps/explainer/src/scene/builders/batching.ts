@@ -7,8 +7,9 @@
  * Occupancy is honest arithmetic: the bus holds `computeBoundBatch` riders (the batch where a
  * decode step's sums take as long as its haul of bytes). Every rider is one cube; a seat
  * fills before the next, so the bus visibly fills; riders past the capacity queue at the stop.
- * In the prefill beat the same places hold one prompt's tokens. Every number in a tag comes
- * from `evalArith` with the chapter's `BUS_ARITH` inputs.
+ * In the prefill beat the same places hold one prompt's tokens. Every number written on the
+ * bus's side, its crates or its stop sign comes from `evalArith` with the chapter's
+ * `BUS_ARITH` inputs.
  *
  * Loop channels read: `batch` (riders the loop puts on the bus; the slider replaces it once the
  * reader moves it), `crates` (0 lifted clear → 1 on the rack), `prefill` (1 while one prompt's
@@ -17,16 +18,17 @@
 import { clamp } from "math";
 import {
   KIT,
+  text,
   type BlockPart,
   type MeshAsset,
   type SceneAnchor,
   type SceneDesc,
+  type SceneText,
 } from "@repo/renderer";
 import { evalArith } from "@repo/llm";
 import type { Vec3 } from "math";
 import { BUS_ARITH, PREFILL_TOKENS } from "../../chapters/data/batching.ts";
 import { formatStat } from "../../chapters/format.ts";
-import type { SceneTags } from "../../hud/SceneTags.tsx";
 import type { SceneBuilder, SceneFrame } from "../build-frame.ts";
 
 export const SEATS = 16;
@@ -141,11 +143,21 @@ const built = new WeakMap<
     tokens: BlockPart[];
     queue: BlockPart[];
     crates: BlockPart[];
+    text: { trip: SceneText; crates: SceneText; stop: SceneText };
   }
 >();
 
-/** Tag indices. */
-const TAG = { trip: 0, crates: 1, stop: 2 } as const;
+/**
+ * Font sizes (em), metres: the trip's readout on the bus's side, the cargo's on its middle
+ * crate, and the stop sign's.
+ */
+const TEXT = { trip: 0.1, crates: 0.075, stop: 0.075 };
+/** The middle of the belt between the decks (the prop's `BELT`, 1.12–1.38 m). */
+const BELT_Y = 1.25;
+/** The stop sign's plate, metres. */
+const SIGN: Vec3 = [0.62, 0.42, 0.03];
+/** The crate the cargo's readout is stencilled on: the middle one. */
+const LABELLED_CRATE = Math.floor(CRATES / 2);
 
 /** Dynamics slots: the bus's nodes share 0; riders, tokens and the queue one each. */
 const SLOT = { riders: 1, tokens: 2, queue: 3, crates: 4, stop: 4 + CRATES } as const;
@@ -180,7 +192,6 @@ function seatCubes(parts: BlockPart[], spots: Spot[], shown: number): void {
 
 export const batching: SceneBuilder = {
   assets: { bus: "/props/bus.glb" },
-  tagCount: 3,
 
   create(assets, revision) {
     const bus = assets.bus;
@@ -217,8 +228,9 @@ export const batching: SceneBuilder = {
       id: "stop.sign",
       slot: SLOT.stop + 1,
       material: "card",
-      center: [px, 1.85, pz],
-      size: [0.36, 0.26, 0.03],
+      // In front of the post, which ends at its top.
+      center: [px, 2 - SIGN[1] / 2 + 0.06, pz + 0.03 + SIGN[2] / 2],
+      size: SIGN,
     });
     // The bus's wheels stand on the floor; the shadow grounds it (the last slot).
     const shadow = KIT.contactShadow.build({
@@ -242,7 +254,12 @@ export const batching: SceneBuilder = {
     // The mesh parts keep the prop's own space, which is the world's: anchors on them are world points.
     const anchors: SceneAnchor[] = [
       // The belt between the decks, toward the nose, clear of the riders.
-      { id: "bus", part: "bus.body", local: [body[3]! - 0.6, 1.25, body[5]! + 0.01], priority: 1 },
+      {
+        id: "bus",
+        part: "bus.body",
+        local: [body[3]! - 0.6, BELT_Y, body[5]! + 0.01],
+        priority: 1,
+      },
       // Just outside the upper deck's window, over the third seat's riders, so the pill never covers them.
       {
         id: "riders",
@@ -257,36 +274,58 @@ export const batching: SceneBuilder = {
       { id: "crates", part: "crate.1", local: [0, 0.5, 0.5], priority: 2 },
       { id: "stop", part: "stop.sign", local: [-0.5, 0, 0.5], priority: 2 },
     ];
-    const scene: SceneDesc = { revision, parts, anchors, assets };
+    const texts = {
+      // The trip's readout is painted along the belt between the decks, on the window side,
+      // clear of the nose where the bus's label pins.
+      trip: text({
+        id: "trip",
+        part: "bus.body",
+        local: [body[0]! + (body[3]! - body[0]!) * 0.42, BELT_Y, body[5]!],
+        size: TEXT.trip,
+        style: "chalk",
+        maxWidth: (body[3]! - body[0]!) * 0.75,
+      }),
+      // What the crates hold, stencilled in dark ink on the middle one's side (it shows only
+      // while they glow).
+      crates: text({
+        id: "crates",
+        part: `crate.${LABELLED_CRATE}`,
+        local: [0, 0, 0.5],
+        size: TEXT.crates,
+        style: "ink",
+        maxWidth: layout.crates[LABELLED_CRATE]!.size[0] - 0.06,
+      }),
+      // Why riders wait, on the stop's sign.
+      stop: text({
+        id: "stop",
+        part: "stop.sign",
+        local: [0, 0, 0.5],
+        size: TEXT.stop,
+        style: "ink",
+        maxWidth: SIGN[0] - 0.06,
+      }),
+    };
+    const scene: SceneDesc = {
+      revision,
+      parts,
+      anchors,
+      assets,
+      text: [texts.trip, texts.crates, texts.stop],
+    };
     built.set(scene, {
       layout,
       riders,
       tokens,
       queue,
       crates: crates.map((c) => c.parts[0] as BlockPart),
+      text: texts,
     });
-    const tags: SceneTags = {
-      anchors: [
-        // On the floor in front of the bus, clear of the HUD and the labels.
-        { id: "trip", part: "bus.body", local: [-0.2, 0, body[5]! + 1.1], priority: 0 },
-        { id: "crates", part: "crate.3", local: [0, 0.5, 0.5], priority: 0 },
-        // Above the queue's middle, clear of the stop sign's label.
-        {
-          id: "stop",
-          part: "bus.body",
-          local: [STOP.x - 2 * STOP.pitch, 0.95, STOP.rows[0]],
-          priority: 0,
-        },
-      ],
-      text: ["", "", ""],
-      style: ["above", "above", "above"],
-    };
-    return { scene, tags };
+    return scene;
   },
 
   update(frame: SceneFrame, _def, tl, ui) {
     const { scene, dynamics } = frame.input;
-    const { layout, riders, tokens, queue, crates } = built.get(scene)!;
+    const { layout, riders, tokens, queue, crates, text: texts } = built.get(scene)!;
     const c = tl.channels;
     // The loop fills the bus until the reader takes the slider; then the slider's riders ride.
     const onBus = ui.sliderSet ? ui.slider : Math.round(c.batch ?? 0);
@@ -309,14 +348,14 @@ export const batching: SceneBuilder = {
 
     const readout = busReadout(onBus);
     const riderWord = onBus === 1 ? "rider" : "riders";
-    frame.tags.text[TAG.trip] =
+    texts.trip.text =
       prefill > 0.5
         ? `prefill: one ${PREFILL_TOKENS}-token prompt boards at once\none trip: ${formatStat(readout.prefillSec, "s")}`
         : onBus > 0
           ? `${onBus} ${riderWord} · ${formatStat(readout.totalTokPerSec, "tok/s")} in total\none trip: ${formatStat(readout.tripSec, "s")}`
           : "";
-    frame.tags.text[TAG.crates] =
-      heavy > 0.3 ? `${formatStat(readout.weightBytes, "bytes")} of weights, every trip` : "";
-    frame.tags.text[TAG.stop] = onBus > capacity ? "bus full: each trip takes longer" : "";
+    texts.crates.text =
+      heavy > 0.3 ? `${formatStat(readout.weightBytes, "bytes")}\nof weights,\nevery trip` : "";
+    texts.stop.text = onBus > capacity ? "bus full:\neach trip\ntakes longer" : "";
   },
 };

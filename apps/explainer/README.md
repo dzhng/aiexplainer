@@ -36,9 +36,9 @@ Each step below has one owner. Change a step in its owner, never beside it.
    `LookConfig`. Camera presets are `look/shots.json`.
 6. **Stage.** `runtime/stage.ts` is the one frame loop, and the app and every lab page run
    through it: clock → `buildFrame` → orbit → `renderer.frame` → `placeLabels` → the DOM
-   labels and scene text. `runtime/app.tsx` owns the app state, `/#N` routing, the
-   chapter's model and the session. The HUD (`src/hud/`) only renders state and sends
-   actions.
+   labels, which keep clear of the text the scene writes on its parts. `runtime/app.tsx`
+   owns the app state, `/#N` routing, the chapter's model and the session. The HUD
+   (`src/hud/`) only renders state and sends actions.
 
 ## Lab
 

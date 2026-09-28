@@ -9,7 +9,7 @@ import {
   workSoFar,
   type GenerationRun,
 } from "../src/scene/builders/generation.ts";
-import { chapterRun, fixtureRun, frameAt, shippedModel } from "./scene-harness.ts";
+import { chapterRun, fixtureRun, frameAt, shippedModel, textOf } from "./scene-harness.ts";
 
 const loaded = await shippedModel("full");
 const model = transformerModel(loaded);
@@ -37,11 +37,9 @@ test("the work counter is the sum of the prefix lengths each step reread", () =>
   expect(run.steps.map((s) => s.fed)).toEqual(run.steps.map((_, i) => tokens.length + i));
   const total = run.steps.reduce((sum, s) => sum + s.fed, 0);
   expect(workSoFar(run.steps, GENERATION_STEPS)).toBe(total);
-  // After the loop has written every word, the counter's tag says exactly that sum.
+  // After the loop has written every word, the counter says exactly that sum.
   const done = frameAt(def, run, 19.2);
-  expect(done.frame.tags.text.find((t) => t.startsWith("tokens read"))).toBe(
-    `tokens read: ${total}`,
-  );
+  expect(textOf(done.scene, "counter").text).toBe(`tokens read: ${total}`);
   // Each step costs one more token than the last: the counter's growth is quadratic.
   const gaps = run.steps.slice(1).map((s, i) => s.fed - run.steps[i]!.fed);
   expect(gaps.every((g) => g === 1)).toBe(true);

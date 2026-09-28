@@ -1,13 +1,12 @@
 /**
  * The domain → renderer adapter (pure: no DOM, no GPU). A chapter's data, its loop state,
- * the HUD controls and the model's real output become the renderer's `FrameInput`, plus the
- * scene text the overlay draws. Each chapter names a scene builder; the builder creates its
+ * the HUD controls and the model's real output become the renderer's `FrameInput`, the words
+ * written on its parts included. Each chapter names a scene builder; the builder creates its
  * parts once (a new `revision`) and then updates transforms and dynamics in place every frame.
  */
 import type { FrameInput, OrbitPose, SceneDesc } from "@repo/renderer";
 import type { ChapterDef, ChapterSlug, SceneBuilderId } from "../chapters/types.ts";
 import type { TimelineState } from "../chapters/timeline.ts";
-import type { SceneTags } from "../hud/SceneTags.tsx";
 import { attention, positions, type AttentionRun } from "./builders/attention.ts";
 import { autocomplete, type CountsRun } from "./builders/autocomplete.ts";
 import { embeddings } from "./builders/embeddings.ts";
@@ -156,9 +155,8 @@ export interface QuantizationRun {
 export interface SceneBuilder {
   /** Prop URLs by asset id; the app loads them before the first frame. */
   assets: Record<string, string>;
-  /** How many scene tags the builder writes. */
-  tagCount: number;
-  create(assets: SceneDesc["assets"], revision: number): { scene: SceneDesc; tags: SceneTags };
+  /** The scene with its parts and the text written on them (`SceneDesc.text`). */
+  create(assets: SceneDesc["assets"], revision: number): SceneDesc;
   update(
     frame: SceneFrame,
     def: ChapterDef,
@@ -197,15 +195,14 @@ export const SCENE_BUILDERS: Record<SceneBuilderId, SceneBuilder> = {
   finished: finishedScene(PART_BUILDERS, buildFrame),
 };
 
-/** What one frame of a chapter's scene is: the renderer's input and the overlay's text. */
+/** What one frame of a chapter's scene is: the renderer's input, from the builder it came from. */
 export interface SceneFrame {
   builder: SceneBuilderId | null;
   input: Omit<FrameInput, "timeSec" | "viewport">;
-  tags: SceneTags;
 }
 
 export function createSceneFrame(input: SceneFrame["input"]): SceneFrame {
-  return { builder: null, input, tags: { anchors: [], text: [], style: [] } };
+  return { builder: null, input };
 }
 
 /**
@@ -223,9 +220,8 @@ export function buildFrame(
   const builder = SCENE_BUILDERS[def.scene];
   if (out.builder !== def.scene) {
     const created = builder.create(out.input.scene.assets, nextRevision());
-    out.input.scene = withEnvironment(created.scene);
-    out.tags = created.tags;
-    const slots = created.scene.parts.reduce((n, p) => Math.max(n, p.slot + 1), 1);
+    out.input.scene = withEnvironment(created);
+    const slots = created.parts.reduce((n, p) => Math.max(n, p.slot + 1), 1);
     out.input.dynamics = {
       intensity: new Float32Array(slots).fill(1),
       widthScale: new Float32Array(slots).fill(1),

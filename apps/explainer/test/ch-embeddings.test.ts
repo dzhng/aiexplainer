@@ -10,7 +10,7 @@ import { computeRun } from "../src/runtime/scene-run.ts";
 import type { PinsRun } from "../src/scene/build-frame.ts";
 import { mapPoint } from "../src/scene/builders/embeddings.ts";
 import { EMBED_MAP, projectRow } from "../src/scene/embed-map.ts";
-import { frameAt } from "./scene-harness.ts";
+import { frameAt, textOf, texts } from "./scene-harness.ts";
 
 const loaded = await shippedModel("embed");
 const model = transformerModel(loaded);
@@ -88,7 +88,7 @@ describe("chapter 2's numbers come from the model", () => {
     expect([cat!.text, kitten!.text]).toEqual([" cat", " kitten"]);
     const near = nearestTokens(model, cat!.id, 4096).find((n) => n.token === kitten!.id)!;
     expect(loopRun.steps[0]!.cosine!).toBeCloseTo(near.similarity, 5);
-    const note = sceneAt(7, loopRun).frame.tags.text[0]!;
+    const note = textOf(sceneAt(7, loopRun).input.scene, "note").text;
     expect(note).toContain(loopRun.steps[0]!.cosine!.toFixed(2));
   });
 
@@ -114,8 +114,17 @@ describe("chapter 2's loop", () => {
     const hero = sceneAt(chapter.ogTimeSec, loopRun);
     expect(hero.shown("word.").length).toBe(2);
     expect(Math.abs(hero.part("pin.4.arrow").transform[0]!)).toBeGreaterThan(0.01);
-    expect(hero.frame.tags.text.slice(1, 3)).toEqual(["cat", "kitten"]);
-    expect(hero.frame.tags.text.filter(Boolean)).toMatchSnapshot();
+    const words = ["word.0", "word.1"].map((id) => textOf(hero.input.scene, id));
+    expect(words.map((w) => w.text)).toEqual(["cat", "kitten"]);
+    // Each word stands over its own pin's head.
+    expect(words.map((w) => w.part)).toEqual(["word.0.head", "word.1.head"]);
+    expect(texts(hero.input.scene).filter(Boolean)).toMatchSnapshot();
+    // Crowded pins show one word each, the input's first: every pin word yields, and the
+    // input's words come before the background's in the scene's text.
+    const pinWords = hero.input.scene.text!.filter((t) => /^(word|pin)\.\d+$/.test(t.id));
+    expect(pinWords.every((t) => t.yields)).toBe(true);
+    const lastInput = pinWords.findLastIndex((t) => t.id.startsWith("word."));
+    expect(lastInput).toBeLessThan(pinWords.findIndex((t) => t.id.startsWith("pin.")));
   });
 
   test("the point lands by 10 s: cat and kitten are pins, lit, with their cosine", () => {

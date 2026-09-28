@@ -12,7 +12,7 @@ import { SCENE_KIT } from "../src/chapters/scenes.ts";
 import { resolveStat } from "../src/chapters/stats.ts";
 import { CONTINUATION } from "../src/chapters/data/stack.ts";
 import { KV_STEPS, notesWritten, type KvRun } from "../src/scene/builders/kv-cache.ts";
-import { chapterRun, fixtureRun, frameAt, shippedModel } from "./scene-harness.ts";
+import { chapterRun, fixtureRun, frameAt, shippedModel, textOf, texts } from "./scene-harness.ts";
 
 const loaded = await shippedModel("full");
 const model = transformerModel(loaded);
@@ -59,7 +59,7 @@ test("every window's words are a windowed reference's; the loop's 4 changes them
 test("the window knob: the reader's window evicts old notes and names what it writes", () => {
   const { min, max } = def.slider!;
   const at = (window: number) =>
-    frameAt(def, run, 3, { slider: window, sliderSet: true }).frame.tags.text.join("\n");
+    texts(frameAt(def, run, 3, { slider: window, sliderSet: true }).scene).join("\n");
   expect(at(min)).toContain(`keep only the last ${min}: it writes`);
   expect(at(min)).toContain("not how Llama-3-8B runs");
   // Wider windows on this prompt write the same words, and the scene says so (measured).
@@ -79,7 +79,8 @@ test("the rack's memory note counts the notes written: each word's once", () => 
   expect(notesWritten(tokens.length, 0)).toBe(0);
   expect(notesWritten(tokens.length, 4)).toBe(tokens.length + 3);
   const done = frameAt(def, run, 12.8);
-  const note = done.frame.tags.text.find((t) => t.startsWith("notes:"))!;
+  const note = textOf(done.scene, "memory").text;
+  expect(note).toStartWith("notes:");
   expect(note).toContain(`${tokens.length + KV_STEPS - 1} words`);
 });
 

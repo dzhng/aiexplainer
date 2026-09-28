@@ -14,6 +14,7 @@ import { resolveStat } from "../src/chapters/stats.ts";
 import { createTimelineState, evalTimeline } from "../src/chapters/timeline.ts";
 import { computeRun } from "../src/runtime/scene-run.ts";
 import { buildFrame, createSceneFrame } from "../src/scene/build-frame.ts";
+import { textOf, texts } from "./scene-harness.ts";
 import {
   ROLL_SEED,
   WORD_FACES,
@@ -108,7 +109,7 @@ describe("chapter 3: the die is the model's own distribution", () => {
     // The loop's first roll lands on that face and says so.
     const landed = sceneAt(8, loopRun);
     const face = sample(shares, seededRng(ROLL_SEED));
-    expect(landed.frame.tags.text[0]).toContain(
+    expect(textOf(landed.input.scene, "note").text).toContain(
       face < WORD_FACES ? `“${step.top[face]!.text.trim()}”` : "other words",
     );
   });
@@ -151,7 +152,13 @@ describe("chapter 3's numbers and loop", () => {
 
   test("the hero frame (snapshot of its words)", () => {
     const hero = sceneAt(chapter.ogTimeSec, loopRun);
-    expect(hero.frame.tags.text.filter(Boolean)).toMatchSnapshot();
+    expect(texts(hero.input.scene).filter(Boolean)).toMatchSnapshot();
+    // Each face's words are written on one of that face's own staves, facing out of it.
+    for (let f = 0; f <= WORD_FACES; f++) {
+      const face = textOf(hero.input.scene, `face.${f}`);
+      expect(face.part).toStartWith(`die.face.${f}.`);
+      expect(face.face).toBe("top");
+    }
   });
 
   test("the scene builds only from the primitives its scene declares", () => {

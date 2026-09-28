@@ -10,6 +10,7 @@ import { buildFrame, createSceneFrame, type SceneUi } from "../src/scene/build-f
 import { share } from "../src/chapters/format.ts";
 import { computeRun as runFor } from "../src/runtime/scene-run.ts";
 import type { CountsRun } from "../src/scene/builders/autocomplete.ts";
+import { textOf, texts } from "./scene-harness.ts";
 
 const publicDir = path.resolve(import.meta.dirname, "../public");
 const board = parseGlb(
@@ -67,10 +68,11 @@ test("at full growth, bar heights are the real nextWords shares of the word on t
     const want = (golden[i]!.p / golden[0]!.p) * h[0]!;
     expect(h[i]!).toBeCloseTo(Math.max(want, 0.004), 5);
   }
-  // Bars past the slider are slivers; tags read word and share.
+  // Bars past the slider are slivers; each slot names its word and its share.
   for (let i = 5; i < 10; i++) expect(h[i]!).toBeLessThan(0.01);
-  expect(frame.tags.text[0]).toBe(`${golden[0]!.word}\n${Math.round(golden[0]!.p * 100)}%`);
-  expect(frame.tags.text[10]).toBe(autocomplete.loop.inputs![0]);
+  expect(textOf(input.scene, "word.0").text).toBe(golden[0]!.word);
+  expect(textOf(input.scene, "share.0").text).toBe(`${Math.round(golden[0]!.p * 100)}%`);
+  expect(textOf(input.scene, "card").text).toBe(autocomplete.loop.inputs![0]!);
 });
 
 test("typed text shows its last word's bars at full height; an unseen word shows none", async () => {
@@ -84,9 +86,10 @@ test("typed text shows its last word's bars at full height; an unseen word shows
 
   const unseen = (await computeRun(autocomplete, "zzyzx"))!;
   const blank = frameAt(0, {}, "zzyzx");
-  const hb = heights(buildFrame(autocomplete, blank.tl, blank.ui, unseen, blank.frame).scene);
-  expect(Math.max(...hb)).toBeLessThan(0.01);
-  expect(blank.frame.tags.text.slice(0, 10).every((t) => t === "")).toBe(true);
+  const blankScene = buildFrame(autocomplete, blank.tl, blank.ui, unseen, blank.frame).scene;
+  expect(Math.max(...heights(blankScene))).toBeLessThan(0.01);
+  const slotText = blankScene.text!.filter((t) => /^(word|share)\./.test(t.id));
+  expect(slotText.every((t) => t.text === "")).toBe(true);
 });
 
 describe("chapter 0's loop", () => {
@@ -106,12 +109,20 @@ describe("chapter 0's loop", () => {
   test("the rail holds the whole text as cards, the header names the lookup", async () => {
     const run = (await computeRun(autocomplete, null))!;
     const { frame, tl, ui } = frameAt(12.5);
-    buildFrame(autocomplete, tl, ui, run, frame);
+    const { scene } = buildFrame(autocomplete, tl, ui, run, frame);
     // "a" on the lit card, "once" and "upon" on dim cards left of it, bars for "a".
-    expect(frame.tags.text[10]).toBe("a");
-    expect(frame.tags.text[12]).toBe("After “a”…");
-    expect(frame.tags.text.slice(13).filter(Boolean)).toEqual(["once", "upon"]);
-    expect(frame.tags.style.slice(10, 14)).toEqual(["onPart", "above", "heading", "dim"]);
+    expect(textOf(scene, "card")).toMatchObject({ text: "a", part: "card", style: "ink" });
+    expect(textOf(scene, "header")).toMatchObject({
+      text: "After “a”…",
+      part: "board.housing",
+      style: "sign",
+    });
+    const dim = scene.text!.filter((t) => t.id.startsWith("earlier.") && t.text);
+    expect(dim.map((t) => t.text)).toEqual(["once", "upon"]);
+    expect(dim.map((t) => [t.part, t.style])).toEqual([
+      ["earlier.0", "muted"],
+      ["earlier.1", "muted"],
+    ]);
   });
 
   test("a long text keeps its end on the rail, and its first card says it goes on", async () => {
@@ -122,7 +133,9 @@ describe("chapter 0's loop", () => {
     const run = (await computeRun(autocomplete, words.join(" ")))!;
     const { frame, tl, ui } = frameAt(0, {}, words.join(" "));
     const input = buildFrame(autocomplete, tl, ui, run, frame);
-    const shown = frame.tags.text.slice(13).filter(Boolean);
+    const shown = texts(input.scene).filter(
+      (t, i) => input.scene.text![i]!.id.startsWith("earlier.") && t,
+    );
     expect(shown[0]).toBe("…");
     expect(shown.slice(1)).toEqual(words.slice(-shown.length, -1));
     // Every dim card shown sits on the rail, left of the lit card and clear of each other.
@@ -152,16 +165,17 @@ describe("chapter 0's loop", () => {
       const { frame, tl, ui } = frameAt(t);
       const input = buildFrame(autocomplete, tl, ui, run, frame);
       const card = input.scene.parts.find((p) => p.id === "card")!;
-      return { h: heights(input.scene), text: frame.tags.text, card };
+      const text = (id: string) => textOf(input.scene, id).text;
+      return { h: heights(input.scene), text, card };
     };
     const failure = at(17);
-    expect(failure.text[10]).toBe(unseen);
+    expect(failure.text("card")).toBe(unseen);
     expect(Math.max(...failure.h)).toBeLessThan(0.01);
-    expect(failure.text[11]).toContain(unseen);
+    expect(failure.text("no-counts")).toContain(unseen);
     // While "upon" rides onto the card, the bars still show (and light) "once"'s counts.
     const handoff = at(6);
-    expect(handoff.text[10]).toBe("upon");
-    expect(handoff.text[0]).toStartWith("upon");
+    expect(handoff.text("card")).toBe("upon");
+    expect(handoff.text("word.0")).toBe("upon");
     // The loop's last instant and its first draw the same frame (card off the rail, bars flat).
     const end = at(autocomplete.loop.durationSec - 1e-6);
     const start = at(0);

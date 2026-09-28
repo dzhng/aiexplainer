@@ -16,8 +16,8 @@ import { resolveStat } from "../src/chapters/stats.ts";
 import { validateChapter } from "../src/chapters/validate.ts";
 import { computeRun } from "../src/runtime/scene-run.ts";
 import { type QuantizationRun, type SceneUi } from "../src/scene/build-frame.ts";
-import { lensIndex } from "../src/scene/builders/quantization.ts";
-import { frameAt as sceneFrameAt } from "./scene-harness.ts";
+import { lensIndex, storyTail } from "../src/scene/builders/quantization.ts";
+import { frameAt as sceneFrameAt, textOf } from "./scene-harness.ts";
 
 const full = await shippedModel("full");
 const q8 = await shippedModel("full-q8");
@@ -29,7 +29,7 @@ const run = (await computeRun(
 
 function frameAt(t: number, ui: Partial<SceneUi> = {}, r: QuantizationRun = run) {
   const { frame } = sceneFrameAt(quantization, r, t, ui);
-  return { input: frame.input, tags: frame.tags.text };
+  return { input: frame.input };
 }
 
 const part = (scene: SceneDesc, id: string) => scene.parts.find((p) => p.id === id) as BlockPart;
@@ -59,7 +59,7 @@ describe("chapter 12's numbers equal their sources", () => {
 
   test("the 8-bit crate's height is the measured byte ratio; the words are each model's", () => {
     expect(run.byteRatio).toBe(probe(q8, "q8-bytes"));
-    const { input, tags } = frameAt(20);
+    const { input } = frameAt(20);
     const ratio =
       part(input.scene, "crate.8").transform[5]! / part(input.scene, "crate.16").transform[5]!;
     expect(ratio).toBeCloseTo(run.byteRatio, 6);
@@ -75,7 +75,10 @@ describe("chapter 12's numbers equal their sources", () => {
     };
     expect(run.full).toEqual(words(full));
     expect(run.q8).toEqual(words(q8));
-    expect(tags[0]).toContain(words(full).join(""));
+    // Each machine's front ends with its own words (the story wraps onto a few lines).
+    const story = (m: string) => textOf(input.scene, `story.${m}`).text.replace(/\n/g, " ");
+    expect(story("16")).toContain(words(full).join("").trim());
+    expect(story("8")).toContain(words(q8).join("").trim());
   });
 
   test("the magnifier shows the weight rounding moves most, snapping onto the grid", () => {
@@ -92,7 +95,7 @@ describe("chapter 12's numbers equal their sources", () => {
   test("the hero frame's parts, and the failure beat's words", () => {
     const { input } = frameAt(quantization.ogTimeSec);
     expect(input.scene.parts.map((p) => [p.id, p.kind, p.slot])).toMatchSnapshot();
-    expect(frameAt(20).tags[0]).toEndWith("still one word per trip");
+    expect(textOf(frameAt(20).input.scene, "same").text).toEndWith("still one word per trip");
   });
 
   test("the point lands by 10 s and the last beat is the failure", () => {
@@ -101,4 +104,13 @@ describe("chapter 12's numbers equal their sources", () => {
     expect(beat("crate")).toBeLessThan(10);
     expect(quantization.loop.beats.at(-1)!.id).toBe("one-per-trip");
   });
+});
+
+test("a machine's story keeps its end, broken between words, and says when it was cut", () => {
+  expect(storyTail("a big bird", 12, 3)).toBe("a big bird");
+  expect(storyTail("Once upon a time, there was a big bird who loved", 12, 3)).toBe(
+    "…there was\na big bird\nwho loved",
+  );
+  for (const line of storyTail("one two three four five six seven", 9, 2).split("\n"))
+    expect(line.replace("…", "").length).toBeLessThanOrEqual(9);
 });

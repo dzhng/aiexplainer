@@ -42,6 +42,7 @@ describe("the finished machine is the other chapters' scenes, composed", () => {
     // Its only parts of its own are the route (a pipe and its pulses); no part is there twice.
     expect(new Set(whole.parts.map((p) => p.id)).size).toBe(whole.parts.length);
     let count = 0;
+    let written = 0;
     STATIONS.forEach(({ def, scale }, n) => {
       const own = frameAt(
         def,
@@ -116,14 +117,22 @@ describe("the tour", () => {
     fovY: 1,
   });
 
-  test("at each stop only that station's label and scene text show, and it outshines the rest", () => {
-    STATIONS.forEach(({ def }, n) => {
-      const { scene, frame, intensity } = frameAt(finished, run, settled(n), {}, assets);
+  test("at each stop only that station's label and written text show, and it outshines the rest", () => {
+    let written = 0;
+    STATIONS.forEach(({ def, scale }, n) => {
+      const { scene, intensity } = frameAt(finished, run, settled(n), {}, assets);
       expect(scene.anchors.map((a) => a.id)).toEqual([def.slug]);
       expect(scene.anchors[0]!.part.startsWith(`${def.slug}/`)).toBe(true);
-      frame.tags.text.forEach((text, i) => {
-        if (text) expect(frame.tags.anchors[i]!.part.startsWith(`${def.slug}/`)).toBe(true);
-      });
+      const alone = frameAt(def, run.runs[def.slug] ?? null, def.ogTimeSec, {}, assets).scene;
+      for (const text of scene.text!) {
+        if (!text.text) continue;
+        written++;
+        // Written on the station's own copied part, at the station's scale.
+        expect(text.id.startsWith(`${def.slug}/`)).toBe(true);
+        expect(text.part.startsWith(`${def.slug}/`)).toBe(true);
+        const original = alone.text!.find((t) => `${def.slug}/${t.id}` === text.id)!;
+        expect(text.size).toBeCloseTo(original.size * scale, 9);
+      }
       const slotOf = (slug: string) =>
         scene.parts.find((p) => p.id.startsWith(`${slug}/`) && intensity[p.slot]! > 0)!.slot;
       const other = STATIONS[(n + 1) % STATIONS.length]!.def.slug;
@@ -134,6 +143,8 @@ describe("the tour", () => {
       expect(intensity[mine]!).toBeGreaterThan(own.intensity[ownSlot]!);
       expect(intensity[slotOf(other)]!).toBeLessThan(1);
     });
+    // The stops do write: most stations' scenes have words on show at their moment.
+    expect(written).toBeGreaterThan(STATIONS.length);
   });
 
   test("the camera frames each station with its own shot, scaled down; the ends are the wide shot", () => {

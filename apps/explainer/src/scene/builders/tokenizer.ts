@@ -1,5 +1,5 @@
 /**
- * Chapter 1's scene, built from the kit (`block`, `brick`, `contactShadow`): a work table with a baseplate, the
+ * Chapter 1's scene, built from the kit (`block`, `brick`, `contactShadow`, `text`): a work table with a baseplate, the
  * "box of shapes" at the back, and a row of toy bricks, one per tokenizer piece of the text on
  * show, each with its piece and its id written on its face. Pieces come from the real shared
  * tokenizer (the run); a piece that starts a new word (it carries the word's leading space)
@@ -25,10 +25,11 @@ import {
   type Part,
   type SceneAnchor,
   type SceneDesc,
+  type SceneText,
+  text,
   PARKED_Y,
 } from "@repo/renderer";
 import type { Vec3 } from "math";
-import type { SceneTags } from "../../hud/SceneTags.tsx";
 import type { SceneBuilder, SceneFrame, PiecesRun, SceneRun } from "../build-frame.ts";
 import { stepAt } from "../step.ts";
 import { tableParts, tableTop, type TableSpec } from "./table.ts";
@@ -71,6 +72,13 @@ const BOX = { center: [-0.8, 0.91, -0.54] as Vec3, size: [0.95, 0.26, 0.42] as V
 /** Where a brick leaves the box: just over its rim. */
 const BOX_TOP = BOX.center[1] + BOX.size[1] / 2;
 const CARD = { width: 0.62, height: 0.2, depth: 0.03, travel: 1.6 };
+/**
+ * Font sizes (em), metres: a brick's face (its piece over its id), the card's text, the box's
+ * note (two lines on its front) and the notes along the table's front edge.
+ */
+const TEXT = { face: 0.062, card: 0.09, boxNote: 0.062, note: 0.058 };
+/** Air either side of a brick face's words, metres. */
+const FACE_MARGIN = 0.03;
 
 export type Colour = "brickLetter" | "brickEarly" | "brickLate";
 export const COLOURS: readonly Colour[] = ["brickLetter", "brickEarly", "brickLate"];
@@ -133,9 +141,14 @@ interface Built {
   pools: Record<Colour, { parts: Part[]; slot: number }[]>;
   card: BlockPart;
   anchors: Record<"bricks" | "ids", SceneAnchor>;
-  /** Tag indices: one per pool brick (colour-major), then the card, then the note. */
-  cardTag: number;
-  noteTag: number;
+  /** What is written: each pool brick's face (by colour), the card's word, the two notes. */
+  text: {
+    faces: Record<Colour, SceneText[]>;
+    card: SceneText;
+    /** The box note is printed on the box of shapes; the others are about the row of bricks. */
+    boxNote: SceneText;
+    note: SceneText;
+  };
   /** Per-frame scratch: bricks claimed per colour, a placement, the last layout. */
   used: number[];
   placement: { center: Vec3; unit: number; length: number };
@@ -283,8 +296,6 @@ function heapParts(): Part[] {
 
 export const tokenizer: SceneBuilder = {
   assets: {},
-  // A face per pool brick, the card's word, and one note.
-  tagCount: COLOURS.length * MAX_BRICKS + 2,
 
   create(assets, revision) {
     const pools = {} as Built["pools"];
@@ -328,43 +339,70 @@ export const tokenizer: SceneBuilder = {
       // The plate's front edge, under the row: where the text is laid out.
       { id: "text", part: "plate", local: onPlate(0, PLATE_TOP, 0.775), priority: 1 },
     ];
-    const scene: SceneDesc = { revision, parts, anchors: sceneAnchors, assets };
-
-    const faceAnchors = COLOURS.flatMap((colour) =>
-      pools[colour].map((b) => ({
-        id: `face.${b.parts[0]!.id}`,
-        part: b.parts[0]!.id,
-        local: [0, 0, 0.5] as Vec3,
-        priority: 0,
-      })),
-    );
-    const noteAnchor: SceneAnchor = {
-      id: "note",
-      part: "plate",
-      local: onPlate(0.15, PLATE_TOP + 0.62, ROW_Z[0][0]),
-      priority: 0,
+    // Each brick's piece and id are written on its front face; the card's text on the card.
+    const faces = {} as Built["text"]["faces"];
+    for (const colour of COLOURS)
+      faces[colour] = pools[colour].map((b) =>
+        text({
+          id: `face.${b.parts[0]!.id}`,
+          part: b.parts[0]!.id,
+          local: [0, 0, 0.5],
+          size: TEXT.face,
+          style: "ink",
+        }),
+      );
+    const written: Built["text"] = {
+      faces,
+      card: text({
+        id: "card",
+        part: "card",
+        local: [0, 0, 0.5],
+        size: TEXT.card,
+        style: "ink",
+        maxWidth: CARD.width - 0.06,
+      }),
+      // The box's own note is printed across the box's front, under its glowing rim.
+      boxNote: text({
+        id: "note.box",
+        part: "box.front",
+        local: [0, 0, 0.5],
+        size: TEXT.boxNote,
+        style: "chalk",
+        maxWidth: BOX.size[0] - 0.08,
+      }),
+      // The notes about the row of bricks run along the table's front edge, under the plate.
+      note: text({
+        id: "note",
+        part: "table",
+        local: [0, 0, 0.5],
+        size: TEXT.note,
+        style: "chalk",
+        maxWidth: TABLE.size[0] - 0.2,
+      }),
     };
-    const tags: SceneTags = {
-      anchors: [
-        ...faceAnchors,
-        { id: "card", part: "card", local: [0, 0, 0.5], priority: 0 },
-        noteAnchor,
+    const scene: SceneDesc = {
+      revision,
+      parts,
+      anchors: sceneAnchors,
+      assets,
+      text: [
+        ...COLOURS.flatMap((colour) => faces[colour]),
+        written.card,
+        written.boxNote,
+        written.note,
       ],
-      text: Array.from({ length: faceAnchors.length + 2 }, () => ""),
-      style: [...faceAnchors.map(() => "onPart" as const), "onPart", "above"],
     };
     built.set(scene, {
       pools,
       card,
       anchors,
-      cardTag: faceAnchors.length,
-      noteTag: faceAnchors.length + 1,
+      text: written,
       used: COLOURS.map(() => 0),
       placement: { center: [0, 0, 0], unit: UNIT, length: 1 },
       layout: { from: undefined, count: -1, pieces: [], spots: [] },
       motion: { spots: null, arrive: -1, slide: -1 },
     });
-    return { scene, tags };
+    return scene;
   },
 
   update(frame: SceneFrame, _def, tl, ui, run) {
@@ -384,7 +422,7 @@ export const tokenizer: SceneBuilder = {
       const pool = b.pools[COLOURS[c]!];
       b.used[c] = 0;
       for (let i = 0; i < pool.length; i++) {
-        frame.tags.text[c * MAX_BRICKS + i] = "";
+        b.text.faces[COLOURS[c]!][i]!.text = "";
         placeBrick(pool[i]!.parts, PARKED);
         dynamics.intensity[pool[i]!.slot] = 0;
       }
@@ -413,7 +451,9 @@ export const tokenizer: SceneBuilder = {
       at.length = spot.length;
       placeBrick(brick.parts, at);
       const stamped = stamp * (n + 1) > i + 0.5;
-      frame.tags.text[c * MAX_BRICKS + k] = u > 0.9 ? faceText(piece, stamped) : "";
+      const face = b.text.faces[COLOURS[c]!][k]!;
+      face.text = u > 0.9 ? faceText(piece, stamped) : "";
+      face.maxWidth = at.length * at.unit - FACE_MARGIN;
       const inPair = (FAILURE_PAIR as readonly string[]).includes(piece.text.trim());
       dynamics.intensity[brick.slot] = inPair ? pair * GLOW : 0;
       first ??= brick.parts[0]!.id;
@@ -435,7 +475,7 @@ export const tokenizer: SceneBuilder = {
     card[12] = (1 - slide) * CARD.travel;
     card[13] = shown ? PLATE_TOP + CARD.height / 2 : PARKED_Y;
     card[14] = ROW_Z[0][0];
-    frame.tags.text[b.cardTag] = shown ? step.text : "";
+    b.text.card.text = shown ? step.text : "";
 
     // Bricks that moved can hide (or stop hiding) the faces behind them.
     const motion = b.motion;
@@ -449,24 +489,36 @@ export const tokenizer: SceneBuilder = {
     dynamics.intensity[BOX_SLOT] = 0.15 + (typed ? 0 : (tl.channels.box ?? 0)) * 2.5;
     dynamics.intensity[HEAP_SLOT] = 0;
     dynamics.intensity[CARD_SLOT] = 0;
-    frame.tags.text[b.noteTag] = typed ? "" : noteFor(tl.channels, step, run);
+    const note = typed ? null : noteFor(tl.channels, step, run);
+    b.text.boxNote.text = note?.on === "box" ? note.text : "";
+    b.text.note.text = note?.on === "row" ? note.text : "";
   },
 };
 
-/** The scene note for the loop's current beat, from the run's own numbers. */
+/**
+ * The scene note for the loop's current beat, from the run's own numbers, and what it is
+ * about: the box of shapes (printed on it) or the row of bricks (along the table's edge).
+ */
 function noteFor(
   channels: Record<string, number>,
   step: { pieces: Piece[] } | undefined,
   run: SceneRun | null,
-): string {
-  if (!step || run?.kind !== "pieces") return "";
+): { on: "box" | "row"; text: string } | null {
+  if (!step || run?.kind !== "pieces") return null;
   if ((channels.pair ?? 0) > 0.5) {
     const [a, b] = FAILURE_PAIR.map((w) => step.pieces.find((p) => p.text.trim() === w));
     if (a && b)
-      return `“${FAILURE_PAIR[0]}” is ${a.id}, “${FAILURE_PAIR[1]}” is ${b.id}: nothing says they're alike`;
+      return {
+        on: "row",
+        text: `“${FAILURE_PAIR[0]}” is ${a.id}, “${FAILURE_PAIR[1]}” is ${b.id}: nothing says they're alike`,
+      };
   }
   if ((channels.box ?? 0) > 0.5)
-    return `every text is built from the same ${run.vocab.toLocaleString("en-US")} shapes`;
-  if ((channels.snapNote ?? 0) > 0.5) return "never seen whole, but made of bricks it knows";
-  return "";
+    return {
+      on: "box",
+      text: `every text is built from\nthe same ${run.vocab.toLocaleString("en-US")} shapes`,
+    };
+  if ((channels.snapNote ?? 0) > 0.5)
+    return { on: "row", text: "never seen whole, but made of bricks it knows" };
+  return null;
 }

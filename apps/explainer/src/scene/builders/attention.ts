@@ -27,16 +27,17 @@ import {
   pipePaths,
   placeHand,
   sealedPaths,
+  text as sceneText,
   type BlockPart,
   type PipeFan,
   type SceneAnchor,
   type SceneDesc,
+  type SceneText,
   type TubePart,
 } from "@repo/renderer";
 import type { Mat4, Vec3 } from "math";
 import { formatStat, share, tokenLabel } from "../../chapters/format.ts";
 import { look } from "../../look/look.ts";
-import type { SceneTags } from "../../hud/SceneTags.tsx";
 import type { SceneBuilder, SceneFrame } from "../build-frame.ts";
 import { nextRevision } from "../revision.ts";
 
@@ -137,10 +138,10 @@ export const SEALED_NOTE = "you can't read tomorrow's newspaper";
 export const ORDER_NOTE = "same mix, same guess: the order is lost";
 
 /**
- * Scene text slots: the mix's word, the focus word, the sealed note, the guess, the needle's
- * angle, the order note, then one per word.
+ * The scene's text, in order: the mix's word, the focus word, the sealed note, the guess, the
+ * needle's angle, the order note, the dials' pair note, then one per word.
  */
-const TAG = {
+const WRITTEN = {
   mix: 0,
   focus: 1,
   sealed: 2,
@@ -153,6 +154,18 @@ const TAG = {
 /** Chapter 5's failure: attention only gathers. */
 export const AVERAGE_NOTE =
   "the mix is only an average: nothing here thinks about what it gathered";
+/**
+ * Font sizes (em), metres: a word on its block (a little wider than `BLOCK.perChar`, into the
+ * block's padding), the mix's word, the notes on the stand's front, and the notes over the mix
+ * and the dials.
+ */
+const TEXT = { word: 0.08, mix: 0.1, stand: 0.09, over: 0.09 };
+/** Air kept between a word and its block's ends, metres. */
+const WORD_MARGIN = 0.02;
+/** Where the stand's notes sit on its front step's face (unit height): sealed high, order low. */
+const NOTE_Y = { sealed: 0.18, order: -0.22 };
+/** The guess stands this high over the mix's middle (its unit height), clear of its top. */
+const GUESS_Y = 2.2;
 /** A clock dial on a word: its radius, and how its hand glows (the pair's, brighter). */
 const DIAL = { radius: 0.09, glow: 0.35, pairGlow: 1.6 };
 /** Pulses are this bright at full flow (they add light over the pipe). */
@@ -288,6 +301,8 @@ interface Built {
   sealedAnchor: SceneAnchor;
   sealedAt: Vec3;
   mixAnchor: SceneAnchor;
+  /** The scene's text, indexed by `WRITTEN`. */
+  text: SceneText[];
 }
 const built = new WeakMap<SceneDesc, Built>();
 const layouts = new WeakMap<AttentionStep, Layout>();
@@ -397,8 +412,6 @@ function standNeedle(transform: Mat4, base: Vec3, toward: Vec3, tilt: number): v
 function attentionScene(o: { dials: boolean }): SceneBuilder {
   return {
     assets: {},
-    tagCount: TAG.words + MAX_TOKENS,
-
     create(assets, revision) {
       // Built parked; the first update lays everything out for the real prompt.
       const block = (id: string, slot: number, material: string) =>
@@ -487,7 +500,59 @@ function attentionScene(o: { dials: boolean }): SceneBuilder {
         // The front step's left end: the page of words.
         { id: "sentence", part: "stand.0", local: [-0.5, 0, 0.5], priority: 1 },
       ];
-      const scene: SceneDesc = { revision, parts, anchors, assets };
+      // Each word is written on its block's front face (`update` picks the block and its ink);
+      // the stand's notes on its front step's face; the guess, the needle's angle and the dials'
+      // pair note stand over what they measure, facing the eye.
+      const onFace: Vec3 = [0, 0, 0.5];
+      const over = (id: string, part: string, local: Vec3) =>
+        sceneText({
+          id,
+          part,
+          local,
+          face: "camera",
+          size: TEXT.over,
+          style: "chalk",
+          align: [0.5, 1],
+        });
+      const text: SceneText[] = [
+        // The mix and focus blocks glow pale: their words are dark ink.
+        sceneText({ id: "mix-word", part: "mix", local: onFace, size: TEXT.mix, style: "ink" }),
+        sceneText({
+          id: "focus-word",
+          part: "focus-word",
+          local: onFace,
+          size: TEXT.word,
+          style: "ink",
+        }),
+        sceneText({
+          id: "sealed-note",
+          part: "stand.0",
+          local: [0, NOTE_Y.sealed, 0.5],
+          size: TEXT.stand,
+          style: "chalk",
+          align: [1, 0.5],
+        }),
+        over("guess", "mix", [0, GUESS_Y, 0]),
+        over("turn", "needle", [0, 1, 0]),
+        sceneText({
+          id: "note",
+          part: "stand.0",
+          local: [0, NOTE_Y.order, 0.5],
+          size: TEXT.stand,
+          style: "chalk",
+        }),
+        over("pair", "stand.0", [0, 0, 0]),
+        ...Array.from({ length: MAX_TOKENS }, (_, i) =>
+          sceneText({
+            id: `word.${i}`,
+            part: `word.${i}`,
+            local: onFace,
+            size: TEXT.word,
+            style: "chalk",
+          }),
+        ),
+      ];
+      const scene: SceneDesc = { revision, parts, anchors, assets, text };
       built.set(scene, {
         steps: stand.map((s) => s.parts[0] as BlockPart),
         words: words.map((w) => w.parts[0] as BlockPart),
@@ -512,50 +577,22 @@ function attentionScene(o: { dials: boolean }): SceneBuilder {
         sealedAnchor,
         sealedAt: sealedAnchor.local,
         mixAnchor,
+        text,
       });
-      // Each word sits on the bottom of its block's front face; the lit words are printed on.
-      const onFace: Vec3 = [0, -0.5, 0.5];
-      const tags: SceneTags = {
-        anchors: [
-          { id: "mix-word", part: "mix", local: [0, 0, 0.5], priority: 0 },
-          { id: "focus-word", part: "focus-word", local: [0, 0, 0.5], priority: 0 },
-          // On the riser of the later words' step, under them.
-          { id: "sealed-note", part: "stand.0", local: [0, 0, 0.5], priority: 0 },
-          // Clear above the mix, and at the needle's tip.
-          { id: "guess", part: "mix", local: [0, 2.2, 0], priority: 0 },
-          { id: "turn", part: "needle", local: [0, 1, 0], priority: 0 },
-          // On the front of the stand, under the words.
-          { id: "note", part: "stand.0", local: [0, -0.1, 0.5], priority: 0 },
-          // Over the two words whose hands are compared.
-          { id: "pair", part: "stand.0", local: [0, 0, 0], priority: 0 },
-          ...Array.from({ length: MAX_TOKENS }, (_, i) => ({
-            id: `word.${i}`,
-            part: `word.${i}`,
-            local: onFace,
-            priority: 0,
-          })),
-        ],
-        text: Array.from({ length: TAG.words + MAX_TOKENS }, () => ""),
-        style: [
-          "onPart",
-          "onPart",
-          ...Array.from({ length: TAG.words - 2 + MAX_TOKENS }, () => "above" as const),
-        ],
-      };
-      return { scene, tags };
+      return scene;
     },
 
     update(frame: SceneFrame, _def, tl, ui, run) {
       const { scene, dynamics } = frame.input;
       const b = built.get(scene)!;
-      const text = frame.tags.text;
+      const text = b.text;
       const typed = ui.text !== null;
       const steps = run?.kind === "attention" ? run.steps : [];
       // Typed text (or a scenario's prompt) is one step; the loop steps through its inputs.
       const at = typed ? 0 : Math.round(tl.channels.step ?? 0);
       const step = steps[Math.min(Math.max(0, at), steps.length - 1)];
       if (!step) {
-        text.fill("");
+        for (const t of text) t.text = "";
         dynamics.widthScale.fill(0, SLOT.sealed);
         return;
       }
@@ -632,16 +669,20 @@ function attentionScene(o: { dials: boolean }): SceneBuilder {
         const up = earlier ? lineUp(i) : 0;
         if (earlier) rise(part, i, up);
         else place(part.transform, PARKED, SLIVER);
-        frame.tags.anchors[TAG.words + i]!.part = part.id;
-        text[TAG.words + i] = earlier && up > 0.6 ? label(i) : "";
+        const onWord = text[WRITTEN.words + i]!;
+        onWord.part = part.id;
+        onWord.style = "chalk";
+        onWord.maxWidth = earlier ? layout.widths[i]! - WORD_MARGIN : undefined;
+        onWord.text = earlier && up > 0.6 ? label(i) : "";
       }
       const focusUp = lineUp(step.focus);
       rise(b.focusWord, step.focus, focusUp);
       dynamics.intensity[SLOT.focus] = FOCUS_GLOW;
-      text[TAG.focus] = focusUp > 0.6 ? label(step.focus) : "";
+      text[WRITTEN.focus]!.maxWidth = layout.widths[step.focus]! - WORD_MARGIN;
+      text[WRITTEN.focus]!.text = focusUp > 0.6 ? label(step.focus) : "";
       const wordsShown = blocks > 0.95;
 
-      // The later words and their sealed stubs come up together; the tags ride the dim blocks.
+      // The later words and their sealed stubs come up together, written on their dim blocks.
       const laterShown = future > 0.6;
       for (let j = 0; j < FUTURE_WORDS; j++) {
         const i = n + j;
@@ -656,23 +697,26 @@ function attentionScene(o: { dials: boolean }): SceneBuilder {
         dynamics.widthScale[SLOT.sealed + j] = clamp((up - 0.7) / 0.3, 0, 1);
         dynamics.intensity[SLOT.sealed + j] = PIPE_GLOW;
         if (here) {
-          const anchor = frame.tags.anchors[TAG.words + i]!;
-          anchor.part = part.id;
-          text[TAG.words + i] = laterShown ? tokenLabel(step.tokens[i]!) : "";
+          const onLater = text[WRITTEN.words + i]!;
+          onLater.part = part.id;
+          onLater.style = "muted";
+          onLater.maxWidth = layout.widths[i]! - WORD_MARGIN;
+          onLater.text = laterShown ? tokenLabel(step.tokens[i]!) : "";
         }
       }
       const noted = laterCount > 0 && future >= 0.9 && blocks >= 0.9;
       if (laterCount > 0) {
-        // Under the later words, low on the riser of the step they stand on.
+        // Under the later words, on the riser of the step they stand on, ending under the last.
         const first = layout.centres[n]!;
-        const last = layout.centres[n + laterCount - 1]!;
+        const lastAt = n + laterCount - 1;
+        const right = layout.centres[lastAt]![0] + layout.widths[lastAt]! / 2;
         const row = layout.steps.findIndex((s) => Math.abs(s.centre[2] - first[2]) < 1e-6);
         const riser = layout.steps[row]!;
-        const note = frame.tags.anchors[TAG.sealed]!;
+        const note = text[WRITTEN.sealed]!;
         note.part = `stand.${row}`;
-        note.local = [((first[0] + last[0]) / 2 - riser.centre[0]) / riser.size[0], -0.1, 0.5];
+        note.local[0] = (right - riser.centre[0]) / riser.size[0];
       }
-      text[TAG.sealed] = noted ? SEALED_NOTE : "";
+      text[WRITTEN.sealed]!.text = noted ? SEALED_NOTE : "";
       b.sealedAnchor.local = noted ? b.sealedAt : OUT_OF_SIGHT;
 
       // The mix block hangs over the stand; it grows in with the words, so the loop starts on an
@@ -686,15 +730,17 @@ function attentionScene(o: { dials: boolean }): SceneBuilder {
         ]);
       b.mixAnchor.local = blocks >= 0.9 ? MIX_PIN : OUT_OF_SIGHT;
       dynamics.intensity[SLOT.mix] = MIX.glow * (0.3 + 0.7 * fill);
-      text[TAG.mix] = wordsShown ? tokenLabel(step.tokens[step.focus]!) : "";
-      text[TAG.guess] =
+      text[WRITTEN.mix]!.text = wordsShown ? tokenLabel(step.tokens[step.focus]!) : "";
+      text[WRITTEN.guess]!.text =
         wordsShown && guessShown
           ? `guess for the next word: “${tokenLabel(step.guess.token)}”, ${share(step.guess.p)} sure`
           : "";
       const positions = run?.kind === "attention" ? run.positions : undefined;
       const change = positions?.change;
       // One note under the words: the order note, then (chapter 5's failure) the average note.
-      text[TAG.note] =
+      // It spans the front step at most (the average note is a long line).
+      text[WRITTEN.note]!.maxWidth = layout.steps[0]!.size[0] - 0.2;
+      text[WRITTEN.note]!.text =
         channel("average", 0) > 0.5
           ? AVERAGE_NOTE
           : !lostShown
@@ -729,7 +775,7 @@ function attentionScene(o: { dials: boolean }): SceneBuilder {
       standNeedle(b.needle.transform, top, [toward[0] / flat, 0, toward[2] / flat], tilt * turn);
       dynamics.widthScale[SLOT.needle] = needleShown ? 1 : 0;
       dynamics.intensity[SLOT.needle] = NEEDLE.glow;
-      text[TAG.turn] =
+      text[WRITTEN.turn]!.text =
         needleShown && turn >= 0.9
           ? `${Math.round(from90 - after)}° closer to “${tokenLabel(step.tokens[referent]!)}”`
           : "";
@@ -823,24 +869,22 @@ function poseDials(
     const lit = pair && swapped?.includes(i);
     dynamics.intensity[SLOT.dials + i] = lit ? DIAL.pairGlow : DIAL.glow;
   }
-  const text = frame.tags.text;
+  const note = b.text[WRITTEN.pair]!;
   if (!pair || !swapped || !(radPerToken > 0)) {
-    text[TAG.pair] = "";
+    note.text = "";
     return;
   }
   // Over the first of the pair, reaching toward the second.
   const [a, c] = swapped;
   const pin = frame.input.scene.anchors.find((x) => x.id === "dials");
   if (pin) pin.part = b.dials![a]!.face.id;
-  const anchor = frame.tags.anchors[TAG.pair]!;
   const fa = b.dials![a]!.face.transform;
   const fc = b.dials![c]!.face.transform;
-  anchor.part = b.dials![a]!.face.id;
-  anchor.local = [(fc[12]! - fa[12]!) / 2, DIAL.radius * 1.3, 0];
+  note.part = b.dials![a]!.face.id;
+  note.local = [(fc[12]! - fa[12]!) / 2, DIAL.radius * 2.4, 0];
   const apart = c - a;
   const degrees = Math.round((apart * radPerToken * 180) / Math.PI);
-  text[TAG.pair] =
-    `“${tokenLabel(step.tokens[a]!)}” and “${tokenLabel(step.tokens[c]!)}”: ${apart} places, ${degrees}° apart`;
+  note.text = `“${tokenLabel(step.tokens[a]!)}” and “${tokenLabel(step.tokens[c]!)}”: ${apart} places, ${degrees}° apart`;
 }
 
 /** The two positions a reorder of the run's first two steps swaps, in order; else null. */

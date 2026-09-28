@@ -1,5 +1,5 @@
 /**
- * Chapter 14's scene, built from the kit (`triageBays`, `block`, `bars`, `contactShadow`): a
+ * Chapter 14's scene, built from the kit (`triageBays`, `block`, `bars`, `contactShadow`, `text`): a
  * row of 8 expert bays behind a router desk, the words queueing beside the desk, and a usage
  * bar in front of each bay.
  *
@@ -17,14 +17,15 @@ import {
   bayCenter,
   deskCenter,
   placeBar,
+  text,
   type BarSlot,
   type BlockPart,
   type SceneAnchor,
   type SceneDesc,
+  type SceneText,
   type TriageBaysParams,
 } from "@repo/renderer";
 import type { Vec3 } from "math";
-import type { SceneTags } from "../../hud/SceneTags.tsx";
 import type { ExpertsRun, SceneBuilder, SceneFrame } from "../build-frame.ts";
 
 const EXPERTS = 8;
@@ -77,24 +78,34 @@ function put(t: number[], c: readonly number[], s: readonly number[] = TILE) {
   t[14] = c[2]!;
 }
 
+/**
+ * Font sizes (em), metres: a word on its tile, the routing note on the desk, a bay's weight
+ * on its back wall and number on its floor, and a bay's usage share.
+ */
+const TEXT = { word: 0.1, desk: 0.1, weight: 0.12, number: 0.2, share: 0.085 };
+/** The weight's height on a bay's back wall (unit block), clear of its word and its lamp. */
+const WEIGHT_Y = 0.12;
+/** The number's place on a bay's floor, toward its front (unit block). */
+const NUMBER_Z = 0.25;
+
+interface Texts {
+  queue: SceneText[];
+  copies: SceneText[];
+  desk: SceneText;
+  weights: SceneText[];
+  shares: SceneText[];
+  numbers: SceneText[];
+}
+
 interface Built {
   queue: BlockPart[];
   copies: BlockPart[];
   bars: BlockPart[];
   barSlots: BarSlot[];
   even: BlockPart;
+  text: Texts;
 }
 const built = new WeakMap<SceneDesc, Built>();
-
-const TAG = {
-  queue: 0,
-  copies: QUEUE,
-  desk: QUEUE + 2,
-  weights: QUEUE + 3,
-  usage: QUEUE + 3 + EXPERTS,
-  numbers: QUEUE + 3 + 2 * EXPERTS,
-};
-const TAG_COUNT = QUEUE + 3 + 3 * EXPERTS;
 const SLOT = {
   bays: 0,
   words: TRIAGE_SLOTS.lamps + EXPERTS,
@@ -111,7 +122,6 @@ function routing(run: ExpertsRun, n: number) {
 
 export const experts: SceneBuilder = {
   assets: {},
-  tagCount: TAG_COUNT,
 
   create(assets, revision) {
     const triage = KIT.triageBays.build(BAYS);
@@ -166,48 +176,85 @@ export const experts: SceneBuilder = {
       { id: "tokens", part: "triage.desk", local: [0.5, -0.4, 0.5], priority: 2 },
       { id: "usage", part: "usage.0", local: [-0.5, 0, 0.5], priority: 1 },
     ];
-    const scene: SceneDesc = { revision, parts, anchors, assets };
-    built.set(scene, { queue, copies, bars: bars.parts as BlockPart[], barSlots, even });
-    const tags: SceneTags = {
-      anchors: [
-        ...queue.map((p) => ({ id: p.id, part: p.id, local: [0, 0, 0.5] as Vec3, priority: 0 })),
-        ...copies.map((p) => ({ id: p.id, part: p.id, local: [0, 0, 0.5] as Vec3, priority: 0 })),
-        // Above the middle of the row of bays, where the words go.
-        { id: "desk", part: "triage.bay.4", local: [-0.56, 1.35, 0], priority: 0 },
-        ...Array.from({ length: EXPERTS }, (_, e) => ({
-          id: `weight.${e}`,
-          part: `triage.bay.${e}`,
-          local: [0, 0.62, 0.5] as Vec3,
-          priority: 0,
-        })),
-        ...Array.from({ length: EXPERTS }, (_, e) => ({
+    // Every word is written on its own tile; the routing note on the router desk's front; the
+    // router's weight for a bay on that bay's back wall, above where its word stands; each
+    // bay's number painted on its floor, at the front; each bay's usage share just above its
+    // usage bar, which it measures.
+    const wordOn = (p: BlockPart) =>
+      text({
+        id: p.id,
+        part: p.id,
+        local: [0, 0, 0.5],
+        size: TEXT.word,
+        style: "ink",
+        maxWidth: TILE[0] - 0.04,
+      });
+    const onWall = (id: string, e: number, y: number, size: number) =>
+      text({ id, part: `triage.bay.${e}`, local: [0, y, 0.5], size, style: "chalk" });
+    const texts: Texts = {
+      queue: queue.map(wordOn),
+      copies: copies.map(wordOn),
+      desk: text({
+        id: "desk",
+        part: "triage.desk",
+        local: [0, 0.05, 0.5],
+        size: TEXT.desk,
+        style: "chalk",
+        maxWidth: BAYS.desk[0] - 0.08,
+      }),
+      weights: Array.from({ length: EXPERTS }, (_, e) =>
+        onWall(`weight.${e}`, e, WEIGHT_Y, TEXT.weight),
+      ),
+      shares: Array.from({ length: EXPERTS }, (_, e) =>
+        text({
           id: `share.${e}`,
           part: `usage.${e}`,
-          local: [0, 0.5, 0.5] as Vec3,
-          priority: 0,
-        })),
-        // Each bay's number, on its floor's front edge.
-        ...Array.from({ length: EXPERTS }, (_, e) => ({
+          local: [0, 0.5, 0.5],
+          size: TEXT.share,
+          style: "chalk",
+          align: [0.5, 1.3],
+        }),
+      ),
+      numbers: Array.from({ length: EXPERTS }, (_, e) =>
+        text({
           id: `number.${e}`,
           part: `triage.bay.${e}.floor`,
-          local: [0, 0, 0.5] as Vec3,
-          priority: 0,
-        })),
-      ],
-      text: Array.from({ length: TAG_COUNT }, () => ""),
-      style: [
-        ...Array.from({ length: QUEUE + 2 }, () => "onPart" as const),
-        ...Array.from({ length: 1 + 3 * EXPERTS }, () => "above" as const),
+          local: [0, 0.5, NUMBER_Z],
+          face: "top",
+          size: TEXT.number,
+          style: "chalk",
+        }),
+      ),
+    };
+    const scene: SceneDesc = {
+      revision,
+      parts,
+      anchors,
+      assets,
+      text: [
+        ...texts.queue,
+        ...texts.copies,
+        texts.desk,
+        ...texts.weights,
+        ...texts.shares,
+        ...texts.numbers,
       ],
     };
-    return { scene, tags };
+    built.set(scene, {
+      queue,
+      copies,
+      bars: bars.parts as BlockPart[],
+      barSlots,
+      even,
+      text: texts,
+    });
+    return scene;
   },
 
   update(frame: SceneFrame, _def, tl, ui, run) {
     const { scene, dynamics } = frame.input;
-    const { queue, copies, bars, barSlots, even } = built.get(scene)!;
-    const texts = frame.tags.text;
-    texts.fill("");
+    const { queue, copies, bars, barSlots, even, text: texts } = built.get(scene)!;
+    for (const t of scene.text!) t.text = "";
     for (let e = 0; e < EXPERTS; e++) dynamics.intensity[TRIAGE_SLOTS.lamps + e] = 0;
     if (run?.kind !== "experts") return;
     const c = tl.channels;
@@ -233,31 +280,31 @@ export const experts: SceneBuilder = {
         desk[2] + QUEUE_AT.dz,
       ];
       put(t, i === n ? deskTop : waiting);
-      texts[TAG.queue + i] = word.text;
+      texts.queue[i]!.text = word.text.trim();
     }
-    const { text, bays, weights } = routing(run, n);
+    const { text: word, bays, weights } = routing(run, n);
     copies.forEach((copy, j) => {
       const bay = bays[j]!;
       if (route <= 0.02) return put(copy.transform, [0, HIDDEN_Y, 0]);
       put(copy.transform, lerp(deskTop, inBay(bay), route));
-      texts[TAG.copies + j] = text;
+      texts.copies[j]!.text = word.trim();
     });
     if (route > 0.5) {
       bays.forEach((bay, j) => {
         dynamics.intensity[TRIAGE_SLOTS.lamps + bay] = LAMP_ON;
-        texts[TAG.weights + bay] = `${Math.round(weights[j]! * 100)}%`;
+        texts.weights[bay]!.text = `${Math.round(weights[j]! * 100)}%`;
       });
-      texts[TAG.desk] =
-        `“${text.trim()}” → bays ${bays.map((b) => b + 1).join(" and ")} (layer ${run.layer + 1} of ${run.layers})`;
+      const to = bays.map((b) => b + 1).join(" and ");
+      texts.desk.text = `“${word.trim()}” →\nbays ${to}\n(layer ${run.layer + 1} of ${run.layers})`;
     }
     for (let e = 0; e < EXPERTS; e++) {
       const used = run.usage[e]!;
       placeBar(bars[e]!.transform, barSlots[e]!, used * USAGE_HEIGHT * usage);
-      if (usage > 0.9) texts[TAG.usage + e] = `${(used * 100).toFixed(1)}%`;
+      if (usage > 0.9) texts.shares[e]!.text = `${(used * 100).toFixed(1)}%`;
     }
     for (let e = 0; e < EXPERTS; e++) {
       dynamics.intensity[SLOT.bars + e] = usage > 0 ? 1 : 0;
-      texts[TAG.numbers + e] = `${e + 1}`;
+      texts.numbers[e]!.text = `${e + 1}`;
     }
     const share = 1 / EXPERTS;
     even.transform[13] = usage > 0.9 ? share * USAGE_HEIGHT : HIDDEN_Y;

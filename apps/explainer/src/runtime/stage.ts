@@ -1,8 +1,9 @@
 /**
- * The one frame loop: a canvas, the real renderer, orbit controls, pinned labels and scene
- * text. Every frame: clock → `update` (the app's timeline → buildFrame, or a lab fixture's
- * tweak) → orbit → renderer.frame → placeLabels → label and tag refs. The app and every lab
- * page run through it; it also installs the probe's `receipt`, `labels` and scene crops.
+ * The one frame loop: a canvas, the real renderer, orbit controls and pinned labels. Every
+ * frame: clock → `update` (the app's timeline → buildFrame, or a lab fixture's tweak) → orbit
+ * → renderer.frame → placeLabels (clear of the scene's own text) → label refs. The app and
+ * every lab page run through it; it also installs the probe's `receipt`, `labels` and scene
+ * crops (`part:*`, `text:*`).
  */
 import {
   copyPose,
@@ -25,11 +26,11 @@ import {
   type OrbitPose,
   type Renderer,
   type ScreenRect,
+  type TextRect,
   type WorldAnchor,
 } from "@repo/renderer";
 import type { Box3 } from "math/shapes";
 import type { LabelsHandle } from "../hud/Labels.tsx";
-import type { SceneTags, SceneTagsHandle } from "../hud/SceneTags.tsx";
 import type { ProbeApi } from "../lab/probe.ts";
 import { roomOrbitLimits } from "../scene/environment.ts";
 import type { Clock } from "./clock.ts";
@@ -58,10 +59,8 @@ export interface StageOptions {
   pose?: (pose: OrbitPose, timeSec: number) => void;
   /** The label layer to drive, for the scene's anchors. */
   labels?: LabelsHandle | null;
-  /** Screen rects labels must keep clear of besides scene text (the HUD panels). */
+  /** Screen rects labels must keep clear of besides the scene's text (the HUD panels). */
   obstacles?: () => readonly ScreenRect[];
-  /** Scene text: the overlay and the builder's current tags. */
-  tags?: { layer: SceneTagsHandle | null; current: () => SceneTags };
 }
 
 export interface Stage {
@@ -78,9 +77,6 @@ export interface Stage {
   arriving(): boolean;
   dispose(): void;
 }
-
-/** Scene text never hides for overlap: a 1 px box. */
-const TAG_BOX: LabelBox = { dx: 0, dy: 0, width: 1, height: 1 };
 
 export async function runStage(o: StageOptions): Promise<Stage | null> {
   const created = await createRenderer(o.canvas, o.look);
@@ -116,9 +112,8 @@ export async function runStage(o: StageOptions): Promise<Stage | null> {
   const matrices = createCameraMatrices();
   const labelAnchors: WorldAnchor[] = [];
   const labelPlacements: LabelPlacement[] = [];
-  const tagAnchors: WorldAnchor[] = [];
-  const tagPlacements: LabelPlacement[] = [];
   const obstacles: ScreenRect[] = [];
+  const textRects: TextRect[] = [];
   // Occluders change with the scene's structure or its layout; anchors move every frame.
   const occludedFor = { revision: -1, layout: -1 };
   let occluders: Occluder[] = [];
@@ -130,14 +125,9 @@ export async function runStage(o: StageOptions): Promise<Stage | null> {
       occludedFor.layout = scene.layout ?? 0;
     }
     cameraMatrices(input.camera, input.viewport, matrices);
-    // Scene text first: labels then steer clear of it.
-    if (o.tags) {
-      const tags = o.tags.current();
-      sceneAnchors(scene, tags.anchors, tagAnchors);
-      placeLabels(matrices, tagAnchors, occluders, tagPlacements, TAG_BOX);
-      o.tags.layer?.update(tagPlacements, tags);
-      o.tags.layer?.obstacles(obstacles);
-    } else obstacles.length = 0;
+    // Labels steer clear of the text written in the scene.
+    obstacles.length = 0;
+    for (const rect of renderer.textRects(matrices, textRects)) obstacles.push(rect);
     if (o.obstacles) for (const rect of o.obstacles()) obstacles.push(rect);
     sceneAnchors(scene, scene.anchors, labelAnchors);
     const widths = o.labels?.pillWidths();
@@ -179,6 +169,7 @@ export async function runStage(o: StageOptions): Promise<Stage | null> {
       const rect = projectBox(matrices, partWorldBounds(part, input.scene.assets, box));
       if (rect) crops[`part:${part.id}`] = rect;
     }
+    for (const { id, ...rect } of renderer.textRects(matrices, [])) crops[`text:${id}`] = rect;
     return crops;
   };
 

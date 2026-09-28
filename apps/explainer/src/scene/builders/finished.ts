@@ -3,10 +3,11 @@
  * no part of its own. Each station (`data/finished.ts`) is its chapter's scene, built and
  * updated by that chapter's builder through `buildFrame` into a frame of its own, at its own
  * loop time and on its own run; this scene copies every station's parts into one scene, scaled
- * and placed on a grid on the floor, and passes their dynamics and scene text through.
+ * and placed on a grid on the floor, and passes their dynamics and the text written on their
+ * parts through (its size scaled with the station).
  *
  * On top it adds only the tour: the station in view pulses (its emission breathes) while the
- * rest dim, only its scene text and its label show, and `tourPose` frames it with its own
+ * rest dim, only its written text and its label show, and `tourPose` frames it with its own
  * chapter's shot, scaled down with it. Back on the wide shot, a wave of light runs through the
  * machine in tour order. Its one part of its own is the route: a pipe along the floor from
  * station to station in tour order, pulses flowing along it, so the stations read as one
@@ -15,7 +16,14 @@
  * Each station's loop runs offset so that it plays its chapter's link-preview moment
  * (`ogTimeSec`) as the camera arrives. The slider holds the tour on one station.
  */
-import { KIT, type OrbitPose, type Part, type SceneAnchor, type SceneDesc } from "@repo/renderer";
+import {
+  KIT,
+  type OrbitPose,
+  type Part,
+  type SceneAnchor,
+  type SceneDesc,
+  type SceneText,
+} from "@repo/renderer";
 import type { Vec3 } from "math";
 import {
   FLOOR,
@@ -26,7 +34,6 @@ import {
 } from "../../chapters/data/finished.ts";
 import { createTimelineState, evalTimeline, type TimelineState } from "../../chapters/timeline.ts";
 import type { ChapterDef, SceneBuilderId } from "../../chapters/types.ts";
-import type { SceneTags } from "../../hud/SceneTags.tsx";
 import { arrivalPose } from "../../runtime/arrival.ts";
 import type { SceneBuilder, SceneFrame, SceneUi, buildFrame } from "../build-frame.ts";
 import { nextRevision } from "../revision.ts";
@@ -134,7 +141,7 @@ function stationInView(stop: number): number {
   return nearest - 1;
 }
 
-/** One station's own frame and where its parts, slots and tags land in the machine's. */
+/** One station's own frame and where its parts, slots and text land in the machine's. */
 interface Placed {
   station: Station;
   origin: Vec3;
@@ -145,9 +152,10 @@ interface Placed {
   /** The station scene's revision its parts were last copied at. */
   revision: number;
   slotBase: number;
-  tagBase: number;
   /** Station part → the machine's copy of it. */
   copies: [Part, Part][];
+  /** Station text → the machine's copy of it. */
+  texts: [SceneText, SceneText][];
   /** The machine's anchor for this station's label (its chapter's own label anchor). */
   anchor: SceneAnchor;
 }
@@ -157,7 +165,7 @@ interface Built {
   /** The route's pipe and its pulses, after every station's parts. */
   route: Part[];
   routeSlot: number;
-  /** Part id in a station → its id in the machine, cached so tag syncing allocates nothing. */
+  /** Part id in a station → its id in the machine, cached so text syncing allocates nothing. */
   ids: Map<string, string>;
 }
 const built = new WeakMap<SceneDesc, Built>();
@@ -179,14 +187,37 @@ function copyPart(p: Placed, part: Part): Part {
   };
 }
 
-/** (Re)copies every station's parts into the machine's scene: a new structure. */
+/**
+ * The machine's copy of a station's text: on the copied part, at the station's scale, and
+ * blank until `update` syncs it.
+ */
+function copyText(p: Placed, t: SceneText): SceneText {
+  const { scale } = p.station;
+  return {
+    ...t,
+    id: p.prefix + t.id,
+    part: p.prefix + t.part,
+    local: [...t.local],
+    size: t.size * scale,
+    lift: t.lift * scale,
+    maxWidth: t.maxWidth === undefined ? undefined : t.maxWidth * scale,
+    text: "",
+  };
+}
+
+/** (Re)copies every station's parts and text into the machine's scene: a new structure. */
 function assemble(scene: SceneDesc, b: Built): void {
   scene.parts.length = 0;
+  const text: SceneText[] = [];
   for (const p of b.placed) {
-    p.copies = p.frame.input.scene.parts.map((part) => [part, copyPart(p, part)]);
+    const sub = p.frame.input.scene;
+    p.copies = sub.parts.map((part) => [part, copyPart(p, part)]);
     for (const [, copy] of p.copies) scene.parts.push(copy);
-    p.revision = p.frame.input.scene.revision;
+    p.texts = (sub.text ?? []).map((t) => [t, copyText(p, t)]);
+    for (const [, copy] of p.texts) text.push(copy);
+    p.revision = sub.revision;
   }
+  scene.text = text;
   scene.parts.push(...b.route);
   scene.revision = nextRevision();
 }
@@ -230,11 +261,9 @@ export function finishedScene(
   const own = (s: Station) => builders[s.def.scene as Exclude<SceneBuilderId, "finished">];
   return {
     assets: Object.assign({}, ...STATIONS.map((s) => own(s).assets)),
-    tagCount: STATIONS.reduce((n, s) => n + own(s).tagCount, 0),
 
     create(assets, revision) {
       const b: Built = { placed: [], route: [], routeSlot: 0, ids: new Map() };
-      const tags: SceneTags = { anchors: [], text: [], style: [] };
       let slotBase = 0;
       STATIONS.forEach((station, n) => {
         const frame: SceneFrame = {
@@ -248,7 +277,6 @@ export function finishedScene(
               flowPhase: new Float32Array(1),
             },
           },
-          tags: { anchors: [], text: [], style: [] },
         };
         const ui: SceneUi = {
           slider: station.def.slider?.initial ?? 0,
@@ -269,15 +297,11 @@ export function finishedScene(
           ui,
           revision: -1,
           slotBase,
-          tagBase: tags.text.length,
+          texts: [],
           copies: [],
           anchor: { ...own, id: station.def.slug, part: prefix + own.part },
         };
         slotBase += frame.input.dynamics.intensity.length;
-        for (const a of frame.tags.anchors)
-          tags.anchors.push({ ...a, id: prefix + a.id, part: prefix + a.part });
-        tags.text.push(...frame.tags.text.map(() => ""));
-        tags.style.push(...frame.tags.style);
         b.placed.push(placed);
       });
       b.routeSlot = slotBase;
@@ -290,7 +314,7 @@ export function finishedScene(
       assemble(scene, b);
       scene.revision = revision;
       built.set(scene, b);
-      return { scene, tags };
+      return scene;
     },
 
     update(frame, def, tl, ui, run) {
@@ -314,7 +338,6 @@ export function finishedScene(
       scene.layout = layout + scene.revision;
 
       scene.anchors.length = 0;
-      const text = frame.tags.text;
       b.placed.forEach((p, n) => {
         const sub = p.frame.input;
         const { scale } = p.station;
@@ -329,12 +352,16 @@ export function finishedScene(
           dynamics.widthScale[slot] = widthScale[k]!;
           dynamics.flowPhase[slot] = flowPhase[k]!;
         }
-        // Scene text: only the station in view speaks; its anchors follow its parts.
-        const tags = p.frame.tags;
-        for (let j = 0; j < tags.text.length; j++) {
-          const anchor = frame.tags.anchors[p.tagBase + j]!;
-          anchor.part = prefixed(b, p.prefix, tags.anchors[j]!.part);
-          text[p.tagBase + j] = n === inView ? tags.text[j]! : "";
+        // Written text: only the station in view speaks; it follows its station's parts.
+        for (const [own, copy] of p.texts) {
+          copy.text = n === inView ? own.text : "";
+          copy.part = prefixed(b, p.prefix, own.part);
+          copy.style = own.style;
+          copy.opacity = own.opacity;
+          copy.local[0] = own.local[0];
+          copy.local[1] = own.local[1];
+          copy.local[2] = own.local[2];
+          copy.maxWidth = own.maxWidth === undefined ? undefined : own.maxWidth * scale;
         }
         if (n === inView) {
           const own = sub.scene.anchors.find((a) => a.id === p.station.label)!;

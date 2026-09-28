@@ -20,15 +20,16 @@ import {
   KIT,
   pipePaths,
   placeSegment,
+  text,
   type BlockPart,
   type Part,
   type SceneAnchor,
   type SceneDesc,
+  type SceneText,
   type TubePart,
 } from "@repo/renderer";
 import { evalArith } from "@repo/llm";
-import type { Vec3 } from "math";
-import type { SceneTags } from "../../hud/SceneTags.tsx";
+import type { Mat4, Vec3 } from "math";
 import type { SceneBuilder, SceneFrame } from "../build-frame.ts";
 import { nextRevision } from "../revision.ts";
 import { box, segment } from "./parts.ts";
@@ -71,8 +72,26 @@ const PIPE_LIFT = 0.35;
 const GROUP_MATERIAL = ["bar", "barAlt"];
 /** `end`: how far (x, z) the first belt starts before block 1 and the last runs past block 4. */
 const BELT = { y: 1.1, radius: 0.05, end: [1, 0.35] as const };
-/** The page: a sheet on the floor in front of block 1 and to its right. */
-const PAGE = { center: [-2.1, 0.01, 2.5] as Vec3, size: [1.0, 0.02, 0.6] as Vec3 };
+/**
+ * The page: a sheet propped on the floor in front of block 1 and to its right, its front edge
+ * on the floor and its face tilted `tilt` radians up toward the camera, so its words read.
+ */
+const PAGE = { at: [-2.1, 2.7] as const, size: [1.1, 0.02, 0.62] as Vec3, tilt: 1.05 };
+
+/** The page's transform: propped as `PAGE` says, at `shown` of its size (0 hides it). */
+function placePage(t: Mat4, shown: number): void {
+  const [w, h, d] = PAGE.size;
+  const s = Math.max(shown, 1e-4);
+  const c = Math.cos(PAGE.tilt);
+  const sn = Math.sin(PAGE.tilt);
+  // Rotated about x: its top face's normal leans from +y toward +z (column-major).
+  const m = [w * s, 0, 0, 0, 0, h * c, h * sn, 0, 0, -d * s * sn, d * s * c, 0];
+  for (let i = 0; i < m.length; i++) t[i] = m[i]!;
+  t[12] = PAGE.at[0];
+  t[13] = (d / 2) * sn + (h / 2) * c;
+  t[14] = PAGE.at[1] + (d / 2) * c;
+  t[15] = 1;
+}
 
 const tokenX = (i: number, n: number) => (i - (n - 1) / 2) * RAIL.pitch;
 const readerX = (h: number) => (h - (HEADS - 1) / 2) * READER.pitch;
@@ -86,7 +105,14 @@ interface Built {
   belts: TubePart[];
   page: BlockPart;
   slots: { pipes: number; lamps: number; belts: number };
+  text: { words: SceneText[]; page: SceneText; names: SceneText[] };
 }
+
+/**
+ * Font sizes (em), metres: a word on its rail tile, the page's lines, and each block's name
+ * (read from the pull-back, so large).
+ */
+const TEXT = { tile: 0.09, page: 0.08, name: 0.22 };
 
 const built = new WeakMap<SceneDesc, Built>();
 
@@ -109,8 +135,6 @@ function headPaths(b: number, h: number, n: number): Vec3[][] {
 
 export const stack: SceneBuilder = {
   assets: {},
-  // A word per rail slot, the page (or its one-word note), and a name per block.
-  tagCount: STACK_TOKENS + 1 + BLOCKS,
 
   create(assets, revision) {
     let slot = 0;
@@ -202,8 +226,8 @@ export const stack: SceneBuilder = {
     );
     slot += BLOCKS + 1;
     parts.push(...belts);
-    // The page the line writes: a sheet on the floor in front of block 1, its text above it.
-    const page = box("page", plainSlot, "housing", PAGE.center, PAGE.size);
+    // The page the line writes: a sheet propped in front of block 1, its text written on it.
+    const page = box("page", plainSlot, "card", [0, 0, 0], PAGE.size);
     parts.push(page);
     const shadow = KIT.contactShadow.build({
       id: "shadow",
@@ -219,7 +243,48 @@ export const stack: SceneBuilder = {
       { id: "block", part: "block.0.beam", local: [-0.35, 0.5, 0.5], priority: 2 },
       { id: "line", part: "block.1.beam", local: [0.3, 0.5, 0.5], priority: 1 },
     ];
-    const scene: SceneDesc = { revision, parts, anchors, assets };
+    const texts: Built["text"] = {
+      // Block 1's words, each on its tile in dark ink.
+      words: Array.from({ length: STACK_TOKENS }, (_, i) =>
+        text({
+          id: `word.${i}`,
+          part: `block.0.word.${i}`,
+          local: [0, 0, 0.5],
+          size: TEXT.tile,
+          style: "ink",
+          maxWidth: RAIL.tile[0] - 0.012,
+        }),
+      ),
+      // The page's words are written on the propped sheet itself, from its left.
+      page: text({
+        id: "page",
+        part: "page",
+        local: [-0.45, 0.5, 0],
+        face: "top",
+        size: TEXT.page,
+        style: "ink",
+        align: [0, 0.5],
+        maxWidth: PAGE.size[0] - 0.1,
+      }),
+      // Each block's name stands on its top beam, like the letters of a sign.
+      names: Array.from({ length: BLOCKS }, (_, k) =>
+        text({
+          id: `name.${k}`,
+          part: `block.${k}.beam`,
+          local: [0, 0.5, 0.5],
+          size: TEXT.name,
+          style: "chalk",
+          align: [0.5, 1.15],
+        }),
+      ),
+    };
+    const scene: SceneDesc = {
+      revision,
+      parts,
+      anchors,
+      assets,
+      text: [...texts.words, texts.page, ...texts.names],
+    };
     const b: Built = {
       tiles,
       pipes,
@@ -227,30 +292,11 @@ export const stack: SceneBuilder = {
       belts,
       page,
       slots: { pipes: pipesSlot, lamps: lampsSlot, belts: beltSlot },
+      text: texts,
     };
     built.set(scene, b);
-    pose(b, BUILT_POSE, null, null, null, null);
-
-    const tags: SceneTags = {
-      anchors: [
-        ...Array.from({ length: STACK_TOKENS }, (_, i) => ({
-          id: `word.${i}`,
-          part: `block.0.word.${i}`,
-          local: [0, 0.5, 0.5] as Vec3,
-          priority: 0,
-        })),
-        { id: "page", part: "page", local: [0, 0.5, 0.5], priority: 0 },
-        ...Array.from({ length: BLOCKS }, (_, k) => ({
-          id: `name.${k}`,
-          part: `block.${k}.beam`,
-          local: [0, 0.5, 0.5] as Vec3,
-          priority: 0,
-        })),
-      ],
-      text: Array.from({ length: STACK_TOKENS + 1 + BLOCKS }, () => ""),
-      style: Array.from({ length: STACK_TOKENS + 1 + BLOCKS }, () => "above"),
-    };
-    return { scene, tags };
+    pose(b, BUILT_POSE, null, null, null, false);
+    return scene;
   },
 
   update(frame: SceneFrame, _def, tl, ui, run) {
@@ -273,14 +319,7 @@ export const stack: SceneBuilder = {
       layPipes(b, n);
       frame.input.scene.revision = nextRevision();
     }
-    pose(
-      b,
-      state,
-      data,
-      frame.input.dynamics.intensity,
-      frame.input.dynamics.widthScale,
-      frame.tags.text,
-    );
+    pose(b, state, data, frame.input.dynamics.intensity, frame.input.dynamics.widthScale, true);
   },
 };
 
@@ -323,7 +362,7 @@ function pose(
   data: StackRun | null,
   intensity: Float32Array | null,
   widthScale: Float32Array | null,
-  text: string[] | null,
+  write: boolean,
 ): void {
   const n = data?.tokens.length ?? STACK_TOKENS;
   for (let blk = 0; blk < BLOCKS; blk++) {
@@ -367,8 +406,7 @@ function pose(
   }
   // The page shows only while it has words on it.
   const pageShown = state.write > 0 || state.failure >= 0.5 ? 1 : 1e-4;
-  b.page.transform[0] = PAGE.size[0] * pageShown;
-  b.page.transform[10] = PAGE.size[2] * pageShown;
+  placePage(b.page.transform, pageShown);
   if (intensity) {
     // Belts glow as the one pass reaches them, and sit dim otherwise.
     for (let k = 0; k <= BLOCKS; k++)
@@ -381,19 +419,21 @@ function pose(
           intensity[pipe.slot] = (0.3 + 0.7 * grow) * (blk + 1 === LIT_BLOCK ? 1 : DIM);
     }
   }
-  if (!text) return;
+  if (!write) return;
+  const text = b.text;
   for (let i = 0; i < STACK_TOKENS; i++) {
     const word = data && i < n ? data.tokens[i]! : "";
     const landed = i < n && state.tokens * n - i >= 1;
-    text[i] = landed ? (word === "<bos>" ? "·" : word.trim() || "␣") : "";
-    if (data && i === n && state.pass >= 1) text[i] = data.next.trim();
+    const tile = text.words[i]!;
+    tile.text = landed ? (word === "<bos>" ? "·" : word.trim() || "␣") : "";
+    if (data && i === n && state.pass >= 1) tile.text = data.next.trim();
   }
   const page = data
     ? wrap(`…${data.prompt.split(" ").slice(-2).join(" ")}${data.continuation}`)
     : "";
   const chars = Math.round(page.length * state.write);
   // The page, written out; at the failure beat it shrinks to the one word a single pass makes.
-  text[STACK_TOKENS] = !data
+  text.page.text = !data
     ? ""
     : state.failure >= 0.5
       ? `one pass through the line\nwrites one word: “${data.next.trim()}”`
@@ -401,7 +441,7 @@ function pose(
         ? page.slice(0, chars)
         : "";
   for (let k = 0; k < BLOCKS; k++)
-    text[STACK_TOKENS + 1 + k] =
+    text.names[k]!.text =
       state.zoom > 0.6
         ? k === BLOCKS - 1
           ? `block ${k + 1} of ${BLOCKS}\n(Llama-3-8B has ${evalArith("layers", {})})`

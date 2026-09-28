@@ -10,7 +10,7 @@ import { createTimelineState, evalTimeline } from "../src/chapters/timeline.ts";
 import { validateChapter } from "../src/chapters/validate.ts";
 import { type SceneUi } from "../src/scene/build-frame.ts";
 import { busCapacity, occupancy, PER_SPOT, SEATS } from "../src/scene/builders/batching.ts";
-import { frameAt as sceneFrameAt } from "./scene-harness.ts";
+import { frameAt as sceneFrameAt, texts } from "./scene-harness.ts";
 
 const bus = parseGlb(
   await Bun.file(path.resolve(import.meta.dirname, "../public/props/bus.glb")).arrayBuffer(),
@@ -19,7 +19,7 @@ const bus = parseGlb(
 function frameAt(t: number, ui: Partial<SceneUi> = {}) {
   const { frame } = sceneFrameAt(batching, null, t, ui, { bus });
   const tl = evalTimeline(batching.loop, t, createTimelineState(batching.loop));
-  return { input: frame.input, tl, tags: frame.tags.text };
+  return { input: frame.input, tl, text: texts(frame.input.scene) };
 }
 
 /** How many `<prefix>.<n>` cubes stand above the floor (hidden ones wait below it). */
@@ -91,11 +91,20 @@ describe("chapter 11's scene", () => {
 
   test("the slider replaces the loop's riders once the reader moves it", () => {
     const loop = frameAt(3);
-    expect(loop.tags[0]).toStartWith("1 rider ·");
+    expect(loop.text[0]).toStartWith("1 rider ·");
     expect(shown(loop.input.scene, "rider")).toBe(1);
     const set = frameAt(3, { slider: 200, sliderSet: true });
-    expect(set.tags[0]).toStartWith("200 riders ·");
+    expect(set.text[0]).toStartWith("200 riders ·");
     expect(shown(set.input.scene, "rider")).toBe(200);
+  });
+
+  test("each readout is written on the part it describes", () => {
+    const { input } = frameAt(20);
+    expect(input.scene.text!.map((t) => [t.id, t.part, t.face])).toEqual([
+      ["trip", "bus.body", "front"],
+      ["crates", "crate.2", "front"],
+      ["stop", "stop.sign", "front"],
+    ]);
   });
 
   test("prefill seats one prompt's tokens and no riders", () => {
@@ -106,14 +115,14 @@ describe("chapter 11's scene", () => {
 
   test("every number the scene writes is the arithmetic for what it shows", () => {
     const t = 10;
-    const { tl, tags } = frameAt(t);
+    const { tl, text } = frameAt(t);
     const riders = Math.round(tl.channels.batch!);
     expect(riders).toBeGreaterThan(busCapacity());
-    expect(tags[0]).toBe(
+    expect(text[0]).toBe(
       `${riders} riders · ${formatStat(evalArith("batchThroughput", args(riders)), "tok/s")} in total\none trip: ${formatStat(evalArith("decodeStepSeconds", args(riders)), "s")}`,
     );
-    expect(tags[2]).not.toBe("");
-    const prefill = frameAt(15).tags[0]!;
+    expect(text[2]).not.toBe("");
+    const prefill = frameAt(15).text[0]!;
     const seconds = evalArith("prefillSeconds", {
       tokens: PREFILL_TOKENS,
       weightBytes: BUS_ARITH.weightBytes,
@@ -121,7 +130,7 @@ describe("chapter 11's scene", () => {
     });
     expect(prefill).toContain(`${PREFILL_TOKENS}-token prompt`);
     expect(prefill).toContain(formatStat(seconds, "s"));
-    const heavy = frameAt(20).tags[1]!;
+    const heavy = frameAt(20).text[1]!;
     expect(heavy).toStartWith(formatStat(evalArith("weightBytes", { weightBytes: 2 }), "bytes"));
   });
 

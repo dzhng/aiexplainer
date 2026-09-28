@@ -1,5 +1,5 @@
 /**
- * Chapter 13's scene, built from the kit (`block`, `draftStrip`, `contactShadow`): a small
+ * Chapter 13's scene, built from the kit (`block`, `draftStrip`, `contactShadow`, `text`): a small
  * junior machine (the drafter), a big senior machine (the target), the draft strip between
  * them, and a rail with the story so far.
  *
@@ -17,14 +17,16 @@ import {
   draftTileCenter,
   faceId,
   setDraftTile,
+  text,
+  type DraftTileState,
   type BlockPart,
   type Part,
   type SceneAnchor,
   type SceneDesc,
+  type SceneText,
 } from "@repo/renderer";
 import type { Vec3 } from "math";
 import { LOOP_ROUNDS, SPEC_RUN } from "../../chapters/data/speculative.ts";
-import type { SceneTags } from "../../hud/SceneTags.tsx";
 import type { SceneBuilder, SceneFrame, SpeculativeRun } from "../build-frame.ts";
 import { box } from "./parts.ts";
 
@@ -65,18 +67,36 @@ export function storyAfter(rounds: SpeculativeRun["byK"][number]["rounds"], coun
     .join("");
 }
 
+/** Font sizes (em), metres: a tile's word, the senior's notes, the story on the rail. */
+const TEXT = { tile: 0.1, note: 0.1, story: 0.11 };
+/** The senior's notes sit this far down its front (unit block), under its lamp. */
+const NOTE_Y = -0.12;
+/** Each tile's ink by the face showing: a discarded guess reads dim on its dark face. */
+const TILE_STYLE: Record<DraftTileState, string> = {
+  hidden: "ink",
+  drafted: "ink",
+  accepted: "ink",
+  rejected: "muted",
+  added: "ink",
+};
+
+interface Texts {
+  tiles: SceneText[];
+  added: SceneText;
+  senior: SceneText;
+  story: SceneText;
+}
+
 interface Built {
   strip: Part[];
   lamps: BlockPart[];
+  text: Texts;
 }
 const built = new WeakMap<SceneDesc, Built>();
-
-const TAG = { tiles: 0, added: TILES, round: TILES + 1, story: TILES + 2, heavy: TILES + 3 };
 const SLOT = { junior: 0, senior: 1, lamps: 2, strip: 4, rail: 8, shadow: 9 } as const;
 
 export const speculative: SceneBuilder = {
   assets: {},
-  tagCount: TILES + 4,
 
   create(assets, revision) {
     const junior = box(
@@ -132,40 +152,62 @@ export const speculative: SceneBuilder = {
       { id: "draft", part: "rail", local: [-0.45, 13.5, 0], priority: 3 },
       { id: "output", part: "rail", local: [0.5, 0, 0.5], priority: 1 },
     ];
-    const scene: SceneDesc = { revision, parts, anchors, assets };
-    built.set(scene, { strip: strip.parts, lamps });
-    const tiles = Array.from({ length: TILES }, (_, i) => ({
-      id: `tile.${i}`,
-      part: `draft.${i}`,
-      local: [0, 0, 0.5] as Vec3,
-      priority: 0,
-    }));
-    const tags: SceneTags = {
-      anchors: [
-        ...tiles,
-        { id: "added", part: "draft.0", local: [0, 1.4, 0.5], priority: 0 },
-        { id: "round", part: "rail", local: [0, 8, 0], priority: 0 },
-        { id: "story", part: "rail", local: [0, 1, 0.5], priority: 0 },
-        { id: "heavy", part: "senior", local: [0, 0.62, 0.5], priority: 0 },
-      ],
-      text: Array.from({ length: TILES + 4 }, () => ""),
-      style: [
-        ...Array.from({ length: TILES }, () => "onPart" as const),
-        "above",
-        "above",
-        "above",
-        "above",
-      ],
+    // Each guess is written on its tile's showing face; the senior's word is captioned just
+    // above its own tile. The round's notes (drafting, the verdict) and the failure note
+    // are on the senior's front, where the draft is checked; the story stands on its rail.
+    const texts: Texts = {
+      tiles: Array.from({ length: TILES }, (_, i) =>
+        text({
+          id: `tile.${i}`,
+          part: faceId("draft", i),
+          local: [0, 0, 0.5],
+          size: TEXT.tile,
+          style: "ink",
+          maxWidth: TILE[0] - 0.05,
+        }),
+      ),
+      added: text({
+        id: "added",
+        part: faceId("draft", 0),
+        local: [0, 0.5, 0.5],
+        size: TEXT.note,
+        style: "chalk",
+        align: [0.5, 1.5],
+      }),
+      senior: text({
+        id: "senior",
+        part: "senior",
+        local: [0, NOTE_Y, 0.5],
+        size: TEXT.note,
+        style: "chalk",
+        maxWidth: SENIOR.size[0] - 0.15,
+      }),
+      story: text({
+        id: "story",
+        part: "rail",
+        local: [0, 0.5, 0.5],
+        size: TEXT.story,
+        style: "chalk",
+        align: [0.5, 1.3],
+        maxWidth: RAIL.size[0],
+      }),
     };
-    return { scene, tags };
+    const scene: SceneDesc = {
+      revision,
+      parts,
+      anchors,
+      assets,
+      text: [...texts.tiles, texts.added, texts.senior, texts.story],
+    };
+    built.set(scene, { strip: strip.parts, lamps, text: texts });
+    return scene;
   },
 
   update(frame: SceneFrame, _def, tl, ui, run) {
     const { scene, dynamics } = frame.input;
-    const { strip } = built.get(scene)!;
-    const texts = frame.tags.text;
+    const { strip, text: texts } = built.get(scene)!;
     const c = tl.channels;
-    texts.fill("");
+    for (const t of scene.text!) t.text = "";
     if (run?.kind !== "speculative") return;
     const byK = run.byK.find((r) => r.k === ui.slider) ?? run.byK[0]!;
     // Typed text or a moved slider shows the first round's verdict, held.
@@ -183,33 +225,33 @@ export const speculative: SceneBuilder = {
       const center = draftTileCenter(params, Math.min(slot, Math.max(0, count - 1)));
       const lift = state === "rejected" ? DROP : RISE;
       setDraftTile(strip, i, state, center, TILE, lift);
-      // The word rides on whichever face is showing.
-      frame.tags.anchors[TAG.tiles + i]!.part = faceId("draft", i, state);
-      texts[TAG.tiles + i] =
+      // The word is written on whichever face is showing, in that face's ink.
+      const tile = texts.tiles[i]!;
+      tile.part = faceId("draft", i, state);
+      tile.style = TILE_STYLE[state];
+      tile.text =
         state === "hidden" || !round
           ? ""
-          : i < round.drafted.length
-            ? round.drafted[i]!
-            : (round.next ?? "");
+          : (i < round.drafted.length ? round.drafted[i]! : (round.next ?? "")).trim();
     }
-    // The caption rides on the senior's word's own face, wherever it sits.
+    // The caption rides above the senior's word's own tile, wherever it sits.
     const heavy = held ? 0 : (c.heavy ?? 0);
     if (view?.verdict && round && heavy < 0.5) {
       const all = round.accepted === round.drafted.length;
       const kept = `round ${roundAt + 1}: kept ${round.accepted} of ${round.drafted.length}`;
-      if (round.next === null) texts[TAG.round] = `${kept}, and the story ends`;
+      if (round.next === null) texts.senior.text = `${kept},\nand the story ends`;
       else {
-        texts[TAG.added] = all ? "bonus: the senior's own word" : "the senior's correction";
-        frame.tags.anchors[TAG.added]!.part = faceId("draft", count - 1, "added");
-        texts[TAG.round] = `${kept}, plus the senior's word`;
+        texts.added.text = all ? "bonus: the senior's own word" : "the senior's correction";
+        texts.added.part = faceId("draft", count - 1, "added");
+        texts.senior.text = `${kept},\nplus the senior's word`;
       }
     } else if (round && heavy < 0.5) {
-      texts[TAG.round] = `round ${roundAt + 1}: the junior drafts ${round.drafted.length} words`;
+      texts.senior.text = `round ${roundAt + 1}: the junior\ndrafts ${round.drafted.length} words`;
     }
     const done = roundAt + (view?.joined ? 1 : 0);
     const tail = run.prompt.length > 22 ? `…${run.prompt.slice(-20)}` : run.prompt;
-    texts[TAG.story] = `${tail}${storyAfter(byK.rounds, done)}`;
-    texts[TAG.heavy] = heavy > 0.5 ? "every check still runs the whole senior" : "";
+    texts.story.text = `${tail}${storyAfter(byK.rounds, done)}`;
+    if (heavy > 0.5) texts.senior.text = "every check still runs\nthe whole senior";
 
     // The kept and added faces glow softly, so the word on each stays readable.
     for (let k = 1; k <= 3; k++) dynamics.intensity[SLOT.strip + k] = FACE_GLOW;

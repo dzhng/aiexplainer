@@ -1,12 +1,14 @@
 /**
- * Chapter 0's scene, built from the kit (`mesh`, `bars`, `block`, `contactShadow`): the
- * counter board split into its nodes on a soft contact shadow, a count bar in each of its
+ * Chapter 0's scene, built from the kit (`mesh`, `bars`, `block`, `contactShadow`, `text`):
+ * the counter board split into its nodes on a soft contact shadow, a count bar in each of its
  * slots, and the text as word cards on its rail. Bar heights are the real `nextWords` shares
  * for the last word; the slot and rail positions come from the prop's own nodes, so the
- * Blender script stays their only owner. The header strip names the lookup ("after “upon”…"),
- * so the bars read as that word's row of the tally, and the rail holds the whole text: a dim
- * card per earlier word, and the last word on the lit card at the right end, the only word the
+ * Blender script stays their only owner. The header plate names the lookup ("After “upon”…"),
+ * so the bars read as that word's row of the tally; each slot's word is printed on the panel
+ * above it and its share rides just above its bar. The rail holds the whole text: a dim card
+ * per earlier word, and the last word on the lit card at the right end, the only word the
  * machine looks at. A text too long for the rail keeps its end, and its first card reads "…".
+ * Every word is written on the board or a card (`kit/text.ts`), none floats over the scene.
  *
  * Loop channels read: `railWord` (which step's text is on the rail), `barsWord` (which step's
  * counts the bars show; it may lag the card), `railSlide` (0 → 1 as the lit card slides in;
@@ -17,17 +19,18 @@
 import {
   KIT,
   placeBar,
+  text,
   type BarSlot,
   type BlockPart,
   type MeshAsset,
   type SceneAnchor,
   type SceneDesc,
+  type SceneText,
 } from "@repo/renderer";
 import type { NextWord } from "@repo/llm";
 import type { Mat4 } from "math";
 import type { Box3 } from "math/shapes";
 import { share } from "../../chapters/format.ts";
-import type { SceneTags } from "../../hud/SceneTags.tsx";
 import type { SceneBuilder, SceneFrame } from "../build-frame.ts";
 import { stepAt } from "../step.ts";
 import { shown as named } from "./sampling.ts";
@@ -50,14 +53,27 @@ const EARLIER = 12;
 /** Bars are this share of their slot's width and depth, so the channel walls stay visible. */
 const BAR_WIDTH = 0.72;
 const BAR_DEPTH = 0.6;
-/** Clearance below the slot top and above its floor, metres. */
+/** Clearance above a slot's floor, metres; above the tallest bar its share still fits. */
 const SLOT_MARGIN = 0.03;
 const CARD = { width: 0.5, height: 0.12, depth: 0.02 };
 /**
- * A dim card's width: its word's characters at the scene text's size (about 4 cm each in the
- * hero shot), plus a margin, and never narrower than `min`. `gap` is the space between cards.
+ * Font sizes (em), metres: the header plate's title, each slot's word and share, the lit
+ * card's word, a dim card's word, and the note for a word with no counts.
  */
-const DIM_CARD = { perChar: 0.042, margin: 0.09, min: 0.2, gap: 0.035 };
+const TEXT = { header: 0.1, word: 0.07, share: 0.062, card: 0.078, dim: 0.068, note: 0.075 };
+/** A card's words sit this far up its face (unit card): the rail's lip hides its lower edge. */
+const CARD_TEXT_Y = 0.15;
+/** The gap between a bar's top and its share, metres. */
+const SHARE_GAP = 0.02;
+/** The room kept above the tallest bar: the gap, the share's cap height and a margin. */
+const SHARE_ROOM = SHARE_GAP + 0.9 * TEXT.share;
+/** Air between neighbouring slots' words, metres. */
+const WORD_MARGIN = 0.03;
+/**
+ * A dim card's width: its word's characters at the dim text's size (Inter's letters average
+ * about 0.6 em), plus a margin, and never narrower than `min`. `gap` is the space between cards.
+ */
+const DIM_CARD = { perChar: 0.6 * TEXT.dim, margin: 0.09, min: 0.2, gap: 0.035 };
 /** Where the text starts: clear of the rail's left end, metres. */
 const RAIL_MARGIN = 0.1;
 /** How far right of its resting place the card starts its slide, metres. */
@@ -82,17 +98,36 @@ function nodeBox(asset: MeshAsset, name: string): Box {
 /** Layout read from the prop, fixed for the scene's lifetime. */
 interface Layout {
   slots: BarSlot[];
+  /** Slot centre to slot centre, and each slot's top, metres. */
+  pitch: number;
+  slotTop: number;
   card: { x: number; y: number; z: number };
   /** The leftmost x a dim card may reach. */
   railStart: number;
   /** The middle of the slot row, on its front face: where "no counts" is written. */
   middle: [number, number, number];
+  /** The header plate's face, centred: where the lookup is named. */
+  header: [number, number, number];
+  /** The panel face's height between the slots' tops and the header plate: each slot's word. */
+  wordY: number;
+  /** The panel face (behind the slots). */
+  panelZ: number;
 }
 
-/** The layout and the parts `update` moves, per built scene. */
+/** The scene's text, by what it names. */
+interface Texts {
+  words: SceneText[];
+  shares: SceneText[];
+  card: SceneText;
+  noCounts: SceneText;
+  header: SceneText;
+  earlier: SceneText[];
+}
+
+/** The layout and the parts and text `update` moves, per built scene. */
 const built = new WeakMap<
   SceneDesc,
-  { layout: Layout; bars: BlockPart[]; card: BlockPart; earlier: BlockPart[] }
+  { layout: Layout; bars: BlockPart[]; card: BlockPart; earlier: BlockPart[]; text: Texts }
 >();
 
 function layoutOf(asset: MeshAsset): Layout {
@@ -102,17 +137,27 @@ function layoutOf(asset: MeshAsset): Layout {
       x: (b.min[0] + b.max[0]) / 2,
       z: (b.min[2] + b.max[2]) / 2,
       floor: b.min[1] + SLOT_MARGIN,
-      maxHeight: b.max[1] - b.min[1] - 2 * SLOT_MARGIN,
+      maxHeight: b.max[1] - b.min[1] - SLOT_MARGIN - SHARE_ROOM,
       width: (b.max[0] - b.min[0]) * BAR_WIDTH,
       depth: (b.max[2] - b.min[2]) * BAR_DEPTH,
     };
   });
   // The card stands on the rail's shelf at its right end, clear of the bars that are shown.
   const rail = nodeBox(asset, "board.rail");
+  const housing = nodeBox(asset, "board.housing");
+  const slot = nodeBox(asset, "board.slot.0");
   const first = slots[0]!;
   const last = slots[SLOTS - 1]!;
+  // The header plate, centred high on the panel face (`counter_board.py`: 0.2 m tall, its
+  // middle 0.14 m below the housing's top).
+  const header: [number, number, number] = [0, housing.max[1] - 0.14, housing.max[2]];
   return {
     slots,
+    pitch: slots[1]!.x - slots[0]!.x,
+    slotTop: slot.max[1],
+    header,
+    wordY: (slot.max[1] + header[1] - 0.1) / 2,
+    panelZ: slot.min[2],
     middle: [(first.x + last.x) / 2, first.floor + first.maxHeight / 2, first.z + first.depth],
     railStart: rail.min[0] + RAIL_MARGIN,
     card: {
@@ -183,9 +228,6 @@ export function earlierCards(
 
 export const autocomplete: SceneBuilder = {
   assets: { board: "/props/counter_board.glb" },
-  // A word per bar, the lit card's word, the note for a word with no counts, the header, and
-  // a word per dim card.
-  tagCount: SLOTS + 3 + EARLIER,
 
   create(assets, revision) {
     const board = assets.board;
@@ -246,57 +288,95 @@ export const autocomplete: SceneBuilder = {
       ...earlierParts,
       ...cardKit.parts,
     ];
-    const housing = nodeBox(board, "board.housing");
-    // The header plate, centred high on the panel face.
-    const header: [number, number, number] = [0, housing.max[1] - 0.14, housing.max[2]];
     const anchors: SceneAnchor[] = [
-      { id: "board", part: "board.housing", local: header, priority: 1 },
+      { id: "board", part: "board.housing", local: layout.header, priority: 1 },
       // Halfway up the tallest bar's right side, so the pill clears the bar's own word.
       { id: "bars", part: "bar.0", local: [0.5, 0, 0.5], priority: 3 },
       // The card's right edge, so the pill clears the word written above the card.
       { id: "rail", part: "card", local: [0.5, 0, 0.5], priority: 2 },
     ];
-    const scene: SceneDesc = { revision, parts, anchors, assets };
+    // Each slot's word is printed on the panel above it, its share just above its bar (moved
+    // by `update`), in the plane of the bar's face so the slot's walls never cut it.
+    const texts: Texts = {
+      words: layout.slots.map((slot, i) =>
+        text({
+          id: `word.${i}`,
+          part: "board.housing",
+          local: [slot.x, layout.wordY, layout.panelZ],
+          size: TEXT.word,
+          style: "chalk",
+          maxWidth: layout.pitch - WORD_MARGIN,
+        }),
+      ),
+      shares: layout.slots.map((slot, i) =>
+        text({
+          id: `share.${i}`,
+          part: "board.housing",
+          local: [slot.x, slot.floor, slot.z + slot.depth / 2],
+          size: TEXT.share,
+          style: "chalk",
+          align: [0.5, 1],
+        }),
+      ),
+      card: text({
+        id: "card",
+        part: "card",
+        local: [0, CARD_TEXT_Y, 0.5],
+        size: TEXT.card,
+        style: "ink",
+        maxWidth: CARD.width - 0.06,
+      }),
+      noCounts: text({
+        id: "no-counts",
+        part: "board.housing",
+        local: layout.middle,
+        size: TEXT.note,
+        style: "chalk",
+      }),
+      header: text({
+        id: "header",
+        part: "board.housing",
+        local: layout.header,
+        size: TEXT.header,
+        style: "sign",
+      }),
+      earlier: Array.from({ length: EARLIER }, (_, i) =>
+        text({
+          id: `earlier.${i}`,
+          part: `earlier.${i}`,
+          local: [0, CARD_TEXT_Y, 0.5],
+          size: TEXT.dim,
+          style: "muted",
+        }),
+      ),
+    };
+    const scene: SceneDesc = {
+      revision,
+      parts,
+      anchors,
+      assets,
+      text: [
+        texts.header,
+        ...texts.words,
+        ...texts.shares,
+        texts.card,
+        texts.noCounts,
+        ...texts.earlier,
+      ],
+    };
     built.set(scene, {
       layout,
       bars: barsKit.parts as BlockPart[],
       card: cardKit.parts[0] as BlockPart,
       earlier: earlierParts,
+      text: texts,
     });
-    const tags: SceneTags = {
-      anchors: [
-        ...Array.from({ length: SLOTS }, (_, i) => ({
-          id: `word.${i}`,
-          part: `bar.${i}`,
-          local: [0, 0.5, 0.5] as [number, number, number],
-          priority: 0,
-        })),
-        { id: "card", part: "card", local: [0, 0, 0.5], priority: 0 },
-        { id: "no-counts", part: "board.housing", local: layout.middle, priority: 0 },
-        { id: "header", part: "board.housing", local: header, priority: 0 },
-        // A little above each dim card's middle: the rail's lip hides the card's lower edge.
-        ...Array.from({ length: EARLIER }, (_, i) => ({
-          id: `earlier.${i}`,
-          part: `earlier.${i}`,
-          local: [0, 0.28, 0.5] as [number, number, number],
-          priority: 0,
-        })),
-      ],
-      text: Array.from({ length: SLOTS + 3 + EARLIER }, () => ""),
-      style: [
-        ...Array.from({ length: SLOTS }, () => "above" as const),
-        "onPart",
-        "above",
-        "heading",
-        ...Array.from({ length: EARLIER }, () => "dim" as const),
-      ],
-    };
-    return { scene, tags };
+    return scene;
   },
 
   update(frame: SceneFrame, _def, tl, ui, run) {
     const { scene, dynamics } = frame.input;
-    const { layout, bars, card: cardPart, earlier } = built.get(scene)!;
+    const { layout, bars, card: cardPart, earlier, text: texts } = built.get(scene)!;
     const steps = run?.kind === "counts" ? run.steps : [];
     const typed = ui.text !== null;
     const pick = (channel: number | undefined) => stepAt(steps, typed, channel);
@@ -310,20 +390,25 @@ export const autocomplete: SceneBuilder = {
       const slot = layout.slots[i]!;
       const next = step?.next[i];
       const shown = next !== undefined;
-      placeBar(bars[i]!.transform, slot, shown ? next.p * growth * slot.maxHeight : 0);
-      frame.tags.text[i] = shown && growth > 0.05 ? `${named(next.word)}\n${share(next.p)}` : "";
+      const height = shown ? next.p * growth * slot.maxHeight : 0;
+      placeBar(bars[i]!.transform, slot, height);
+      const labelled = shown && growth > 0.05;
+      texts.words[i]!.text = labelled ? named(next.word) : "";
+      texts.shares[i]!.text = labelled ? share(next.p) : "";
+      // The share rides just above its bar's top, in the room its slot keeps for it.
+      texts.shares[i]!.local[1] = slot.floor + height + SHARE_GAP;
       dynamics.intensity[1 + i] = i === 0 ? 1 + flash * FLASH_GAIN : 1;
     }
 
     const card = layout.card;
     const x = card.x + (1 - slide) * CARD_TRAVEL;
     placeCard(cardPart.transform, x, card.y, card.z);
-    frame.tags.text[SLOTS] = onCard?.word ?? "";
+    texts.card.text = onCard?.word ?? "";
     // A word the model never kept has no row: say so once the bars would have risen.
     const empty = step !== undefined && step.next.length === 0 && growth > 0.5;
-    frame.tags.text[SLOTS + 1] = empty ? `never seen “${step.word}”: no counts` : "";
+    texts.noCounts.text = empty ? `never seen “${step.word}”: no counts` : "";
     // The bars are one row of the tally: the row for the word they were looked up after.
-    frame.tags.text[SLOTS + 2] = step ? `After “${step.word}”…` : "";
+    texts.header.text = step ? `After “${step.word}”…` : "";
 
     // The earlier words stay put while the lit card slides. A word the text just gained (the
     // one the lit card last held) unfolds on its dim card as the new last word slides in.
@@ -341,7 +426,9 @@ export const autocomplete: SceneBuilder = {
         dim?.width,
         dim ? unfold : 0,
       );
-      frame.tags.text[SLOTS + 3 + i] = dim && unfold > 0.6 ? dim.word : "";
+      const label = texts.earlier[i]!;
+      label.text = dim && unfold > 0.6 ? dim.word : "";
+      label.maxWidth = dim ? dim.width - DIM_CARD.margin / 2 : undefined;
     }
   },
 };

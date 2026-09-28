@@ -1,5 +1,5 @@
 /**
- * Chapter 3's scene, built from the kit (`block`, `bars`, `die`, `contactShadow`): on a work
+ * Chapter 3's scene, built from the kit (`block`, `bars`, `die`, `contactShadow`, `text`): on a work
  * table, the word the machine is looking at on a card, a strip of score bars behind it (the
  * word's arrow scored against every word's arrow: the highest scores of the whole
  * vocabulary), and a loaded die whose faces are the top six words plus “every other word”,
@@ -29,11 +29,12 @@ import {
   type Part,
   type SceneAnchor,
   type SceneDesc,
+  type SceneText,
+  text,
   PARKED_Y,
 } from "@repo/renderer";
 import { probabilities, seededRng } from "@repo/llm";
 import type { Vec3 } from "math";
-import type { SceneTags } from "../../hud/SceneTags.tsx";
 import type { SceneBuilder, SceneFrame } from "../build-frame.ts";
 import { stepAt } from "../step.ts";
 import { tableParts, tableTop, type TableSpec } from "./table.ts";
@@ -52,6 +53,30 @@ const TURNS = 2;
 export const SCORE_BARS = 12;
 const BARS = { x0: -0.95, pitch: 0.12, z: -0.55, width: 0.08, depth: 0.08, maxHeight: 0.55 };
 const CARD = { x: -0.45, z: 0.35, width: 0.46, height: 0.16, depth: 0.03 };
+/**
+ * Font sizes (em), metres: a die face's word and share, a bar's word, the card's word, the
+ * prompt before the card and the note along the table's edge.
+ */
+const TEXT = { face: 0.062, bar: 0.068, card: 0.08, prompt: 0.064, note: 0.058 };
+/** A face shows its words only if its arc is this many em long (a cap height and air). */
+const FACE_ARC = 1;
+/** Air at either end of a face's words, along the drum, metres. */
+const FACE_MARGIN = 0.06;
+/** The bars' words: the baselines of the two staggered rows, metres above the table. */
+const BAR_WORD_ROWS = [0.03, 0.115] as const;
+/** Air between two words of one row, metres (they are two bars apart). */
+const BAR_WORD_GAP = 0.03;
+/** The prompt starts this far in front of the card, metres. */
+const PROMPT_GAP = 0.06;
+
+/** A point `up` metres over the table's top at (x, z) world, in its local (unit-cube) space. */
+function onTable(x: number, up: number, z: number): Vec3 {
+  return [
+    (x - TABLE.center[0]) / TABLE.size[0],
+    0.5 + up / TABLE.size[1],
+    (z - TABLE.center[2]) / TABLE.size[2],
+  ];
+}
 /** Seed of roll n: each roll draws from its own seeded generator, so every loop is the same. */
 export const ROLL_SEED = 3000;
 const FACE_MATERIALS = ["dieA", "dieB", "dieA", "dieB", "dieA", "dieB", "dieOther"];
@@ -132,10 +157,20 @@ interface Built {
   /** The reading line across the drum: the face under it is the roll. */
   pointer: BlockPart;
   anchors: Record<"top", SceneAnchor>;
-  tagOf: { note: number; faces: number; bars: number; card: number; prompt: number };
-  /** Every stave's part id, by face; a face's word tag rides one of them. */
+  /**
+   * What is written: each face's word and share (on the stave of that face nearest the eye),
+   * each lit bar's word (on the table in front of it), the card's word, the prompt (on the
+   * table before the card) and the note (along the table's front edge).
+   */
+  text: {
+    faces: SceneText[];
+    bars: SceneText[];
+    card: SceneText;
+    prompt: SceneText;
+    note: SceneText;
+  };
+  /** Every stave's part id, by face; a face's words ride one of them. */
   staveIds: string[][];
-  faceAnchors: SceneAnchor[];
   shares: number[];
   pose: {
     center: Vec3;
@@ -156,8 +191,6 @@ const built = new WeakMap<SceneDesc, Built>();
 
 export const sampling: SceneBuilder = {
   assets: {},
-  // The note, a word per face, a word per bar, the card's word, the prompt above it.
-  tagCount: 1 + FACES + SCORE_BARS + 2,
 
   create(assets, revision) {
     const slots: BarSlot[] = Array.from({ length: SCORE_BARS }, (_, i) => ({
@@ -204,47 +237,70 @@ export const sampling: SceneBuilder = {
       { id: "scores", part: "bar.0", local: [-0.5, 0.2, 0.5], priority: 2 },
       { id: "word", part: "card", local: [-0.5, 0, 0.5], priority: 1 },
     ];
-    const scene: SceneDesc = { revision, parts, anchors: sceneAnchors, assets };
-    const tagOf = {
-      note: 0,
-      faces: 1,
-      bars: 1 + FACES,
-      card: 1 + FACES + SCORE_BARS,
-      prompt: 2 + FACES + SCORE_BARS,
-    };
     const staveIds = Array.from({ length: FACES }, (_, f) =>
       Array.from({ length: STAVES }, (_, s) => `die.face.${f}.${s}`),
     );
-    const faceAnchors: SceneAnchor[] = staveIds.map((ids, f) => ({
-      id: `face.${f}`,
-      part: ids[0]!,
-      local: [0, 1.8, 0],
-      priority: 0,
-    }));
-    const tags: SceneTags = {
-      anchors: [
-        // Over the middle of the table, above the bars.
-        { id: "note", part: "table", local: [0.08, 8, -0.28] as Vec3, priority: 0 },
-        // Each face's word floats just off one of its staves (clear of its neighbours' bounds).
-        ...faceAnchors,
-        ...Array.from({ length: SCORE_BARS }, (_, i) => ({
+    const written: Built["text"] = {
+      // Written on a stave's outer face, along the drum's axis: dark ink on the pale and gold
+      // faces, light (dark-rimmed) on the slate "every other word" face.
+      faces: staveIds.map((ids, f) =>
+        text({
+          id: `face.${f}`,
+          part: ids[0]!,
+          local: [0, 0.5, 0],
+          face: "top",
+          size: TEXT.face,
+          style: f < WORD_FACES ? "ink" : "chalk",
+        }),
+      ),
+      // Stencilled across the foot of each lit bar's front, in two staggered rows so
+      // neighbours (a bar is narrower than its word) never touch.
+      bars: slots.map((slot, i) =>
+        text({
           id: `bar.${i}`,
-          part: `bar.${i}`,
-          local: [0, 0.5, 0.5] as Vec3,
-          priority: 0,
-        })),
-        { id: "card", part: "card", local: [0, 0, 0.5], priority: 0 },
-        // On the table just in front of the card: the whole prompt, of which it sees one word.
-        { id: "prompt", part: "card", local: [0, -0.45, 12], priority: 0 },
-      ],
-      text: [],
-      style: [],
+          part: "table",
+          local: onTable(slot.x, BAR_WORD_ROWS[i % 2]!, BARS.z + BARS.depth / 2),
+          size: TEXT.bar,
+          style: "chalk",
+          align: [0.5, 1],
+          maxWidth: 2 * BARS.pitch - BAR_WORD_GAP,
+        }),
+      ),
+      card: text({
+        id: "card",
+        part: "card",
+        local: [0, 0, 0.5],
+        size: TEXT.card,
+        style: "ink",
+        maxWidth: CARD.width - 0.06,
+      }),
+      // On the table just in front of the card: the whole prompt, of which it sees one word.
+      prompt: text({
+        id: "prompt",
+        part: "table",
+        local: onTable(CARD.x, 0, CARD.z + CARD.depth / 2 + PROMPT_GAP),
+        face: "top",
+        size: TEXT.prompt,
+        style: "chalk",
+        align: [0.5, 0],
+      }),
+      // The notes run along the table's front edge.
+      note: text({
+        id: "note",
+        part: "table",
+        local: [0, 0, 0.5],
+        size: TEXT.note,
+        style: "chalk",
+        maxWidth: TABLE.size[0] - 0.2,
+      }),
     };
-    tags.text = tags.anchors.map(() => "");
-    // The card's word and the faces' words are written on their parts, in dark ink.
-    tags.style = tags.anchors.map((_, i) =>
-      i === tagOf.card || (i >= tagOf.faces && i < tagOf.faces + FACES) ? "onPart" : "above",
-    );
+    const scene: SceneDesc = {
+      revision,
+      parts,
+      anchors: sceneAnchors,
+      assets,
+      text: [written.note, ...written.faces, ...written.bars, written.card, written.prompt],
+    };
     built.set(scene, {
       die: dieKit.parts,
       bars: barsKit.parts as BlockPart[],
@@ -252,9 +308,8 @@ export const sampling: SceneBuilder = {
       card,
       pointer,
       anchors,
-      tagOf,
+      text: written,
       staveIds,
-      faceAnchors,
       shares: Array.from({ length: FACES }, () => 1 / FACES),
       pose: {
         center: [DIE.x, TOP + DIE.radius, DIE.z0],
@@ -268,7 +323,7 @@ export const sampling: SceneBuilder = {
       motion: 0,
       eye: [0, 0, 0],
     });
-    return { scene, tags };
+    return scene;
   },
 
   update(frame: SceneFrame, _def, tl, ui, run) {
@@ -285,8 +340,10 @@ export const sampling: SceneBuilder = {
     const glow = typed ? 0 : (tl.channels.glow ?? 0);
     const form = typed ? 1 : (tl.channels.form ?? 1);
     const roll = typed ? 1 : (tl.channels.roll ?? 1);
-    const tags = frame.tags.text;
-    tags.fill("");
+    const written = b.text;
+    for (const item of written.faces) item.text = "";
+    for (const item of written.bars) item.text = "";
+    written.card.text = written.prompt.text = written.note.text = "";
     if (!step) return;
 
     // The whole vocabulary's probabilities at this temperature (the scores are fixed per step).
@@ -308,7 +365,7 @@ export const sampling: SceneBuilder = {
       placeBar(b.bars[i]!.transform, b.slots[i]!, Math.max(0, h));
       const lit = i < WORD_FACES;
       dynamics.intensity[BAR_SLOT + i] = lit ? 0.4 + glow * 0.8 : 0.25;
-      tags[b.tagOf.bars + i] = lit && grow > 0.6 ? shown(bar.text) : "";
+      written.bars[i]!.text = lit && grow > 0.6 ? shown(bar.text) : "";
     }
 
     // The die: formed out of the lit bars, rolled, landed.
@@ -366,16 +423,19 @@ export const sampling: SceneBuilder = {
             : 0;
       const phi = start + ((k + 0.5) / STAVES) * span;
       start += span;
-      b.faceAnchors[f]!.part = b.staveIds[f]![k]!;
+      const onFace = written.faces[f]!;
+      onFace.part = b.staveIds[f]![k]!;
+      onFace.maxWidth = pose.length - FACE_MARGIN;
       const facing = Math.cos(phi) * eyeY + Math.sin(phi) * eyeZ;
       const word = f < WORD_FACES ? shown(top[f]!.text) : "every other word";
-      tags[b.tagOf.faces + f] =
-        form > 0.9 && facing > 0.5 && shares[f]! > 0.035 ? `${word}\n${share(shares[f]!)}` : "";
+      // One line, so it fits across its face's arc (a face narrower than it shows nothing).
+      const fits = span * pose.radius > FACE_ARC * TEXT.face;
+      onFace.text = form > 0.9 && facing > 0.5 && fits ? `${word} ${share(shares[f]!)}` : "";
     }
 
-    tags[b.tagOf.card] = step.last.trim() || "␣";
-    tags[b.tagOf.prompt] = `…${step.text.slice(-28)}`;
-    tags[b.tagOf.note] = typed
+    written.card.text = step.last.trim() || "␣";
+    written.prompt.text = `…${step.text.slice(-28)}`;
+    written.note.text = typed
       ? spreadNote(temperature, probs)
       : noteFor(tl.channels, temperature, probs, step, shares, onTop);
 

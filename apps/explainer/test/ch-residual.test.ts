@@ -4,7 +4,7 @@ import { residual as def } from "../src/chapters/data/residual.ts";
 import { SCENE_KIT } from "../src/chapters/scenes.ts";
 import { resolveStat } from "../src/chapters/stats.ts";
 import { knobAngle, riverHeight, type ResidualRun } from "../src/scene/builders/residual.ts";
-import { chapterRun, fixtureRun, frameAt, shippedModel } from "./scene-harness.ts";
+import { chapterRun, fixtureRun, frameAt, shippedModel, textOf } from "./scene-harness.ts";
 
 const withModel = await shippedModel("residual");
 const withoutModel = await shippedModel("noresidual");
@@ -64,9 +64,9 @@ test("without the river the readout says every word is equally likely; with it, 
   expect(run.without.p * run.without.vocab).toBeLessThan(1.5);
   expect(run.with.p * run.with.vocab).toBeGreaterThan(100);
   const noRiver = frameAt(def, run, 3.5);
-  expect(noRiver.frame.tags.text[1]).toContain("1 in 4,096 each");
+  expect(textOf(noRiver.scene, "readout").text).toContain("1 in 4,096 each");
   const hero = frameAt(def, run, HERO);
-  expect(hero.frame.tags.text[1]).toContain(run.with.answer.trim());
+  expect(textOf(hero.scene, "readout").text).toContain(run.with.answer.trim());
 });
 
 test("the point lands by 10 s, and the loop's seam draws the same frame", () => {

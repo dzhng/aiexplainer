@@ -23,28 +23,31 @@ import {
   KIT,
   placeNote,
   rackSize,
+  text,
   type BlockPart,
   type NoteRackParams,
   type Part,
+  type SceneText,
   type SceneAnchor,
   type SceneDesc,
   type TubePart,
 } from "@repo/renderer";
-import type { Vec3 } from "math";
 import { formatStat, tokenLabel } from "../../chapters/format.ts";
-import type { SceneTags } from "../../hud/SceneTags.tsx";
 import type { SceneBuilder, SceneFrame } from "../build-frame.ts";
 import {
   buildLine,
+  CARD_SIZE,
   cardFlight,
   LAYERS,
   PHASE,
   placeCard,
   placeFeed,
   placeTile,
+  railText,
   RAIL_SLOTS,
   slotX,
   LINE,
+  TEXT,
 } from "./generation.ts";
 import { box } from "./parts.ts";
 
@@ -91,7 +94,11 @@ interface Built {
   notes: BlockPart[];
   card: BlockPart;
   slots: { feeds: number; bands: number; read: number };
+  text: { words: SceneText[]; card: SceneText; memory: SceneText; note: SceneText };
 }
+
+/** The plate on the rack's top edge where what it holds is written, metres. */
+const HEADER = { height: 0.24, depth: 0.05, widthShare: 0.8 };
 
 const built = new WeakMap<SceneDesc, Built>();
 
@@ -99,20 +106,25 @@ const noteIndex = (l: number, c: number, n: number) => (l * RAIL_SLOTS + c) * SL
 
 export const kvCache: SceneBuilder = {
   assets: {},
-  // A word per rail slot, the new word's card, the rack's memory note, the sharing note, the
-  // window note, and the failure note.
-  tagCount: RAIL_SLOTS + 3,
 
   create(assets, revision) {
     const rack = KIT.noteRack.build(RACK);
     const rackSlots = 1 + LAYERS * RAIL_SLOTS;
     const line = buildLine(rackSlots);
     let slot = line.next;
-    const card = box("card", slot++, "card", LINE.birth, [0.5, 0.2, 0.06]);
+    const card = box("card", slot++, "card", LINE.birth, CARD_SIZE);
     // The rack stands on two posts behind the machine, and a read line runs from it down into
-    // the machine: lit while a word reads the notes.
+    // the machine: lit while a word reads the notes. A header plate on its top edge says what
+    // it holds.
     const { width, height } = rackSize(RACK);
     const [rx, ry, rz] = RACK.center;
+    const header = box(
+      "rack.header",
+      0,
+      "housing",
+      [rx, ry + height / 2 + HEADER.height / 2, rz],
+      [width * HEADER.widthShare, HEADER.height, HEADER.depth],
+    );
     const postH = ry - height / 2;
     const posts = [-1, 1].map((side, i) =>
       box(
@@ -144,13 +156,50 @@ export const kvCache: SceneBuilder = {
       bounds: [-3.1, 0, -1.3, 3.1, 2.3, 1.1],
       softness: 0.35,
     });
-    const parts: Part[] = [...shadow.parts, ...rack.parts, ...posts, read, ...line.parts, card];
+    const parts: Part[] = [
+      ...shadow.parts,
+      ...rack.parts,
+      header,
+      ...posts,
+      read,
+      ...line.parts,
+      card,
+    ];
     const anchors: SceneAnchor[] = [
       { id: "rack", part: "rack.frame.board", local: [-0.42, 0.5, 0.5], priority: 3 },
       { id: "machine", part: "machine", local: [-0.35, 0.5, 0.5], priority: 2 },
       { id: "rail", part: "rail", local: [-0.4, -0.5, 0.5], priority: 2 },
     ];
-    const scene: SceneDesc = { revision, parts, anchors, assets };
+    const texts: Built["text"] = {
+      ...railText(),
+      // What the rack holds, on its header plate.
+      memory: text({
+        id: "memory",
+        part: "rack.header",
+        local: [0, 0, 0.5],
+        size: TEXT.readout,
+        style: "chalk",
+        maxWidth: width * HEADER.widthShare - 0.1,
+      }),
+      // The phase note (sharing, the window, the trip) says what the machine's reading costs:
+      // it stands just above the machine's top edge, under the rack, as chapter 9's sum does.
+      note: text({
+        id: "note",
+        part: "machine",
+        local: [0, 0.5, 0.5],
+        size: TEXT.note,
+        style: "chalk",
+        align: [0.5, 1.5],
+        maxWidth: LINE.machine.size[0] + 0.3,
+      }),
+    };
+    const scene: SceneDesc = {
+      revision,
+      parts,
+      anchors,
+      assets,
+      text: [...texts.words, texts.card, texts.memory, texts.note],
+    };
     const b: Built = {
       tiles: line.tiles,
       feeds: line.feeds,
@@ -158,27 +207,11 @@ export const kvCache: SceneBuilder = {
       notes: rack.parts.filter((p) => p.id.startsWith("rack.note.")) as BlockPart[],
       card,
       slots: { feeds: line.slots.feeds, bands: line.slots.bands, read: readSlot },
+      text: texts,
     };
     built.set(scene, b);
-    pose(b, BUILT_POSE, null, null, null);
-    const tags: SceneTags = {
-      anchors: [
-        ...Array.from({ length: RAIL_SLOTS }, (_, i) => ({
-          id: `word.${i}`,
-          part: `word.${i}`,
-          local: [0, 0, 0.5] as Vec3,
-          priority: 0,
-        })),
-        { id: "card", part: "card", local: [0, 0, 0.5], priority: 0 },
-        // What the rack holds: just under the board.
-        { id: "memory", part: "rack.frame.board", local: [0, -0.78, 0.5], priority: 0 },
-        // The phase note (sharing, the window, the trip): on the floor in front, right.
-        { id: "note", part: "rack.frame.board", local: [0.62, 0, 0.5], priority: 0 },
-      ],
-      text: Array.from({ length: RAIL_SLOTS + 3 }, () => ""),
-      style: [...Array.from({ length: RAIL_SLOTS + 1 }, () => "onPart" as const), "above", "above"],
-    };
-    return { scene, tags };
+    pose(b, BUILT_POSE, null, null, false);
+    return scene;
   },
 
   update(frame: SceneFrame, def, tl, ui, run) {
@@ -197,13 +230,7 @@ export const kvCache: SceneBuilder = {
       keep: keep < all ? keep : null,
     };
     const data = run?.kind === "kv-cache" ? run : null;
-    pose(
-      built.get(frame.input.scene)!,
-      state,
-      data,
-      frame.input.dynamics.intensity,
-      frame.tags.text,
-    );
+    pose(built.get(frame.input.scene)!, state, data, frame.input.dynamics.intensity, true);
   },
 };
 
@@ -245,7 +272,7 @@ function pose(
   state: Pose,
   data: KvRun | null,
   intensity: Float32Array | null,
-  text: string[] | null,
+  write: boolean,
 ): void {
   const prompt = data?.tokens.length ?? 10;
   const steps = data?.steps ?? [];
@@ -308,18 +335,19 @@ function pose(
     placeCard(b.card, flying, [slotX(onRail), LINE.rail.y + 0.25, LINE.rail.z]);
   else placeCard(b.card, -1);
 
-  if (!text || !data) return;
+  if (!write || !data) return;
+  const text = b.text;
   for (let i = 0; i < RAIL_SLOTS; i++) {
     const word = i < prompt ? data.tokens[i] : steps[i - prompt]?.word;
     // In the window phase, words whose notes were evicted drop out of the text shown.
     const dropped = state.window > 0.5 && i < oldest;
-    text[i] = i < onRail && word && !dropped ? tokenLabel(word) : "";
+    text.words[i]!.text = i < onRail && word && !dropped ? tokenLabel(word) : "";
   }
-  text[RAIL_SLOTS] = flying >= 0 && done < total ? steps[done]!.word.trim() : "";
+  text.card.text = flying >= 0 && done < total ? steps[done]!.word.trim() : "";
   const held = state.window > 0.5 ? kept : written;
   const perWord =
     state.ghost > 0.5 ? (data.bytesPerToken * data.heads) / data.kvHeads : data.bytesPerToken;
-  text[RAIL_SLOTS + 1] = written
+  text.memory.text = written
     ? `notes: ${held} words × ${formatStat(perWord, "bytes")} = ${formatStat(held * perWord, "bytes")}`
     : "";
   const wrote = steps
@@ -328,7 +356,7 @@ function pose(
     .join("")
     .trim();
   const weights = formatStat(evalArith("weightBytes", { weightBytes: 2 }), "bytes");
-  text[RAIL_SLOTS + 2] =
+  text.note.text =
     state.ghost > 0.5
       ? `if each of the ${data.heads} readers kept its own:\n${data.heads} notes per word per block`
       : state.shared > 0.5

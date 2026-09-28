@@ -14,7 +14,7 @@ import { resolveStat } from "../src/chapters/stats.ts";
 import { validateChapter } from "../src/chapters/validate.ts";
 import type { ExpertsRun } from "../src/scene/build-frame.ts";
 import { createTimelineState, evalTimeline } from "../src/chapters/timeline.ts";
-import { chapterRun, frameAt } from "./scene-harness.ts";
+import { chapterRun, frameAt, textOf } from "./scene-harness.ts";
 
 const moe = await shippedModel("moe");
 const run = (await chapterRun(experts)) as ExpertsRun;
@@ -51,6 +51,22 @@ describe("chapter 14's numbers equal their sources", () => {
     expect(routed.size).toBe(ROUTED_TOKENS);
     // Between words, with the copies still at the desk, no bay is lit.
     expect(lit(frameAt(experts, run, 0.2).intensity)).toEqual([]);
+  });
+
+  test("a routed word's weights are written in its two bays, and the desk names them", () => {
+    const { scene } = frameAt(experts, run, experts.ogTimeSec);
+    const c = evalTimeline(experts.loop, experts.ogTimeSec, createTimelineState(experts.loop));
+    const token = run.tokens[Math.round(c.channels.token ?? 0)]!;
+    const weights = Array.from({ length: 8 }, (_, e) => textOf(scene, `weight.${e}`));
+    token.experts.forEach((e, j) => {
+      expect(weights[e]!.text).toBe(`${Math.round(token.weights[j]! * 100)}%`);
+      expect(weights[e]!.part).toBe(`triage.bay.${e}`);
+    });
+    expect(weights.filter((w) => w.text).length).toBe(2);
+    expect(textOf(scene, "desk").text).toContain(
+      `bays ${token.experts.map((e) => e + 1).join(" and ")}`,
+    );
+    expect(textOf(scene, "number.2")).toMatchObject({ text: "3", part: "triage.bay.2.floor" });
   });
 
   test("the usage histogram is the export gate's evidence", () => {

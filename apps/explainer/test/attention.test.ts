@@ -24,7 +24,7 @@ import {
 } from "../src/scene/builders/attention.ts";
 import { tokenLabel } from "../src/chapters/format.ts";
 import type { SceneRun } from "../src/scene/build-frame.ts";
-import { frameAt as sceneFrameAt } from "./scene-harness.ts";
+import { frameAt as sceneFrameAt, texts } from "./scene-harness.ts";
 
 const models = path.resolve(import.meta.dirname, "../public/models");
 const loaded = await shippedModel("attn");
@@ -41,7 +41,7 @@ function golden(prompt: string): Float32Array {
 
 function frameAt(t: number, run: SceneRun, text: string | null = null) {
   const { frame } = sceneFrameAt(attention, run, t, { slider: 3, text });
-  return { input: frame.input, frame };
+  return { input: frame.input, frame, text: texts(frame.input.scene) };
 }
 
 const pipeOf = (scene: SceneDesc, i: number) =>
@@ -82,10 +82,10 @@ describe("chapter 4: pipe width is the real attention weight", () => {
     const step = run.kind === "attention" ? run.steps[0]! : null;
     const widest = weights.indexOf(Math.max(...weights));
     expect(step!.tokens[widest]).toBe(" Mia");
-    const { input, frame } = frameAt(attention.ogTimeSec, run);
+    const { input, text } = frameAt(attention.ogTimeSec, run);
     const label = input.scene.anchors.find((a) => a.id === "pipes")!;
     expect(label.part).toBe(`pipe.${widest}`);
-    expect(frame.tags.text).toContain(`Mia ${Math.round(weights[widest]! * 100)}%`);
+    expect(text).toContain(`Mia ${Math.round(weights[widest]! * 100)}%`);
   });
 
   test("CPU mirror: the radii the GPU draws are in the same order as the weights", () => {
@@ -197,7 +197,7 @@ describe("chapter 4: sealed pipes from the future", () => {
       });
     // Before the beat the later words are not up; after it, every one has its cap.
     expect(sealedOpen(at(9).input).every((w) => w === 0)).toBe(true);
-    const { input, frame } = at(attention.ogTimeSec);
+    const { input, text } = at(attention.ogTimeSec);
     expect(sealedOpen(input)).toEqual(Array.from({ length: FUTURE_WORDS }, () => 1));
     for (let i = step!.focus + 1; i < step!.tokens.length; i++)
       expect(input.dynamics.widthScale[pipeOf(input.scene, i).slot]).toBe(0);
@@ -208,8 +208,8 @@ describe("chapter 4: sealed pipes from the future", () => {
       return { x: block.transform[12]!, stub: cap.path[0]![0] };
     });
     for (const b of blocks) expect(b.stub).toBeCloseTo(b.x, 6);
-    expect(frame.tags.text).toContain(SEALED_NOTE);
-    expect(frame.tags.text).toContain(tokenLabel(step!.tokens.at(-1)!));
+    expect(text).toContain(SEALED_NOTE);
+    expect(text).toContain(tokenLabel(step!.tokens.at(-1)!));
   });
 });
 
@@ -252,10 +252,10 @@ describe("chapter 4: flow and the failure beat", () => {
     expect(second!.weights).not.toEqual(first!.weights);
     expect(second!.turn.after).toBe(first!.turn.after);
     // The note shows over the second order only, after its pipes have settled.
-    const note = (t: number) => frameAt(t, run).frame.tags.text.includes(ORDER_NOTE);
+    const note = (t: number) => frameAt(t, run).text.includes(ORDER_NOTE);
     expect(note(25)).toBe(true);
     expect(note(19)).toBe(false);
-    expect(frameAt(25, run).frame.tags.text).toContain(
+    expect(frameAt(25, run).text).toContain(
       `guess for the next word: “cat”, ${Math.round(first!.guess.p * 100)}% sure`,
     );
   });
@@ -289,7 +289,7 @@ describe("chapter 4: flow and the failure beat", () => {
     expect(mia.turn.before).toBeCloseTo(angleDeg(row(res.residualIn, mia.focus), target), 9);
     expect(mia.turn.after).toBeCloseTo(angleDeg(row(res.sum, mia.focus), target), 9);
     expect(mia.turn.after).toBeLessThan(mia.turn.before);
-    const shown = frameAt(attention.ogTimeSec, run).frame.tags.text;
+    const shown = frameAt(attention.ogTimeSec, run).text;
     expect(shown).toContain(`${Math.round(mia.turn.before - mia.turn.after)}° closer to “Mia”`);
   });
 });

@@ -12,30 +12,32 @@ import {
   colourOf,
   faceText,
 } from "../src/scene/builders/tokenizer.ts";
-import { frameAt } from "./scene-harness.ts";
+import { frameAt, textOf } from "./scene-harness.ts";
 
 const model = await shippedTokenizer();
 const ctx = { ...(await shippedContext("tokenizer")), model };
 const runFor = async (text: string | null) => (await computeRun(chapter, text, ctx)) as PiecesRun;
 const loopRun = await runFor(null);
 
-/** The scene at loop time `t`: the bricks on show (in pool order) and every tag's text. */
+/** The scene at loop time `t`: the bricks on show (in pool order). */
 function sceneAt(t: number, run: PiecesRun, text: string | null = null) {
   const { frame } = frameAt(chapter, run, t, { text });
   const { input } = frame;
   const bodies = input.scene.parts.filter(
     (p) => /^brick\.\w+\.\d+$/.test(p.id) && p.transform[13]! > 0,
   );
-  return { input, frame, bodies, tags: frame.tags.text };
+  return { input, frame, bodies };
 }
 
 /** The bricks on show in reading order (back row first, left to right), as their faces read. */
 function faces(scene: ReturnType<typeof sceneAt>): string[] {
-  const { frame } = scene;
+  const written = scene.input.scene.text!;
   return scene.bodies
     .map((body) => {
-      const i = frame.tags.anchors.findIndex((a) => a.part === body.id);
-      return { order: body.transform[12]! + body.transform[14]! * 100, text: frame.tags.text[i]! };
+      // Each brick's words are written on its own front face.
+      const face = written.find((t) => t.part === body.id)!;
+      expect(face.face).toBe("front");
+      return { order: body.transform[12]! + body.transform[14]! * 100, text: face.text };
     })
     .sort((a, b) => a.order - b.order)
     .map((f) => f.text);
@@ -87,7 +89,7 @@ describe("chapter 1: bricks are the real tokenizer's pieces", () => {
     const [cat, kitten] = FAILURE_PAIR.map((w) => step.pieces.find((p) => p.text.trim() === w)!);
     expect(cat!.id).not.toBe(kitten!.id);
     const failure = sceneAt(20, loopRun);
-    const note = failure.tags.at(-1)!;
+    const note = textOf(failure.input.scene, "note").text;
     expect(note).toContain(String(cat!.id));
     expect(note).toContain(String(kitten!.id));
     // The pair glows, the rest do not.

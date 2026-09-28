@@ -26,17 +26,18 @@ import {
   placeSegment,
   placeStretch,
   stretchSpan,
+  text,
   type BlockPart,
   type Part,
   type RiverParams,
   type SceneAnchor,
   type SceneDesc,
+  type SceneText,
   type TubePart,
   type VolumeKnobParams,
 } from "@repo/renderer";
 import type { ModelId } from "@repo/llm";
 import type { Vec3 } from "math";
-import type { SceneTags } from "../../hud/SceneTags.tsx";
 import { look } from "../../look/look.ts";
 import type { SceneBuilder, SceneFrame } from "../build-frame.ts";
 import { share } from "../../chapters/format.ts";
@@ -102,6 +103,13 @@ const CURRENT = { radius: 0.06, glow: 1.1 };
 /** Knob angle: pointing right at the first station's input, turning down with its log size. */
 const KNOB = { radius: 0.14, start: 1.1, turn: 1.8 };
 
+/**
+ * Font sizes (em), metres: the best guess printed on the readout card, and the notes standing
+ * in the air over the row (the prompt over the first station, the knob's numbers over the
+ * noted station, clear of its pour, the river's size past its end), facing the eye.
+ */
+const TEXT = { readout: 0.13, note: 0.12 };
+
 interface Built {
   pipes: TubePart[];
   stretches: BlockPart[];
@@ -112,6 +120,8 @@ interface Built {
   pointers: BlockPart[];
   knobs: VolumeKnobParams[];
   slots: { pipes: number; river: number; pointers: number[]; currents: number };
+  /** The prompt, the readout, the note at the row's end, and one per station. */
+  text: SceneText[];
 }
 
 const built = new WeakMap<SceneDesc, Built>();
@@ -126,8 +136,6 @@ function pipeSpan(i: number): [number, number] {
 
 export const residual: SceneBuilder = {
   assets: {},
-  // The prompt, the readout, the note at the row's end, and one per station (the slider's).
-  tagCount: 7,
 
   create(assets, revision) {
     let slot = 0;
@@ -211,7 +219,25 @@ export const residual: SceneBuilder = {
       { id: "knob", part: "knob.2.dial", local: [0, 1, -1], priority: 2 },
       { id: "readout", part: "readout", local: [0.5, 0.5, 0.5], priority: 1 },
     ];
-    const scene: SceneDesc = { revision, parts, anchors, assets };
+    // The best guess is printed on the readout card. The prompt, each station's knob numbers
+    // and the river's size at its end have no face of their own to go on (the stations are
+    // too small to hold them legibly): they stand over and under the row, facing the eye.
+    const note = (id: string, part: string, local: Vec3, align: [number, number]) =>
+      text({ id, part, local, face: "camera", size: TEXT.note, style: "chalk", align });
+    const texts: SceneText[] = [
+      note("prompt", "station.0", [-0.5, 0.5, 0.5], [0, 1.4]),
+      text({
+        id: "readout",
+        part: "readout",
+        local: [0, 0, 0.5],
+        size: TEXT.readout,
+        style: "ink",
+        maxWidth: READOUT.size[0] - 0.1,
+      }),
+      note("end", "river.stretch.4", [0.35, -0.9, 0.5], [0.5, 0]),
+      ...STATIONS.map((_, k) => note(`station.${k}`, `station.${k}`, [0, 0.5, 0.5], [0.5, 1.25])),
+    ];
+    const scene: SceneDesc = { revision, parts, anchors, assets, text: texts };
     const b: Built = {
       pipes,
       stretches: river.parts.filter((p) => p.id.startsWith("river.stretch.")) as BlockPart[],
@@ -223,26 +249,12 @@ export const residual: SceneBuilder = {
       pointers: knobParts.filter((p) => p.id.endsWith(".pointer")) as BlockPart[],
       knobs,
       slots: { pipes: pipesSlot, river: riverSlot, pointers: pointerSlots, currents: currentsSlot },
+      text: texts,
     };
     built.set(scene, b);
     // Built with the river full, so label occluders match the hero.
     pose(b, BUILT_POSE, null, null, null);
-    const tags: SceneTags = {
-      anchors: [
-        { id: "prompt", part: "station.0", local: [0, 0.5, 0.5], priority: 0 },
-        { id: "readout", part: "readout", local: [0, 0, 0.5], priority: 0 },
-        { id: "end", part: "river.stretch.4", local: [0.35, -0.9, 0.5], priority: 0 },
-        ...STATIONS.map((_, k) => ({
-          id: `station.${k}`,
-          part: `station.${k}`,
-          local: [0, -0.62, 0.5] as Vec3,
-          priority: 0,
-        })),
-      ],
-      text: ["", "", "", "", "", "", ""],
-      style: ["above", "onPart", "above", "above", "above", "above", "above"],
-    };
-    return { scene, tags };
+    return scene;
   },
 
   update(frame: SceneFrame, _def, tl, ui, run) {
@@ -258,7 +270,7 @@ export const residual: SceneBuilder = {
     const b = built.get(frame.input.scene)!;
     const data = run?.kind === "residual" ? run : null;
     const { dynamics } = frame.input;
-    pose(b, state, data, dynamics.intensity, frame.tags.text);
+    pose(b, state, data, dynamics.intensity, b.text);
     // The currents run on the loop's clock, each lane a little behind the one before.
     const phase = tl.t * look.flow.cyclesPerSec;
     for (let k = 0; k < (STATIONS.length + 1) * CURRENTS.length; k++)
@@ -293,7 +305,7 @@ function pose(
   state: Pose,
   data: ResidualRun | null,
   intensity: Float32Array | null,
-  text: string[] | null,
+  texts: SceneText[] | null,
 ): void {
   const { river, failure } = state;
   const y = STATION.y;
@@ -368,14 +380,14 @@ function pose(
     if (intensity) intensity[b.slots.pointers[k]!] = 0.8 * river;
   }
 
-  if (!text) return;
+  if (!texts) return;
   const shown = river < 0.5 ? without : withRiver;
   const settled = river < 0.5 ? state.flowA > 0.99 : state.flowB > 0.99;
-  text[0] = data ? `“${data.prompt}”` : "";
+  texts[0]!.text = data ? `“${data.prompt}”` : "";
   // The readout answers only once the signal has made it through every station.
-  text[1] = shown ? (settled ? guess(shown, failure) : "reading…") : "";
+  texts[1]!.text = shown ? (settled ? guess(shown, failure) : "reading…") : "";
   const end = shown ? shown.stream.at(-1)! / shown.stream[0]! : 0;
-  text[2] =
+  texts[2]!.text =
     shown && settled
       ? river < 0.5
         ? `signal left: ${end === 0 ? "0%" : share(end)}`
@@ -385,7 +397,7 @@ function pose(
   for (let k = 0; k < n; k++) {
     const reached = clamp(state.flowB * (n + 1) - k - 0.5, 0, 1);
     const ratio = withRiver ? withRiver.stream[k]! / withRiver.stream[0]! : 0;
-    text[3 + k] =
+    texts[3 + k]!.text =
       withRiver && k + 1 === NOTED_STATION && river > 0.5 && reached >= 1
         ? `in: river ${ratio.toPrecision(2)}×\nknob sets it to 1×`
         : "";
