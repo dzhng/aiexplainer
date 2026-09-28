@@ -24,7 +24,7 @@ skim is 7 min 9 s.
 1. The polish pass over the backlog below.
 2. The whole-spec review (refactor-clean → code-review → write-docs) over the full diff.
 3. Re-record all media (`bun run --cwd apps/explainer media`).
-4. Slice 36 (release candidate), then merge `llm-explainer` into `main` (production). The human authorized this (2026-09-27). O5 (the domain) and turning off Vercel Authentication for the public post stay the human's call.
+4. Slice 36 (release candidate), then merge `llm-explainer` into `main` (production). The human authorized this (2026-09-27).
 5. Consolidate `choices.md`, then close-spec.
 
 **Polish backlog** (from the choices ledger; judge each at the whole-spec review):
@@ -171,6 +171,8 @@ the human says otherwise.
 
 **Human notes:**
 
+- **"no need for public domain, and I disabled vercel auth"** (2026-09-27): O5 closed; previews and production are public.
+
 - **"you can merge to main whenever you want"** (2026-09-27): the production merge is authorized; do it after slice 36 is green.
 
 - **A richer room, an arrival move and a game UI** (2026-09-27, on the 11b shots): "the zoom is
@@ -195,7 +197,7 @@ the human says otherwise.
 - **O4:** H100 SXM: 3.35 TB/s HBM3, about 989 dense BF16 TFLOPS (1,979 with sparsity), 80 GB (https://www.nvidia.com/en-us/data-center/h100/). Confirmed in slice 18.
 - **O2:** every trained model's prompts are measured into its `scenarios.json` (slices 16–17).
 - **O3:** drafter-64, final (held-out α 0.601, speedup 1.24×; slice 33).
-- **O5** (public domain) stays OPEN until slice 36. It blocks only the public post.
+- **O5:** resolved by the human: no custom domain. Production is https://aiexplainer-red.vercel.app (`SITE_URL` is set on Vercel production for link-preview cards), and the human turned Vercel Authentication off.
 - **Repo and deploys:** public at https://github.com/dzhng/aiexplainer. Vercel builds a
   protected preview for every push. Production is `main`, and merging into `main` is the
   release (the human's call).

@@ -562,3 +562,10 @@ standalone. Entries are appended per pass and consolidated when the spec closes.
   10-minute skim.** Verdict: sound.
 - **Chips: 1.51 million weights (the `full` model) vs 8.03 billion (Llama-3-8B), and Llama's 32
   blocks; no scenarios (no single probe to cite).** Verdict: sound.
+
+## Release setup (human decisions, 2026-09-27)
+
+- **No custom domain: production is `https://aiexplainer-red.vercel.app`.** `SITE_URL` is set
+  for the production target on Vercel, so `/c/N/` link-preview cards use the stable domain.
+  The human disabled Vercel Authentication, so previews are public too. Verdict: the human's
+  call; O5 is closed.
