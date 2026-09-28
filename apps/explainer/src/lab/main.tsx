@@ -8,7 +8,7 @@ import { calibScene } from "./calib.ts";
 import { loadFixture } from "./fixtures.ts";
 import { kitScene } from "./kit.ts";
 import { installProbe } from "./probe.ts";
-import { measureBloom } from "./perf.ts";
+import { measureBloom, sceneFixture } from "./perf.ts";
 import { registryBaseline } from "./registry-baseline.ts";
 import { tokensScene } from "./tokens.ts";
 import { AdapterPage } from "./pages/AdapterPage.tsx";
@@ -100,7 +100,11 @@ switch (route) {
     const canvas = document.createElement("canvas");
     canvas.style.cssText = "position:fixed;inset:0;width:100vw;height:100vh";
     document.body.append(canvas);
-    measureBloom(canvas, probe, params.get("fixture") ?? "board-room")
+    const scene = params.get("scene");
+    const fixture = scene
+      ? sceneFixture(scene, Number(params.get("t") ?? 0))
+      : loadFixture(params.get("fixture") ?? "board-room");
+    measureBloom(canvas, probe, fixture)
       .catch((error) => probe.errors.push(String(error)))
       .finally(markReady);
     break;

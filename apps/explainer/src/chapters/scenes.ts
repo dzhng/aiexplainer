@@ -30,13 +30,28 @@ export const SCENE_ANCHORS = {
   speculative: ["junior", "senior", "draft", "output"],
   /** Chapter 14: the triage desk, the expert bays, the waiting words, and the usage bars. */
   experts: ["desk", "bays", "tokens", "usage"],
+  /**
+   * Chapter 15: one anchor per station, named by its chapter's slug, where that chapter's own
+   * label pins (`data/finished.ts` picks which).
+   */
+  finished: [
+    "autocomplete",
+    "tokenizer",
+    "embeddings",
+    "attention",
+    "mlp",
+    "experts",
+    "residual",
+    "stack",
+    "sampling",
+    "generation",
+    "speculative",
+    "quantization",
+    "batching",
+  ],
 } as const satisfies Record<string, readonly string[]>;
 
-/**
- * The kit primitives each scene builds from (`@repo/renderer` `KIT`). The validator rejects a
- * primitive outside the kit; a test holds each builder to its list.
- */
-export const SCENE_KIT: Record<keyof typeof SCENE_ANCHORS, readonly string[]> = {
+const PART_KIT = {
   autocomplete: ["mesh", "bars", "block", "contactShadow"],
   tokenizer: ["block", "brick", "contactShadow"],
   embeddings: ["block", "pins", "brick", "contactShadow"],
@@ -50,6 +65,16 @@ export const SCENE_KIT: Record<keyof typeof SCENE_ANCHORS, readonly string[]> = 
   quantization: ["block", "contactShadow"],
   speculative: ["block", "draftStrip", "contactShadow"],
   experts: ["triageBays", "block", "bars", "contactShadow"],
+} satisfies Record<Exclude<keyof typeof SCENE_ANCHORS, "finished">, readonly string[]>;
+
+/**
+ * The kit primitives each scene builds from (`@repo/renderer` `KIT`). The validator rejects a
+ * primitive outside the kit; a test holds each builder to its list. The finished machine is
+ * built only from the other scenes, so its kit is theirs.
+ */
+export const SCENE_KIT: Record<keyof typeof SCENE_ANCHORS, readonly string[]> = {
+  ...PART_KIT,
+  finished: [...new Set(Object.values(PART_KIT).flat())],
 };
 
 export type SceneBuilderId = keyof typeof SCENE_ANCHORS;

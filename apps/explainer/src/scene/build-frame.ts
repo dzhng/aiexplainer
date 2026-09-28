@@ -4,8 +4,14 @@
  * scene text the overlay draws. Each chapter names a scene builder; the builder creates its
  * parts once (a new `revision`) and then updates transforms and dynamics in place every frame.
  */
-import type { FrameInput, SceneDesc } from "@repo/renderer";
-import type { ChapterDef, FollowId, SceneBuilderId, ViewMode } from "../chapters/types.ts";
+import type { FrameInput, OrbitPose, SceneDesc } from "@repo/renderer";
+import type {
+  ChapterDef,
+  ChapterSlug,
+  FollowId,
+  SceneBuilderId,
+  ViewMode,
+} from "../chapters/types.ts";
 import type { TimelineState } from "../chapters/timeline.ts";
 import type { SceneTags } from "../hud/SceneTags.tsx";
 import { attention, type AttentionRun } from "./builders/attention.ts";
@@ -21,6 +27,7 @@ import { batching } from "./builders/batching.ts";
 import { quantization } from "./builders/quantization.ts";
 import { speculative } from "./builders/speculative.ts";
 import { experts } from "./builders/experts.ts";
+import { finishedScene } from "./builders/finished.ts";
 import { withEnvironment } from "./environment.ts";
 import { nextRevision } from "./revision.ts";
 
@@ -51,7 +58,17 @@ export type SceneRun =
   | QuantizationRun
   | SpeculativeRun
   | ExpertsRun
-  | AttentionRun;
+  | AttentionRun
+  | FinishedRun;
+
+/**
+ * Chapter 15's run (`runtime/runs/finished.ts`): each station's own chapter run, by slug, as
+ * that chapter computes it on its own model.
+ */
+export interface FinishedRun {
+  kind: "finished";
+  runs: Partial<Record<ChapterSlug, SceneRun | null>>;
+}
 
 /** Chapter 1's run (`runtime/runs/tokenizer.ts`). */
 export interface PiecesRun {
@@ -144,9 +161,15 @@ export interface SceneBuilder {
     ui: SceneUi,
     run: SceneRun | null,
   ): void;
+  /**
+   * A toured scene's camera (`ChapterDef.tour`) at this moment of its loop, written into `out`.
+   * The app draws it until the reader takes the camera.
+   */
+  tourPose?(def: ChapterDef, tl: TimelineState, ui: SceneUi, out: OrbitPose): OrbitPose;
 }
 
-export const SCENE_BUILDERS: Record<SceneBuilderId, SceneBuilder> = {
+/** The scenes that stand on their own: every chapter's but the finished machine's. */
+const PART_BUILDERS: Record<Exclude<SceneBuilderId, "finished">, SceneBuilder> = {
   autocomplete,
   tokenizer,
   embeddings,
@@ -160,6 +183,11 @@ export const SCENE_BUILDERS: Record<SceneBuilderId, SceneBuilder> = {
   quantization,
   speculative,
   experts,
+};
+
+export const SCENE_BUILDERS: Record<SceneBuilderId, SceneBuilder> = {
+  ...PART_BUILDERS,
+  finished: finishedScene(PART_BUILDERS, buildFrame),
 };
 
 /** What one frame of a chapter's scene is: the renderer's input and the overlay's text. */

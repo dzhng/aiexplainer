@@ -104,8 +104,11 @@ export function validateChapter(
     if (!isSceneAnchor(def.scene, f.anchor))
       problems.push(`follow ${f.id}: unknown anchor ${f.anchor}`);
 
-  if (def.labels.length > MAX_LABELS)
+  // A tour shows one stop's label at a time; everywhere else every label can show at once.
+  if (def.labels.length > MAX_LABELS && !def.tour)
     problems.push(`${def.labels.length} labels (max ${MAX_LABELS})`);
+  if (new Set(def.labels.map((l) => l.anchor)).size !== def.labels.length)
+    problems.push("two labels on one anchor");
   for (const label of def.labels) {
     if (!isSceneAnchor(def.scene, label.anchor))
       problems.push(`label: unknown anchor ${label.anchor}`);
@@ -120,6 +123,8 @@ export function validateChapter(
     if (!Object.hasOwn(def.loop.channels, def.pullBack.channel))
       problems.push(`pullBack: no loop channel ${def.pullBack.channel}`);
   }
+  if (def.tour && !Object.hasOwn(def.loop.channels, def.tour.channel))
+    problems.push(`tour: no loop channel ${def.tour.channel}`);
 
   if (def.stats.length !== 3) problems.push(`${def.stats.length} stats (need 3)`);
   for (const stat of def.stats) {

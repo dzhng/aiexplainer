@@ -28,6 +28,11 @@ export interface ChapterSceneState {
   run: SceneRun | null;
   /** Seconds into the chapter's loop. */
   loopTime: number;
+  /**
+   * Whether a toured chapter (`ChapterDef.tour`) may steer the camera: not while the arrival
+   * move runs, and not once the reader has taken the camera.
+   */
+  steer: boolean;
 }
 
 const loaded = new Map<string, Promise<SceneDesc["assets"][string]>>();
@@ -61,7 +66,8 @@ export interface ChapterScene {
   channel(id: string): number | null;
   /** The stage's first frame input: the chapter's shot, an empty scene until the first update. */
   input: Omit<FrameInput, "timeSec" | "viewport">;
-  update: (input: FrameInput) => void;
+  /** Returns true when the loop steered the camera (a tour): the orbit continues from there. */
+  update: (input: FrameInput) => boolean;
 }
 
 export function chapterScene(
@@ -100,9 +106,10 @@ export function chapterScene(
       return tl?.channels[id] ?? null;
     },
     update(stageInput) {
-      const { def, ui, run, loopTime } = state();
+      const { def, ui, run, loopTime, steer } = state();
+      const builder = SCENE_BUILDERS[def.scene];
       // The builder needs its props; until they arrive the previous scene stays up.
-      if (Object.keys(SCENE_BUILDERS[def.scene].assets).some((id) => !assets[id])) return;
+      if (Object.keys(builder.assets).some((id) => !assets[id])) return false;
       if (timelineFor !== def || !tl) {
         tl = createTimelineState(def.loop);
         timelineFor = def;
@@ -126,6 +133,10 @@ export function chapterScene(
         held.fovY = from.fovY;
         arrivalPose(held, shotPose(def.pullBack.shot), pull, from);
       }
+      // A tour drives the camera from the loop, stop by stop.
+      if (!def.tour || !steer || !builder.tourPose) return false;
+      builder.tourPose(def, tl, ui, stageInput.camera);
+      return true;
     },
   };
 }
