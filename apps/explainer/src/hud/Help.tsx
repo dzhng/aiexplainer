@@ -39,6 +39,11 @@ export function Help({ dispatch, def, model, slider }: HudProps) {
         </p>
         <ul>
           <li>
+            The numbered panel on the left holds every control, in order: type your own text (a real
+            model runs it in your browser), or try an example, turn the chapter&apos;s knob where it
+            has one, and follow a part.
+          </li>
+          <li>
             <b>Follow</b> (<kbd>1</kbd>–<kbd>4</kbd>) picks one part to watch, and the caption
             explains it.
           </li>
@@ -46,9 +51,9 @@ export function Help({ dispatch, def, model, slider }: HudProps) {
             The left and right arrow keys, or the ladder at the bottom, move between chapters.
           </li>
           <li>
-            <b>Labels: Analogy / Technical</b> (bottom right) switches the part labels between the
-            everyday picture and the technical term. <b>Technical</b> under the caption gives the
-            exact claim.
+            <b>Labels: Analogy / Technical</b>, at the foot of the panel, switches the part labels
+            between the everyday picture and the technical term. <b>Technical</b> under the caption
+            gives the exact claim.
           </li>
           <li>
             <kbd>Space</kbd> plays or pauses, <kbd>?</kbd> opens this panel, <kbd>Esc</kbd> closes
