@@ -18,7 +18,6 @@ export const ModelId = z.enum([
   "full",
   "full-q8",
   "drafter-64",
-  "drafter-96",
   "moe",
 ]);
 export type ModelId = z.infer<typeof ModelId>;
