@@ -430,3 +430,25 @@ standalone. Entries are appended per pass and consolidated when the spec closes.
   Verdict: short-lived seam; removed when slice 22's primitive merges.
 - **Polish items for review:** chapter 8's three-line title and a stray tube at the left edge
   of the hero frame.
+
+## Slices 31–32 (chapters 11–12)
+
+- **Chapter 11 shows the ridge beat as the knee at batch 329 (new `ARITH.computeBoundBatch`,
+  where a step's arithmetic time equals its memory time), not the raw ridge figure of about
+  295 FLOP/byte.** Why: that is the batch where the seats fill. Verdict: sound, and the
+  arithmetic is exact.
+- **Stat chips take `ArithArg` bindings (`{slider: true}` or `{probe}`),** so chips follow the
+  slider or feed a probe into a formula without typing a number. Verdict: sound, and it
+  strengthens D25.
+- **`SliderDef.loop` plus `AppState.sliderSet`: the loop plays the slider until the reader moves
+  it,** and the HUD samples the channel at 10 Hz. Verdict: sound; it is compatible with D32
+  (a reader's input takes over).
+- **Chapter 11's prefill is a loop beat, not a HUD scenario,** because a model-less chapter has
+  no probe for a scenario to cite. Verdict: sound.
+- **Chapter 11 has no Cutaway view (the bus sides are windows).** Verdict: sound.
+- **Chapter 12's fp16/int8 toggle is the slider, and the HUD scenarios are `full-q8`'s two
+  KL-chosen prompts.** Verdict: sound.
+- **A `weights` request (Inference, Session, worker, local) serves raw tensor slices for the
+  weight strip.** Verdict: sound; one path through `weightSlice`.
+- **Copy violation found at merge:** the chapter-12 chip label "KL divergence (nats)" is jargon
+  (D2). Sent back for a plain relabel. Verdict: fix pending in lane D.
