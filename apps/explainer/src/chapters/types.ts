@@ -69,10 +69,10 @@ export interface ChapterDef {
   ogTimeSec: number;
 }
 
-/** Two storyteller sentences, then the "Precisely:" line behind one click (copy rules). */
+/** Two storyteller sentences, then the "Technical" line behind one click (copy rules). */
 export interface Caption {
   story: [string, string];
-  precisely: string;
+  technical: string;
 }
 
 /**
@@ -104,11 +104,11 @@ export interface FollowTarget {
   anchor: AnchorId;
 }
 
-/** A part's label in both readings; the Analogy/Precise toggle picks one (D16). */
+/** A part's label in both readings; the Analogy/Technical toggle picks one (D16). */
 export interface LabelDef {
   anchor: AnchorId;
   analogy: string;
-  precise: string;
+  technical: string;
 }
 
 export interface SliderDef {

@@ -46,8 +46,9 @@ export function Help({ dispatch, def, model, slider }: HudProps) {
             The left and right arrow keys, or the ladder at the bottom, move between chapters.
           </li>
           <li>
-            <b>Analogy / Precise</b> switches the part labels between the everyday picture and the
-            technical name. <b>Precisely</b> under the caption gives the exact claim.
+            <b>Labels: Analogy / Technical</b> (bottom right) switches the part labels between the
+            everyday picture and the technical term. <b>Technical</b> under the caption gives the
+            exact claim.
           </li>
           <li>
             <kbd>Space</kbd> plays or pauses, <kbd>?</kbd> opens this panel, <kbd>Esc</kbd> closes

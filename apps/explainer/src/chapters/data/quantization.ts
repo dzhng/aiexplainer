@@ -24,7 +24,7 @@ export const quantization: ChapterDef = {
         "A lower-resolution photo keeps the picture in half the space, and the same trick works on the machine's numbers.",
         "Each weight is rounded to one of 255 levels, so the copy is half the size and still picks nearly the same words.",
       ],
-      precisely:
+      technical:
         "8-bit quantization (q8_0) stores each group of 32 weights as one 16-bit scale and 32 whole numbers from −127 to 127; each weight becomes scale × its number.",
     },
     byFollow: {
@@ -33,7 +33,7 @@ export const quantization: ChapterDef = {
           "These bars are 32 real weights from this tiny model, first as stored at 16 bits, then rounded to 8.",
           "At full size the rounding is too small to see, so the magnifier zooms in on one weight.",
         ],
-        precisely:
+        technical:
           "Each 8-bit number is round(w ÷ scale), where scale is the group's largest |w| ÷ 127, so no weight moves by more than half a step.",
       },
       crates: {
@@ -41,7 +41,7 @@ export const quantization: ChapterDef = {
           "The 8-bit copy's weights fill about half the crate.",
           "Less to haul means a quicker trip, because the haul was the slow part.",
         ],
-        precisely:
+        technical:
           "This tiny model's 8-bit weights file is the measured share of the 16-bit one (the scales add a little). For Llama-3-8B the chip shows the weights at the slider's bytes per weight.",
       },
       machines: {
@@ -49,7 +49,7 @@ export const quantization: ChapterDef = {
           "Both machines continue the same story, and they pick the same next word almost every time.",
           "The copy is not perfect, but its guesses stay very close.",
         ],
-        precisely:
+        technical:
           "On validation text the 8-bit copy's top next token matches the 16-bit model's at the agreement chip's rate; the drift chip is the KL divergence, in nats, between their whole next-token distributions.",
       },
     },
@@ -102,10 +102,14 @@ export const quantization: ChapterDef = {
   ],
   views: ["whole", "exploded"],
   labels: [
-    { anchor: "strip", analogy: "A strip of real weights", precise: "32 weights, one q8_0 group" },
-    { anchor: "lens", analogy: "Magnifier: one weight", precise: "One weight on the 8-bit grid" },
-    { anchor: "crates", analogy: "The cargo, 16-bit vs 8-bit", precise: "Weights file bytes" },
-    { anchor: "machines", analogy: "Two machines, one story", precise: "16-bit vs 8-bit copy" },
+    {
+      anchor: "strip",
+      analogy: "A strip of real weights",
+      technical: "32 weights, one q8_0 group",
+    },
+    { anchor: "lens", analogy: "Magnifier: one weight", technical: "One weight on the 8-bit grid" },
+    { anchor: "crates", analogy: "The cargo, 16-bit vs 8-bit", technical: "Weights file bytes" },
+    { anchor: "machines", analogy: "Two machines, one story", technical: "16-bit vs 8-bit copy" },
   ],
   loop: {
     durationSec: 24,

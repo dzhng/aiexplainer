@@ -101,22 +101,22 @@
     {
       "anchor": "hidden",
       "analogy": "Behind the screen",
-      "precise": "Occluded block"
+      "technical": "Occluded block"
     },
     {
       "anchor": "open",
       "analogy": "In plain view",
-      "precise": "Visible block"
+      "technical": "Visible block"
     },
     {
       "anchor": "back",
       "analogy": "Behind the pipe",
-      "precise": "Block behind a capsule"
+      "technical": "Block behind a capsule"
     },
     {
       "anchor": "pipe",
       "analogy": "Pipe",
-      "precise": "Tube capsule"
+      "technical": "Tube capsule"
     }
   ]
 }

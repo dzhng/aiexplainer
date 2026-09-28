@@ -100,32 +100,32 @@
     {
       "anchor": "m0",
       "analogy": "Marker 0",
-      "precise": "Marker 0"
+      "technical": "Marker 0"
     },
     {
       "anchor": "m1",
       "analogy": "Marker 1",
-      "precise": "Marker 1"
+      "technical": "Marker 1"
     },
     {
       "anchor": "m2",
       "analogy": "Marker 2",
-      "precise": "Marker 2"
+      "technical": "Marker 2"
     },
     {
       "anchor": "m3",
       "analogy": "Marker 3",
-      "precise": "Marker 3"
+      "technical": "Marker 3"
     },
     {
       "anchor": "m4",
       "analogy": "Marker 4",
-      "precise": "Marker 4"
+      "technical": "Marker 4"
     },
     {
       "anchor": "m5",
       "analogy": "Marker 5",
-      "precise": "Marker 5"
+      "technical": "Marker 5"
     }
   ]
 }

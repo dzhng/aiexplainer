@@ -92,14 +92,14 @@ function TitlePanel({ state, dispatch, def, model, motion, slider }: HudProps) {
       <section className={`${css.box} ${css.caption}`} aria-live="polite">
         <p>{caption.story.join(" ")}</p>
         <button
-          className={css.precisely}
-          aria-expanded={state.precisionOpen}
-          onClick={() => dispatch({ type: "togglePrecisely" })}
+          className={css.technical}
+          aria-expanded={state.technicalOpen}
+          onClick={() => dispatch({ type: "toggleTechnical" })}
         >
           <ChevronIcon />
-          Precisely
+          Technical
         </button>
-        {state.precisionOpen && <p className={css.preciseText}>{caption.precisely}</p>}
+        {state.technicalOpen && <p className={css.technicalText}>{caption.technical}</p>}
       </section>
       {def.model !== null && (
         <label className={`${css.box} ${css.prompt}`} data-crop="panel:prompt">
@@ -271,6 +271,9 @@ function Ladder({ state, dispatch, chapters }: HudProps) {
   );
 }
 
+/** What the corner toggle does, for its tooltip and screen readers. */
+const LABEL_MODE_HINT = "Label wording: the everyday analogy or the technical term";
+
 function Corner({ state, dispatch, def }: HudProps) {
   const [copied, setCopied] = useState(false);
   const share = () => {
@@ -286,16 +289,21 @@ function Corner({ state, dispatch, def }: HudProps) {
   };
   return (
     <div className={css.corner} data-crop="panel:corner" data-intro="below">
-      <Segmented
-        label="Label reading"
-        options={[
-          { value: "analogy", label: "Analogy" },
-          { value: "precise", label: "Precise" },
-        ]}
-        selected={state.labelMode}
-        onSelect={(mode) => mode !== state.labelMode && dispatch({ type: "toggleLabelMode" })}
-        className={css.box}
-      />
+      <div className={css.labelMode} title={LABEL_MODE_HINT}>
+        <span className={css.labelModeHead} aria-hidden>
+          Label wording
+        </span>
+        <Segmented
+          label={LABEL_MODE_HINT}
+          options={[
+            { value: "analogy", label: "Analogy" },
+            { value: "technical", label: "Technical" },
+          ]}
+          selected={state.labelMode}
+          onSelect={(mode) => mode !== state.labelMode && dispatch({ type: "toggleLabelMode" })}
+          className={css.box}
+        />
+      </div>
       <button
         className={`${css.box} ${css.pill} ${copied ? "" : css.pillSquare}`}
         aria-label="Copy a link to this chapter"

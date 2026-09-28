@@ -4,13 +4,13 @@
  *
  * D32: arriving at a chapter restarts its loop (`loopEpoch` bumps, `playing` turns on); a scene
  * control (Follow, slider, scenario, view, typed text) pauses it; ▶ resumes. The reading aids (Analogy /
- * Precise, "Precisely", help) change what text is shown, not the scene, so they don't pause.
+ * Technical labels, the "Technical" caption line, help) change what text is shown, not the scene, so they don't pause.
  */
 import { LADDER, displayNumber, slugAt } from "../chapters/ladder.ts";
 import type { ChapterDef, ChapterSlug, FollowId, ViewMode } from "../chapters/types.ts";
 
 export type Chapters = Partial<Record<ChapterSlug, ChapterDef>>;
-export type LabelMode = "analogy" | "precise";
+export type LabelMode = "analogy" | "technical";
 
 export interface AppState {
   chapter: ChapterSlug;
@@ -31,7 +31,7 @@ export interface AppState {
   /** Bumps on every arrival; the frame loop restarts loop time when it changes. */
   loopEpoch: number;
   labelMode: LabelMode;
-  precisionOpen: boolean;
+  technicalOpen: boolean;
   helpOpen: boolean;
 }
 
@@ -46,7 +46,7 @@ export type Action =
   | { type: "setView"; view: ViewMode }
   | { type: "togglePlay" }
   | { type: "toggleLabelMode" }
-  | { type: "togglePrecisely" }
+  | { type: "toggleTechnical" }
   | { type: "toggleHelp" };
 
 /** The written chapters in ladder order: the ones ← / → and the ladder can reach. */
@@ -74,7 +74,7 @@ function arrive(chapters: Chapters, slug: ChapterSlug, from: AppState | null): A
     playing: true,
     loopEpoch: (from?.loopEpoch ?? -1) + 1,
     labelMode: from?.labelMode ?? "analogy",
-    precisionOpen: false,
+    technicalOpen: false,
     helpOpen: from?.helpOpen ?? false,
   };
 }
@@ -130,9 +130,9 @@ export function reduce(state: AppState, action: Action, chapters: Chapters): App
     case "togglePlay":
       return { ...state, playing: !state.playing };
     case "toggleLabelMode":
-      return { ...state, labelMode: state.labelMode === "analogy" ? "precise" : "analogy" };
-    case "togglePrecisely":
-      return { ...state, precisionOpen: !state.precisionOpen };
+      return { ...state, labelMode: state.labelMode === "analogy" ? "technical" : "analogy" };
+    case "toggleTechnical":
+      return { ...state, technicalOpen: !state.technicalOpen };
     case "toggleHelp":
       return { ...state, helpOpen: !state.helpOpen };
   }

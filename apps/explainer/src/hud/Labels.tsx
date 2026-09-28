@@ -132,7 +132,7 @@ export const Labels = forwardRef<LabelsHandle, { labels: readonly LabelDef[]; re
             <div className={css.leader} style={geometry.leader} data-leader="" />
             <div className={css.dot} data-dot="" />
             <div className={css.pill} style={geometry.pill} data-pill="">
-              {reading === "analogy" ? label.analogy : label.precise}
+              {reading === "analogy" ? label.analogy : label.technical}
             </div>
           </div>
         ))}

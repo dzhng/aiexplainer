@@ -18,7 +18,7 @@ export const mlp: ChapterDef = {
         "Attention hands each word an arrow of gathered clues, and next it passes a panel of yes/no questions, the model's neurons.",
         "Each question that answers yes lights up and pushes the arrow toward the words that should come next.",
       ],
-      precisely:
+      technical:
         "This is the MLP (multilayer perceptron): each neuron scores the arrow with silu(w1·x)·(w3·x), and w2 adds every neuron's own direction, scaled by its score, back onto the arrow. A lot of what the model knows is stored here.",
     },
     byFollow: {
@@ -27,7 +27,7 @@ export const mlp: ChapterDef = {
           "Each lamp is one question, and its brightness is how strongly the arrow answered it.",
           "Nobody wrote these questions; training found them, so most don't match any one idea we could name.",
         ],
-        precisely:
+        technical:
           "Lamp brightness is |activation| of this tiny model's most active neurons at the last word (the slider sets how many); the rest of the panel is not drawn.",
       },
       arrow: {
@@ -35,7 +35,7 @@ export const mlp: ChapterDef = {
           "The arrow is everything the machine has worked out so far about the last word and the words before it.",
           "Each push adds to the arrow instead of replacing it, so what attention gathered is still there afterwards.",
         ],
-        precisely:
+        technical:
           "The arrow is the last token's vector. The MLP's output is added onto it, and each pipe's width is how much that one neuron raises or lowers the answer's logit.",
       },
       readout: {
@@ -43,7 +43,7 @@ export const mlp: ChapterDef = {
           "The bars show how sure the machine is of its next word with the brightest lamps off, then with every lamp on.",
           "A lot of what the model knows is stored here: switch a few questions off and its best guess collapses.",
         ],
-        precisely:
+        technical:
           "p(next token) from this tiny model with its 16 most active neurons zeroed, then with none zeroed; the chip repeats that test over 30 fact-like prompts.",
       },
     },
@@ -84,9 +84,9 @@ export const mlp: ChapterDef = {
   ],
   views: ["whole", "exploded"],
   labels: [
-    { anchor: "panel", analogy: "Yes/no questions", precise: "MLP neurons (SwiGLU)" },
-    { anchor: "arrow", analogy: "The word's arrow", precise: "Last token's vector" },
-    { anchor: "readout", analogy: "How sure of the next word", precise: "p(next token)" },
+    { anchor: "panel", analogy: "Yes/no questions", technical: "MLP neurons (SwiGLU)" },
+    { anchor: "arrow", analogy: "The word's arrow", technical: "Last token's vector" },
+    { anchor: "readout", analogy: "How sure of the next word", technical: "p(next token)" },
   ],
   loop: {
     durationSec: 22,

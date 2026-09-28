@@ -47,7 +47,7 @@ function checkCaption(where: string, caption: Caption, problems: string[]) {
         `${where}: sentence ${i + 1} has ${wordCount(sentence)} words (max ${MAX_SENTENCE_WORDS})`,
       );
   }
-  if (!caption.precisely?.trim()) problems.push(`${where}: missing precisely line`);
+  if (!caption.technical?.trim()) problems.push(`${where}: missing technical line`);
 }
 
 function checkLoop(def: ChapterDef, loop: Timeline, problems: string[]) {
@@ -112,7 +112,7 @@ export function validateChapter(
   for (const label of def.labels) {
     if (!isSceneAnchor(def.scene, label.anchor))
       problems.push(`label: unknown anchor ${label.anchor}`);
-    if (!label.analogy?.trim() || !label.precise?.trim())
+    if (!label.analogy?.trim() || !label.technical?.trim())
       problems.push(`label ${label.anchor}: needs both readings`);
   }
 

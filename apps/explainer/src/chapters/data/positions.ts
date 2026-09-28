@@ -40,7 +40,7 @@ export const positions: ChapterDef = {
         "Now every word carries a clock hand, turned a little further for each place it sits along the sentence.",
         "Swap two words and their hands swap angles too, so the pipes and the guess both change.",
       ],
-      precisely:
+      technical:
         "RoPE (rotary position embedding): before the dot products, each query and key is rotated pair by pair by an angle proportional to its position, so a score depends on how far apart two words are. A hand shows one pair's real angle in this tiny model: position × 10000^(−10/96), about 22° per word. With one attention layer and no positions, shuffling the earlier words doesn't change the prediction; with RoPE it does.",
     },
     byFollow: {
@@ -49,7 +49,7 @@ export const positions: ChapterDef = {
           "Each hand turns by the same step for every place a word moves along, like the hour hand across a day.",
           "Two hands' angle apart says how far apart their words sit, wherever in the sentence they are.",
         ],
-        precisely:
+        technical:
           "The hand's angle is position × θ, with θ = ropeTheta^(−2i/headDim) for pair i = 5 of this tiny model's 48 pairs (headDim 96); other pairs turn faster or slower, and a query-key score depends only on the difference of their angles.",
       },
       pipes: {
@@ -57,7 +57,7 @@ export const positions: ChapterDef = {
           "The pipes still carry the last word's attention, but now a word's place changes how wide its pipe opens.",
           "So “dog” three places back draws differently from “dog” six places back.",
         ],
-        precisely:
+        technical:
           "Pipe width = the attention weight from the last token, computed with RoPE-rotated queries and keys in the one-layer `rope` model.",
       },
       mix: {
@@ -65,7 +65,7 @@ export const positions: ChapterDef = {
           "The mix above is still only a weighted average of what the pipes carry.",
           "Nothing here works on it yet: that is the next chapter's part.",
         ],
-        precisely:
+        technical:
           "The attention output is Σ weight × value; this model has no MLP, so after attention the only step left is reading off the next-word scores.",
       },
     },
@@ -102,10 +102,10 @@ export const positions: ChapterDef = {
   scenarios,
   views: ["whole", "exploded"],
   labels: [
-    { anchor: "sentence", analogy: "The story so far", precise: "Tokens in context" },
-    { anchor: "dials", analogy: "Clock hand: its place", precise: "RoPE angle, one pair" },
-    { anchor: "pipes", analogy: "Wider pipe, more drawn", precise: "Attention weight (width)" },
-    { anchor: "mix", analogy: "The last word's mix", precise: "Weighted sum of values" },
+    { anchor: "sentence", analogy: "The story so far", technical: "Tokens in context" },
+    { anchor: "dials", analogy: "Clock hand: its place", technical: "RoPE angle, one pair" },
+    { anchor: "pipes", analogy: "Wider pipe, more drawn", technical: "Attention weight (width)" },
+    { anchor: "mix", analogy: "The last word's mix", technical: "Weighted sum of values" },
   ],
   loop: {
     durationSec: 24,

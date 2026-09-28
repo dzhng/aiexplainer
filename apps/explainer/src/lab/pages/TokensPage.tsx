@@ -298,7 +298,7 @@ function LabelsSection() {
     >
       <div style={s.row}>
         <LabelSpecimen reading="analogy" />
-        <LabelSpecimen reading="precise" />
+        <LabelSpecimen reading="technical" />
       </div>
     </Section>
   );

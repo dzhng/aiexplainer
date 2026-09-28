@@ -31,9 +31,13 @@ const debug = {
   layers: layersFrom(params),
   bloom: params.get("bloom") !== "0",
 };
-// `?labels=0` hides the label layer; `?reading=precise` shows the precise wording.
+// `?labels=0` hides the label layer; `?reading=technical` shows the technical wording.
 const reading =
-  params.get("labels") === "0" ? null : params.get("reading") === "precise" ? "precise" : "analogy";
+  params.get("labels") === "0"
+    ? null
+    : params.get("reading") === "technical"
+      ? "technical"
+      : "analogy";
 // `?turntable=<rad/s>` spins the renderer fixtures' camera, for held-time orbit sweeps.
 const turntable = Number(params.get("turntable") ?? 0);
 

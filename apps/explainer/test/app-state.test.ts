@@ -78,7 +78,7 @@ describe("loop (D32)", () => {
   });
 
   test("reading aids don't pause the loop", () => {
-    for (const type of ["toggleLabelMode", "togglePrecisely", "toggleHelp"] as const)
+    for (const type of ["toggleLabelMode", "toggleTechnical", "toggleHelp"] as const)
       expect(run(start, { type }).playing).toBe(true);
   });
 
@@ -87,7 +87,7 @@ describe("loop (D32)", () => {
       start,
       { type: "setFollow", follow: "next" },
       { type: "setSlider", value: 9 },
-      { type: "togglePrecisely" },
+      { type: "toggleTechnical" },
       { type: "toggleLabelMode" },
     );
     const again = run(touched, { type: "goto", chapter: "autocomplete" });
@@ -96,8 +96,8 @@ describe("loop (D32)", () => {
       loopEpoch: start.loopEpoch + 1,
       follow: null,
       slider: autocomplete.slider.initial,
-      precisionOpen: false,
-      labelMode: "precise",
+      technicalOpen: false,
+      labelMode: "technical",
     });
   });
 

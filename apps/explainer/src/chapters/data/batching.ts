@@ -28,7 +28,7 @@ export const batching: ChapterDef = {
         "A bus trip costs about the same whether it carries one rider or a hundred, because the trip itself is the expensive part.",
         "Every new word means hauling all the weights to the GPU's arithmetic, so many conversations share each haul.",
       ],
-      precisely:
+      technical:
         "Batching decodes one next token for each of many sequences in a single step, reading the weights once for all of them; prefill reads a whole prompt in one step the same way.",
     },
     byFollow: {
@@ -37,7 +37,7 @@ export const batching: ChapterDef = {
           "Each glowing rider is one conversation waiting for its next word.",
           "They ride together, so every seat filled adds a word per trip for almost nothing extra.",
         ],
-        precisely:
+        technical:
           "Each glowing cube is one token being worked on: in decode, one sequence of the batch; in prefill, one token of the prompt. A decode step reads the weights once plus each sequence's own KV cache.",
       },
       crates: {
@@ -45,7 +45,7 @@ export const batching: ChapterDef = {
           "The crates are the model's weights, and every single trip hauls all of them.",
           "That haul, not the arithmetic, is what makes a lone rider slow.",
         ],
-        precisely:
+        technical:
           "At small batches a decode step lasts as long as reading every weight from GPU memory; the sums finish long before the bytes arrive (memory-bound).",
       },
       stop: {
@@ -53,7 +53,7 @@ export const batching: ChapterDef = {
           "Once the seats are full, extra riders stop riding for free, and each trip takes longer.",
           "From here the arithmetic, not the haul, sets the pace, so the total stops rising.",
         ],
-        precisely:
+        technical:
           "Past the knee a step's FLOPs take longer than its bytes (compute-bound), so tokens per second across the batch stays at the GPU's compute ceiling.",
       },
     },
@@ -107,17 +107,17 @@ export const batching: ChapterDef = {
   // No Cutaway: both sides are windows already, so a section would only paint the shell.
   views: ["whole", "exploded"],
   labels: [
-    { anchor: "bus", analogy: "The bus: one trip per word", precise: "One decode step" },
+    { anchor: "bus", analogy: "The bus: one trip per word", technical: "One decode step" },
     {
       anchor: "riders",
       analogy: "Riders: one word each per trip",
-      precise: "Tokens in this step",
+      technical: "Tokens in this step",
     },
-    { anchor: "crates", analogy: "Cargo: all the weights", precise: "Weights read every step" },
+    { anchor: "crates", analogy: "Cargo: all the weights", technical: "Weights read every step" },
     {
       anchor: "stop",
       analogy: "The stop: riders past a full bus",
-      precise: "Past the knee: compute-bound",
+      technical: "Past the knee: compute-bound",
     },
   ],
   loop: {

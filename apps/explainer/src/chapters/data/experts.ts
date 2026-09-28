@@ -24,7 +24,7 @@ export const experts: ChapterDef = {
         "At a hospital, a triage desk sends each patient to the right specialists, not to every doctor in the building.",
         "Here the router sends each word to 2 of 8 expert bays, so the machine holds much more than any one word pays for.",
       ],
-      precisely:
+      technical:
         "Mixture of experts: the MLP is split into 8 experts, and a small router picks the top 2 for each token, mixing their outputs by its renormalised probabilities; the other 6 do no work for that token.",
     },
     byFollow: {
@@ -33,7 +33,7 @@ export const experts: ChapterDef = {
           "The desk looks at each word and scores all 8 bays for it.",
           "It sends the word to the 2 bays that scored highest, and weighs their answers by those scores.",
         ],
-        precisely:
+        technical:
           "The router is one linear layer: a score per expert from the token's vector, turned into probabilities; the top 2 are kept and their weights renormalised to sum to 1.",
       },
       bays: {
@@ -41,7 +41,7 @@ export const experts: ChapterDef = {
           "Each bay is an expert, a full question panel of its own, like the one in chapter 6.",
           "Only the 2 lit bays work on this word; the dark ones cost it nothing.",
         ],
-        precisely:
+        technical:
           "Each expert is a SwiGLU MLP; a token's MLP output is the weighted sum of its 2 chosen experts' outputs, so its compute is 2 experts' worth, not 8.",
       },
       usage: {
@@ -49,7 +49,7 @@ export const experts: ChapterDef = {
           "Over many words every bay gets its share of patients, so none sits idle.",
           "Training nudged the desk to spread the work, or a few bays would do everything.",
         ],
-        precisely:
+        technical:
           "Each bar is an expert's measured share of routing slots on held-out text, and the line across them is an even share (1 in 8); training added a load-balancing loss (Switch Transformer) so the router doesn't collapse onto a few experts.",
       },
     },
@@ -93,10 +93,10 @@ export const experts: ChapterDef = {
   ],
   views: ["whole", "exploded"],
   labels: [
-    { anchor: "desk", analogy: "Triage desk: picks 2 bays", precise: "Router (top-2 of 8)" },
-    { anchor: "bays", analogy: "Expert bays", precise: "8 expert MLPs" },
-    { anchor: "tokens", analogy: "Words waiting to be seen", precise: "Tokens" },
-    { anchor: "usage", analogy: "How busy each bay is", precise: "Share of routing slots" },
+    { anchor: "desk", analogy: "Triage desk: picks 2 bays", technical: "Router (top-2 of 8)" },
+    { anchor: "bays", analogy: "Expert bays", technical: "8 expert MLPs" },
+    { anchor: "tokens", analogy: "Words waiting to be seen", technical: "Tokens" },
+    { anchor: "usage", analogy: "How busy each bay is", technical: "Share of routing slots" },
   ],
   loop: {
     durationSec: 24,

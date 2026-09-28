@@ -51,15 +51,15 @@ test("rejects a 3-sentence caption, whether as three entries or packed into one"
   expect(validateChapter(packed)).toContain("caption: sentence 2 holds more than one sentence");
 });
 
-test("rejects a story sentence over 25 words and a missing precisely line", () => {
+test("rejects a story sentence over 25 words and a missing technical line", () => {
   const long = broken(
     (d) => void (d.caption.byFollow.next!.story[0] = Array(26).fill("word").join(" ") + "."),
   );
   expect(validateChapter(long)).toContain(
     "caption.byFollow.next: sentence 1 has 26 words (max 25)",
   );
-  const noPrecisely = broken((d) => void (d.caption.default.precisely = ""));
-  expect(validateChapter(noPrecisely)).toContain("caption: missing precisely line");
+  const noTechnical = broken((d) => void (d.caption.default.technical = ""));
+  expect(validateChapter(noTechnical)).toContain("caption: missing technical line");
 });
 
 test("rejects a stat with no scale", () => {

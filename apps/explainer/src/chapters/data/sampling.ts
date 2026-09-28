@@ -20,7 +20,7 @@ export const sampling: ChapterDef = {
         "The word on the card scores every word in the vocabulary, and the scores load a die: likely words get wide faces.",
         "The machine rolls it, and the face that lands is the next word, so the same start can end differently.",
       ],
-      precisely:
+      technical:
         "Each score (logit) is the dot product of the current word's vector with every word's output vector. Softmax turns scores into probabilities, and sampling draws one word in proportion to them.",
     },
     byFollow: {
@@ -29,7 +29,7 @@ export const sampling: ChapterDef = {
           "Each bar is one word's score: how well its arrow lines up with the arrow of the word on the card.",
           "The six tallest bars become the die's word faces; every other word shares the last face.",
         ],
-        precisely:
+        technical:
           "A score is a dot product with a row of the output table (the unembedding). Bars show the highest scores of the whole vocabulary, measured up from its average score.",
       },
       die: {
@@ -37,7 +37,7 @@ export const sampling: ChapterDef = {
           "Each face is as wide around the rim as its word's chance, so a wide face comes up often.",
           "The temperature slider loads the die: cold makes the favourite face swallow the rim, hot spreads the odds over every word.",
         ],
-        precisely:
+        technical:
           "Probabilities are softmax(scores ÷ temperature); temperature 0 always picks the top word. The roll stops at a uniformly random angle, which lands on each face exactly as often as its share.",
       },
       word: {
@@ -45,7 +45,7 @@ export const sampling: ChapterDef = {
           "Type a sentence and only its last word goes on the card: the machine sees nothing before it.",
           "Two different stories that end in the same word roll exactly the same die.",
         ],
-        precisely:
+        technical:
           "This tiny model has no attention: its prediction depends on the last token alone, so every prompt ending in the same token gives identical probabilities.",
       },
     },
@@ -109,9 +109,9 @@ export const sampling: ChapterDef = {
   ],
   views: ["whole"],
   labels: [
-    { anchor: "die", analogy: "The loaded die", precise: "Next-token distribution" },
-    { anchor: "scores", analogy: "How well each word lines up", precise: "Logits (the highest)" },
-    { anchor: "word", analogy: "The only word it sees", precise: "Last token" },
+    { anchor: "die", analogy: "The loaded die", technical: "Next-token distribution" },
+    { anchor: "scores", analogy: "How well each word lines up", technical: "Logits (the highest)" },
+    { anchor: "word", analogy: "The only word it sees", technical: "Last token" },
   ],
   loop: {
     durationSec: 26,

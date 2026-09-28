@@ -17,7 +17,7 @@ export const generation: ChapterDef = {
         "To write a story the machine picks one word, adds it to the end of the text, and starts again.",
         "Every time, it rereads the whole text from the very first word, so each new word costs a little more.",
       ],
-      precisely:
+      technical:
         "Autoregressive generation: sample the next token from the model's output, append it to the input, and run the full forward pass again over every token.",
     },
     byFollow: {
@@ -26,7 +26,7 @@ export const generation: ChapterDef = {
           "The machine is the same four blocks as before; it has no memory between words.",
           "Each word it writes comes from a fresh pass over everything on the rail.",
         ],
-        precisely:
+        technical:
           "Without a cache every step recomputes keys, values and activations for all earlier positions; the bands are this tiny model's 4 layers running.",
       },
       rail: {
@@ -34,7 +34,7 @@ export const generation: ChapterDef = {
           "The rail holds the text so far: your words, then the machine's, one landing at a time.",
           "Each new word lands at the end and becomes part of what gets reread next time.",
         ],
-        precisely:
+        technical:
           "The words are drawn at temperature 0.8 with a fixed seed, the same draw as chapter 8's page.",
       },
       counter: {
@@ -42,7 +42,7 @@ export const generation: ChapterDef = {
           "The counter adds up every word the machine has had to read, and it climbs faster with each step.",
           "Writing the tenth word means rereading nine; the thousandth means rereading nine hundred and ninety-nine.",
         ],
-        precisely:
+        technical:
           "The count is the number of tokens fed through the model, summed over steps: the prefix length at each step, so it grows with the square of the length.",
       },
     },
@@ -92,9 +92,9 @@ export const generation: ChapterDef = {
   ],
   views: ["whole", "exploded"],
   labels: [
-    { anchor: "machine", analogy: "The whole machine", precise: "Forward pass (4 layers)" },
-    { anchor: "rail", analogy: "The text so far", precise: "Input tokens" },
-    { anchor: "counter", analogy: "Words reread", precise: "Tokens processed" },
+    { anchor: "machine", analogy: "The whole machine", technical: "Forward pass (4 layers)" },
+    { anchor: "rail", analogy: "The text so far", technical: "Input tokens" },
+    { anchor: "counter", analogy: "Words reread", technical: "Tokens processed" },
   ],
   loop: {
     durationSec: 24,

@@ -259,7 +259,7 @@
   color: var(--hud-muted);
 }
 
-.precisely {
+.technical {
   margin-top: 8px;
   display: inline-flex;
   align-items: center;
@@ -272,7 +272,7 @@
   color: var(--hud-accent);
 }
 
-.precisely:hover {
+.technical:hover {
   text-shadow: 0 0 10px var(--hud-glow);
 }
 
@@ -282,11 +282,11 @@
   transition: transform 120ms ease;
 }
 
-.precisely[aria-expanded="true"] .chevron {
+.technical[aria-expanded="true"] .chevron {
   transform: rotate(90deg);
 }
 
-.preciseText {
+.technicalText {
   margin: 8px 0 0;
   padding-top: 8px;
   border-top: 1px dashed var(--hud-line);
@@ -650,6 +650,27 @@
 .corner .seg {
   --cut: var(--hud-cut-small);
   padding: 3px 4px;
+}
+
+/* The label-wording toggle, captioned just above so the corner row keeps its width. */
+.labelMode {
+  position: relative;
+}
+
+.labelModeHead {
+  position: absolute;
+  left: 2px;
+  bottom: calc(100% + 5px);
+  font-family: var(--font-display);
+  font-size: var(--text-xs);
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: var(--hud-muted);
+  text-shadow:
+    0 0 3px var(--bg-deep),
+    0 1px 6px var(--bg-deep);
 }
 
 .corner .seg button {

@@ -135,22 +135,22 @@
     {
       "anchor": "top",
       "analogy": "Most likely next",
-      "precise": "Highest count"
+      "technical": "Highest count"
     },
     {
       "anchor": "card",
       "analogy": "Your word",
-      "precise": "Current word"
+      "technical": "Current word"
     },
     {
       "anchor": "header",
       "analogy": "Counter board",
-      "precise": "Word-pair counts"
+      "technical": "Word-pair counts"
     },
     {
       "anchor": "rare",
       "analogy": "Rarely next",
-      "precise": "Lowest count"
+      "technical": "Lowest count"
     }
   ]
 }

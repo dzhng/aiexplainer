@@ -18,7 +18,7 @@ export const autocomplete: ChapterDef = {
         "Your phone's keyboard guesses your next word, and the simplest way to guess is to remember which word usually came next.",
         "This machine read millions of children's stories and kept a tally for every pair of words that sat side by side.",
       ],
-      precisely:
+      technical:
         "For each word it knows, this tiny model keeps the 20 words that most often came right after it in TinyStories; each bar is one word's share of those kept counts.",
     },
     byFollow: {
@@ -27,7 +27,7 @@ export const autocomplete: ChapterDef = {
           "Each word gets its own row of tallies, one mark for every time another word came right after it.",
           "Nothing here understands the words; it only remembers what came next, and how often.",
         ],
-        precisely:
+        technical:
           "The table stores count(w, x), how many times word x followed word w, as whole numbers, keeping only the most frequent x for each w.",
       },
       next: {
@@ -35,7 +35,7 @@ export const autocomplete: ChapterDef = {
           "The bars are the tallies for the word on the card, turned into shares that add up to all of it.",
           "The machine takes the tallest bar, puts that word on the card, and does the same thing again.",
         ],
-        precisely:
+        technical:
           "Each bar is count(w, x) divided by the sum of the kept counts for w; the loop picks the largest (greedy decoding).",
       },
       text: {
@@ -43,7 +43,7 @@ export const autocomplete: ChapterDef = {
           "The machine only ever looks at the last word on the card, however long your sentence is.",
           "Give it a word it never saw, like the misspelt “onse”, and there is no row to read, so no bars appear.",
         ],
-        precisely:
+        technical:
           "The context is exactly one word; a word outside this tiny model's vocabulary has no counts, so it predicts nothing at all.",
       },
     },
@@ -80,13 +80,13 @@ export const autocomplete: ChapterDef = {
   scenarios: [{ id: "once", label: "Once upon a", prompt: "once upon a", probe: "top-successor" }],
   views: ["whole", "cutaway", "exploded"],
   labels: [
-    { anchor: "board", analogy: "The tally board", precise: "Word-pair count table" },
+    { anchor: "board", analogy: "The tally board", technical: "Word-pair count table" },
     {
       anchor: "bars",
       analogy: "How often each word came next",
-      precise: "Share of the kept next-word counts",
+      technical: "Share of the kept next-word counts",
     },
-    { anchor: "rail", analogy: "The last word so far", precise: "Context: one word" },
+    { anchor: "rail", analogy: "The last word so far", technical: "Context: one word" },
   ],
   loop: {
     durationSec: 20,

@@ -43,7 +43,7 @@ export const attention: ChapterDef = {
         "Every word so far has a pipe into the last word; the better a word matches what it is looking for, the wider its pipe.",
         "In Mia's story the widest pipe runs back to her name; shuffle a short sentence and its pipes just trade places.",
       ],
-      precisely:
+      technical:
         "Attention: the last token asks a question (its query), every token offers a label (its key), and their dot products, through a softmax, become weights that add up to 1. Each pipe's width is one weight of this tiny one-layer model. Weights show what a word draws from; they are not proof of meaning.",
     },
     byFollow: {
@@ -52,7 +52,7 @@ export const attention: ChapterDef = {
           "A pipe's width is how much the last word draws from the word the pipe comes from.",
           "All the pipes together always carry exactly one full share, so a wide pipe leaves less for the rest.",
         ],
-        precisely:
+        technical:
           "Pipe width = the attention weight softmax(q·k/√d) for that position, from layer 0 of this tiny model; the weights over every position sum to 1.",
       },
       mix: {
@@ -60,7 +60,7 @@ export const attention: ChapterDef = {
           "What flows up the pipes is a blend of the words, each in proportion to its pipe.",
           "The last word's block ends up carrying some of “Mia” with it, even though “Mia” was many words back.",
         ],
-        precisely:
+        technical:
           "The mix is the weighted sum of every position's value vector, using the attention weights; it is added to the last token's own vector (the residual stream).",
       },
       sealed: {
@@ -68,7 +68,7 @@ export const attention: ChapterDef = {
           "The words after “but” are the ones this machine goes on to write, and their pipes are capped shut.",
           "A word may only draw on the words before it: you can't read tomorrow's newspaper.",
         ],
-        precisely:
+        technical:
           "The causal mask: before the softmax, every score for a later position is set to minus infinity, so its weight is exactly 0. The dim words are this tiny model's own next four guesses.",
       },
     },
@@ -105,10 +105,10 @@ export const attention: ChapterDef = {
   scenarios,
   views: ["whole", "exploded"],
   labels: [
-    { anchor: "sentence", analogy: "The story so far", precise: "Tokens in context" },
-    { anchor: "pipes", analogy: "Wider pipe, more drawn", precise: "Attention weight (width)" },
-    { anchor: "mix", analogy: "The last word's mix", precise: "Weighted sum of values" },
-    { anchor: "sealed", analogy: "Later words: sealed", precise: "Causal mask: weight 0" },
+    { anchor: "sentence", analogy: "The story so far", technical: "Tokens in context" },
+    { anchor: "pipes", analogy: "Wider pipe, more drawn", technical: "Attention weight (width)" },
+    { anchor: "mix", analogy: "The last word's mix", technical: "Weighted sum of values" },
+    { anchor: "sealed", analogy: "Later words: sealed", technical: "Causal mask: weight 0" },
   ],
   loop: {
     durationSec: 30,
