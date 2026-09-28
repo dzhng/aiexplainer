@@ -8,6 +8,7 @@ import { block } from "./block.ts";
 import { brick } from "./brick.ts";
 import { pins } from "./pins.ts";
 import { contactShadow } from "./contact-shadow.ts";
+import { dial } from "./dial.ts";
 import { flows } from "./flows.ts";
 import { die } from "./die.ts";
 import { draftStrip } from "./draft-strip.ts";
@@ -31,6 +32,7 @@ export const KIT = {
   pipes,
   sealed,
   flows,
+  dial,
   pins,
   questionPanel,
   river,

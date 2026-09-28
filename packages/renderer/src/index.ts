@@ -47,6 +47,7 @@ export {
 } from "./kit/pipes.ts";
 export { sealedPaths, type SealedParams } from "./kit/sealed.ts";
 export type { FlowsParams } from "./kit/flows.ts";
+export { placeHand, type DialParams } from "./kit/dial.ts";
 export { placeSegment, UNIT_SEGMENT, type TubeParams } from "./kit/tube.ts";
 export {
   lampCenter,
