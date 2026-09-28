@@ -15,7 +15,9 @@
  * The fallback page shows the title and the why-line itself; the HUD's text would be
  * illegible at phone width. Frames are encoded H.264 at the best quality on `CRF_LADDER`
  * that fits `MAX_VIDEO_BYTES`. The poster is the first frame (the video starts without a
- * jump), and the 1200×630 link-preview card is the whole app, HUD included, at `ogTimeSec`.
+ * jump), and the 1200×630 link-preview card is the whole app, HUD included, at `ogTimeSec`:
+ * laid out at 1440 px wide (the desktop layout the scenes are framed for; at 1200 px the
+ * panels crowd the scene) and scaled down.
  */
 import { createHash } from "node:crypto";
 import { mkdir, mkdtemp, readdir, rm, stat } from "node:fs/promises";
@@ -43,6 +45,11 @@ import {
 
 const FPS = 30;
 const RECORD_VIEWPORT = { width: 1920, height: 1080 };
+/** The card's layout size: `CARD_SIZE`'s aspect at 1440 px wide. */
+const CARD_VIEWPORT = {
+  width: 1440,
+  height: Math.round((1440 * CARD_SIZE.height) / CARD_SIZE.width),
+};
 const MAX_VIDEO_BYTES = 3_000_000;
 /** x264 quality steps tried in order until the video fits (lower is better quality). */
 const CRF_LADDER = [18, 21, 24, 27, 30, 33];
@@ -125,7 +132,7 @@ function durationSec(file: string): number {
 
 async function shootCard(browser: Browser, base: string, def: ChapterDef, file: string) {
   const url = `${base}/?clock=held&t=${def.ogTimeSec}#${displayNumber(def.slug)}`;
-  const opened = await openPage(browser, url, CARD_SIZE);
+  const opened = await openPage(browser, url, CARD_VIEWPORT);
   try {
     await waitReady(opened);
     await settle(opened.page);
@@ -141,7 +148,8 @@ async function shootCard(browser: Browser, base: string, def: ChapterDef, file: 
     }
     await Bun.write(png, previous);
     if (opened.failures.length) throw new Error(opened.failures.join("\n"));
-    run([FFMPEG, "-loglevel", "error", "-y", "-i", png, "-q:v", "3", file]);
+    // prettier-ignore
+    run([FFMPEG, "-loglevel", "error", "-y", "-i", png, "-vf", `scale=${CARD_SIZE.width}:${CARD_SIZE.height}:flags=lanczos`, "-q:v", "3", file]);
   } finally {
     await opened.page.context().close();
   }
