@@ -360,7 +360,7 @@
     "durationSec": 0.6,
     "cutaway": {
       "cap": "focus",
-      "capGain": 1.2,
+      "capGain": 0.4,
       "planes": {
         "default": {
           "normal": [0, 0, 1],

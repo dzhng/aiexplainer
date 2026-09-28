@@ -125,3 +125,15 @@ Any token change. After this slice it propagates to every chapter automatically,
 - **Performance** (board-room, 1440×900): 1.6–2.2 ms with bloom (≤ 8 ms).
 - **Registry:** the baseline holds.
 - **Human checkpoint (implementer's call): token page accepted as the style guide.**
+
+## Polish pass (2026-09-27): the Cutaway cap
+
+- The cap was a flat, bright peach (focus × 1.2) that read as a painted frame. It is now
+  focus × 0.4, lit as before, under fine diagonal section hatching in the cut plane
+  (drafting's sign for a cut; 6 cm pitch, antialiased by its screen-space rate, darkening
+  45% on the lines). Shots: `throwaway/shots/polish-cap/cut-before.png` →
+  `cut-after.png` (crops `*-crop.png`).
+- Unprimed critique: the after reads as sectioned solid and no longer competes with the lit
+  bars. Pitch widened 4.5 → 6 cm for its shimmer note. Left as is: the dashed slivers on the
+  slot walls (walls a few mm thick, cut edge-on: sub-pixel caps, dimmer than before). A
+  corrupted "upon" glyph in one capture did not repeat on a re-shoot (`cut-after2.png`).
