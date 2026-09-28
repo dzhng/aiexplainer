@@ -19,7 +19,6 @@ import {
   sceneOccluders,
   type FrameInput,
   type FrameReceipt,
-  type LabelBox,
   type LabelPlacement,
   type LookConfig,
   type Occluder,

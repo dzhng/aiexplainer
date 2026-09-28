@@ -42,7 +42,6 @@ describe("the finished machine is the other chapters' scenes, composed", () => {
     // Its only parts of its own are the route (a pipe and its pulses); no part is there twice.
     expect(new Set(whole.parts.map((p) => p.id)).size).toBe(whole.parts.length);
     let count = 0;
-    let written = 0;
     STATIONS.forEach(({ def, scale }, n) => {
       const own = frameAt(
         def,
