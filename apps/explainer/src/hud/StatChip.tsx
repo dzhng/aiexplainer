@@ -13,15 +13,23 @@ import { useCountUp } from "./motion.ts";
 export function StatChip({
   stat,
   model,
+  slider,
   countKey = null,
 }: {
   stat: StatChipDef;
   model: ModelSource | null;
+  /** The HUD slider's value, for a chip whose arithmetic follows it. */
+  slider: number;
   countKey?: number | null;
 }) {
   const ready = statReady(stat, model);
-  const settled = ready ? statText(stat, model) : "…";
-  const text = useCountUp(ready ? resolveStat(stat, model) : null, stat.format, settled, countKey);
+  const settled = ready ? statText(stat, model, slider) : "…";
+  const text = useCountUp(
+    ready ? resolveStat(stat, model, slider) : null,
+    stat.format,
+    settled,
+    countKey,
+  );
   return (
     <div className={`${css.box} ${css.chip}`} data-crop={`chip:${stat.id}`}>
       <span className={css.chipLabel}>{stat.label}</span>

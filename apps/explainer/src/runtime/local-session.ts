@@ -16,6 +16,7 @@ export function localSession(modelsUrl: URL): Session {
     generate: (tokens, options) => inference.generate(tokens, options),
     nextWords: async (word, k) => inference.nextWords(word, k),
     neighbours: async (token, k) => inference.neighbours(token, k),
+    weights: async (tensor, start, count, model) => inference.weights(tensor, start, count, model),
     cancel() {},
     dispose() {},
   };

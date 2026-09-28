@@ -14,17 +14,21 @@ import {
   nearestTokens,
   nextWords,
   transformerModel,
+  weightSlice,
   type CountsModel,
+  type LoadedModel,
   type ForwardResult,
   type Neighbour,
   type NextWord,
   type Transformer,
+  type WeightSlice,
 } from "@repo/llm";
 import type { GenerateRequest, ModelInfo, RunOptions } from "./session.ts";
 
-type Held =
+type Held = { loaded: LoadedModel } & (
   | { kind: "transformer"; transformer: Transformer }
-  | { kind: "counts"; counts: CountsModel };
+  | { kind: "counts"; counts: CountsModel }
+);
 
 export interface Inference {
   load(manifestUrl: URL): Promise<ModelInfo>;
@@ -41,6 +45,8 @@ export interface Inference {
   ): Promise<GenerateStep[]>;
   nextWords(word: string, k: number): NextWord[];
   neighbours(token: number, k: number): Neighbour[];
+  /** A run of a loaded model's stored weights (`weightSlice`), on `model` or the latest. */
+  weights(tensor: string, start: number, count: number, model?: string): WeightSlice;
 }
 
 export function createInference(): Inference {
@@ -62,8 +68,8 @@ export function createInference(): Inference {
         held.set(
           manifest.id,
           manifest.kind === "transformer"
-            ? { kind: "transformer", transformer: transformerModel(loaded) }
-            : { kind: "counts", counts: countsModel(loaded) },
+            ? { kind: "transformer", loaded, transformer: transformerModel(loaded) }
+            : { kind: "counts", loaded, counts: countsModel(loaded) },
         );
         const info: ModelInfo = {
           id: manifest.id,
@@ -95,6 +101,12 @@ export function createInference(): Inference {
     },
     neighbours(token, k) {
       return nearestTokens(transformer(current, "neighbours"), token, k);
+    },
+    weights(tensor, start, count, model) {
+      const id = model ?? current;
+      const entry = id === undefined ? undefined : held.get(id);
+      if (!entry) throw new Error(`weights needs a loaded model (${id ?? "none"})`);
+      return weightSlice(entry.loaded, tensor, start, count);
     },
     nextWords(word, k) {
       const model = current === undefined ? undefined : held.get(current);

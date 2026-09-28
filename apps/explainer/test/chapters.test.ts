@@ -143,4 +143,6 @@ test("stat formatting names units and keeps three significant figures", () => {
   expect(formatStat(0.623, "pct")).toBe("62.3%");
   expect(formatStat(0.9991, "pct")).toBe("99.9%");
   expect(formatStat(3.3616, "x")).toBe("3.36×");
+  expect(formatStat(0.00024573, "num")).toBe("0.000246");
+  expect(formatStat(4.2178, "num")).toBe("4.22");
 });

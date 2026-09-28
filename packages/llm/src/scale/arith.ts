@@ -94,6 +94,24 @@ export function batchThroughput(
   return (batch / decodeStepSeconds(cfg, gpu, batch, contextLen, precision)) as TokensPerSec;
 }
 
+/**
+ * The batch at which a decode step stops waiting on memory: past it, the sums for every extra
+ * sequence take longer than the weights take to arrive, so throughput stops growing.
+ * `Infinity` if the step never gets there (each sequence's KV reads outlast its sums).
+ */
+export function computeBoundBatch(
+  cfg: ModelConfig,
+  gpu: Gpu,
+  contextLen: number,
+  precision: Precision = BF16,
+): number {
+  const weightsTime = transferTime(weightBytes(cfg, precision.weightBytes), gpu.bandwidth);
+  const perSequence =
+    computeTime(flopsPerToken(cfg, contextLen), gpu.flopsDense) -
+    transferTime(bytes(contextLen * kvBytesPerToken(cfg, precision.kvBytes)), gpu.bandwidth);
+  return perSequence > 0 ? weightsTime / perSequence : Infinity;
+}
+
 /** Reading a `tokens`-long prompt in one pass (causal: token i attends to i positions). */
 export function prefillSeconds(
   cfg: ModelConfig,

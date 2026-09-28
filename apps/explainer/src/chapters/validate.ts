@@ -131,7 +131,17 @@ export function validateChapter(
     if (stat.value.kind !== "arith" && def.model === null)
       problems.push(`stat ${stat.id}: reads a ${stat.value.kind} but the chapter has no model`);
     if (stat.value.kind === "arith") {
-      const { fn, args } = stat.value;
+      const { fn } = stat.value;
+      // Bindings are checked for shape here; their values exist only at run time.
+      const args: Record<string, number> = {};
+      for (const [name, arg] of Object.entries(stat.value.args)) {
+        if (typeof arg === "number") args[name] = arg;
+        else if ("probe" in arg) {
+          if (def.model === null)
+            problems.push(`stat ${stat.id}: ${name} reads a probe but the chapter has no model`);
+          args[name] = 0;
+        } else args[name] = def.slider.initial;
+      }
       const argProblems = arithProblems(fn, args);
       problems.push(...argProblems.map((p) => `stat ${stat.id}: ${p}`));
       if (argProblems.length) continue;
@@ -151,6 +161,8 @@ export function validateChapter(
   const { min, max, initial } = def.slider;
   if (!(min <= initial && initial <= max))
     problems.push(`slider ${def.slider.id}: initial outside range`);
+  if (def.slider.loop !== undefined && !Object.hasOwn(def.loop.channels, def.slider.loop))
+    problems.push(`slider ${def.slider.id}: no loop channel ${def.slider.loop}`);
 
   checkLoop(def, def.loop, problems);
   return problems;

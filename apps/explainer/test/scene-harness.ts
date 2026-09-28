@@ -55,6 +55,7 @@ export function frameAt(
   const full: SceneUi = {
     follow: null,
     slider: def.slider.initial,
+    sliderSet: false,
     view: "whole",
     text: null,
     ...ui,

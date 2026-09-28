@@ -55,6 +55,7 @@ export function ScenePage({ slug, reading, debug, clock, probe, onReady }: Scene
     const ui = {
       follow: null,
       slider: def.slider.initial,
+      sliderSet: false,
       view: asked && def.views.includes(asked) ? asked : (def.views[0] ?? "whole"),
       text: null,
     };

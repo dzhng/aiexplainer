@@ -13,6 +13,7 @@ import type {
   NextWord,
   ProbeResult,
   TransformerArch,
+  WeightSlice,
 } from "@repo/llm";
 import { modelManifestUrl } from "./models.ts";
 
@@ -47,6 +48,7 @@ export type WorkerRequest = { id: number } & (
   | { type: "run"; tokens: number[]; options?: RunOptions }
   | { type: "nextWords"; word: string; k: number }
   | { type: "neighbours"; token: number; k: number }
+  | { type: "weights"; tensor: string; start: number; count: number; model?: ModelId }
 );
 
 export type WorkerReply = { id: number } & (
@@ -73,6 +75,8 @@ export interface Session {
   nextWords(word: string, k: number): Promise<NextWord[]>;
   /** The loaded transformer's nearest tokens in its input embedding table. */
   neighbours(token: number, k: number): Promise<Neighbour[]>;
+  /** A run of a loaded model's stored weights (`weightSlice`), on `model` or the latest. */
+  weights(tensor: string, start: number, count: number, model?: ModelId): Promise<WeightSlice>;
   /** Rejects the live request, if any, and drops its eventual reply. */
   cancel(): void;
   dispose(): void;
@@ -148,6 +152,9 @@ export function createSession(options: SessionOptions = {}): Session {
     },
     neighbours(token, k) {
       return send<Neighbour[]>({ id: nextId++, type: "neighbours", token, k });
+    },
+    weights(tensor, start, count, model) {
+      return send<WeightSlice>({ id: nextId++, type: "weights", tensor, start, count, model });
     },
     cancel,
     dispose() {

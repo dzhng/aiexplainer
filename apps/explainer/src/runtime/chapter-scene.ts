@@ -57,6 +57,8 @@ export interface ChapterScene {
   frame: SceneFrame;
   /** The loop's time and beat as of the last update. */
   beat(): { t: number; id: string; note: string } | null;
+  /** A loop channel's value as of the last update, if the loop has one by that id. */
+  channel(id: string): number | null;
   /** The stage's first frame input: the chapter's shot, an empty scene until the first update. */
   input: Omit<FrameInput, "timeSec" | "viewport">;
   update: (input: FrameInput) => void;
@@ -93,6 +95,9 @@ export function chapterScene(
     beat() {
       const beat = tl && timelineFor ? timelineFor.loop.beats[tl.beat] : undefined;
       return beat && tl ? { t: tl.t, id: beat.id, note: beat.note } : null;
+    },
+    channel(id) {
+      return tl?.channels[id] ?? null;
     },
     update(stageInput) {
       const { def, ui, run, loopTime } = state();
