@@ -4,16 +4,14 @@
  * written by the worker's `generate`. Text longer than the scene's rail keeps `<bos>` and its
  * last words, and the model reads exactly what the scene shows.
  */
-import { promptTokens, type Tokenizer } from "@repo/llm";
+import { promptTokens } from "@repo/llm";
 import { STACK_TOKENS, type StackRun } from "../../scene/builders/stack.ts";
-import type { SceneRunFn } from "../scene-run.ts";
-
-/** The continuation's draw: a fixed seed, so the page reads the same on every visit. */
-export const CONTINUATION = { seed: 3, temperature: 0.8, maxNewTokens: 24 } as const;
+import { CONTINUATION } from "../../chapters/data/stack.ts";
+import { promptOf, transformerOf, type SceneRunFn } from "../scene-run.ts";
 
 export const stackRun: SceneRunFn = async (def, text, { model, session }) => {
-  const prompt = text ?? def.loop.inputs?.[0] ?? "";
-  const tokenizer = model.tokenizer as Tokenizer;
+  const prompt = promptOf(def, text);
+  const { arch, tokenizer } = transformerOf(model, "the stack chapter");
   const all = promptTokens(tokenizer, prompt);
   const ids = all.length > STACK_TOKENS ? [all[0]!, ...all.slice(1 - STACK_TOKENS)] : all;
   const last = ids.length - 1;
@@ -25,9 +23,6 @@ export const stackRun: SceneRunFn = async (def, text, { model, session }) => {
       Array.from(data.subarray(h * ids.length, (h + 1) * ids.length)),
     );
   });
-  const arch =
-    "manifest" in model && model.manifest.kind === "transformer" ? model.manifest.arch : null;
-  if (!arch) throw new Error("the stack chapter needs the full transformer");
   const group = arch.nHeads / arch.nKvHeads;
   const steps = await session.generate(ids, { model: "full", ...CONTINUATION });
   return {

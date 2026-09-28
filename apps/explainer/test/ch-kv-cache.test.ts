@@ -10,7 +10,7 @@ import {
 import { kvCache as def } from "../src/chapters/data/kv-cache.ts";
 import { SCENE_KIT } from "../src/chapters/scenes.ts";
 import { resolveStat } from "../src/chapters/stats.ts";
-import { CONTINUATION } from "../src/runtime/runs/stack.ts";
+import { CONTINUATION } from "../src/chapters/data/stack.ts";
 import { KV_STEPS, KV_WINDOW, notesWritten, type KvRun } from "../src/scene/builders/kv-cache.ts";
 import { chapterRun, fixtureRun, frameAt, shippedModel } from "./scene-harness.ts";
 

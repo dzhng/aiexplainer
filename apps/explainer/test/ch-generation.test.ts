@@ -3,7 +3,7 @@ import { generate, promptTokens, seededRng, transformerModel } from "@repo/llm";
 import { generation as def } from "../src/chapters/data/generation.ts";
 import { SCENE_KIT } from "../src/chapters/scenes.ts";
 import { resolveStat } from "../src/chapters/stats.ts";
-import { CONTINUATION } from "../src/runtime/runs/stack.ts";
+import { CONTINUATION } from "../src/chapters/data/stack.ts";
 import {
   GENERATION_STEPS,
   workSoFar,

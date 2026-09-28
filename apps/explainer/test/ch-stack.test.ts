@@ -12,7 +12,7 @@ import type { TubePart } from "@repo/renderer";
 import { SCENE_KIT } from "../src/chapters/scenes.ts";
 import { resolveStat } from "../src/chapters/stats.ts";
 import { validateChapter } from "../src/chapters/validate.ts";
-import { CONTINUATION } from "../src/runtime/runs/stack.ts";
+import { CONTINUATION } from "../src/chapters/data/stack.ts";
 import { pipeRadius, type StackRun } from "../src/scene/builders/stack.ts";
 import { chapterRun, fixtureRun, frameAt, shippedModel } from "./scene-harness.ts";
 

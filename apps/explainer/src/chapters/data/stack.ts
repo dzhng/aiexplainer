@@ -5,6 +5,9 @@
  */
 import type { ChapterDef } from "../types.ts";
 
+/** The continuation's draw (chapters 8–10): a fixed seed, so the page reads the same on every visit. */
+export const CONTINUATION = { seed: 3, temperature: 0.8, maxNewTokens: 24 } as const;
+
 export const stack: ChapterDef = {
   slug: "stack",
   title: "Many readers, one assembly line",

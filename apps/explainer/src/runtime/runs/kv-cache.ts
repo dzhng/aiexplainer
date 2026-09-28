@@ -4,14 +4,14 @@
  * sliding window whose cache keeps only the last `KV_WINDOW` positions, to show that the
  * window changes what the model writes.
  */
-import { modelMetric, promptTokens, type Tokenizer } from "@repo/llm";
+import { modelMetric, promptTokens } from "@repo/llm";
 import { KV_STEPS, KV_WINDOW, type KvRun } from "../../scene/builders/kv-cache.ts";
-import type { SceneRunFn } from "../scene-run.ts";
-import { CONTINUATION } from "./stack.ts";
+import { CONTINUATION } from "../../chapters/data/stack.ts";
+import { promptOf, transformerOf, type SceneRunFn } from "../scene-run.ts";
 
 export const kvCacheRun: SceneRunFn = async (def, text, { model, session }) => {
-  const prompt = text ?? def.loop.inputs?.[0] ?? "";
-  const tokenizer = model.tokenizer as Tokenizer;
+  const prompt = promptOf(def, text);
+  const { arch, tokenizer } = transformerOf(model, "the kv-cache chapter");
   const ids = promptTokens(tokenizer, prompt);
   const draw = {
     model: "full" as const,
@@ -24,9 +24,6 @@ export const kvCacheRun: SceneRunFn = async (def, text, { model, session }) => {
     maxNewTokens: KV_STEPS,
     window: KV_WINDOW,
   });
-  const arch =
-    "manifest" in model && model.manifest.kind === "transformer" ? model.manifest.arch : null;
-  if (!arch) throw new Error("the kv-cache chapter needs the full transformer");
   return {
     kind: "kv-cache",
     prompt,

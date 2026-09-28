@@ -3,12 +3,12 @@
  * shared tokenizer on the main thread: a table lookup, so it never goes to the worker.
  */
 import type { PiecesRun } from "../../scene/build-frame.ts";
-import type { SceneRunFn } from "../scene-run.ts";
+import { inputsOf, type SceneRunFn } from "../scene-run.ts";
 
 export const tokenizerRun: SceneRunFn = async (def, text, { model }) => {
   const { tokenizer } = model;
   if (!tokenizer) throw new Error("the tokenizer chapter needs the shared tokenizer");
-  const inputs = text === null ? (def.loop.inputs ?? []) : [text];
+  const inputs = inputsOf(def, text);
   const steps: PiecesRun["steps"] = inputs.map((input) => {
     const ids = tokenizer.encode(input);
     const pieces = tokenizer.pieces(ids).map(({ text, byteSpan: [start, end] }, i) => ({

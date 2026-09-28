@@ -6,7 +6,7 @@
 import { transformerModel, type LoadedModel, type Transformer } from "@repo/llm";
 import type { PinsRun } from "../../scene/build-frame.ts";
 import { MAX_PINNED_INPUT, projectRow } from "../../scene/embed-map.ts";
-import type { SceneRunFn } from "../scene-run.ts";
+import { inputsOf, type SceneRunFn } from "../scene-run.ts";
 
 /** Each loaded transformer's weights as f32, decoded once. */
 const transformers = new WeakMap<LoadedModel, Transformer>();
@@ -35,7 +35,7 @@ export const embeddingsRun: SceneRunFn = async (def, text, { model }) => {
   const table = transformer(model);
   const d = table.arch.dModel;
   const rowOf = (id: number) => table.tokEmb.subarray(id * d, (id + 1) * d);
-  const inputs = text === null ? (def.loop.inputs ?? []) : [text];
+  const inputs = inputsOf(def, text);
   const steps: PinsRun["steps"] = inputs.map((input) => {
     // Words as they sit mid-sentence, with their leading space: " cat", not "c" + "at".
     const ids = [...tokenizer.encode(` ${input.trim()}`)].slice(0, MAX_PINNED_INPUT);

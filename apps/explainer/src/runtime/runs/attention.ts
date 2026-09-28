@@ -6,7 +6,7 @@
  * the most from. Text longer than the scene holds keeps `<bos>` and its last tokens, and the
  * model reads exactly what the scene shows.
  */
-import { promptTokens, type LoadedModel } from "@repo/llm";
+import { argmax, probabilities, promptTokens, type LoadedModel } from "@repo/llm";
 import {
   CLOCK_PAIR,
   FUTURE_WORDS,
@@ -62,7 +62,7 @@ export async function attentionStep(
   for (let k = 0; k < FUTURE_WORDS; k++) {
     const { logits } = await session.run(ids);
     const next = argmax(logits);
-    probs ??= softmax(logits);
+    probs ??= probabilities(logits, 1);
     guess ??= { token: tokenizer.decode([next]), p: probs[next]! };
     ids.push(next);
   }
@@ -90,23 +90,6 @@ export async function attentionStep(
     },
   };
   return { step, probs: probs! };
-}
-
-function argmax(values: ArrayLike<number>): number {
-  let best = 0;
-  for (let i = 1; i < values.length; i++) if (values[i]! > values[best]!) best = i;
-  return best;
-}
-
-/** softmax(logits), summed in f64. */
-function softmax(logits: ArrayLike<number>): Float64Array {
-  let max = -Infinity;
-  for (let j = 0; j < logits.length; j++) max = Math.max(max, logits[j]!);
-  const out = new Float64Array(logits.length);
-  let sum = 0;
-  for (let j = 0; j < logits.length; j++) sum += out[j] = Math.exp(logits[j]! - max);
-  for (let j = 0; j < out.length; j++) out[j]! /= sum;
-  return out;
 }
 
 /** The angle between two vectors, in degrees. */

@@ -6,13 +6,11 @@
 import { promptTokens } from "@repo/llm";
 import { SPEC_RUN } from "../../chapters/data/speculative.ts";
 import type { SpeculativeRun } from "../../scene/build-frame.ts";
-import type { SceneRunFn } from "../scene-run.ts";
+import { promptOf, transformerOf, type SceneRunFn } from "../scene-run.ts";
 
 export const speculativeRun: SceneRunFn = async (def, text, { model, session }) => {
-  if (!("manifest" in model) || !model.tokenizer)
-    throw new Error("speculative decoding needs the drafter and its tokenizer");
-  const { tokenizer } = model;
-  const prompt = text ?? def.loop.inputs?.[0] ?? "";
+  const { tokenizer } = transformerOf(model, "speculative decoding");
+  const prompt = promptOf(def, text);
   const tokens = promptTokens(tokenizer, prompt);
   await session.load("full");
   await session.load("drafter-64");

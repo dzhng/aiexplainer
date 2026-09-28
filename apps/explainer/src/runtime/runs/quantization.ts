@@ -6,13 +6,11 @@
  */
 import { probeResult, promptTokens, sourceEvidence, type ModelId } from "@repo/llm";
 import { CONTINUE_WORDS, STRIP } from "../../chapters/data/quantization.ts";
-import type { SceneRunFn } from "../scene-run.ts";
+import { promptOf, transformerOf, type SceneRunFn } from "../scene-run.ts";
 
 export const quantizationRun: SceneRunFn = async (def, text, { model, session }) => {
-  if (!("manifest" in model) || !model.tokenizer)
-    throw new Error("quantization needs the full-q8 model and its tokenizer");
-  const { tokenizer } = model;
-  const prompt = text ?? def.loop.inputs?.[0] ?? "";
+  const { tokenizer } = transformerOf(model, "quantization");
+  const prompt = promptOf(def, text);
   const tokens = promptTokens(tokenizer, prompt);
   const continued = async (id: ModelId) => {
     await session.load(id);

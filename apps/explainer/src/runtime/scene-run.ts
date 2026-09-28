@@ -2,8 +2,9 @@
  * The model output a chapter's scene shows: the loop's inputs, or the reader's text in their
  * place, run through the chapter's model. Anything that runs a network goes to the inference
  * worker (D38); table lookups (chapter 0's word rule, chapter 1's tokenizer, chapter 2's
- * embedding rows) read the model the main thread already holds for the HUD's stats. Each scene that shows model output has one run function
- * (`runs/<scene>.ts`); this picks it. The run's shape is the scene builder's.
+ * embedding rows) read the model the main thread already holds for the HUD's stats. Each
+ * scene that shows model output has one run function (`runs/<scene>.ts`); this picks it. The
+ * run's shape is the scene builder's.
  */
 import type { ModelSource } from "@repo/llm";
 import type { SceneBuilderId } from "../chapters/scenes.ts";
@@ -39,6 +40,23 @@ export interface RunContext {
    * chapters' output, the finished machine's, needs their models too).
    */
   source(id: ChapterModelId): Promise<ModelSource>;
+}
+
+/** The text a one-prompt run reads: the reader's, or the loop's first input. */
+export function promptOf(def: ChapterDef, text: string | null): string {
+  return text ?? def.loop.inputs?.[0] ?? "";
+}
+
+/** Every text a run reads: the reader's alone, or each of the loop's inputs. */
+export function inputsOf(def: ChapterDef, text: string | null): readonly string[] {
+  return text === null ? (def.loop.inputs ?? []) : [text];
+}
+
+/** The chapter's model as the transformer and tokenizer a run needs (`chapter` names who asks). */
+export function transformerOf(model: ModelSource, chapter: string) {
+  if (!("manifest" in model) || model.manifest.kind !== "transformer" || !model.tokenizer)
+    throw new Error(`${chapter} needs a transformer and its tokenizer`);
+  return { arch: model.manifest.arch, tokenizer: model.tokenizer };
 }
 
 /** Computes one scene's run for the loop's inputs, or for the reader's text alone. */

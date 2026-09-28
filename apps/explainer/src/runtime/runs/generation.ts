@@ -4,14 +4,14 @@
  * worker's seeded `generate` does it (the same draw as chapter 8's page); each step reports
  * the token it wrote and how many tokens it fed.
  */
-import { promptTokens, type Tokenizer } from "@repo/llm";
+import { promptTokens } from "@repo/llm";
 import { GENERATION_STEPS, type GenerationRun } from "../../scene/builders/generation.ts";
-import type { SceneRunFn } from "../scene-run.ts";
-import { CONTINUATION } from "./stack.ts";
+import { CONTINUATION } from "../../chapters/data/stack.ts";
+import { promptOf, transformerOf, type SceneRunFn } from "../scene-run.ts";
 
 export const generationRun: SceneRunFn = async (def, text, { model, session }) => {
-  const prompt = text ?? def.loop.inputs?.[0] ?? "";
-  const tokenizer = model.tokenizer as Tokenizer;
+  const prompt = promptOf(def, text);
+  const { tokenizer } = transformerOf(model, "generation");
   const ids = promptTokens(tokenizer, prompt);
   const steps = await session.generate(ids, {
     model: "full",

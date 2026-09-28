@@ -1,6 +1,13 @@
 // Turning logits into a choice: temperature, a numerically stable softmax, and a draw.
 import type { Rng } from "./rng.ts";
 
+/** The index of the largest value (the first, on ties). */
+export function argmax(values: ArrayLike<number>): number {
+  let best = 0;
+  for (let i = 1; i < values.length; i++) if (values[i]! > values[best]!) best = i;
+  return best;
+}
+
 /**
  * `softmax(logits / temperature)`, computed after subtracting the max so large logits
  * cannot overflow. Temperature 0 puts all probability on the argmax (first on ties).
@@ -8,8 +15,7 @@ import type { Rng } from "./rng.ts";
 export function probabilities(logits: ArrayLike<number>, temperature: number): Float64Array {
   if (!(temperature >= 0)) throw new Error(`temperature must be ≥ 0, got ${temperature}`);
   const probs = new Float64Array(logits.length);
-  let best = 0;
-  for (let i = 1; i < logits.length; i++) if (logits[i]! > logits[best]!) best = i;
+  const best = argmax(logits);
   if (temperature === 0) {
     probs[best] = 1;
     return probs;

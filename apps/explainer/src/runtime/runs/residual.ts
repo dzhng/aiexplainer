@@ -7,15 +7,30 @@
  * - the model's best next word and its probability.
  * Every run names its model, so it never depends on which model the session loaded last.
  */
-import { probabilities, promptTokens, type ModelId, type Tokenizer } from "@repo/llm";
+import {
+  argmax,
+  probabilities,
+  promptTokens,
+  type LayerTrace,
+  type ModelId,
+  type Tokenizer,
+} from "@repo/llm";
 import type { ResidualPass, ResidualRun } from "../../scene/builders/residual.ts";
-import type { RunContext, SceneRunFn } from "../scene-run.ts";
+import { promptOf, transformerOf, type RunContext, type SceneRunFn } from "../scene-run.ts";
 
 const rms = (values: ArrayLike<number>) => {
   let squares = 0;
   for (let i = 0; i < values.length; i++) squares += values[i]! ** 2;
   return Math.sqrt(squares / values.length);
 };
+
+/** The stream's size (RMS) at the traced token entering each layer, and leaving the last. */
+export function streamSizes(layers: readonly LayerTrace[]): number[] {
+  return [
+    ...layers.map((layer) => layer.attn!.residual.rms.data[0]!),
+    rms(layers.at(-1)!.mlpResidual!.sum.data),
+  ];
+}
 
 async function pass(
   session: RunContext["session"],
@@ -27,18 +42,14 @@ async function pass(
   const last = tokens.length - 1;
   const { logits, trace } = await session.run(tokens, { model, trace: { tokens: [last] } });
   const layers = trace!.layers.map((layer) => layer!);
-  const stream = [
-    ...layers.map((layer) => layer.attn!.residual.rms.data[0]!),
-    rms(layers.at(-1)!.mlpResidual!.sum.data),
-  ];
+  const stream = streamSizes(layers);
   const adds = layers.map((layer) => {
     const attn = layer.attn!.residual.branch.data;
     const mlp = layer.mlpResidual!.branch.data;
     return rms(attn.map((v, i) => v + mlp[i]!));
   });
   const probs = probabilities(logits, 1);
-  let best = 0;
-  for (let i = 1; i < probs.length; i++) if (probs[i]! > probs[best]!) best = i;
+  const best = argmax(probs);
   return {
     model,
     stream,
@@ -50,8 +61,8 @@ async function pass(
 }
 
 export const residualRun: SceneRunFn = async (def, text, { model, session }) => {
-  const prompt = text ?? def.loop.inputs?.[0] ?? "";
-  const tokenizer = model.tokenizer as Tokenizer;
+  const prompt = promptOf(def, text);
+  const { tokenizer } = transformerOf(model, "the residual chapter");
   const tokens = promptTokens(tokenizer, prompt);
   const run: ResidualRun = {
     kind: "residual",

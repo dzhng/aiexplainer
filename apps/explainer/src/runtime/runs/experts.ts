@@ -6,15 +6,12 @@
  */
 import { probeResult, promptTokens, sourceEvidence } from "@repo/llm";
 import { ROUTED_TOKENS, ROUTER_LAYER } from "../../chapters/data/experts.ts";
-import type { SceneRunFn } from "../scene-run.ts";
+import { promptOf, transformerOf, type SceneRunFn } from "../scene-run.ts";
 
 export const expertsRun: SceneRunFn = async (def, text, { model, session }) => {
-  if (!("manifest" in model) || model.manifest.kind !== "transformer" || !model.tokenizer)
-    throw new Error("experts needs the moe model and its tokenizer");
-  const { tokenizer } = model;
-  const arch = model.manifest.arch;
+  const { arch, tokenizer } = transformerOf(model, "experts");
   if (arch.mlp === "none" || arch.mlp.kind !== "moe") throw new Error("experts needs an MoE model");
-  const prompt = text ?? def.loop.inputs?.[0] ?? "";
+  const prompt = promptOf(def, text);
   const ids = promptTokens(tokenizer, prompt);
   // Position 0 is <bos>; the desk sees the words after it.
   const shown = Array.from({ length: Math.min(ROUTED_TOKENS, ids.length - 1) }, (_, i) => i + 1);
