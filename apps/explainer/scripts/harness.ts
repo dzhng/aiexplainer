@@ -10,7 +10,6 @@ import { createServer } from "vite";
 export const appRoot = path.resolve(import.meta.dirname, "..");
 export const repoRoot = path.resolve(appRoot, "../..");
 export const FFMPEG = "/opt/homebrew/bin/ffmpeg";
-export const FFPROBE = "/opt/homebrew/bin/ffprobe";
 
 /**
  * Vercel's protection bypass for automation (never disabling protection). Set

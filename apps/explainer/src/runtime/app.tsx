@@ -104,8 +104,8 @@ export interface AppProps {
     /** Where each chapter opens past the arrival move (`?lesson=`). */
     start: LessonStart;
     /**
-     * The pass ends by itself at the lesson's end. Off under a driven clock, where the loop
-     * wraps as it always did, so held shots and the recorder see the whole loop.
+     * The pass ends by itself at the lesson's end. Off under a held clock, where the loop
+     * wraps as it always did, so held shots see the whole loop.
      */
     ends: boolean;
     /** Where completion is remembered; `null` (captures) remembers nothing. */
@@ -113,7 +113,7 @@ export interface AppProps {
   };
   /**
    * The renderer could not start although the adapter probe passed (a refused device, a failed
-   * pipeline): the page shows the fallback instead.
+   * pipeline): the page shows the unsupported message instead.
    */
   onUnsupported: () => void;
 }
@@ -322,7 +322,7 @@ export function App(props: AppProps) {
           obstacles: () => panelRects.current,
           onReady: () => {
             // Ready once the scene shows real model output (or has none to wait for).
-            // A stage that failed (the page turns to the fallback) never marks the scene ready.
+            // A stage that failed (the page turns to the unsupported message) never marks the scene ready.
             const wait = () => {
               if (!alive) return;
               if (live.current.run || live.current.def.model === null)

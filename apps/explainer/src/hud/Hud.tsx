@@ -16,7 +16,7 @@ import type { ChapterDef, SliderDef } from "../chapters/types.ts";
 import { BRAND_NAME, SERIES_TITLE, X_PROFILE } from "../look/brand.ts";
 import { sharePathFor, type Action, type AppState, type Chapters } from "../state/app-state.ts";
 import { controlsUnlocked } from "../state/lesson.ts";
-import { copyOrShow } from "../fallback/copy.ts";
+import { copyOrShow } from "./copy.ts";
 import { Help } from "./Help.tsx";
 import css from "./hud.module.css";
 import { BrandMark, ChevronIcon, HelpIcon, ShareIcon, XIcon } from "./icons.tsx";

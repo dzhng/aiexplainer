@@ -1,6 +1,6 @@
 /**
  * Who gets the 3D app (D20, D29): a desktop-sized window with a fine pointer and a hardware
- * WebGPU adapter. Everyone else gets the fallback page (a video of the app).
+ * WebGPU adapter. Everyone else gets a short message instead (D20).
  */
 export type Support = "webgpu" | "no-webgpu" | "small-screen";
 
@@ -17,7 +17,7 @@ export interface SupportEnv {
 }
 
 export function detectSupport(env: SupportEnv): Support {
-  if (new URLSearchParams(env.search).get("force") === "fallback") return "no-webgpu";
+  if (new URLSearchParams(env.search).get("force") === "unsupported") return "no-webgpu";
   if (env.width < MIN_WIDTH_PX || env.touchOnly) return "small-screen";
   return env.hasAdapter ? "webgpu" : "no-webgpu";
 }

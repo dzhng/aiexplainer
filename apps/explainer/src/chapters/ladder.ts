@@ -28,7 +28,7 @@ export function displayNumber(slug: ChapterSlug): number {
   return LADDER.indexOf(slug);
 }
 
-/** What the HUD, the fallback and the share cards call a chapter: "Intro", or its number. */
+/** What the HUD and the share cards call a chapter: "Intro", or its number. */
 export function chapterBadge(slug: ChapterSlug): string {
   const n = displayNumber(slug);
   return n === 0 ? "Intro" : String(n);

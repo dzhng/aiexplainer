@@ -3,7 +3,7 @@ import { existsSync } from "node:fs";
 import path from "node:path";
 import { sharePage, siteOrigin } from "../scripts/share.ts";
 import { CHAPTERS } from "../src/chapters/index.ts";
-import { mediaFor } from "../src/runtime/media.ts";
+import { cardFor } from "../src/runtime/media.ts";
 import { writtenChapters } from "../src/state/app-state.ts";
 
 const def = CHAPTERS.autocomplete!;
@@ -28,14 +28,13 @@ test("the origin is SITE_URL, else the Vercel deployment, else vite preview", ()
   expect(siteOrigin({})).toBe("http://localhost:4173");
 });
 
-test("every written chapter has its recorded video, poster and card (run `bun run --cwd apps/explainer media`)", () => {
+test("every written chapter has its link-preview card (run `bun run --cwd apps/explainer cards`)", () => {
   const publicDir = path.resolve(import.meta.dirname, "../public");
   for (const slug of writtenChapters(CHAPTERS)) {
-    for (const file of Object.values(mediaFor(slug))) {
-      expect({ file, exists: existsSync(path.join(publicDir, file)) }).toEqual({
-        file,
-        exists: true,
-      });
-    }
+    const file = cardFor(slug);
+    expect({ file, exists: existsSync(path.join(publicDir, file)) }).toEqual({
+      file,
+      exists: true,
+    });
   }
 });

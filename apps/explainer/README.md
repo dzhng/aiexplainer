@@ -1,8 +1,8 @@
 # apps/explainer
 
 The site. It is a React shell around one WebGPU canvas. Visitors whose browser has no
-WebGPU, or whose screen is too small, get a recorded video of each chapter instead (D20,
-D29). It ships as a static Vite build on Vercel.
+WebGPU, or whose screen is too small, get a short message instead (D20). It ships as a
+static Vite build on Vercel.
 
 ## How a frame is made
 
@@ -15,8 +15,7 @@ Each step below has one owner. Change a step in its owner, never beside it.
    budget, the loop budget, and that every anchor, shot, colour and kit primitive a def
    names exists.
 2. **Time.** `runtime/clock.ts` is the only reader of the wall clock, and a test enforces
-   it. `?clock=held&t=…` freezes it and `?clock=step` advances it frame by frame, so every
-   capture is deterministic. The loop (`chapters/timeline.ts`) turns loop time into
+   it. `?clock=held&t=…` freezes it, so every capture is deterministic. The loop (`chapters/timeline.ts`) turns loop time into
    channel values and the active beat.
 3. **Model output.** Each scene that shows a model has one run function in
    `runtime/runs/<scene>.ts`. `runtime/scene-run.ts` picks it and owns what a run reads:
@@ -62,14 +61,14 @@ and named crops.
   clock, shoot named crops, strips and masks. Its header lists the flags.
 - `bun run --cwd apps/explainer sheet --variable <crop|full> --chapters all` shoots one
   crop across every chapter, side by side, as a consistency check.
-- `bun run --cwd apps/explainer media` records each chapter's video, poster and
-  link-preview card into `public/media/`. ffmpeg is a build-time tool (D41).
+- `bun run --cwd apps/explainer cards` shoots each chapter's link-preview card into
+  `public/media/`. ffmpeg is a build-time tool (D41). Re-run it after a look change.
 - The `build` script runs `scripts/share.ts` after `vite build`. It writes one static
   share page per chapter (`/c/<N>/`, D34), because crawlers ignore `#` fragments.
 - Query flags isolate layers for shots: `?hud=0`, `?labels=0`, `?bloom=0`, `?layers=`,
   `?emissive=0`, and `?arrival=1` to keep the arrival move under a held clock.
-- A driven clock (`?clock=held|step`) opens each chapter straight into its lesson's pass
-  and never ends it, so shots and videos see the loop. `?lesson=brief` or `?lesson=done`
+- A held clock (`?clock=held`) opens each chapter straight into its lesson's pass and
+  never ends it, so shots see the loop. `?lesson=brief` or `?lesson=done`
   opens on the brief card or the reader's turn instead (`src/state/lesson.ts`).
 
 `test/` holds the bun tests. `test/scene-harness.ts` builds a chapter's run and its frame

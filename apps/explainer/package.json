@@ -10,7 +10,7 @@
     "check-types": "tsc --noEmit",
     "lint": "oxlint src scripts test",
     "test": "bun test test",
-    "media": "bun scripts/record.ts",
+    "cards": "bun scripts/cards.ts",
     "sheet": "bun scripts/sheet.ts"
   },
   "dependencies": {

@@ -5,7 +5,7 @@
  *
  *   bun scripts/verify.ts --route /lab/adapter [--t 12.5] [--out name] [--base http://…]
  *   bun scripts/verify.ts --route /lab/adapter --browser shell   # negative control: expect failure
- *   bun scripts/verify.ts --route '/#0' --browser webkit --no-webgpu --expect fallback
+ *   bun scripts/verify.ts --route '/#0' --browser webkit --no-webgpu --expect unsupported
  *   bun scripts/verify.ts --route '/#0' --base https://<preview>.vercel.app   # a deployment
  *   bun scripts/verify.ts --route '/#0' --out hud --press '?' --crop panel:tl,panel:help
  *   bun scripts/verify.ts --route '/lab/renderer?fixture=boxes' --t 0 --out boxes --crop 'part:near+part:far'
@@ -38,7 +38,7 @@
  *   from, must lie within 2 px of its marker's rendered pixel centroid.
  * - `--no-webgpu` removes `navigator.gpu` before the page runs (Playwright's WebKit has
  *   WebGPU on, so this is how it stands in for a browser without it).
- * - `--expect fallback` passes only if the page chose the fallback (no adapter is then fine);
+ * - `--expect unsupported` passes only if the page showed the unsupported message (no adapter is then fine);
  *   by default the page must have chosen the 3D app on a hardware adapter.
  * - `--base` opens a deployment instead of a dev server; a protected Vercel preview needs
  *   `VERCEL_AUTOMATION_BYPASS_SECRET` (see harness.ts).
@@ -309,13 +309,14 @@ try {
   }));
   console.log("adapter", JSON.stringify(adapter));
   if (support) console.log("support", support);
-  if (args.expect === "fallback") {
-    const shown = await page.evaluate(() => document.querySelector("[data-fallback]") !== null);
-    if (!shown || support === "webgpu") failures.push(`expected the fallback page, got ${support}`);
+  if (args.expect === "unsupported") {
+    const shown = await page.evaluate(() => document.querySelector("[data-unsupported]") !== null);
+    if (!shown || support === "webgpu")
+      failures.push(`expected the unsupported message, got ${support}`);
   } else if (!adapter) failures.push("no WebGPU adapter");
   else if (adapter.isFallbackAdapter) failures.push("fallback (software) adapter");
   else if (support !== undefined && support !== "webgpu")
-    failures.push(`the page chose the fallback (${support})`);
+    failures.push(`the page showed the unsupported message (${support})`);
 
   if (args.lesson)
     await page.waitForFunction(

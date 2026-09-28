@@ -5,7 +5,6 @@
  */
 import { H100_SXM, LLAMA_3_8B } from "@repo/llm";
 import { statReady, statSource, statText } from "../chapters/stats.ts";
-import { mediaFor } from "../runtime/media.ts";
 import css from "./hud.module.css";
 import type { HudProps } from "./Hud.tsx";
 import { CloseIcon } from "./icons.tsx";
@@ -62,11 +61,6 @@ export function Help({ dispatch, def, model, slider }: HudProps) {
             opens this panel, <kbd>Esc</kbd> closes it.
           </li>
         </ul>
-
-        <p>
-          Rather watch? <a href={mediaFor(def.slug).video}>Watch this chapter&apos;s loop</a> as a
-          video.
-        </p>
 
         <h3>Where the numbers come from</h3>
         <p>Every number is computed, never typed in, and each one names its scale:</p>

@@ -10,10 +10,6 @@ export interface HeldClock extends Clock {
   set(t: number): void;
 }
 
-export interface StepClock extends Clock {
-  step(): void;
-}
-
 /** Real time, starting at 0 when created. */
 function rafClock(): Clock {
   const start = performance.now();
@@ -37,46 +33,24 @@ export function heldClock(t: number): HeldClock {
   };
 }
 
-/** Advances by exactly one frame per `step()`, for frame-by-frame recording. */
-export function stepClock(fps: number): StepClock {
-  let frame = 0;
-  return {
-    now: () => frame / fps,
-    step: () => {
-      frame += 1;
-    },
-  };
-}
-
 /**
- * Whether the harness drives time (`?clock=held` or `?clock=step`): decorative motion on the
- * wall clock is skipped then, so captures are deterministic.
+ * Whether the harness holds time (`?clock=held`): decorative motion on the wall clock is
+ * skipped then, so captures are deterministic.
  */
-export function clockIsDriven(search: string): boolean {
-  const clock = new URLSearchParams(search).get("clock");
-  return clock === "held" || clock === "step";
+export function clockIsHeld(search: string): boolean {
+  return new URLSearchParams(search).get("clock") === "held";
 }
 
 /**
- * Whether chapters open with the arrival move (D42): in real time yes; under a driven clock
- * (held captures, the step recorder) only with `?arrival=1`, so hero shots stay deterministic.
+ * Whether chapters open with the arrival move (D42): in real time yes; under a held clock
+ * (held captures) only with `?arrival=1`, so hero shots stay deterministic.
  */
 export function arrivalFromSearch(search: string): boolean {
-  return new URLSearchParams(search).get("arrival") === "1" || !clockIsDriven(search);
+  return new URLSearchParams(search).get("arrival") === "1" || !clockIsHeld(search);
 }
 
-/**
- * `?clock=held&t=12.5` holds time; `?clock=step&fps=30` advances one frame per probe `step()`
- * (the recorder); anything else runs in real time.
- */
+/** `?clock=held&t=12.5` holds time; anything else runs in real time. */
 export function clockFromSearch(search: string): Clock {
   const params = new URLSearchParams(search);
-  switch (params.get("clock")) {
-    case "held":
-      return heldClock(Number(params.get("t") ?? 0));
-    case "step":
-      return stepClock(Number(params.get("fps") ?? 30));
-    default:
-      return rafClock();
-  }
+  return params.get("clock") === "held" ? heldClock(Number(params.get("t") ?? 0)) : rafClock();
 }

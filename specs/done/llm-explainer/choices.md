@@ -19,8 +19,8 @@ post-release requests, 2026-09-28; see the README).
   provisionally.
 - **Acceptable, with a known cost** (12): trade-offs that shipped with a limit.
 - **Sound** (70): choices the agent stands behind with no reservation.
-- **Amendments** (37): choices made while landing the human's post-release requests,
-  each with its own verdict (7 defaults to confirm, 5 acceptable with a cost, 25 sound).
+- **Amendments** (38): choices made while landing the human's post-release requests,
+  each with its own verdict (7 defaults to confirm, 5 acceptable with a cost, 26 sound).
 
 ## Incidents and post-hoc selections
 
@@ -824,3 +824,11 @@ choices to the implementation. Each names its verdict.
     its share just inside its top in dark ink: light letters above it drowned in its
     glow. The rail's words are on their cards, and the header is on its plate in the
     glowing display face. Verdict: sound.
+
+38. **Visitors who can't run the 3D app get a short message, not a video.** The human
+    called the recorded fallback videos overengineering. Phones and small windows are told
+    to open the explainer on a computer; browsers without a working WebGPU are told to
+    try a recent Chrome, Edge or Safari. The videos, posters, the step clock and the video
+    recorder are deleted (`scripts/record.ts` → `scripts/cards.ts`, cards only), and
+    `?force=fallback` became `?force=unsupported`. The link-preview cards stay, because a
+    shared `/c/N/` link on X shows them. Verdict: sound.

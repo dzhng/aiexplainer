@@ -103,7 +103,7 @@ The full wording and evidence are in [explore/map.html](explore/map.html).
 | D17 | Storyteller voice, then a "Technical" line.                                                                                    | caption copy                                                                          |
 | D18 | Label key parts only: at most 5 per chapter.                                                                                   | `validate.ts` `MAX_LABELS` (waived for the toured chapter, which shows one at a time) |
 | D19 | Made to post on X: deep links and link-preview images.                                                                         | `/#N`, `scripts/share.ts`, `public/media/`                                            |
-| D20 | Desktop only; small screens get the fallback page.                                                                             | `runtime/support.ts` `detectSupport`                                                  |
+| D20 | Desktop only; small screens get a short message.                                                                               | `runtime/support.ts` `detectSupport`                                                  |
 | D21 | About 10 minutes to skim the ladder.                                                                                           | 16 loops plus 16 arrival moves come to about 7 minutes                                |
 | D22 | v1 is all 16 chapters.                                                                                                         | `chapters/index.ts`                                                                   |
 | D23 | Branded dzhng, with "Follow on X"; no airsup name or implied affiliation.                                                      | `look/brand.ts`                                                                       |
@@ -112,7 +112,7 @@ The full wording and evidence are in [explore/map.html](explore/map.html).
 | D26 | The drafter is the smallest full-architecture model; the best measured acceptance wins.                                        | `training/configs/drafter-64.toml`                                                    |
 | D27 | Speed comes from Llama-3-8B arithmetic on a named GPU; browser timing is never shown as speed.                                 | chip values can only be model, arith or probe                                         |
 | D28 | One tokenizer for every model; chapter 0 counts whole words.                                                                   | every neural model's manifest points at the same `tokenizer.json` hash                |
-| D29 | The fallback plays a recorded video of the real app, with a "copy link" button.                                                | `fallback/Fallback.tsx`, `scripts/record.ts`                                          |
+| D29 | ~~The fallback plays a recorded video of the real app.~~ Superseded: a short message (amendments).                             | `unsupported/Unsupported.tsx`                                                         |
 | D30 | `training/` is a uv project with pinned torch on MPS; exported weights are committed; `typegpu` and `math` are pinned exactly. | `training/pyproject.toml`, `apps/explainer/public/models/`, the root `catalog`        |
 
 The map's sharp edges are also rules, and they hold. The MoE model trains with a
@@ -136,7 +136,7 @@ orbit are built by hand (`labels.ts`, `passes/bloom.ts`, `orbit.ts`).
 | D38 | Inference runs in a cancellable Web Worker, on the CPU.                                                                                                                                            | Controls stay responsive while a typed prompt runs; no GPU inference (D9).                                       |
 | D39 | No workspaces beyond L1. Chapter data, timelines and look tokens live in `apps/explainer`.                                                                                                         | A `packages/chapters` would have one consumer.                                                                   |
 | D40 | The lab routes (`/lab/*`) are a second Vite entry, built for previews only.                                                                                                                        | Each visual variable needs a fixture page that doesn't boot the whole app.                                       |
-| D41 | ffmpeg (Homebrew) is a build-time tool for the fallback videos, never used at runtime.                                                                                                             | D29 needs recordings.                                                                                            |
+| D41 | ffmpeg (Homebrew) is a build-time tool for the link-preview cards, never used at runtime.                                                                                                          | The cards are scaled with it.                                                                                    |
 | D42 | Each chapter opens on a wide room shot and eases in to its hero shot (2.5 s); the loop starts when the move ends. Camera input cancels it; held clocks and recordings skip it unless `?arrival=1`. | The human asked for it. It shows off the room without costing the loop budget.                                   |
 
 ### Human notes
@@ -250,9 +250,8 @@ last five items). Each landed as its own commit or commits; the ledger entries a
   ends it; Space pauses), then "Your turn": the scene holds the lesson's end, the reader's
   input drives it, and Replay lesson plays it again as written. A big Next in the left
   column opens once the lesson ends or is skipped; completion is remembered in
-  `localStorage` where allowed. The ladder still jumps anywhere. Captures on a driven
-  clock open straight into the pass and never end it, so shots and the recorded video
-  are unchanged; `?lesson=brief|done` shoots the other states. This supersedes D12
+  `localStorage` where allowed. The ladder still jumps anywhere. Captures on a held
+  clock open straight into the pass and never end it, so shots are unchanged; `?lesson=brief|done` shoots the other states. This supersedes D12
   (free exploration first), D24 (the loop plays on arrival) and D32 (touching a control
   pauses the loop).
 - **The words are written on the machines** (2026-09-28). Looking at the intro's board,
@@ -272,6 +271,14 @@ last five items). Each landed as its own commit or commits; the ledger entries a
   deleted. The pinned labels with leader lines stay HTML: they annotate the scene
   rather than being part of it. The same change gave the builders an ambient clock
   (`SceneFrame.ambientSec`), so flow pulses keep moving on the reader's turn.
+- **No fallback videos: visitors who can't run the 3D app get a short message.** The human:
+  "that's dume, delete that. you're overengineering it. if they can't run live 3d, just
+  show error msg". Phones and small windows are told to open it on a computer; browsers
+  without a working WebGPU are told to try a recent Chrome, Edge or Safari
+  (`unsupported/Unsupported.tsx`). The per-chapter videos, posters, the step clock and
+  the video recorder are deleted. The link-preview cards stay (they are what a shared
+  `/c/N/` link shows on X), shot by `bun run --cwd apps/explainer cards`. This supersedes
+  D29.
 
 ## Principles
 
@@ -303,8 +310,8 @@ colour tokens, shots and kit primitives. It can't invent one; adding one is a ki
 with its own review. `validateChapter` rejects unknown anchors, shots, colours and
 primitives.
 
-**Every capture is deterministic.** Time comes from one clock, which can be held or
-stepped, so shots, videos and cards reproduce byte for byte.
+**Every capture is deterministic.** Time comes from one clock, which can be held, so
+shots and cards reproduce byte for byte.
 
 ## Invariants
 
@@ -380,8 +387,8 @@ Other rules that must keep holding:
   warm and cool practical light.
 - **A counter board shaped like a monitor.** It read as a screen; it is a tally board on
   two posts.
-- **A whole-app fallback video.** At phone width it repeated the title as unreadable
-  text. The video shows the scene only; the link-preview card shows the whole app.
+- **Fallback videos.** Phones and browsers without WebGPU once got a recorded video of
+  each chapter. The human called it overengineering; they now get a short message.
 - **Node bounding boxes for label occlusion.** The two-post stand's box spanned the whole
   board. Meshes are tested per triangle.
 - **Expecting `root.destroy()` to free buffers.** It doesn't free buffers the root created

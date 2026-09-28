@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test";
-import { copyOrShow } from "../src/fallback/copy.ts";
+import { copyOrShow } from "../src/hud/copy.ts";
 
 const url = "https://example.test/c/13/";
 

@@ -16,9 +16,8 @@
  * A chapter whose lesson ended or was skipped is complete; Next (and →) needs that. Completion
  * is remembered in `localStorage` where the browser allows it, and works without it.
  *
- * Captures run on a driven clock (`?clock=held|step`): a chapter opens straight into
- * `playing` at the clock's time and never ends by itself, so a shot or the recorder's video
- * is the lesson's pass (the loop wraps as it always did). `?lesson=brief|play|done` picks
+ * Captures run on a held clock (`?clock=held`): a chapter opens straight into
+ * `playing` at the clock's time and never ends by itself, so a shot is the lesson's pass (the loop wraps as it always did). `?lesson=brief|play|done` picks
  * where a chapter opens past the move, for shooting each state.
  */
 import type { ChapterSlug } from "../chapters/types.ts";
@@ -54,12 +53,12 @@ export function openingPhase(opening: LessonOpening): LessonPhase {
 
 /**
  * Where chapters open past the move: `?lesson=` when given, else straight into the pass under
- * a driven clock (captures) and the brief in real time.
+ * a held clock (captures) and the brief in real time.
  */
-export function lessonStartFromSearch(search: string, driven: boolean): LessonStart {
+export function lessonStartFromSearch(search: string, held: boolean): LessonStart {
   const asked = new URLSearchParams(search).get("lesson");
   if (asked === "brief" || asked === "play" || asked === "done") return asked;
-  return driven ? "play" : "brief";
+  return held ? "play" : "brief";
 }
 
 /** What moves a lesson on: the move ending, Start, the pass ending, Skip, Replay. */

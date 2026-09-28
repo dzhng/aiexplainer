@@ -7,7 +7,7 @@ test("a desktop window with an adapter gets the app", () => {
   expect(detectSupport(desktop)).toBe("webgpu");
 });
 
-test("no adapter (no navigator.gpu, or requestAdapter gave null) gets the fallback", () => {
+test("no adapter (no navigator.gpu, or requestAdapter gave null) gets the unsupported message", () => {
   expect(detectSupport({ ...desktop, hasAdapter: false })).toBe("no-webgpu");
 });
 
@@ -18,7 +18,7 @@ test("a narrow window or a touch-only device is a small screen, even with WebGPU
   expect(detectSupport({ ...desktop, touchOnly: true })).toBe("small-screen");
 });
 
-test("?force=fallback forces the fallback", () => {
-  expect(detectSupport({ ...desktop, search: "?force=fallback" })).toBe("no-webgpu");
+test("?force=unsupported forces the unsupported message", () => {
+  expect(detectSupport({ ...desktop, search: "?force=unsupported" })).toBe("no-webgpu");
   expect(detectSupport({ ...desktop, search: "?force=app" })).toBe("webgpu");
 });

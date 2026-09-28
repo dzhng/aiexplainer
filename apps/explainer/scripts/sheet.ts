@@ -17,7 +17,7 @@ import path from "node:path";
 import { parseArgs } from "node:util";
 import { CHAPTERS } from "../src/chapters/index.ts";
 import { displayNumber, type ChapterSlug } from "../src/chapters/ladder.ts";
-import { CARD_SIZE, mediaFor } from "../src/runtime/media.ts";
+import { CARD_SIZE, cardFor } from "../src/runtime/media.ts";
 import { writtenChapters } from "../src/state/app-state.ts";
 import { FFMPEG, appRoot, repoRoot as repo, run } from "./harness.ts";
 
@@ -52,7 +52,7 @@ if (args.variable === "og") {
   const width = 600;
   const height = Math.round((width * CARD_SIZE.height) / CARD_SIZE.width);
   const columns = Math.min(4, slugs.length);
-  const cards = slugs.map((slug) => path.join(appRoot, "public", mediaFor(slug).card));
+  const cards = slugs.map((slug) => path.join(appRoot, "public", cardFor(slug)));
   const inputs = cards.flatMap((file) => ["-i", file]);
   const scaled = cards.map((_, i) => `[${i}]scale=${width}:${height}[t${i}]`).join(";");
   const layout = cards.map(

@@ -16,7 +16,7 @@ import { CHAPTERS } from "../src/chapters/index.ts";
 import { chapterBadge } from "../src/chapters/ladder.ts";
 import type { ChapterDef } from "../src/chapters/types.ts";
 import { SERIES_TITLE } from "../src/look/brand.ts";
-import { CARD_SIZE, mediaFor } from "../src/runtime/media.ts";
+import { CARD_SIZE, cardFor } from "../src/runtime/media.ts";
 import { hashFor, sharePathFor, writtenChapters } from "../src/state/app-state.ts";
 import { preview } from "vite";
 import { appRoot, launch, openPage } from "./harness.ts";
@@ -41,7 +41,7 @@ export function sharePage(def: ChapterDef, origin: string): string {
     "og:title": title,
     "og:description": def.why,
     "og:url": `${origin}${sharePathFor(def.slug)}`,
-    "og:image": `${origin}${mediaFor(def.slug).card}`,
+    "og:image": `${origin}${cardFor(def.slug)}`,
     "og:image:width": String(CARD_SIZE.width),
     "og:image:height": String(CARD_SIZE.height),
     "og:image:alt": `The machine from “${def.title}”`,
@@ -81,7 +81,7 @@ async function write(): Promise<void> {
     const file = path.join(appRoot, "dist", sharePathFor(slug), "index.html");
     await mkdir(path.dirname(file), { recursive: true });
     await Bun.write(file, sharePage(CHAPTERS[slug]!, origin));
-    console.log("share", path.relative(appRoot, file), "→", `${origin}${mediaFor(slug).card}`);
+    console.log("share", path.relative(appRoot, file), "→", `${origin}${cardFor(slug)}`);
   }
 }
 
