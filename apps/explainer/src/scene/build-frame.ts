@@ -43,6 +43,17 @@ export interface SceneUi {
   text: string | null;
 }
 
+/** The controls as a chapter opens: each at its default, the loop's inputs untouched. */
+export function defaultUi(def: ChapterDef): SceneUi {
+  return {
+    follow: null,
+    slider: def.slider.initial,
+    sliderSet: false,
+    view: def.views[0] ?? "whole",
+    text: null,
+  };
+}
+
 /**
  * The chapter's model output for what the scene shows (`runtime/scene-run.ts`). Each scene's
  * builder reads its own kind.

@@ -12,6 +12,7 @@ import {
 } from "@repo/renderer";
 import type { LabelDef } from "../chapters/types.ts";
 import { lookConfig, type MaterialToken } from "../look/look.ts";
+import type { SceneRun } from "../scene/build-frame.ts";
 import { ENVIRONMENT, withEnvironment } from "../scene/environment.ts";
 
 export interface FixtureJson {
@@ -33,6 +34,16 @@ export interface LabScene {
   look: LookConfig;
   input: Omit<FrameInput, "timeSec" | "viewport">;
   labels?: LabelDef[];
+}
+
+const runs = import.meta.glob<SceneRun>("./fixtures/runs/*.json", {
+  eager: true,
+  import: "default",
+});
+
+/** A chapter's committed run (`fixtures/runs/<slug>.json`, `scripts/scene-run.ts`), if any. */
+export function fixtureRun(slug: string): SceneRun | null {
+  return runs[`./fixtures/runs/${slug}.json`] ?? null;
 }
 
 const fixtures = import.meta.glob<FixtureJson>("./fixtures/*.json", {

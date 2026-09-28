@@ -13,16 +13,11 @@ import type { BlockPart, SceneDesc } from "@repo/renderer";
 import { shippedContext, shippedModel } from "../scripts/shipped.ts";
 import { CONTINUE_WORDS, STRIP, quantization } from "../src/chapters/data/quantization.ts";
 import { resolveStat } from "../src/chapters/stats.ts";
-import { createTimelineState, evalTimeline } from "../src/chapters/timeline.ts";
 import { validateChapter } from "../src/chapters/validate.ts";
 import { computeRun } from "../src/runtime/scene-run.ts";
-import {
-  buildFrame,
-  createSceneFrame,
-  type QuantizationRun,
-  type SceneUi,
-} from "../src/scene/build-frame.ts";
+import { type QuantizationRun, type SceneUi } from "../src/scene/build-frame.ts";
 import { lensIndex } from "../src/scene/builders/quantization.ts";
+import { frameAt as sceneFrameAt } from "./scene-harness.ts";
 
 const full = await shippedModel("full");
 const q8 = await shippedModel("full-q8");
@@ -33,27 +28,8 @@ const run = (await computeRun(
 )) as QuantizationRun;
 
 function frameAt(t: number, ui: Partial<SceneUi> = {}, r: QuantizationRun = run) {
-  const frame = createSceneFrame({
-    camera: { target: [0, 0, 0], yaw: 0, pitch: 0, distance: 5, fovY: 0.7 },
-    view: { mode: "whole", t: 0 },
-    scene: { revision: 0, parts: [], anchors: [], assets: {} },
-    dynamics: {
-      intensity: new Float32Array(1),
-      widthScale: new Float32Array(1),
-      flowPhase: new Float32Array(1),
-    },
-  });
-  const tl = evalTimeline(quantization.loop, t, createTimelineState(quantization.loop));
-  const full: SceneUi = {
-    follow: null,
-    slider: quantization.slider.initial,
-    sliderSet: false,
-    view: "whole",
-    text: null,
-    ...ui,
-  };
-  const input = buildFrame(quantization, tl, full, r, frame);
-  return { input, tags: frame.tags.text };
+  const { frame } = sceneFrameAt(quantization, r, t, ui);
+  return { input: frame.input, tags: frame.tags.text };
 }
 
 const part = (scene: SceneDesc, id: string) => scene.parts.find((p) => p.id === id) as BlockPart;

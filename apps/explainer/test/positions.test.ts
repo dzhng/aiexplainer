@@ -19,6 +19,7 @@ import {
 } from "../src/scene/builders/attention.ts";
 import { shippedContext, shippedModel } from "../scripts/shipped.ts";
 import { frameAt } from "./scene-harness.ts";
+import { formatStat } from "../src/chapters/format.ts";
 
 const models = path.resolve(import.meta.dirname, "../public/models");
 const loaded = await shippedModel("rope");
@@ -75,7 +76,7 @@ describe("chapter 5: clock hands turned by position", () => {
       12,
     );
     const text = frameAt(positions, run, 16).frame.tags.text.join("\n");
-    expect(text).toContain("7.45%");
+    expect(text).toContain(formatStat(run.positions!.change!, "pct"));
   });
 
   test("the pair shown is the swapped words, their angle apart their distance × θ", () => {

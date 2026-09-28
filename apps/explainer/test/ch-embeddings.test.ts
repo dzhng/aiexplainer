@@ -6,40 +6,23 @@ import { shippedContext, shippedModel } from "../scripts/shipped.ts";
 import { embeddings as chapter } from "../src/chapters/data/embeddings.ts";
 import { SCENE_KIT } from "../src/chapters/scenes.ts";
 import { resolveStat } from "../src/chapters/stats.ts";
-import { createTimelineState, evalTimeline } from "../src/chapters/timeline.ts";
 import { computeRun } from "../src/runtime/scene-run.ts";
-import { buildFrame, createSceneFrame, type SceneRun } from "../src/scene/build-frame.ts";
+import type { PinsRun } from "../src/scene/build-frame.ts";
 import { mapPoint } from "../src/scene/builders/embeddings.ts";
 import { EMBED_MAP, projectRow } from "../src/scene/embed-map.ts";
+import { frameAt } from "./scene-harness.ts";
 
 const loaded = await shippedModel("embed");
 const model = transformerModel(loaded);
 const tokenizer = loaded.tokenizer!;
 const d = model.arch.dModel;
 const ctx = { ...(await shippedContext("embed")), model: loaded };
-type PinsRun = Extract<SceneRun, { kind: "pins" }>;
 const runFor = async (text: string | null) => (await computeRun(chapter, text, ctx)) as PinsRun;
 const loopRun = await runFor(null);
 
 function sceneAt(t: number, run: PinsRun, text: string | null = null, slider = 60) {
-  const frame = createSceneFrame({
-    camera: { target: [0, 0, 0], yaw: 0, pitch: 0, distance: 5, fovY: 0.7 },
-    view: { mode: "whole", t: 0 },
-    scene: { revision: 0, parts: [], anchors: [], assets: {} },
-    dynamics: {
-      intensity: new Float32Array(1),
-      widthScale: new Float32Array(1),
-      flowPhase: new Float32Array(1),
-    },
-  });
-  const tl = evalTimeline(chapter.loop, t, createTimelineState(chapter.loop));
-  const input = buildFrame(
-    chapter,
-    tl,
-    { follow: null, slider, sliderSet: false, view: "whole", text },
-    run,
-    frame,
-  );
+  const { frame } = frameAt(chapter, run, t, { slider, text });
+  const { input } = frame;
   const part = (id: string) => input.scene.parts.find((p) => p.id === id)!;
   const shown = (prefix: string) =>
     input.scene.parts.filter(

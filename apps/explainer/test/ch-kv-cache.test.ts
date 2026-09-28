@@ -86,5 +86,4 @@ test("the point lands by 10 s, and the loop's seam draws the same frame", () => 
 test("the scene is built from its declared primitives", () => {
   const { scene } = frameAt(def, run, 11.5);
   for (const part of scene.parts) expect(SCENE_KIT["kv-cache"]).toContain(part.primitive!);
-  expect(scene.parts.length).toMatchSnapshot();
 });

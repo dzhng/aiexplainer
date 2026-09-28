@@ -29,10 +29,10 @@ test("every file in chapters/data is registered under its slug", async () => {
 });
 
 test("the display number is the ladder index (D31)", () => {
-  expect(LADDER).toHaveLength(16);
-  expect(displayNumber("autocomplete")).toBe(0);
-  expect(displayNumber("finished")).toBe(15);
-  expect(slugAt(4)).toBe("attention");
+  LADDER.forEach((slug, i) => {
+    expect(displayNumber(slug)).toBe(i);
+    expect(slugAt(i)).toBe(slug);
+  });
 });
 
 test("rejects a 35-second loop", () => {

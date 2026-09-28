@@ -9,7 +9,6 @@ import { compileScene, VERTEX_BYTES, type SceneDesc, type TubePart } from "@repo
 import path from "node:path";
 import { attention, ORDER_PROMPTS, RECALL_PROMPTS } from "../src/chapters/data/attention.ts";
 import { SCENE_KIT } from "../src/chapters/scenes.ts";
-import { createTimelineState, evalTimeline } from "../src/chapters/timeline.ts";
 import { look, lookConfig } from "../src/look/look.ts";
 import { computeRun } from "../src/runtime/scene-run.ts";
 import { angleDeg } from "../src/runtime/runs/attention.ts";
@@ -24,12 +23,8 @@ import {
   MAX_TOKENS,
 } from "../src/scene/builders/attention.ts";
 import { tokenLabel } from "../src/chapters/format.ts";
-import {
-  buildFrame,
-  createSceneFrame,
-  type SceneRun,
-  type SceneUi,
-} from "../src/scene/build-frame.ts";
+import type { SceneRun } from "../src/scene/build-frame.ts";
+import { frameAt as sceneFrameAt } from "./scene-harness.ts";
 
 const models = path.resolve(import.meta.dirname, "../public/models");
 const loaded = await shippedModel("attn");
@@ -45,20 +40,8 @@ function golden(prompt: string): Float32Array {
 }
 
 function frameAt(t: number, run: SceneRun, text: string | null = null) {
-  const frame = createSceneFrame({
-    camera: { target: [0, 0, 0], yaw: 0, pitch: 0, distance: 5, fovY: 0.7 },
-    view: { mode: "whole", t: 0 },
-    scene: { revision: 0, parts: [], anchors: [], assets: {} },
-    dynamics: {
-      intensity: new Float32Array(1),
-      widthScale: new Float32Array(1),
-      flowPhase: new Float32Array(1),
-    },
-  });
-  const tl = evalTimeline(attention.loop, t, createTimelineState(attention.loop));
-  const ui: SceneUi = { follow: null, slider: 3, sliderSet: false, view: "whole", text };
-  const input = buildFrame(attention, tl, ui, run, frame);
-  return { input, frame };
+  const { frame } = sceneFrameAt(attention, run, t, { slider: 3, text });
+  return { input: frame.input, frame };
 }
 
 const pipeOf = (scene: SceneDesc, i: number) =>

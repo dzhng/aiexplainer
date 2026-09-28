@@ -3,9 +3,8 @@ import { shippedContext, shippedTokenizer } from "../scripts/shipped.ts";
 import { tokenizer as chapter } from "../src/chapters/data/tokenizer.ts";
 import { SCENE_KIT } from "../src/chapters/scenes.ts";
 import { resolveStat } from "../src/chapters/stats.ts";
-import { createTimelineState, evalTimeline } from "../src/chapters/timeline.ts";
 import { computeRun } from "../src/runtime/scene-run.ts";
-import { buildFrame, createSceneFrame, type SceneRun } from "../src/scene/build-frame.ts";
+import type { PiecesRun } from "../src/scene/build-frame.ts";
 import {
   EARLY_IDS,
   FAILURE_PAIR,
@@ -13,28 +12,17 @@ import {
   colourOf,
   faceText,
 } from "../src/scene/builders/tokenizer.ts";
+import { frameAt } from "./scene-harness.ts";
 
 const model = await shippedTokenizer();
 const ctx = { ...(await shippedContext("tokenizer")), model };
-type PiecesRun = Extract<SceneRun, { kind: "pieces" }>;
 const runFor = async (text: string | null) => (await computeRun(chapter, text, ctx)) as PiecesRun;
 const loopRun = await runFor(null);
 
 /** The scene at loop time `t`: the bricks on show (in pool order) and every tag's text. */
 function sceneAt(t: number, run: PiecesRun, text: string | null = null, slider = MAX_BRICKS) {
-  const frame = createSceneFrame({
-    camera: { target: [0, 0, 0], yaw: 0, pitch: 0, distance: 5, fovY: 0.7 },
-    view: { mode: "whole", t: 0 },
-    scene: { revision: 0, parts: [], anchors: [], assets: {} },
-    dynamics: {
-      intensity: new Float32Array(1),
-      widthScale: new Float32Array(1),
-      flowPhase: new Float32Array(1),
-    },
-  });
-  const tl = evalTimeline(chapter.loop, t, createTimelineState(chapter.loop));
-  const ui = { follow: null, slider, sliderSet: false, view: "whole" as const, text };
-  const input = buildFrame(chapter, tl, ui, run, frame);
+  const { frame } = frameAt(chapter, run, t, { slider, text });
+  const { input } = frame;
   const bodies = input.scene.parts.filter(
     (p) => /^brick\.\w+\.\d+$/.test(p.id) && p.transform[13]! > 0,
   );

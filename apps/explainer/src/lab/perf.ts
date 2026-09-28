@@ -11,22 +11,11 @@ import type { ChapterSlug } from "../chapters/ladder.ts";
 import { createTimelineState, evalTimeline } from "../chapters/timeline.ts";
 import { lookConfig } from "../look/look.ts";
 import { loadSceneAssets } from "../runtime/chapter-scene.ts";
-import {
-  buildFrame,
-  createSceneFrame,
-  SCENE_BUILDERS,
-  type SceneRun,
-  type SceneUi,
-} from "../scene/build-frame.ts";
+import { buildFrame, createSceneFrame, defaultUi, SCENE_BUILDERS } from "../scene/build-frame.ts";
 import { ENVIRONMENT } from "../scene/environment.ts";
 import { shotPose } from "../scene/shots.ts";
-import type { LabScene } from "./fixtures.ts";
+import { fixtureRun, type LabScene } from "./fixtures.ts";
 import type { ProbeApi } from "./probe.ts";
-
-const runs = import.meta.glob<SceneRun>("./fixtures/runs/*.json", {
-  eager: true,
-  import: "default",
-});
 
 /** A chapter's scene at loop time `t` on its fixture run, as `/lab/scene/<slug>` draws it. */
 export async function sceneFixture(slug: string, t: number): Promise<LabScene> {
@@ -45,15 +34,8 @@ export async function sceneFixture(slug: string, t: number): Promise<LabScene> {
     },
   });
   const tl = evalTimeline(def.loop, t, createTimelineState(def.loop));
-  const ui: SceneUi = {
-    follow: null,
-    slider: def.slider.initial,
-    sliderSet: false,
-    view: def.views[0] ?? "whole",
-    text: null,
-  };
-  const run = runs[`./fixtures/runs/${slug}.json`] ?? null;
-  buildFrame(def, tl, ui, run, frame);
+  const ui = defaultUi(def);
+  buildFrame(def, tl, ui, fixtureRun(slug), frame);
   SCENE_BUILDERS[def.scene].tourPose?.(def, tl, ui, frame.input.camera);
   return { look: lookConfig(), input: frame.input };
 }

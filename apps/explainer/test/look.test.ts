@@ -9,12 +9,14 @@ import {
 } from "../src/look/look.ts";
 
 // Reference values from the IEC 61966-2-1 transfer function, computed independently.
-test("sRGB → linear is right on the token swatches", () => {
-  const expectRgb = (token: PaletteToken, want: [number, number, number]) =>
-    linear(token).forEach((c, i) => expect(c).toBeCloseTo(want[i]!, 6));
-  expectRgb("ink", [0.8069523, 0.838799, 1]);
-  expectRgb("focus", [1, 0.4793202, 0.1470273]);
-  expectRgb("bgDeep", [0.0033465, 0.0051815, 0.0144438]);
+test("sRGB → linear follows the standard on both sides of its seam", () => {
+  const want: [number, number][] = [
+    [0.02, 0.001548],
+    [0.2, 0.0331048],
+    [0.5, 0.2140411],
+    [0.9, 0.7874123],
+  ];
+  for (const [c, l] of want) expect(srgbToLinear(c)).toBeCloseTo(l, 6);
 });
 
 test("the transfer function is continuous at its linear/power seam", () => {

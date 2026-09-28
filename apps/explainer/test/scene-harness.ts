@@ -11,6 +11,7 @@ import { computeRun } from "../src/runtime/scene-run.ts";
 import {
   buildFrame,
   createSceneFrame,
+  defaultUi,
   type SceneFrame,
   type SceneRun,
   type SceneUi,
@@ -52,14 +53,6 @@ export function frameAt(
     },
   });
   const tl = evalTimeline(def.loop, t, createTimelineState(def.loop));
-  const full: SceneUi = {
-    follow: null,
-    slider: def.slider.initial,
-    sliderSet: false,
-    view: "whole",
-    text: null,
-    ...ui,
-  };
-  const input = buildFrame(def, tl, full, run, frame);
+  const input = buildFrame(def, tl, { ...defaultUi(def), ...ui }, run, frame);
   return { frame, scene: input.scene, intensity: input.dynamics.intensity };
 }

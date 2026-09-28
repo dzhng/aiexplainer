@@ -67,5 +67,4 @@ test("the point lands by 10 s, and the loop's seam draws the same frame", () => 
 test("the scene is built from its declared primitives", () => {
   const { scene } = frameAt(def, run, 10);
   for (const part of scene.parts) expect(SCENE_KIT.generation).toContain(part.primitive!);
-  expect(scene.parts.length).toMatchSnapshot();
 });

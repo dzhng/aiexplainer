@@ -8,36 +8,18 @@ import { SCENE_KIT } from "../src/chapters/scenes.ts";
 import { resolveStat, statSource, statText } from "../src/chapters/stats.ts";
 import { createTimelineState, evalTimeline } from "../src/chapters/timeline.ts";
 import { validateChapter } from "../src/chapters/validate.ts";
-import { buildFrame, createSceneFrame, type SceneUi } from "../src/scene/build-frame.ts";
+import { type SceneUi } from "../src/scene/build-frame.ts";
 import { busCapacity, occupancy, PER_SPOT, SEATS } from "../src/scene/builders/batching.ts";
+import { frameAt as sceneFrameAt } from "./scene-harness.ts";
 
 const bus = parseGlb(
   await Bun.file(path.resolve(import.meta.dirname, "../public/props/bus.glb")).arrayBuffer(),
 );
 
 function frameAt(t: number, ui: Partial<SceneUi> = {}) {
-  const assets: SceneDesc["assets"] = { bus };
-  const frame = createSceneFrame({
-    camera: { target: [0, 0, 0], yaw: 0, pitch: 0, distance: 5, fovY: 0.7 },
-    view: { mode: "whole", t: 0 },
-    scene: { revision: 0, parts: [], anchors: [], assets },
-    dynamics: {
-      intensity: new Float32Array(1),
-      widthScale: new Float32Array(1),
-      flowPhase: new Float32Array(1),
-    },
-  });
+  const { frame } = sceneFrameAt(batching, null, t, ui, { bus });
   const tl = evalTimeline(batching.loop, t, createTimelineState(batching.loop));
-  const full: SceneUi = {
-    follow: null,
-    slider: batching.slider.initial,
-    sliderSet: false,
-    view: "whole",
-    text: null,
-    ...ui,
-  };
-  const input = buildFrame(batching, tl, full, null, frame);
-  return { input, tl, tags: frame.tags.text };
+  return { input: frame.input, tl, tags: frame.tags.text };
 }
 
 /** How many `<prefix>.<n>` cubes stand above the floor (hidden ones wait below it). */

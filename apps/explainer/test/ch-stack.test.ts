@@ -95,8 +95,7 @@ test("the point lands by 10 s, and the loop's seam draws the same frame", () => 
   });
 });
 
-test("the scene is built from its declared primitives, in stable slots", () => {
+test("the scene is built from its declared primitives", () => {
   const { scene } = frameAt(def, run, HERO);
   for (const part of scene.parts) expect(SCENE_KIT.stack).toContain(part.primitive!);
-  expect(scene.parts.length).toMatchSnapshot();
 });

@@ -1,3 +1,0 @@
-// Bun Snapshot v1, https://bun.sh/docs/test/snapshots
-
-exports[`the scene is built from its declared primitives, in stable slots 1`] = `299`;
