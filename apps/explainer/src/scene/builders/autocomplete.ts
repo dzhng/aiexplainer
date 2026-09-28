@@ -53,7 +53,7 @@ const EARLIER = 12;
 /** Bars are this share of their slot's width and depth, so the channel walls stay visible. */
 const BAR_WIDTH = 0.72;
 const BAR_DEPTH = 0.6;
-/** Clearance above a slot's floor, metres; above the tallest bar its share still fits. */
+/** Clearance below the slot top and above its floor, metres. */
 const SLOT_MARGIN = 0.03;
 const CARD = { width: 0.5, height: 0.12, depth: 0.02 };
 /**
@@ -65,8 +65,10 @@ const TEXT = { header: 0.1, word: 0.07, share: 0.062, card: 0.078, dim: 0.068, n
 const CARD_TEXT_Y = 0.15;
 /** The gap between a bar's top and its share, metres. */
 const SHARE_GAP = 0.02;
-/** The room kept above the tallest bar: the gap, the share's cap height and a margin. */
-const SHARE_ROOM = SHARE_GAP + 0.9 * TEXT.share;
+/** A bar taller than this share of its slot wears its share inside its top, in dark ink. */
+const SHARE_INSIDE = 0.2;
+/** Inter's cap height, em: a share inside a bar sits this far under the gap below its top. */
+const CAP = 0.73;
 /** Air between neighbouring slots' words, metres. */
 const WORD_MARGIN = 0.03;
 /**
@@ -137,7 +139,7 @@ function layoutOf(asset: MeshAsset): Layout {
       x: (b.min[0] + b.max[0]) / 2,
       z: (b.min[2] + b.max[2]) / 2,
       floor: b.min[1] + SLOT_MARGIN,
-      maxHeight: b.max[1] - b.min[1] - SLOT_MARGIN - SHARE_ROOM,
+      maxHeight: b.max[1] - b.min[1] - 2 * SLOT_MARGIN,
       width: (b.max[0] - b.min[0]) * BAR_WIDTH,
       depth: (b.max[2] - b.min[2]) * BAR_DEPTH,
     };
@@ -395,8 +397,12 @@ export const autocomplete: SceneBuilder = {
       const labelled = shown && growth > 0.05;
       texts.words[i]!.text = labelled ? named(next.word) : "";
       texts.shares[i]!.text = labelled ? share(next.p) : "";
-      // The share rides just above its bar's top, in the room its slot keeps for it.
-      texts.shares[i]!.local[1] = slot.floor + height + SHARE_GAP;
+      // A short bar's share rides just above its top; a tall bar (whose glow would swallow
+      // light letters above it) wears it just inside its top, in dark ink on the glow.
+      const inside = height >= SHARE_INSIDE * slot.maxHeight;
+      const onBar = texts.shares[i]!;
+      onBar.style = inside ? "ink" : "chalk";
+      onBar.local[1] = slot.floor + height + (inside ? -SHARE_GAP - CAP * TEXT.share : SHARE_GAP);
       dynamics.intensity[1 + i] = i === 0 ? 1 + flash * FLASH_GAIN : 1;
     }
 

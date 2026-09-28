@@ -794,9 +794,7 @@ choices to the implementation. Each names its verdict.
     projection; it was replaced, because that was a second camera. Chapter 2's pins and
     chapter 3's die faces yield. Verdict: sound.
 
-34. **A few props changed so their words have somewhere to sit.** Chapter 0's bars stop
-    a share's height below their slot's top, so the tallest bar's share fits above it.
-    Chapter 8's page is propped at 60° toward the camera, in `card` material, because
+34. **A few props changed so their words have somewhere to sit.** Chapter 8's page is propped at 60° toward the camera, in `card` material, because
     flat on the floor its text was unreadable. Chapter 10's note rack has a new header
     plate for its arithmetic. Chapter 11's stop sign is larger (0.62×0.42 m) and stands
     in front of its post. Verdict: a default for the human to confirm (they change the
@@ -811,13 +809,18 @@ choices to the implementation. Each names its verdict.
 
 36. **Occlusion is honest, even when it costs a word.** The request was for text that parts
     in front can hide, and they do. Chapter 2's arrows cross some pin words at the hero
-    angle, and chapter 7's "Stations" label pin can sit on the prompt. Chapter 8's tile
-    words are about 7 px tall at 1280×720, and chapter 11's stop sign sits under the
-    left column; both are hero-camera limits that this change left alone. Verdict:
-    acceptable, with a known cost.
+    angle. Two nearby limits were left alone because they belong to other owners. A label's
+    dot can land on written text: the placer keeps pills clear of text but not dots
+    (chapter 2's "happy", chapter 7's prompt). Some hero cameras put scene words under
+    the left column, which grew with the lesson flow (chapters 5, 9, 10, 13 and 14;
+    chapter 11's stop sign). Chapter 8's tile words and chapter 12's machine stories are
+    about 7 px tall at 1280×720, because their parts are small at the hero distance.
+    Verdict: acceptable, with a known cost.
 
 37. **The intro prints each slot's word above it and its share on the bar.** The word is
     printed on the panel strip above each slot, where a gauge's label would be, so it
-    never moves. The share rides just above its bar's top, in the plane of the bar's face
-    so the slot's walls never cut it. The rail's words are on their cards, and the
-    header on its plate in the glowing display face. Verdict: sound.
+    never moves. A short bar's share rides just above its top, in the plane of the bar's
+    face so the slot's walls never cut it. A bar taller than a fifth of its slot wears
+    its share just inside its top in dark ink: light letters above it drowned in its
+    glow. The rail's words are on their cards, and the header is on its plate in the
+    glowing display face. Verdict: sound.
