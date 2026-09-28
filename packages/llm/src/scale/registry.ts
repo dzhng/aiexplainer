@@ -55,6 +55,35 @@ export const ARITH = {
     describe: "numbers in each token's embedding (its hidden size), from the published config",
     compute: () => cfg.hidden,
   }),
+  layers: entry({
+    args: [],
+    unit: "count",
+    scale: "Llama-3-8B",
+    describe: "transformer blocks stacked one after another, from its config",
+    compute: () => cfg.nLayers,
+  }),
+  maxContext: entry({
+    args: [],
+    unit: "count",
+    scale: "Llama-3-8B",
+    describe: "the longest text it reads at once, in tokens (its config's max positions)",
+    compute: () => cfg.maxPos,
+  }),
+  rereadTokens: entry({
+    args: ["tokens"],
+    unit: "count",
+    scale: null,
+    describe:
+      "tokens fed through the model to write a text this long when every step rereads it all (1 + 2 + … + n)",
+    compute: (a) => (a.tokens * (a.tokens + 1)) / 2,
+  }),
+  mlpNeurons: entry({
+    args: [],
+    unit: "count",
+    scale: "Llama-3-8B",
+    describe: "MLP neurons in each block (its config's intermediate size)",
+    compute: () => cfg.intermediate,
+  }),
   kvBytesPerToken: entry({
     args: ["kvBytes"],
     unit: "bytes",

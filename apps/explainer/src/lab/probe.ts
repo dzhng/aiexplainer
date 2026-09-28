@@ -32,7 +32,7 @@ export interface ProbeApi {
   goto?: (slug: string) => void;
   /** The app only: set HUD controls (`text`, `follow`, `slider`, `view`, `playing: false`). */
   setUi?: (ui: Record<string, unknown>) => void;
-  /** The app only: the chapter loop's current time and beat, for filmstrips. */
+  /** A chapter scene (the app or `/lab/scene/*`): the loop's current time and beat, for filmstrips. */
   beat?: () => { t: number; id: string; note: string } | null;
   /** Free-form results of in-page checks, printed by the harness. */
   results?: unknown;

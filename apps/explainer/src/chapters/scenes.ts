@@ -10,6 +10,12 @@ export const SCENE_ANCHORS = {
   tokenizer: ["bricks", "ids", "box", "text"],
   /** Chapter 2: the map, a word's pin, the arrows, the origin, and your text's pin. */
   embeddings: ["map", "pins", "arrows", "origin", "text"],
+  /** Chapter 6: the question panel, the token arrow, the readout bars, the no-river teaser. */
+  mlp: ["panel", "arrow", "readout", "teaser"],
+  /** Chapter 7: the stations, the river under them, their volume knobs, the best guess. */
+  residual: ["stations", "river", "knob", "readout"],
+  /** Chapter 8: block 1's readers, its word rail, its frame, and the line of blocks. */
+  stack: ["readers", "words", "block", "line"],
 } as const satisfies Record<string, readonly string[]>;
 
 /**
@@ -20,6 +26,9 @@ export const SCENE_KIT: Record<keyof typeof SCENE_ANCHORS, readonly string[]> = 
   autocomplete: ["mesh", "bars", "block", "contactShadow"],
   tokenizer: ["block", "brick", "contactShadow"],
   embeddings: ["block", "pins", "brick", "contactShadow"],
+  mlp: ["questionPanel", "tube", "block", "bars", "contactShadow"],
+  residual: ["block", "tube", "river", "volumeKnob", "contactShadow"],
+  stack: ["block", "tube", "contactShadow"],
 };
 
 export type SceneBuilderId = keyof typeof SCENE_ANCHORS;

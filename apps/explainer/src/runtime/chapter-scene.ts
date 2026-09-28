@@ -4,7 +4,7 @@
  * The app (with its HUD and loop clock) and `/lab/scene/<slug>` (held time, fixture run)
  * both use it, so a scene reviewed in the lab is the scene the app draws.
  */
-import { parseGlb, type FrameInput, type SceneDesc } from "@repo/renderer";
+import { parseGlb, type FrameInput, type OrbitPose, type SceneDesc } from "@repo/renderer";
 import { createTimelineState, evalTimeline, type TimelineState } from "../chapters/timeline.ts";
 import type { ChapterDef } from "../chapters/types.ts";
 import {
@@ -18,6 +18,7 @@ import {
 import { ENVIRONMENT } from "../scene/environment.ts";
 import { shotPose } from "../scene/shots.ts";
 import { ViewTransition } from "../scene/views.ts";
+import { arrivalPose } from "./arrival.ts";
 import { motionClock } from "./clock.ts";
 import { cutPlane, look } from "../look/look.ts";
 
@@ -84,6 +85,8 @@ export function chapterScene(
   // lab page holds the loop clock, and a page that opens in a view starts settled in it.
   let views: ViewTransition | null = null;
   let lastSec = motionClock.now();
+  // The reader's camera, kept while a pull-back eases away from it.
+  const held: OrbitPose = { target: [0, 0, 0], yaw: 0, pitch: 0, distance: 1, fovY: 1 };
   return {
     frame,
     input,
@@ -107,6 +110,17 @@ export function chapterScene(
       views!.step(ui.view, now - lastSec, look.views.durationSec, stageInput.view);
       lastSec = now;
       stageInput.view.cut = cutPlane(def.scene);
+      // The chapter's one zoom-out (D5): ease the camera toward its wide shot and back.
+      const pull = def.pullBack ? (tl.channels[def.pullBack.channel] ?? 0) : 0;
+      if (def.pullBack && pull > 0) {
+        const from = stageInput.camera;
+        held.target = [from.target[0], from.target[1], from.target[2]];
+        held.yaw = from.yaw;
+        held.pitch = from.pitch;
+        held.distance = from.distance;
+        held.fovY = from.fovY;
+        arrivalPose(held, shotPose(def.pullBack.shot), pull, from);
+      }
     },
   };
 }

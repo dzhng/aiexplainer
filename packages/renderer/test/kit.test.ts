@@ -9,7 +9,7 @@ import { KIT, KIT_ENTRIES } from "../src/kit/catalog.ts";
 import { shadowGeometry } from "../src/kit/contact-shadow.ts";
 import { PIN_PARTS, placePin } from "../src/kit/pins.ts";
 import type { Geometry } from "../src/kit/geometry.ts";
-import { tubeGeometry } from "../src/kit/tube.ts";
+import { placeSegment, tubeGeometry } from "../src/kit/tube.ts";
 
 const at = (a: Float32Array, i: number): Vec3 => [a[i * 3]!, a[i * 3 + 1]!, a[i * 3 + 2]!];
 
@@ -54,6 +54,36 @@ test("tube: outward winding, capped ends, and a constant radius through a right-
   expect(Math.max(...corner)).toBeCloseTo(0.25 * Math.SQRT2, 3);
   expect(Math.min(...corner)).toBeCloseTo(0.25, 5);
   expect(g.bounds[3]).toBeCloseTo(2.25, 5);
+});
+
+test("placeSegment stretches the unit segment between two points without mirroring it", () => {
+  const cases: [Vec3, Vec3][] = [
+    [
+      [0, 0, 0],
+      [1, 2, 3],
+    ],
+    [
+      [1, 1, 1],
+      [1, 5, 1],
+    ],
+    [
+      [0, 2, 0],
+      [0.5, 0.4, 0.8],
+    ],
+  ];
+  for (const [from, to] of cases) {
+    const m = mat4.create();
+    placeSegment(m as unknown as number[], from, to, 0.1);
+    const start = vec3.transformMat4([0, 0, 0], [0, 0, 0], m);
+    const end = vec3.transformMat4([0, 0, 0], [0, 1, 0], m);
+    const rim = vec3.transformMat4([0, 0, 0], [1, 0, 0], m);
+    for (let a = 0; a < 3; a++) {
+      expect(start[a]!).toBeCloseTo(from[a]!, 6);
+      expect(end[a]!).toBeCloseTo(to[a]!, 6);
+    }
+    expect(vec3.distance(rim, from)).toBeCloseTo(0.1, 6);
+    expect(mat4.determinant(m)).toBeGreaterThan(0);
+  }
 });
 
 test("tube: a path needs two points", () => {
