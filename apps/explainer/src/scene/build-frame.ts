@@ -199,10 +199,17 @@ export const SCENE_BUILDERS: Record<SceneBuilderId, SceneBuilder> = {
 export interface SceneFrame {
   builder: SceneBuilderId | null;
   input: Omit<FrameInput, "timeSec" | "viewport">;
+  /**
+   * Seconds on the one clock, always running while the loop plays or holds (the stage's
+   * `FrameInput.timeSec`; a held or stepped clock holds or steps it). Purely decorative motion
+   * runs on it (flow pulses, a station's breathing), so the scene stays alive when the lesson
+   * holds its last beat; everything the lesson shows runs on the loop's time.
+   */
+  ambientSec: number;
 }
 
-export function createSceneFrame(input: SceneFrame["input"]): SceneFrame {
-  return { builder: null, input };
+export function createSceneFrame(input: SceneFrame["input"], ambientSec = 0): SceneFrame {
+  return { builder: null, input, ambientSec };
 }
 
 /**

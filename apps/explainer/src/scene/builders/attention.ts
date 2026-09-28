@@ -797,8 +797,9 @@ function attentionScene(o: { dials: boolean }): SceneBuilder {
             : HAIRLINE + (w - HAIRLINE) * settle;
         dynamics.intensity[slot] = PIPE_GLOW;
       }
-      // Pulses ride every pipe at its width, carrying light up into the mix.
-      const phase = tl.t * look.flow.cyclesPerSec;
+      // Pulses ride every pipe at its width, carrying light up into the mix; they are decoration,
+      // so they run on the ambient clock and keep flowing while the lesson holds its end.
+      const phase = frame.ambientSec * look.flow.cyclesPerSec;
       const widestWeight = step.weights[order[0]!]!;
       for (let i = 0; i < MAX_TOKENS; i++) {
         const slot = SLOT.flows + i;

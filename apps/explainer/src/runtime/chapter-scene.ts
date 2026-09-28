@@ -108,6 +108,7 @@ export function chapterScene(
       }
       evalTimeline(def.loop, loopTime, tl);
       frame.input = stageInput;
+      frame.ambientSec = stageInput.timeSec;
       buildFrame(def, tl, ui, run, frame);
       // The chapter's one zoom-out (D5): ease the camera toward its wide shot and back.
       const pull = def.pullBack ? (tl.channels[def.pullBack.channel] ?? 0) : 0;

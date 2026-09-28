@@ -271,8 +271,9 @@ export const residual: SceneBuilder = {
     const data = run?.kind === "residual" ? run : null;
     const { dynamics } = frame.input;
     pose(b, state, data, dynamics.intensity, b.text);
-    // The currents run on the loop's clock, each lane a little behind the one before.
-    const phase = tl.t * look.flow.cyclesPerSec;
+    // The currents run on the ambient clock (they keep flowing while the lesson holds its
+    // end), each lane a little behind the one before.
+    const phase = frame.ambientSec * look.flow.cyclesPerSec;
     for (let k = 0; k < (STATIONS.length + 1) * CURRENTS.length; k++)
       dynamics.flowPhase[b.slots.currents + k] = phase + CURRENTS[k % CURRENTS.length]!.lag;
   },

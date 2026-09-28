@@ -25,15 +25,18 @@ export async function sceneFixture(slug: string, t: number): Promise<LabScene> {
   if (!def) throw new Error(`no written chapter "${slug}"`);
   const assets: SceneDesc["assets"] = {};
   await loadSceneAssets(def, assets);
-  const frame = createSceneFrame({
-    camera: shotPose(def.shot),
-    scene: { revision: 0, parts: [], anchors: [], assets, environment: ENVIRONMENT.id },
-    dynamics: {
-      intensity: new Float32Array(1),
-      widthScale: new Float32Array(1),
-      flowPhase: new Float32Array(1),
+  const frame = createSceneFrame(
+    {
+      camera: shotPose(def.shot),
+      scene: { revision: 0, parts: [], anchors: [], assets, environment: ENVIRONMENT.id },
+      dynamics: {
+        intensity: new Float32Array(1),
+        widthScale: new Float32Array(1),
+        flowPhase: new Float32Array(1),
+      },
     },
-  });
+    t,
+  );
   const tl = evalTimeline(def.loop, t, createTimelineState(def.loop));
   const ui = defaultUi(def);
   buildFrame(def, tl, ui, fixtureRun(slug), frame);

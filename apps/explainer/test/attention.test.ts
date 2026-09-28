@@ -23,7 +23,8 @@ import {
   MAX_TOKENS,
 } from "../src/scene/builders/attention.ts";
 import { tokenLabel } from "../src/chapters/format.ts";
-import type { SceneRun } from "../src/scene/build-frame.ts";
+import { createTimelineState, evalTimeline } from "../src/chapters/timeline.ts";
+import { buildFrame, defaultUi, type SceneRun } from "../src/scene/build-frame.ts";
 import { frameAt as sceneFrameAt, texts } from "./scene-harness.ts";
 
 const models = path.resolve(import.meta.dirname, "../public/models");
@@ -260,17 +261,27 @@ describe("chapter 4: flow and the failure beat", () => {
     );
   });
 
-  test("pulses ride every pipe at its width, and move with the loop clock", () => {
-    const at = (t: number) => frameAt(t, run).input;
-    const a = at(attention.ogTimeSec);
-    const b = at(attention.ogTimeSec + 0.25);
+  test("pulses ride every pipe at its width, and keep flowing while the lesson holds", () => {
+    const { frame } = frameAt(attention.ogTimeSec, run);
+    const { dynamics, scene } = frame.input;
+    const before = { phase: [...dynamics.flowPhase], width: [...dynamics.widthScale] };
+    // The lesson holds its moment while the ambient clock runs on a quarter second.
+    frame.ambientSec += 0.25;
+    const ui = { ...defaultUi(attention), slider: 3 };
+    const held = evalTimeline(
+      attention.loop,
+      attention.ogTimeSec,
+      createTimelineState(attention.loop),
+    );
+    buildFrame(attention, held, ui, run, frame);
     for (let i = 0; i <= steps[0]!.focus; i++) {
-      const pipe = pipeOf(a.scene, i);
-      const flow = a.scene.parts.find((p) => p.id === `flow.${i}`) as TubePart;
+      const pipe = pipeOf(scene, i);
+      const flow = scene.parts.find((p) => p.id === `flow.${i}`) as TubePart;
       expect(flow.path).toBe(pipe.path);
-      expect(a.dynamics.widthScale[flow.slot]).toBe(a.dynamics.widthScale[pipe.slot]!);
-      expect(a.dynamics.intensity[flow.slot]).toBeGreaterThan(0);
-      expect(b.dynamics.flowPhase[flow.slot]! - a.dynamics.flowPhase[flow.slot]!).toBeCloseTo(
+      expect(dynamics.widthScale[flow.slot]).toBe(dynamics.widthScale[pipe.slot]!);
+      expect(dynamics.widthScale[flow.slot]).toBe(before.width[flow.slot]!);
+      expect(dynamics.intensity[flow.slot]).toBeGreaterThan(0);
+      expect(dynamics.flowPhase[flow.slot]! - before.phase[flow.slot]!).toBeCloseTo(
         0.25 * look.flow.cyclesPerSec,
         6,
       );

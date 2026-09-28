@@ -54,15 +54,19 @@ export function frameAt(
   ui: Partial<SceneUi> = {},
   assets: SceneDesc["assets"] = {},
 ): { frame: SceneFrame; scene: SceneDesc; intensity: Float32Array } {
-  const frame = createSceneFrame({
-    camera: { target: [0, 0, 0], yaw: 0, pitch: 0, distance: 5, fovY: 0.7 },
-    scene: { revision: 0, parts: [], anchors: [], assets },
-    dynamics: {
-      intensity: new Float32Array(1),
-      widthScale: new Float32Array(1),
-      flowPhase: new Float32Array(1),
+  const frame = createSceneFrame(
+    {
+      camera: { target: [0, 0, 0], yaw: 0, pitch: 0, distance: 5, fovY: 0.7 },
+      scene: { revision: 0, parts: [], anchors: [], assets },
+      dynamics: {
+        intensity: new Float32Array(1),
+        widthScale: new Float32Array(1),
+        flowPhase: new Float32Array(1),
+      },
     },
-  });
+    // The one clock started with the loop, as in a held capture at `t`.
+    t,
+  );
   const tl = evalTimeline(def.loop, t, createTimelineState(def.loop));
   const input = buildFrame(def, tl, { ...defaultUi(def), ...ui }, run, frame);
   return { frame, scene: input.scene, intensity: input.dynamics.intensity };

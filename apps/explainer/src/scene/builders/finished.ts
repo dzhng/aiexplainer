@@ -277,6 +277,8 @@ export function finishedScene(
               flowPhase: new Float32Array(1),
             },
           },
+          // Synced to the machine's ambient clock every update.
+          ambientSec: 0,
         };
         const ui: SceneUi = {
           slider: station.def.slider?.initial ?? 0,
@@ -328,6 +330,7 @@ export function finishedScene(
       b.placed.forEach((p, n) => {
         const { def: own } = p.station;
         p.ui.text = ui.text;
+        p.frame.ambientSec = frame.ambientSec;
         evalTimeline(own.loop, own.ogTimeSec + tl.t - arrivesAt(n), p.tl);
         build(own, p.tl, p.ui, runs?.[own.slug] ?? null, p.frame);
         const sub = p.frame.input;
@@ -372,7 +375,7 @@ export function finishedScene(
       const route = inView >= 0 ? ROUTE.atStop : ROUTE.glow;
       for (const slot of [b.routeSlot, b.routeSlot + 1]) {
         dynamics.intensity[slot] = route;
-        dynamics.flowPhase[slot] = tl.t * ROUTE.speed;
+        dynamics.flowPhase[slot] = frame.ambientSec * ROUTE.speed;
       }
     },
 
