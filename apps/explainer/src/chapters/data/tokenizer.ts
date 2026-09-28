@@ -13,40 +13,12 @@ export const tokenizer: ChapterDef = {
   model: "tokenizer",
   scene: "tokenizer",
   caption: {
-    default: {
-      story: [
-        "Instead of whole words, the machine keeps a fixed box of word pieces, like toy bricks, and builds any text from them.",
-        "Common words are one brick, and a rare word like “birdcage” snaps into several, so no word is ever missing.",
-      ],
-      technical:
-        "A tokenizer splits text into tokens, pieces from a fixed vocabulary, and stores each as its id. This one is byte-pair encoding (BPE), learned from TinyStories by repeatedly merging the most common pair of neighbouring pieces.",
-    },
-    byFollow: {
-      bricks: {
-        story: [
-          "Each brick is one piece the machine knows: a whole word with its leading space, or just a few letters.",
-          "The colour shows how common the piece is: yellow bricks were learned first, coral ones later, pale ones are single letters.",
-        ],
-        technical:
-          "BPE adds pieces in order of how often their two halves sat side by side in TinyStories, so a lower id means an earlier, more common merge (yellow: ids under 1,024). Pale bricks are single bytes.",
-      },
-      ids: {
-        story: [
-          "The machine never sees letters at all, only the number stamped on each brick: its place in the box.",
-          "The same piece always gets the same number, so a whole sentence becomes a short row of whole numbers.",
-        ],
-        technical:
-          "Encoding maps text to a sequence of token ids, whole numbers that index the vocabulary; decoding maps the ids back to exactly the same text.",
-      },
-      text: {
-        story: [
-          "Type anything, even nonsense or a misspelling, and it still snaps into bricks from the same box.",
-          "Nothing is ever unseen now: the worst case is a word spelled out in small pieces.",
-        ],
-        technical:
-          "Byte-level BPE can encode any text: its vocabulary includes every single byte, so a string with no learned merges falls back to one token per byte.",
-      },
-    },
+    story: [
+      "Instead of whole words, the machine keeps a fixed box of word pieces, like toy bricks, and builds any text from them.",
+      "Common words are one brick, and a rare word like “birdcage” snaps into several, so no word is ever missing.",
+    ],
+    technical:
+      "A tokenizer splits text into tokens, pieces from a fixed vocabulary, and stores each as its id. This one is byte-pair encoding (BPE), learned from TinyStories by repeatedly merging the most common pair of neighbouring pieces.",
   },
   stats: [
     {
@@ -70,11 +42,6 @@ export const tokenizer: ChapterDef = {
       scale: "Llama-3-8B",
       value: { kind: "arith", fn: "vocab", args: {} },
     },
-  ],
-  follow: [
-    { id: "bricks", label: "Bricks", anchor: "bricks" },
-    { id: "ids", label: "Ids", anchor: "ids" },
-    { id: "text", label: "Your text", anchor: "text" },
   ],
   scenarios: [
     {

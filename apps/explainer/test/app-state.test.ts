@@ -27,7 +27,7 @@ const as = (slug: ChapterSlug, patch: Partial<ChapterDef> = {}): ChapterDef => (
 // Written: 0, 1 and 4 (4 without a knob). Unwritten rungs in between must be skipped.
 const chapters: Chapters = {
   autocomplete: base,
-  tokenizer: as("tokenizer", { follow: [{ id: "only", label: "Only", anchor: "board" }] }),
+  tokenizer: as("tokenizer"),
   attention: as("attention", { slider: undefined }),
 };
 
@@ -65,8 +65,6 @@ describe("ladder", () => {
 describe("loop (D32)", () => {
   test("every scene control pauses the loop, and ▶ resumes it", () => {
     const controls: Action[] = [
-      { type: "setFollow", follow: "counts" },
-      { type: "setFollow", follow: null },
       { type: "setSlider", value: 3 },
       { type: "setScenario", scenario: "once" },
       { type: "setText", text: "the" },
@@ -86,7 +84,6 @@ describe("loop (D32)", () => {
   test("goto restarts the loop and resets the chapter's controls, even for the same chapter", () => {
     const touched = run(
       start,
-      { type: "setFollow", follow: "next" },
       { type: "setSlider", value: 9 },
       { type: "toggleTechnical" },
       { type: "toggleLabelMode" },
@@ -95,7 +92,6 @@ describe("loop (D32)", () => {
     expect(again).toMatchObject({
       playing: true,
       loopEpoch: start.loopEpoch + 1,
-      follow: null,
       slider: KNOB.initial,
       technicalOpen: false,
       labelMode: "technical",
@@ -150,45 +146,22 @@ describe("controls", () => {
     expect(shownSlider(set, def, 7)).toBe(3);
   });
 
-  test("a follow target or scenario the chapter doesn't have is ignored", () => {
-    expect(run(start, { type: "setFollow", follow: "nope" })).toBe(start);
+  test("a scenario the chapter doesn't have is ignored", () => {
     expect(run(start, { type: "setScenario", scenario: "nope" })).toBe(start);
   });
 });
 
 describe("keys", () => {
-  const key = (k: string, state = start, def = autocomplete) =>
-    actionForKey({ key: k }, state, def);
-
-  test("1–4 select All, then the follow targets in order", () => {
-    expect(["1", "2", "3", "4"].map((k) => key(k))).toEqual([
-      { type: "setFollow", follow: null },
-      { type: "setFollow", follow: "counts" },
-      { type: "setFollow", follow: "next" },
-      { type: "setFollow", follow: "text" },
-    ]);
-  });
-
-  test("a number past the chapter's follow targets does nothing", () => {
-    const def = chapters.tokenizer!;
-    const state = initialState(chapters, "tokenizer");
-    expect(key("2", state, def)).toEqual({ type: "setFollow", follow: "only" });
-    expect(key("3", state, def)).toBeNull();
-    expect(key("5")).toBeNull();
-  });
+  const key = (k: string, state = start) => actionForKey({ key: k }, state);
 
   test("arrows step the ladder, Space is ▶, ? and Esc handle help, modifiers pass through", () => {
     expect(key("ArrowRight")).toEqual({ type: "next" });
     expect(key("ArrowLeft")).toEqual({ type: "prev" });
     expect(key(" ")).toEqual({ type: "togglePlay" });
     expect(key("?")).toEqual({ type: "toggleHelp" });
+    expect(key("1")).toBeNull();
     expect(key("Escape")).toBeNull();
     expect(key("Escape", { ...start, helpOpen: true })).toEqual({ type: "toggleHelp" });
-    expect(actionForKey({ key: "ArrowRight", metaKey: true }, start, autocomplete)).toBeNull();
-  });
-
-  test("a key press that is a control pauses through the reducer, like a click", () => {
-    const pressed = key("3")!;
-    expect(run(start, pressed)).toMatchObject({ follow: "next", playing: false });
+    expect(actionForKey({ key: "ArrowRight", metaKey: true }, start)).toBeNull();
   });
 });

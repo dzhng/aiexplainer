@@ -188,8 +188,8 @@ function TypeSection() {
 }
 
 function HudSection() {
-  const [follow, setFollow] = useState<string | null>(null);
-  const caption = autocomplete.caption.default;
+  const [reading, setReading] = useState<LabelMode>("analogy");
+  const caption = autocomplete.caption;
   return (
     <Section
       id="hud"
@@ -213,17 +213,17 @@ function HudSection() {
         <div className={hudCss.box} style={{ position: "relative", padding: "12px 14px" }}>
           <div className={hudCss.step}>
             <div className={hudCss.stepHead}>
-              <span className={hudCss.stepNum}>1</span>Follow a part
+              <span className={hudCss.stepNum}>1</span>Labels
             </div>
-            <div className={hudCss.seg} role="group" aria-label="Follow">
-              {[{ id: null, label: "All" }, ...autocomplete.follow].map((f) => (
+            <div className={hudCss.seg} role="group" aria-label="Labels">
+              {(["analogy", "technical"] as const).map((mode) => (
                 <button
-                  key={f.label}
+                  key={mode}
                   type="button"
-                  aria-pressed={f.id === follow}
-                  onClick={() => setFollow(f.id)}
+                  aria-pressed={mode === reading}
+                  onClick={() => setReading(mode)}
                 >
-                  {f.label}
+                  {mode === "analogy" ? "Analogy" : "Technical"}
                 </button>
               ))}
             </div>

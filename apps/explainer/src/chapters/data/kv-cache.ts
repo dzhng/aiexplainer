@@ -17,40 +17,12 @@ export const kvCache: ChapterDef = {
   model: "full",
   scene: "kv-cache",
   caption: {
-    default: {
-      story: [
-        "As each word passes through, the machine jots sticky notes about it and pins them to a rack.",
-        "Later words read the notes instead of rereading the text, so each new word costs just one word's work.",
-      ],
-      technical:
-        "The KV cache: every layer stores each position's attention keys and values once; a new token computes only its own and attends over the cached ones.",
-    },
-    byFollow: {
-      rack: {
-        story: [
-          "Each word leaves one column of notes, one row per block, and they are written only once.",
-          "The rack grows with the text, and on a big model that memory adds up fast.",
-        ],
-        technical:
-          "Notes per word = 2 (key and value) × layers × KV heads × head size × bytes; this tiny model stores f32, Llama-3-8B bf16 (131 kB per token).",
-      },
-      machine: {
-        story: [
-          "Readers that share notes need fewer of them: here four readers share two sets.",
-          "Keeping only the last few notes saves more memory, but changes what the machine writes.",
-        ],
-        technical:
-          "Grouped-query attention: 4 query heads read 2 key/value heads. A sliding window attends to the last N positions only; it changes outputs and is not how Llama-3-8B runs.",
-      },
-      rail: {
-        story: [
-          "After the first pass, only the newest word goes through the machine at each step.",
-          "It still has to go through every block, though, and that trip is the next chapter's problem.",
-        ],
-        technical:
-          "With a cache each decode step feeds one token; its cost is dominated by reading every weight once, which chapter 11 shares across many texts at a time.",
-      },
-    },
+    story: [
+      "As each word passes through, the machine jots sticky notes about it and pins them to a rack.",
+      "Later words read the notes instead of rereading the text, so each new word costs just one word's work.",
+    ],
+    technical:
+      "The KV cache: every layer stores each position's attention keys and values once; a new token computes only its own and attends over the cached ones. Here 4 query heads share 2 key/value heads (grouped-query attention). The knob's sliding window attends to the last N positions only; it changes outputs and is not how Llama-3-8B runs.",
   },
   stats: [
     {
@@ -74,11 +46,6 @@ export const kvCache: ChapterDef = {
       scale: "Llama-3-8B",
       value: { kind: "arith", fn: "weightBytes", args: { weightBytes: 2 } },
     },
-  ],
-  follow: [
-    { id: "rack", label: "The notes", anchor: "rack" },
-    { id: "machine", label: "Sharing & window", anchor: "machine" },
-    { id: "rail", label: "The text", anchor: "rail" },
   ],
   slider: {
     id: "window",

@@ -50,7 +50,6 @@ function sceneAt(t: number, run: LogitsRun, slider?: number, text: string | null
     chapter,
     tl,
     {
-      follow: null,
       slider: slider ?? chapter.slider!.initial,
       sliderSet: slider !== undefined,
       text,

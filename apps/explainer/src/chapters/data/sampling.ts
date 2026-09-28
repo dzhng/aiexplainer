@@ -15,40 +15,12 @@ export const sampling: ChapterDef = {
   model: "embed",
   scene: "sampling",
   caption: {
-    default: {
-      story: [
-        "The word on the card scores every word in the vocabulary, and the scores load a die: likely words get wide faces.",
-        "The machine rolls it, and the face that lands is the next word, so the same start can end differently.",
-      ],
-      technical:
-        "Each score (logit) is the dot product of the current word's vector with every word's output vector. Softmax turns scores into probabilities, and sampling draws one word in proportion to them.",
-    },
-    byFollow: {
-      scores: {
-        story: [
-          "Each bar is one word's score: how well its arrow lines up with the arrow of the word on the card.",
-          "The six tallest bars become the die's word faces; every other word shares the last face.",
-        ],
-        technical:
-          "A score is a dot product with a row of the output table (the unembedding). Bars show the highest scores of the whole vocabulary, measured up from its average score.",
-      },
-      die: {
-        story: [
-          "Each face is as wide around the rim as its word's chance, so a wide face comes up often.",
-          "The temperature slider loads the die: cold makes the favourite face swallow the rim, hot spreads the odds over every word.",
-        ],
-        technical:
-          "Probabilities are softmax(scores ÷ temperature); temperature 0 always picks the top word. The roll stops at a uniformly random angle, which lands on each face exactly as often as its share.",
-      },
-      word: {
-        story: [
-          "Type a sentence and only its last word goes on the card: the machine sees nothing before it.",
-          "Two different stories that end in the same word roll exactly the same die.",
-        ],
-        technical:
-          "This tiny model has no attention: its prediction depends on the last token alone, so every prompt ending in the same token gives identical probabilities.",
-      },
-    },
+    story: [
+      "The word on the card scores every word in the vocabulary, and the scores load a die: likely words get wide faces.",
+      "The machine rolls it, and the face that lands is the next word, so the same start can end differently.",
+    ],
+    technical:
+      "Each score (logit) is the dot product of the current word's vector with every word's output vector. Softmax turns scores into probabilities, and sampling draws one word in proportion to them.",
   },
   stats: [
     {
@@ -72,11 +44,6 @@ export const sampling: ChapterDef = {
       scale: "Llama-3-8B",
       value: { kind: "arith", fn: "vocab", args: {} },
     },
-  ],
-  follow: [
-    { id: "scores", label: "Scores", anchor: "scores" },
-    { id: "die", label: "Die", anchor: "die" },
-    { id: "word", label: "Your text", anchor: "word" },
   ],
   slider: {
     id: "temperature",

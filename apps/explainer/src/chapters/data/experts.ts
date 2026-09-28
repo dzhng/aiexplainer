@@ -19,40 +19,12 @@ export const experts: ChapterDef = {
   model: "moe",
   scene: "experts",
   caption: {
-    default: {
-      story: [
-        "At a hospital, a triage desk sends each patient to the right specialists, not to every doctor in the building.",
-        "Here the router sends each word to 2 of 8 expert bays, so the machine holds much more than any one word pays for.",
-      ],
-      technical:
-        "Mixture of experts: the MLP is split into 8 experts, and a small router picks the top 2 for each token, mixing their outputs by its renormalised probabilities; the other 6 do no work for that token.",
-    },
-    byFollow: {
-      desk: {
-        story: [
-          "The desk looks at each word and scores all 8 bays for it.",
-          "It sends the word to the 2 bays that scored highest, and weighs their answers by those scores.",
-        ],
-        technical:
-          "The router is one linear layer: a score per expert from the token's vector, turned into probabilities; the top 2 are kept and their weights renormalised to sum to 1.",
-      },
-      bays: {
-        story: [
-          "Each bay is an expert, a full question panel of its own, like the one in chapter 6.",
-          "Only the 2 lit bays work on this word; the dark ones cost it nothing.",
-        ],
-        technical:
-          "Each expert is a SwiGLU MLP; a token's MLP output is the weighted sum of its 2 chosen experts' outputs, so its compute is 2 experts' worth, not 8.",
-      },
-      usage: {
-        story: [
-          "Over many words every bay gets its share of patients, so none sits idle.",
-          "Training nudged the desk to spread the work, or a few bays would do everything.",
-        ],
-        technical:
-          "Each bar is an expert's measured share of routing slots on held-out text, and the line across them is an even share (1 in 8); training added a load-balancing loss (Switch Transformer) so the router doesn't collapse onto a few experts.",
-      },
-    },
+    story: [
+      "At a hospital, a triage desk sends each patient to the right specialists, not to every doctor in the building.",
+      "Here the router sends each word to 2 of 8 expert bays, so the machine holds much more than any one word pays for.",
+    ],
+    technical:
+      "Mixture of experts: the MLP is split into 8 experts, and a small router picks the top 2 for each token, mixing their outputs by its renormalised probabilities; the other 6 do no work for that token.",
   },
   stats: [
     {
@@ -76,11 +48,6 @@ export const experts: ChapterDef = {
       scale: "Llama-3-8B",
       value: { kind: "arith", fn: "moeActiveParams", args: { experts: 8, topK: 2 } },
     },
-  ],
-  follow: [
-    { id: "desk", label: "Router", anchor: "desk" },
-    { id: "bays", label: "Experts", anchor: "bays" },
-    { id: "usage", label: "Usage", anchor: "usage" },
   ],
   scenarios: [
     {

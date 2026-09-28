@@ -3,19 +3,17 @@
  * Pure: `reduce` takes the written chapters as context and never reads the DOM or the clock.
  *
  * D32: arriving at a chapter restarts its loop (`loopEpoch` bumps, `playing` turns on); a scene
- * control (Follow, slider, scenario, typed text) pauses it; ▶ resumes. The reading aids (Analogy /
+ * control (slider, scenario, typed text) pauses it; ▶ resumes. The reading aids (Analogy /
  * Technical labels, the "Technical" caption line, help) change what text is shown, not the scene, so they don't pause.
  */
 import { LADDER, displayNumber, slugAt } from "../chapters/ladder.ts";
-import type { ChapterDef, ChapterSlug, FollowId } from "../chapters/types.ts";
+import type { ChapterDef, ChapterSlug } from "../chapters/types.ts";
 
 export type Chapters = Partial<Record<ChapterSlug, ChapterDef>>;
 export type LabelMode = "analogy" | "technical";
 
 export interface AppState {
   chapter: ChapterSlug;
-  /** `null` is "All". */
-  follow: FollowId | null;
   /** The chapter slider's value (0 in a chapter without one). */
   slider: number;
   /**
@@ -39,7 +37,6 @@ export type Action =
   | { type: "goto"; chapter: ChapterSlug }
   | { type: "next" }
   | { type: "prev" }
-  | { type: "setFollow"; follow: FollowId | null }
   | { type: "setSlider"; value: number }
   | { type: "setScenario"; scenario: string | null }
   | { type: "setText"; text: string }
@@ -64,7 +61,6 @@ function arrive(chapters: Chapters, slug: ChapterSlug, from: AppState | null): A
   const def = chapterDef(chapters, slug);
   return {
     chapter: slug,
-    follow: null,
     slider: def.slider?.initial ?? 0,
     sliderSet: false,
     scenario: null,
@@ -113,9 +109,6 @@ export function reduce(state: AppState, action: Action, chapters: Chapters): App
       const to = order[order.indexOf(state.chapter) + (action.type === "next" ? 1 : -1)];
       return to ? arrive(chapters, to, state) : state;
     }
-    case "setFollow":
-      if (action.follow !== null && !def.follow.some((f) => f.id === action.follow)) return state;
-      return { ...paused, follow: action.follow };
     case "setSlider":
       if (!def.slider) return state;
       return { ...paused, slider: snapSlider(def, action.value), sliderSet: true };
@@ -134,12 +127,6 @@ export function reduce(state: AppState, action: Action, chapters: Chapters): App
     case "toggleHelp":
       return { ...state, helpOpen: !state.helpOpen };
   }
-}
-
-/** Keys 1–4 select All, then the chapter's follow targets in order; `undefined` if unused. */
-export function followForKey(def: ChapterDef, key: number): FollowId | null | undefined {
-  if (key === 1) return null;
-  return def.follow[key - 2]?.id;
 }
 
 /** `#4` → the chapter at display number 4 (D31), if it is written. */

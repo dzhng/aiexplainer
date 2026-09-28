@@ -19,40 +19,12 @@ export const quantization: ChapterDef = {
   model: "full-q8",
   scene: "quantization",
   caption: {
-    default: {
-      story: [
-        "A lower-resolution photo keeps the picture in half the space, and the same trick works on the machine's numbers.",
-        "Each weight is rounded to one of 255 levels, so the copy is half the size and still picks nearly the same words.",
-      ],
-      technical:
-        "8-bit quantization (q8_0) stores each group of 32 weights as one 16-bit scale and 32 whole numbers from −127 to 127; each weight becomes scale × its number.",
-    },
-    byFollow: {
-      strip: {
-        story: [
-          "These bars are 32 real weights from this tiny model, first as stored at 16 bits, then rounded to 8.",
-          "At full size the rounding is too small to see, so the magnifier zooms in on one weight.",
-        ],
-        technical:
-          "Each 8-bit number is round(w ÷ scale), where scale is the group's largest |w| ÷ 127, so no weight moves by more than half a step.",
-      },
-      crates: {
-        story: [
-          "The 8-bit copy's weights fill about half the crate.",
-          "Less to haul means a quicker trip, because the haul was the slow part.",
-        ],
-        technical:
-          "This tiny model's 8-bit weights file is the measured share of the 16-bit one (the scales add a little). For Llama-3-8B the chip shows the weights at the slider's bytes per weight.",
-      },
-      machines: {
-        story: [
-          "Both machines continue the same story, and they pick the same next word almost every time.",
-          "The copy is not perfect, but its guesses stay very close.",
-        ],
-        technical:
-          "On validation text the 8-bit copy's top next token matches the 16-bit model's at the agreement chip's rate; the drift chip is the KL divergence, in nats, between their whole next-token distributions.",
-      },
-    },
+    story: [
+      "A lower-resolution photo keeps the picture in half the space, and the same trick works on the machine's numbers.",
+      "Each weight is rounded to one of 255 levels, so the copy is half the size and still picks nearly the same words.",
+    ],
+    technical:
+      "8-bit quantization (q8_0) stores each group of 32 weights as one 16-bit scale and 32 whole numbers from −127 to 127; each weight becomes scale × its number.",
   },
   stats: [
     {
@@ -76,11 +48,6 @@ export const quantization: ChapterDef = {
       scale: "this tiny model",
       value: { kind: "probe", probe: "q8-kl" },
     },
-  ],
-  follow: [
-    { id: "strip", label: "Weights", anchor: "strip" },
-    { id: "crates", label: "Size", anchor: "crates" },
-    { id: "machines", label: "Output", anchor: "machines" },
   ],
   slider: {
     id: "bytes",

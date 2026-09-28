@@ -13,40 +13,12 @@ export const mlp: ChapterDef = {
   model: "mlp",
   scene: "mlp",
   caption: {
-    default: {
-      story: [
-        "Attention hands each word an arrow of gathered clues, and next it passes a panel of yes/no questions, the model's neurons.",
-        "Each question that answers yes lights up and pushes the arrow toward the words that should come next.",
-      ],
-      technical:
-        "This is the MLP (multilayer perceptron): each neuron scores the arrow with silu(w1·x)·(w3·x), and w2 adds every neuron's own direction, scaled by its score, back onto the arrow. A lot of what the model knows is stored here.",
-    },
-    byFollow: {
-      panel: {
-        story: [
-          "Each lamp is one question, and its brightness is how strongly the arrow answered it.",
-          "Nobody wrote these questions; training found them, so most don't match any one idea we could name.",
-        ],
-        technical:
-          "Lamp brightness is |activation| of this tiny model's 24 most active neurons at the last word; the rest of the panel is not drawn.",
-      },
-      arrow: {
-        story: [
-          "The arrow is everything the machine has worked out so far about the last word and the words before it.",
-          "Each push adds to the arrow instead of replacing it, so what attention gathered is still there afterwards.",
-        ],
-        technical:
-          "The arrow is the last token's vector. The MLP's output is added onto it, and each pipe's width is how much that one neuron raises or lowers the answer's logit.",
-      },
-      readout: {
-        story: [
-          "The bars show how sure the machine is of its next word with the brightest lamps off, then with every lamp on.",
-          "A lot of what the model knows is stored here: switch a few questions off and its best guess collapses.",
-        ],
-        technical:
-          "p(next token) from this tiny model with its 16 most active neurons zeroed, then with none zeroed; the chip repeats that test over 30 fact-like prompts.",
-      },
-    },
+    story: [
+      "Attention hands each word an arrow of gathered clues, and next it passes a panel of yes/no questions, the model's neurons.",
+      "Each question that answers yes lights up and pushes the arrow toward the words that should come next.",
+    ],
+    technical:
+      "This is the MLP (multilayer perceptron): each neuron scores the arrow with silu(w1·x)·(w3·x), and w2 adds every neuron's own direction, scaled by its score, back onto the arrow. A lot of what the model knows is stored here.",
   },
   stats: [
     {
@@ -70,11 +42,6 @@ export const mlp: ChapterDef = {
       scale: "Llama-3-8B",
       value: { kind: "arith", fn: "mlpNeurons", args: {} },
     },
-  ],
-  follow: [
-    { id: "panel", label: "Questions", anchor: "panel" },
-    { id: "arrow", label: "The arrow", anchor: "arrow" },
-    { id: "readout", label: "Next word", anchor: "readout" },
   ],
   scenarios: [
     { id: "time", label: "Once upon a", prompt: "Once upon a", probe: "mlp-neurons" },

@@ -57,7 +57,6 @@ function ownsKey(target: EventTarget | null, key: string): boolean {
 function sceneUi(state: AppState, def: ChapterDef): SceneUi {
   const scenario = def.scenarios.find((s) => s.id === state.scenario);
   return {
-    follow: state.follow,
     slider: state.slider,
     sliderSet: state.sliderSet,
     text: state.text ?? scenario?.prompt ?? null,
@@ -321,8 +320,6 @@ export function App(props: AppProps) {
     probe.goto = (slug) => dispatch({ type: "goto", chapter: slug as AppState["chapter"] });
     probe.setUi = (ui) => {
       if (ui.text !== undefined) dispatch({ type: "setText", text: String(ui.text) });
-      if (ui.follow !== undefined)
-        dispatch({ type: "setFollow", follow: ui.follow as string | null });
       if (ui.slider !== undefined) dispatch({ type: "setSlider", value: Number(ui.slider) });
       if (ui.scenario !== undefined)
         dispatch({ type: "setScenario", scenario: ui.scenario as string | null });
@@ -348,14 +345,14 @@ export function App(props: AppProps) {
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
       if (ownsKey(event.target, event.key)) return;
-      const action = actionForKey(event, state, def);
+      const action = actionForKey(event, state);
       if (!action) return;
       event.preventDefault();
       dispatch(action);
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [state, def]);
+  }, [state]);
 
   return (
     <main className={css.stage}>

@@ -20,40 +20,12 @@ export const speculative: ChapterDef = {
   model: "drafter-64",
   scene: "speculative",
   caption: {
-    default: {
-      story: [
-        "A junior writer drafts the next few words quickly, and the senior checks the whole draft in one read.",
-        "Every word the senior agrees with is kept for free, so one slow trip can bring back several words.",
-      ],
-      technical:
-        "Speculative decoding: a small drafter model guesses k tokens; the target model scores all of them in one forward pass and keeps each with probability min(1, p/q), so the output has exactly the target's distribution.",
-    },
-    byFollow: {
-      junior: {
-        story: [
-          "The junior is a much smaller machine, so its guesses are cheap and fast.",
-          "It is often right about easy words, and often wrong about surprising ones.",
-        ],
-        technical:
-          "The drafter is a 1-layer model with about a fifth of the target's weights; each guess is sampled from its own next-token probabilities q.",
-      },
-      senior: {
-        story: [
-          "The senior reads the junior's draft once and marks each word right or wrong, in order.",
-          "At the first word it rejects it writes its own word instead, so nothing wrong ever gets through.",
-        ],
-        technical:
-          "Guess i is kept with probability min(1, p/q) under the target's p; at the first rejection the target samples from max(0, p − q) renormalised; if all k are kept it samples a bonus token.",
-      },
-      draft: {
-        story: [
-          "Gold words were kept, dark words were thrown away, and the blue word is the senior's own.",
-          "More gold per round means fewer slow trips for the same story.",
-        ],
-        technical:
-          "Expected tokens per target pass are (1 − α^(k+1)) ÷ (1 − α), where α is the chance a guess is kept (Leviathan et al. 2023, Eq. 1).",
-      },
-    },
+    story: [
+      "A junior writer drafts the next few words quickly, and the senior checks the whole draft in one read.",
+      "Every word the senior agrees with is kept for free, so one slow trip can bring back several words.",
+    ],
+    technical:
+      "Speculative decoding: a small drafter model guesses k tokens; the target model scores all of them in one forward pass and keeps each with probability min(1, p/q), so the output has exactly the target's distribution.",
   },
   stats: [
     {
@@ -90,11 +62,6 @@ export const speculative: ChapterDef = {
         },
       },
     },
-  ],
-  follow: [
-    { id: "junior", label: "Junior", anchor: "junior" },
-    { id: "senior", label: "Senior", anchor: "senior" },
-    { id: "draft", label: "Draft", anchor: "draft" },
   ],
   slider: {
     id: "k",

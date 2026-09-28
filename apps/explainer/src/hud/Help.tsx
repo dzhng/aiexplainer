@@ -40,12 +40,8 @@ export function Help({ dispatch, def, model, slider }: HudProps) {
         <ul>
           <li>
             The numbered panel on the left holds every control, in order: type your own text (a real
-            model runs it in your browser), or try an example, turn the chapter&apos;s knob where it
-            has one, and follow a part.
-          </li>
-          <li>
-            <b>Follow</b> (<kbd>1</kbd>–<kbd>4</kbd>) picks one part to watch, and the caption
-            explains it.
+            model runs it in your browser) or try an example, then turn the chapter&apos;s knob
+            where it has one.
           </li>
           <li>
             The left and right arrow keys, or the ladder at the bottom, move between chapters.

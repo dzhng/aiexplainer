@@ -2,8 +2,8 @@
  * The HUD over the canvas, drawn from the current `ChapterDef` and `AppState`. One column on
  * the left reads top to bottom: the title panel (what this chapter is and says), then the
  * story panel, every scene control in the order a reader meets them (type your own text, or
- * try an example, turn the knob, follow a part, the label wording, play and help), numbered,
- * with the steps a chapter doesn't have left out. The scene keeps the rest of the screen; the
+ * try an example, turn the knob, then the label wording, play and help), numbered, with the
+ * steps a chapter doesn't have left out. The scene keeps the rest of the screen; the
  * ladder sits at the bottom and the share links in the corner. Every control dispatches an
  * `Action`; the keyboard (`state/keys.ts`) sends the same.
  */
@@ -68,7 +68,7 @@ export function Hud(props: HudProps) {
 }
 
 function TitlePanel({ state, dispatch, def, model, motion, slider }: HudProps) {
-  const caption = (state.follow && def.caption.byFollow[state.follow]) || def.caption.default;
+  const caption = def.caption;
   return (
     <header className={css.tl} data-crop="panel:tl" data-intro="left">
       <div className={css.brand}>
@@ -234,24 +234,6 @@ function StoryPanel(props: HudProps) {
       title: `Turn the knob: ${def.slider.label}`,
       body: <Knob slider={def.slider} value={value} dispatch={dispatch} />,
     });
-  steps.push({
-    title: "Follow a part",
-    aside:
-      def.follow.length > 0 ? (
-        <span className={css.keys}>keys 1–{def.follow.length + 1}</span>
-      ) : undefined,
-    body: (
-      <Segmented
-        label="Follow a part"
-        options={[
-          { value: null, label: "All" },
-          ...def.follow.map((f) => ({ value: f.id as string | null, label: f.label })),
-        ]}
-        selected={state.follow}
-        onSelect={(follow) => dispatch({ type: "setFollow", follow })}
-      />
-    ),
-  });
   return (
     <nav
       className={`${css.box} ${css.story}`}

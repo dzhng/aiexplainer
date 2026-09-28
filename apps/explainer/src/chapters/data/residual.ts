@@ -13,40 +13,12 @@ export const residual: ChapterDef = {
   model: "residual",
   scene: "residual",
   caption: {
-    default: {
-      story: [
-        "Chain stations so each one replaces the signal with its own output, and the word's arrow fades out by the second station.",
-        "Run a river past the stations instead: each one pours in what it worked out, and a volume knob keeps its input steady.",
-      ],
-      technical:
-        "The river is the residual stream: each block adds its output to x instead of replacing it (x ← x + block(x)). The knob is RMSNorm: each block reads x divided by its root-mean-square size.",
-    },
-    byFollow: {
-      river: {
-        story: [
-          "The river only ever grows: every station adds to it, and nothing a station does can wash away what came before.",
-          "That is how the first word's meaning survives all the way to the last station.",
-        ],
-        technical:
-          "River height is the stream's RMS at the last word, as a share of the embedding's, square-root scaled; with it, this tiny model's stream ends many times its starting size.",
-      },
-      knob: {
-        story: [
-          "A growing river would drown each station in louder and louder input, so each station turns its own volume knob down first.",
-          "The knob turns further at every station because the river it reads from is bigger each time.",
-        ],
-        technical:
-          "RMSNorm: before each block, x is divided by sqrt(mean(x²)) and scaled by learned gains. The knob's angle is that divisor, log scaled.",
-      },
-      readout: {
-        story: [
-          "Without the river the machine has no idea what comes next, so every word is exactly as likely as any other.",
-          "With the river it makes a real guess, though one pass through four stations still leaves it unsure.",
-        ],
-        technical:
-          "The readout is each model's top next token and its probability on this text; the chips are the two models' average loss on held-out TinyStories text.",
-      },
-    },
+    story: [
+      "Chain stations so each one replaces the signal with its own output, and the word's arrow fades out by the second station.",
+      "Run a river past the stations instead: each one pours in what it worked out, and a volume knob keeps its input steady.",
+    ],
+    technical:
+      "The river is the residual stream: each block adds its output to x instead of replacing it (x ← x + block(x)). The knob is RMSNorm: each block reads x divided by its root-mean-square size.",
   },
   stats: [
     {
@@ -70,11 +42,6 @@ export const residual: ChapterDef = {
       scale: "this tiny model",
       value: { kind: "probe", probe: "signal-preserved-residual" },
     },
-  ],
-  follow: [
-    { id: "river", label: "The river", anchor: "river" },
-    { id: "knob", label: "Volume knob", anchor: "knob" },
-    { id: "readout", label: "Best guess", anchor: "readout" },
   ],
   scenarios: [
     {

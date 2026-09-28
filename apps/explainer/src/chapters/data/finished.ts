@@ -105,40 +105,12 @@ export const finished: ChapterDef = {
   model: "full",
   scene: "finished",
   caption: {
-    default: {
-      story: [
-        "Every part you added is here, working as one machine, and the camera visits them in the order a word meets them.",
-        "Llama-3-8B is built from these same kinds of parts, less the tally board and the expert bays, only far bigger.",
-      ],
-      technical:
-        "Each station is its own chapter's scene, run on that chapter's tiny model. Llama-3-8B: a tokenizer, embeddings, 32 blocks of RoPE attention (GQA) and SwiGLU MLP on a residual stream with RMSNorm, then sampling, one token per pass, with a KV cache; it is not a mixture of experts.",
-    },
-    byFollow: {
-      reading: {
-        story: [
-          "First the text becomes bricks, and each brick becomes a pin on the map of meanings.",
-          "From here on the machine never sees letters again, only the arrows those pins stand for.",
-        ],
-        technical:
-          "Tokenization splits text into vocabulary pieces; each token id selects one row of the embedding table, a vector of numbers the blocks then read and add to.",
-      },
-      blocks: {
-        story: [
-          "Inside each block, readers draw on earlier words, then the question panel adds what it knows, all onto the river.",
-          "The blocks repeat down the line, and the die at the end picks the next word.",
-        ],
-        technical:
-          "A transformer block is attention then an MLP, each added to the residual stream after RMSNorm; the last layer's vector is scored against the vocabulary and sampled.",
-      },
-      serving: {
-        story: [
-          "The last stations are about running the machine for many readers at once, cheaply.",
-          "Kept notes, a junior drafter, lighter weights and a full bus all get more words out of each trip.",
-        ],
-        technical:
-          "KV caching, speculative decoding, 8-bit quantization and batching change how fast and how cheaply tokens come out; batching and caching leave the output unchanged, quantization changes it slightly.",
-      },
-    },
+    story: [
+      "Every part you added is here, working as one machine, and the camera visits them in the order a word meets them.",
+      "Llama-3-8B is built from these same kinds of parts, less the tally board and the expert bays, only far bigger.",
+    ],
+    technical:
+      "Each station is its own chapter's scene, run on that chapter's tiny model. Llama-3-8B: a tokenizer, embeddings, 32 blocks of RoPE attention (GQA) and SwiGLU MLP on a residual stream with RMSNorm, then sampling, one token per pass, with a KV cache; it is not a mixture of experts.",
   },
   stats: [
     {
@@ -162,11 +134,6 @@ export const finished: ChapterDef = {
       scale: "Llama-3-8B",
       value: { kind: "arith", fn: "layers", args: {} },
     },
-  ],
-  follow: [
-    { id: "reading", label: "Reading in", anchor: "tokenizer" },
-    { id: "blocks", label: "The blocks", anchor: "stack" },
-    { id: "serving", label: "Serving", anchor: "batching" },
   ],
   scenarios: [],
   // Each station's own label, in both readings: one owner for the words.

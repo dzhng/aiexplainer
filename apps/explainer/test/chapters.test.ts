@@ -42,23 +42,19 @@ test("rejects a 35-second loop", () => {
 
 test("rejects a 3-sentence caption, whether as three entries or packed into one", () => {
   const threeEntries = broken((d) => {
-    (d.caption.default.story as string[]).push("A third sentence.");
+    (d.caption.story as string[]).push("A third sentence.");
   });
   expect(validateChapter(threeEntries)).toContain("caption: story must be exactly 2 sentences");
   const packed = broken((d) => {
-    d.caption.default.story[1] = "One sentence here. And another one after it.";
+    d.caption.story[1] = "One sentence here. And another one after it.";
   });
   expect(validateChapter(packed)).toContain("caption: sentence 2 holds more than one sentence");
 });
 
 test("rejects a story sentence over 25 words and a missing technical line", () => {
-  const long = broken(
-    (d) => void (d.caption.byFollow.next!.story[0] = Array(26).fill("word").join(" ") + "."),
-  );
-  expect(validateChapter(long)).toContain(
-    "caption.byFollow.next: sentence 1 has 26 words (max 25)",
-  );
-  const noTechnical = broken((d) => void (d.caption.default.technical = ""));
+  const long = broken((d) => void (d.caption.story[0] = Array(26).fill("word").join(" ") + "."));
+  expect(validateChapter(long)).toContain("caption: sentence 1 has 26 words (max 25)");
+  const noTechnical = broken((d) => void (d.caption.technical = ""));
   expect(validateChapter(noTechnical)).toContain("caption: missing technical line");
 });
 
@@ -85,11 +81,7 @@ test("rejects a scene built from a primitive outside the kit, or an unknown scen
   expect(validateChapter(def, () => undefined)).toContain("unknown scene autocomplete");
 });
 
-test("rejects more than 3 follow targets and more than 5 labels", () => {
-  const follow = broken(
-    (d) => void d.follow.push({ id: "extra", label: "Extra", anchor: "board" }),
-  );
-  expect(validateChapter(follow)).toContain("4 follow targets (max 3)");
+test("rejects more than 5 labels", () => {
   const labels = broken((d) => {
     while (d.labels.length < 6) d.labels.push({ ...d.labels[0]! });
   });

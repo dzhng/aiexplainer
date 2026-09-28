@@ -1,6 +1,6 @@
 /**
  * The scene builders a chapter can name, and the anchors each one exposes. A chapter's
- * follow targets, labels and beat focus must use its scene's anchors; the builder
+ * labels and beat focus must use its scene's anchors; the builder
  * (`scene/builders/<id>.ts`) places a part at every anchor listed here.
  */
 export const SCENE_ANCHORS = {

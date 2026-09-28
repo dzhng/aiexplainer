@@ -14,7 +14,6 @@ export type { AnchorId, ChapterSlug, ModelId, SceneBuilderId };
 export type ChapterModelId = ModelId | "tokenizer";
 
 export type ShotId = keyof typeof shots;
-export type FollowId = string;
 export type ChannelId = string;
 
 export const STAT_SCALES = [
@@ -36,10 +35,8 @@ export interface ChapterDef {
   why: string;
   model: ChapterModelId | null;
   scene: SceneBuilderId;
-  caption: { default: Caption; byFollow: Partial<Record<FollowId, Caption>> };
+  caption: Caption;
   stats: [StatChip, StatChip, StatChip];
-  /** At most 3; "All" is implicit. Keys 1–4 select All then these, in order. */
-  follow: FollowTarget[];
   /**
    * The chapter's one knob, only where it is a real knob of the mechanism (temperature, batch
    * size, bytes per weight, draft length, window size); a chapter without one has no slider.
@@ -99,12 +96,6 @@ export interface StatChip {
  * model (so a measured rate feeds a formula without being typed in).
  */
 export type ArithArg = number | { slider: true } | { probe: string };
-
-export interface FollowTarget {
-  id: FollowId;
-  label: string;
-  anchor: AnchorId;
-}
 
 /** A part's label in both readings; the Analogy/Technical toggle picks one (D16). */
 export interface LabelDef {

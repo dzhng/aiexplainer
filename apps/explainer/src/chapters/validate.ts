@@ -21,7 +21,6 @@ import {
 export const LOOP_SEC = { min: 20, max: 30 } as const;
 const MAX_SENTENCE_WORDS = 25;
 const MAX_HINT_WORDS = 12;
-const MAX_FOLLOW = 3;
 const MAX_LABELS = 5;
 
 /** Which chip formats can display each arithmetic unit. */
@@ -36,19 +35,19 @@ const wordCount = (s: string) => s.trim().split(/\s+/).filter(Boolean).length;
 /** A sentence end followed by more text means the string holds more than one sentence. */
 const holdsTwoSentences = (s: string) => /[.!?]["'”’)]*\s+\S/.test(s.trim());
 
-function checkCaption(where: string, caption: Caption, problems: string[]) {
+function checkCaption(caption: Caption, problems: string[]) {
   if (!Array.isArray(caption.story) || caption.story.length !== 2)
-    problems.push(`${where}: story must be exactly 2 sentences`);
+    problems.push("caption: story must be exactly 2 sentences");
   for (const [i, sentence] of (caption.story ?? []).entries()) {
-    if (!sentence?.trim()) problems.push(`${where}: sentence ${i + 1} is empty`);
+    if (!sentence?.trim()) problems.push(`caption: sentence ${i + 1} is empty`);
     else if (holdsTwoSentences(sentence))
-      problems.push(`${where}: sentence ${i + 1} holds more than one sentence`);
+      problems.push(`caption: sentence ${i + 1} holds more than one sentence`);
     else if (wordCount(sentence) > MAX_SENTENCE_WORDS)
       problems.push(
-        `${where}: sentence ${i + 1} has ${wordCount(sentence)} words (max ${MAX_SENTENCE_WORDS})`,
+        `caption: sentence ${i + 1} has ${wordCount(sentence)} words (max ${MAX_SENTENCE_WORDS})`,
       );
   }
-  if (!caption.technical?.trim()) problems.push(`${where}: missing technical line`);
+  if (!caption.technical?.trim()) problems.push("caption: missing technical line");
 }
 
 function checkLoop(def: ChapterDef, loop: Timeline, problems: string[]) {
@@ -91,19 +90,7 @@ export function validateChapter(
   if (!def.title?.trim()) problems.push("missing title");
   if (!def.why?.trim()) problems.push("missing why-line");
 
-  checkCaption("caption", def.caption.default, problems);
-  const followIds = new Set(def.follow.map((f) => f.id));
-  for (const [id, caption] of Object.entries(def.caption.byFollow)) {
-    if (!followIds.has(id)) problems.push(`caption.byFollow.${id}: no such follow target`);
-    if (caption) checkCaption(`caption.byFollow.${id}`, caption, problems);
-  }
-
-  if (def.follow.length > MAX_FOLLOW)
-    problems.push(`${def.follow.length} follow targets (max ${MAX_FOLLOW})`);
-  if (followIds.size !== def.follow.length) problems.push("duplicate follow ids");
-  for (const f of def.follow)
-    if (!isSceneAnchor(def.scene, f.anchor))
-      problems.push(`follow ${f.id}: unknown anchor ${f.anchor}`);
+  checkCaption(def.caption, problems);
 
   // A tour shows one stop's label at a time; everywhere else every label can show at once.
   if (def.labels.length > MAX_LABELS && !def.tour)

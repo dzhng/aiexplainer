@@ -24,7 +24,7 @@ const assets: SceneDesc["assets"] = {
 // Every frame here builds every station, and one test runs every chapter's model.
 setDefaultTimeout(60_000);
 const run = (await fixtureRun(finished)) as FinishedRun;
-const ui: SceneUi = { follow: null, slider: 1, sliderSet: false, text: null };
+const ui: SceneUi = { slider: 1, sliderSet: false, text: null };
 const tlAt = (t: number) => evalTimeline(finished.loop, t, createTimelineState(finished.loop));
 // Off any keyframe of the stations' own loops, so float rounding of their offset times cannot flip a step.
 const settled = (n: number) => arrivesAt(n) + 0.337;

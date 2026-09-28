@@ -30,7 +30,7 @@ export interface ProbeApi {
   labels?: () => LabelPlacement[];
   /** The app only: go to a chapter by slug, as the ladder does. */
   goto?: (slug: string) => void;
-  /** The app only: set HUD controls (`text`, `follow`, `slider`, `view`, `playing: false`). */
+  /** The app only: set HUD controls (`text`, `slider`, `scenario`, `playing: false`). */
   setUi?: (ui: Record<string, unknown>) => void;
   /** A chapter scene (the app or `/lab/scene/*`): the loop's current time and beat, for filmstrips. */
   beat?: () => { t: number; id: string; note: string } | null;

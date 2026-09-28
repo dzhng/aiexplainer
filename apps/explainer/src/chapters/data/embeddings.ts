@@ -14,40 +14,12 @@ export const embeddings: ChapterDef = {
   model: "embed",
   scene: "embeddings",
   caption: {
-    default: {
-      story: [
-        "Each brick becomes a pin on a map, and the machine learns where to stick it, so words used alike end up close.",
-        "“cat” lands right beside “kitten”, and “sun” beside “moon”: nobody told it that, it learned it from the stories.",
-      ],
-      technical:
-        "Each token id picks one row of an embedding table, a list of numbers called its embedding (a vector). This map shows the pinned words' rows along the 3 directions where they differ most (PCA, computed once offline); the real rows have many more.",
-    },
-    byFollow: {
-      pins: {
-        story: [
-          "A pin marks where one word's list of numbers points; the map is only a shadow of all its directions.",
-          "Words that turn up in the same kinds of sentences get lists that point nearly the same way.",
-        ],
-        technical:
-          "Similarity is the cosine of the angle between two embeddings: 1 for the same direction, 0 for unrelated. The chip shows how often a word's partner beats random words on it.",
-      },
-      arrows: {
-        story: [
-          "Each arrow runs from the centre, where a word made of all zeros would sit, out to its pin.",
-          "Which way an arrow points matters more than how long it is: that is what makes two words alike.",
-        ],
-        technical:
-          "An embedding is a vector; each arrow is that vector's shadow, drawn from the zero vector's shadow. Cosine similarity compares directions and ignores length.",
-      },
-      text: {
-        story: [
-          "Type some words and each one flies to its own pin, the very same pin every time.",
-          "That is also the catch: a pin knows its own word, but nothing about the words around it.",
-        ],
-        technical:
-          "Embedding lookup depends only on the token id, so a token gets the same vector in any sentence. Words are looked up as they sit mid-sentence, with their leading space.",
-      },
-    },
+    story: [
+      "Each brick becomes a pin on a map, and the machine learns where to stick it, so words used alike end up close.",
+      "“cat” lands right beside “kitten”, and “sun” beside “moon”: nobody told it that, it learned it from the stories.",
+    ],
+    technical:
+      "Each token id picks one row of an embedding table, a list of numbers called its embedding (a vector). This map shows the pinned words' rows along the 3 directions where they differ most (PCA, computed once offline); the real rows have many more.",
   },
   stats: [
     {
@@ -71,11 +43,6 @@ export const embeddings: ChapterDef = {
       scale: "this tiny model",
       value: { kind: "probe", probe: "neighbours" },
     },
-  ],
-  follow: [
-    { id: "pins", label: "Pins", anchor: "pins" },
-    { id: "arrows", label: "Arrows", anchor: "arrows" },
-    { id: "text", label: "Your text", anchor: "text" },
   ],
   scenarios: [
     { id: "sun", label: "sun moon", prompt: "sun moon", probe: "neighbours" },

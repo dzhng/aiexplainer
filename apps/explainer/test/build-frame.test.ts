@@ -35,7 +35,7 @@ function frameAt(t: number, ui: Partial<SceneUi> = {}, text: string | null = nul
   return {
     frame,
     tl,
-    ui: { follow: null, slider: 5, sliderSet: false, view: "whole" as const, text, ...ui },
+    ui: { slider: 5, sliderSet: false, text, ...ui },
   };
 }
 

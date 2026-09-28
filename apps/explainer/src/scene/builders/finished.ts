@@ -251,7 +251,6 @@ export function finishedScene(
           tags: { anchors: [], text: [], style: [] },
         };
         const ui: SceneUi = {
-          follow: null,
           slider: station.def.slider?.initial ?? 0,
           sliderSet: false,
           text: null,

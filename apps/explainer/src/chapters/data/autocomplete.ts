@@ -15,40 +15,12 @@ export const autocomplete: ChapterDef = {
   model: "counts",
   scene: "autocomplete",
   caption: {
-    default: {
-      story: [
-        "Your phone's keyboard guesses your next word, and the simplest way to guess is to remember which word usually came next.",
-        "This machine read millions of children's stories and kept a tally for every pair of words that sat side by side.",
-      ],
-      technical:
-        "For each word it knows, this tiny model keeps the 20 words that most often came right after it in TinyStories; each bar is one word's share of those kept counts.",
-    },
-    byFollow: {
-      counts: {
-        story: [
-          "Each word gets its own row of tallies, one mark for every time another word came right after it.",
-          "Nothing here understands the words; it only remembers what came next, and how often.",
-        ],
-        technical:
-          "The table stores count(w, x), how many times word x followed word w, as whole numbers, keeping only the most frequent x for each w.",
-      },
-      next: {
-        story: [
-          "The bars are the tallies for the word on the card, turned into shares that add up to all of it.",
-          "The machine takes the tallest bar, puts that word on the card, and does the same thing again.",
-        ],
-        technical:
-          "Each bar is count(w, x) divided by the sum of the kept counts for w; the loop picks the largest (greedy decoding).",
-      },
-      text: {
-        story: [
-          "The machine only ever looks at the last word, the one on the card, however long your sentence is.",
-          "Give it a word it never saw, like the misspelt “onse”, and there is no row to read, so no bars appear.",
-        ],
-        technical:
-          "The context is exactly one word; a word outside this tiny model's vocabulary has no counts, so it predicts nothing at all.",
-      },
-    },
+    story: [
+      "Your phone's keyboard guesses your next word, and the simplest way to guess is to remember which word usually came next.",
+      "This machine read millions of children's stories and kept a tally for every pair of words that sat side by side.",
+    ],
+    technical:
+      "For each word it knows, this tiny model keeps the 20 words that most often came right after it in TinyStories; each bar is one word's share of those kept counts.",
   },
   stats: [
     {
@@ -72,11 +44,6 @@ export const autocomplete: ChapterDef = {
       scale: "this tiny model",
       value: { kind: "probe", probe: "top-successor" },
     },
-  ],
-  follow: [
-    { id: "counts", label: "Counts", anchor: "board" },
-    { id: "next", label: "Next word", anchor: "bars" },
-    { id: "text", label: "Your text", anchor: "rail" },
   ],
   scenarios: [{ id: "once", label: "Once upon a", prompt: "once upon a", probe: "top-successor" }],
   labels: [

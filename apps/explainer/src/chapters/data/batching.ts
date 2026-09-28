@@ -23,40 +23,12 @@ export const batching: ChapterDef = {
   model: null,
   scene: "batching",
   caption: {
-    default: {
-      story: [
-        "A bus trip costs about the same whether it carries one rider or a hundred, because the trip itself is the expensive part.",
-        "Every new word means hauling all the weights to the GPU's arithmetic, so many conversations share each haul.",
-      ],
-      technical:
-        "Batching decodes one next token for each of many sequences in a single step, reading the weights once for all of them; prefill reads a whole prompt in one step the same way.",
-    },
-    byFollow: {
-      riders: {
-        story: [
-          "Each glowing rider is one conversation waiting for its next word.",
-          "They ride together, so every seat filled adds a word per trip for almost nothing extra.",
-        ],
-        technical:
-          "Each glowing cube is one token being worked on: in decode, one sequence of the batch; in prefill, one token of the prompt. A decode step reads the weights once plus each sequence's own KV cache.",
-      },
-      crates: {
-        story: [
-          "The crates are the model's weights, and every single trip hauls all of them.",
-          "That haul, not the arithmetic, is what makes a lone rider slow.",
-        ],
-        technical:
-          "At small batches a decode step lasts as long as reading every weight from GPU memory; the sums finish long before the bytes arrive (memory-bound).",
-      },
-      stop: {
-        story: [
-          "Once the seats are full, extra riders stop riding for free, and each trip takes longer.",
-          "From here the arithmetic, not the haul, sets the pace, so the total stops rising.",
-        ],
-        technical:
-          "Past the knee a step's FLOPs take longer than its bytes (compute-bound), so tokens per second across the batch stays at the GPU's compute ceiling.",
-      },
-    },
+    story: [
+      "A bus trip costs about the same whether it carries one rider or a hundred, because the trip itself is the expensive part.",
+      "Every new word means hauling all the weights to the GPU's arithmetic, so many conversations share each haul.",
+    ],
+    technical:
+      "Batching decodes one next token for each of many sequences in a single step, reading the weights once for all of them; prefill reads a whole prompt in one step the same way.",
   },
   stats: [
     {
@@ -88,11 +60,6 @@ export const batching: ChapterDef = {
       scale: "Llama-3-8B on H100 SXM",
       value: { kind: "arith", fn: "computeBoundBatch", args: { ...BUS_ARITH } },
     },
-  ],
-  follow: [
-    { id: "riders", label: "Riders", anchor: "riders" },
-    { id: "crates", label: "Cargo", anchor: "crates" },
-    { id: "stop", label: "Full bus", anchor: "stop" },
   ],
   slider: {
     id: "batch",

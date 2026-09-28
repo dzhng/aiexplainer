@@ -12,40 +12,12 @@ export const generation: ChapterDef = {
   model: "full",
   scene: "generation",
   caption: {
-    default: {
-      story: [
-        "To write a story the machine picks one word, adds it to the end of the text, and starts again.",
-        "Every time, it rereads the whole text from the very first word, so each new word costs a little more.",
-      ],
-      technical:
-        "Autoregressive generation: sample the next token from the model's output, append it to the input, and run the full forward pass again over every token.",
-    },
-    byFollow: {
-      machine: {
-        story: [
-          "The machine is the same four blocks as before; it has no memory between words.",
-          "Each word it writes comes from a fresh pass over everything on the rail.",
-        ],
-        technical:
-          "Without a cache every step recomputes keys, values and activations for all earlier positions; the bands are this tiny model's 4 layers running.",
-      },
-      rail: {
-        story: [
-          "The rail holds the text so far: your words, then the machine's, one landing at a time.",
-          "Each new word lands at the end and becomes part of what gets reread next time.",
-        ],
-        technical:
-          "The words are drawn at temperature 0.8 with a fixed seed, the same draw as chapter 8's page.",
-      },
-      counter: {
-        story: [
-          "The counter adds up every word the machine has had to read, and it climbs faster with each step.",
-          "Writing the tenth word means rereading nine; the thousandth means rereading nine hundred and ninety-nine.",
-        ],
-        technical:
-          "The count is the number of tokens fed through the model, summed over steps: the prefix length at each step, so it grows with the square of the length.",
-      },
-    },
+    story: [
+      "To write a story the machine picks one word, adds it to the end of the text, and starts again.",
+      "Every time, it rereads the whole text from the very first word, so each new word costs a little more.",
+    ],
+    technical:
+      "Autoregressive generation: sample the next token from the model's output, append it to the input, and run the full forward pass again over every token.",
   },
   stats: [
     {
@@ -69,11 +41,6 @@ export const generation: ChapterDef = {
       scale: "Llama-3-8B",
       value: { kind: "arith", fn: "maxContext", args: {} },
     },
-  ],
-  follow: [
-    { id: "machine", label: "The machine", anchor: "machine" },
-    { id: "rail", label: "The text", anchor: "rail" },
-    { id: "counter", label: "Work counter", anchor: "counter" },
   ],
   scenarios: [
     {
