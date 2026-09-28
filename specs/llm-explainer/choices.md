@@ -635,3 +635,22 @@ All 7 findings were confirmed and fixed with tests:
   drafter/full weight ratio (`specSpeedup`, Leviathan Theorem 3.8).** Below 1× the old label
   read wrong, so it is now "speed vs no junior, drafting included". Verdict: sound; honest at
   every k (0.912× at k=8).
+
+## Slice 36 and release
+
+- **Labels and scene tags snap to whole pixels.** Why: text drawn at a fractional offset
+  rendered differently run to run (the chapter-3 label). Verdict: sound; card shots are now
+  deterministic.
+- **The controls panel is capped to the space right of the title column (scenario chips shorten
+  with "…"); below 1400 px the ladder anchors left and stops short of the corner.** Views
+  ≥ 1440 px are unchanged. Verdict: sound; crowding at 1200 px remains a follow-up.
+- **Link-preview cards are laid out at 1440×756 and scaled to 1200×630 (text ×0.83).** Verdict:
+  sound; uncrowded scenes beat larger text on a card.
+- **Chapter 3 writes punctuation by name ("period", "comma").** Verdict: acceptable; on one
+  frame "comma" hides behind "period".
+- **`drafter-96` is removed (1.0 MB); its measured α stays documented in slices 17 and 33.**
+  Verdict: sound.
+- **Two videos needed more compression to fit 3 MB (stack CRF 24, finished CRF 27).**
+  Verdict: acceptable.
+- **Production release: `main` was fast-forwarded to `llm-explainer` (aabfdb0), as the human
+  authorized.** Verdict: sound.

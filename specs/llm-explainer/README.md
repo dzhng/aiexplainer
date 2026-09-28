@@ -15,21 +15,18 @@ and supersedes the map's open-items list, kickoff prompt and tweakable plan.
 
 ## Next Agent Prompt
 
-**Status (2026-09-27):** M1–M4 are done: all 16 chapters are merged into `llm-explainer`
-and pushed (github.com/dzhng/aiexplainer; every push builds a protected Vercel preview). The D21
-skim is 7 min 9 s.
+**Status (2026-09-28):** every slice is done, and the app is live in production at
+https://aiexplainer-red.vercel.app (`main` fast-forwarded to `llm-explainer` at aabfdb0).
+Verified on the live site: chapters 0, 4 and 15 on hardware WebGPU, the phone fallback,
+`/c/N/` link-preview cards, and no `/lab` in production.
 
-**Next pickup, in order:**
+**Next pickup:** consolidate `choices.md` into the final ledger, then close the spec with
+close-spec.
 
-1. ~~The polish pass~~ (done).
-2. ~~The whole-spec review~~ (done: 12 commits, pixel-identical).
-3. Re-record all media (`bun run --cwd apps/explainer media`).
-4. Slice 36 (release candidate), then merge `llm-explainer` into `main` (production). The human authorized this (2026-09-27).
-5. Consolidate `choices.md`, then close-spec.
+**Follow-ups (not blocking):**
 
-**Polish pass: done** (see choices.md). Left for the release check: chapter 10's scene
-note sits under the controls panel, a lavender input bar floats beside chapter 8's HUD, and
-chapter 3's punctuation words are tiny.
+- the app's panels crowd scenes at 1200 px wide;
+- card nits listed in slice 36.
 
 You are implementing this spec with [implement-spec](../../.agents/skills/implement-spec/SKILL.md).
 Work the slices in the order of the ladder below. Each slice file is a contract:
@@ -67,7 +64,7 @@ the checklist below, and any new blockers.
 - [x] M2 — Vocabulary lock: ✅[13](slices/13-vocabulary-lock.md)
 - [x] M3 — Model lab: ✅[14](slices/14-tokenizer.md) · ✅[15](slices/15-transformer-core.md) · ✅[16](slices/16-model-lab-early.md) · ✅[17](slices/17-model-lab-late.md) · ✅[18](slices/18-production-arithmetic.md)
 - [x] M4 — Chapters: ✅[19](slices/19-ch-tokenizer.md) · ✅[20](slices/20-ch-embeddings.md) · ✅[21](slices/21-ch-sampling.md) · ✅[22](slices/22-ch-attention-width.md) · ✅[23](slices/23-ch-attention-sealed.md) · ✅[24](slices/24-ch-attention-flow.md) · ✅[25](slices/25-ch-positions.md) · ✅[26](slices/26-ch-mlp.md) · ✅[27](slices/27-ch-residual.md) · ✅[28](slices/28-ch-stack.md) · ✅[29](slices/29-ch-generation.md) · ✅[30](slices/30-ch-kv-cache.md) · ✅[31](slices/31-ch-batching.md) · ✅[32](slices/32-ch-quantization.md) · ✅[33](slices/33-ch-speculative.md) · ✅[34](slices/34-ch-experts.md) · ✅[35](slices/35-ch-finished.md)
-- [ ] M5 — Release candidate: [36](slices/36-release.md)
+- [x] M5 — Release candidate: ✅[36](slices/36-release.md)
 
 ## Goal and non-goals
 
