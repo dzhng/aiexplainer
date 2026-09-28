@@ -18,7 +18,7 @@ export const autocomplete: ChapterDef = {
   caption: {
     story: [
       "Like your phone's keyboard, the simplest first try just remembers which word usually came next, tallied from millions of children's stories.",
-      "It stalls on any word it never saw, like “onse”, and the deep dive starts in chapter 1 by fixing that.",
+      "It stalls on any word it never saw, like the misspelt “onse”, and the deep dive starts in chapter 1 by fixing that.",
     ],
     technical:
       "For each word it knows, this tiny model keeps the 20 words that most often came right after it in TinyStories; each bar is one word's share of those kept counts. It reads only the last word, so a word outside its vocabulary has no counts and no prediction.",

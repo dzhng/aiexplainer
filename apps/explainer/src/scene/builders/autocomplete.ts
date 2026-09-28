@@ -123,9 +123,18 @@ function layoutOf(asset: MeshAsset): Layout {
   };
 }
 
-function placeCard(transform: Mat4, x: number, y: number, z: number, width = CARD.width) {
-  transform[0] = width;
-  transform[5] = width > 1e-3 ? CARD.height : 1e-4;
+/** A card at `scale` of its full size (a dim card unfolds from nothing); 0 hides it. */
+function placeCard(
+  transform: Mat4,
+  x: number,
+  y: number,
+  z: number,
+  width = CARD.width,
+  scale = 1,
+) {
+  const s = Math.max(scale, 1e-4);
+  transform[0] = width * s;
+  transform[5] = CARD.height * s;
   transform[10] = CARD.depth;
   transform[12] = x;
   transform[13] = y;
@@ -269,7 +278,7 @@ export const autocomplete: SceneBuilder = {
         ...Array.from({ length: EARLIER }, (_, i) => ({
           id: `earlier.${i}`,
           part: `earlier.${i}`,
-          local: [0, 0.18, 0.5] as [number, number, number],
+          local: [0, 0.28, 0.5] as [number, number, number],
           priority: 0,
         })),
       ],
@@ -329,7 +338,8 @@ export const autocomplete: SceneBuilder = {
         dim?.x ?? card.x,
         card.y,
         card.z,
-        dim ? dim.width * unfold : 0,
+        dim?.width,
+        dim ? unfold : 0,
       );
       frame.tags.text[SLOTS + 3 + i] = dim && unfold > 0.6 ? dim.word : "";
     }
