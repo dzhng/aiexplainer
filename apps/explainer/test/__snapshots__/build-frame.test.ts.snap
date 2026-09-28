@@ -8,6 +8,16 @@ exports[`the scene is the board, ten bars and a card, in stable slots 1`] = `
     12,
   ],
   [
+    "shadow.0",
+    "shadow",
+    12,
+  ],
+  [
+    "shadow.1",
+    "shadow",
+    12,
+  ],
+  [
     "board.housing",
     "mesh",
     0,

@@ -57,3 +57,10 @@ The analogy not landing for the human. Rework the copy and the beats; the model 
 - **Kit: `triageBays`** (`packages/renderer/src/kit/triage-bays.ts`), with `bayCenter`, `deskCenter` and `TRIAGE_SLOTS`.
 - **Shots** (`throwaway/shots/34/`): `bays-turn-t{0,1,3}`, `app-t1`, `app-t6.5`, `app-t18`, `loop-strip`, `sweep-sheet`, `exploded`. The registry holds at 11 buffers / 77.7 MB across 10 round trips 14 → 13 → 14.
 - **screenshot-critique** (two unprimed passes): lamps now light for most of each word's 2.1 s (the copies leave the desk after 0.3 s), bays carry their numbers 1–8, the histogram has an even-share line (1 in 8) so "every bay gets its share" is readable against it, the waiting words leave once the histogram rises, and the Llama chip reads "per word, as 8 experts (hypothetical)". Left as is: the queue reads right to left (the next word stands nearest the desk).
+
+## Polish pass (2026-09-27)
+
+- **The queue reads left to right.** Waiting words now line up from just right of the desk
+  rightward, along the front of the bays, so the queue reads in story order ("time , there")
+  and each word steps left to the desk. The "Words waiting" label moves to the desk's front
+  right corner, where the queue starts, and the desk's own label stays visible.

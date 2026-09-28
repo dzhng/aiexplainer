@@ -721,6 +721,7 @@ function attentionScene(o: { dials: boolean }): SceneBuilder {
           steps,
           positions?.radPerToken ?? 0,
           channel("dial"),
+          blocks,
           swap,
           from,
           channel("pair", 0) > 0.5,
@@ -784,7 +785,9 @@ function attentionScene(o: { dials: boolean }): SceneBuilder {
  * Stands a clock dial on each word up to the focus, its hand turned clockwise from twelve by
  * the word's position × `radPerToken` (× `dial` as the hands come round). A word moving in a
  * reorder carries its dial, and its hand turns from its old position's angle to its new one.
- * With `pair`, the two words a reorder swaps glow and their angle apart is written over them.
+ * Dials shrink with their blocks (`blocks`, as the words sink at the seam), so the hands leave
+ * with the words instead of unwinding. With `pair`, the two words a reorder swaps glow and
+ * their angle apart is written over them.
  */
 function poseDials(
   b: Built,
@@ -793,6 +796,7 @@ function poseDials(
   steps: AttentionStep[],
   radPerToken: number,
   dial: number,
+  blocks: number,
   swap: number,
   from: number[] | null,
   pair: boolean,
@@ -802,20 +806,22 @@ function poseDials(
   for (let i = 0; i < MAX_TOKENS; i++) {
     const d = b.dials![i]!;
     const block = i < step.focus ? b.words[i]! : i === step.focus ? b.focusWord : null;
-    const shown = block !== null && dial > 0 && block.transform[13]! > -1;
+    // A dial shrunk to a dot goes (its label with it) before it pokes through the sinking word.
+    const shown = block !== null && dial > 0 && blocks > 0.4 && block.transform[13]! > -1;
     if (!shown) {
       for (const part of [d.face, d.tick, d.hand]) place(part.transform, PARKED, SLIVER);
       continue;
     }
     const t = block.transform;
+    const size = Math.min(1, Math.max(0.01, blocks));
+    const r = DIAL.radius * size;
     const centre: Vec3 = [
       t[12]!,
-      t[13]! + BLOCK.height / 2 + DIAL.radius * 1.12,
+      t[13]! + BLOCK.height / 2 + r * 1.12,
       t[14]! + BLOCK.depth / 2 - 0.03,
     ];
-    // The face was built at the origin; stand it here at full size.
-    place(d.face.transform, centre, [1, 1, 1]);
-    const r = DIAL.radius;
+    // The face was built at the origin at full size; stand it here at the blocks' size.
+    place(d.face.transform, centre, [size, size, size]);
     place(
       d.tick.transform,
       [centre[0], centre[1] + r * 0.9, centre[2] + r * 0.02],

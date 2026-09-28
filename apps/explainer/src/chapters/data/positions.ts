@@ -123,13 +123,16 @@ export const positions: ChapterDef = {
         { t: 22.6, v: 1 },
         { t: 23.7, v: 0, ease: "inOut" },
       ],
-      /** Clock hands come round from twelve to their positions' angles. */
+      /**
+       * Clock hands come round from twelve to their positions' angles. At the seam they ride
+       * their blocks down into the stand, and only reset once out of sight (no unwinding).
+       */
       dial: [
         { t: 0, v: 0 },
         { t: 1.6, v: 0 },
         { t: 3.4, v: 1, ease: "inOut" },
-        { t: 22.4, v: 1 },
-        { t: 23.2, v: 0, ease: "inOut" },
+        { t: 23.7, v: 1 },
+        { t: 23.75, v: 0, ease: "step" },
       ],
       pipes: [
         { t: 0, v: 0 },

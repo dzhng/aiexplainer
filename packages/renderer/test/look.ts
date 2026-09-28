@@ -17,7 +17,7 @@ export function testLook(): LookConfig {
       rim: light,
       fill: light,
       size: 0.05,
-      pool: { center: [0, 0, 0], radius: 4, falloff: 4, spill: 0.2 },
+      pool: { center: [0, 0, 0], radius: 4, falloff: 4, spill: 0.2, stretch: 1 },
     },
     ambient: [0.02, 0.02, 0.03],
     materials: {

@@ -123,7 +123,7 @@ export interface LookTokens {
     fill: LightToken;
     size: number;
     /** Direct light falls off outside this pool (metres, horizontal) so the room stays dim. */
-    pool: { center: number[]; radius: number; falloff: number; spill: number };
+    pool: { center: number[]; radius: number; falloff: number; spill: number; stretch: number };
   };
   ambient: { color: ColourValue; intensity: number };
   tonemap: { exposure: number; saturation: number };
@@ -313,6 +313,7 @@ export function lookConfig(extraMaterials: Record<string, MaterialToken> = {}): 
         radius: positive("lights.pool.radius", lights.pool.radius),
         falloff: positive("lights.pool.falloff", lights.pool.falloff),
         spill: unit("lights.pool.spill", lights.pool.spill),
+        stretch: positive("lights.pool.stretch", lights.pool.stretch),
       },
     },
     ambient: colour(ambient.color).map((c) => c * ambient.intensity) as LinearRgb,

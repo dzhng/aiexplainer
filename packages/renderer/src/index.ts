@@ -33,7 +33,7 @@ export type { KitBuild, KitCommon, KitPrimitive } from "./kit/primitive.ts";
 export { BAR_MIN_HEIGHT, placeBar, type BarSlot, type BarsParams } from "./kit/bars.ts";
 export type { BlockParams } from "./kit/block.ts";
 export { BRICK, placeBrick, type BrickParams, type BrickPlacement } from "./kit/brick.ts";
-export type { ContactShadowParams } from "./kit/contact-shadow.ts";
+export { blockFootprint, type ContactShadowParams } from "./kit/contact-shadow.ts";
 export { faceAt, placeDie, type DieParams, type DiePose } from "./kit/die.ts";
 export { PIN, PIN_PARTS, placePin, type PinFieldParams } from "./kit/pins.ts";
 export type { MeshParams } from "./kit/mesh.ts";

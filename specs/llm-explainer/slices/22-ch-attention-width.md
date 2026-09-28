@@ -74,3 +74,12 @@ The analogy not landing for the human. Rework the copy and the beats; the model 
   - a CPU mirror of the vertex stage over `compileScene`'s packed vertices shows the drawn
     radii in weight order, proportional to the weights;
   - every scenario is one of the `attn` model's measured prompts.
+
+## Polish pass (2026-09-27)
+
+- **Front-row pipes cross back-row words: accepted.** At the hero camera, which looks down on
+  the stepped stand from the front, anything rising from a front-row word toward the mix
+  above projects over the rows behind it. Every layout that keeps the mix above the words
+  (higher, further back, steeper steps) only moves the crossing. The crossing pipes are the
+  hairline, translucent low-weight ones; the wide pipes come from the back rows, and the
+  words stay legible through them.

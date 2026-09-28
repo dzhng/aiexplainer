@@ -1,6 +1,8 @@
 import { expect, test } from "bun:test";
 import path from "node:path";
 import { mat4, vec3, type Vec3 } from "math";
+import type { Box3 } from "math/shapes";
+import type { ShadowPart } from "../src/frame-input.ts";
 import { partWorld } from "../src/camera.ts";
 import { parseGlb } from "../src/gltf.ts";
 import { blockGeometry } from "../src/kit/block.ts";
@@ -335,6 +337,35 @@ test("contact shadow sits just above the floor under the subject's footprint, wi
   expect([x0, z0, x1, z1].map((v) => Math.round(v * 100) / 100)).toEqual([-1.3, -0.7, 1.3, 0.6]);
   expect(y0).toBeGreaterThan(0);
   expect(y0).toBeLessThan(0.01);
+});
+
+test("contact shadow on feet: a tight footprint per foot over a faint one under the body", () => {
+  const feet: Box3[] = [
+    [-1, 0, -0.4, -0.9, 0.7, -0.3],
+    [0.9, 0, 0.2, 1, 0.7, 0.3],
+  ];
+  const built = KIT.contactShadow.build({
+    id: "s",
+    slot: 0,
+    bounds: [-1, 0, -0.4, 1, 2, 0.3],
+    softness: 0.3,
+    feet,
+    footSoftness: 0.1,
+  });
+  expect(built.parts.map((part) => [part.id, (part as ShadowPart).material])).toEqual([
+    ["s", "shadowAmbient"],
+    ["s.0", "shadow"],
+    ["s.1", "shadow"],
+  ]);
+  feet.forEach((foot, i) => {
+    const t = built.parts[i + 1]!.transform;
+    // Centred on the foot, its soft edge reaching `footSoftness` past it.
+    expect(t[12]).toBeCloseTo((foot[0] + foot[3]) / 2, 6);
+    expect(t[14]).toBeCloseTo((foot[2] + foot[5]) / 2, 6);
+    expect(t[0]).toBeCloseTo(foot[3] - foot[0] + 0.2, 6);
+    // Above the body's footprint, so it draws over it rather than fighting it.
+    expect(t[13]).toBeGreaterThan(built.parts[0]!.transform[13]!);
+  });
 });
 
 test("pins: each arrow runs from the origin exactly to its head, at its own thin radius", () => {

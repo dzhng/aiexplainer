@@ -27,12 +27,20 @@ export function tableParts(t: TableSpec): Part[] {
     })),
   );
   return [
-    // A soft contact shadow grounds the legs.
+    // A contact shadow under each leg, over a faint one under the top.
     ...KIT.contactShadow.build({
       id: "shadow",
       slot: 0,
       bounds: [tx - sx / 2, 0, tz - sz / 2, tx + sx / 2, ty, tz + sz / 2],
       softness: 0.3,
+      feet: legs.map(({ center: [x, , z], size: [w, h, d] }) => [
+        x - w / 2,
+        0,
+        z - d / 2,
+        x + w / 2,
+        h,
+        z + d / 2,
+      ]),
     }).parts,
     ...KIT.block.build({ id: "table", slot: 0, material: "steel", center: t.center, size: t.size })
       .parts,

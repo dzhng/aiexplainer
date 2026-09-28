@@ -90,3 +90,10 @@ The analogy not landing for the human. Rework the copy and the beats; the model 
       side azimuths.
     - The machine is a plain box with four bands.
     - Long words ("named") overhang their tile.
+
+## Polish pass (2026-09-27)
+
+- **Long words overhanging their tiles (chapters 9–10).** The rail tiles widen 0.30 → 0.34 m
+  (the pitch stays 0.36, so they never touch): "little" now fits. At the far end of the rail,
+  a 5–6 letter word ("named") can still reach its tile's edges. Accepted: the tiles sit at
+  fixed pitch, and a smaller font for tiles alone would change the shared on-part text style.

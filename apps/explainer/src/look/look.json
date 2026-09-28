@@ -103,6 +103,12 @@
         "opacity": 0.5,
         "pulses": true
       },
+      "current": {
+        "color": "active",
+        "emissive": "active",
+        "opacity": 0.5,
+        "pulses": true
+      },
       "focusWord": {
         "color": "focus",
         "emissive": "focus",
@@ -305,11 +311,42 @@
         "roughness": 0.7,
         "opacity": 1
       },
+      "binder": {
+        "color": "#232a3a",
+        "metallic": 0,
+        "roughness": 0.55,
+        "opacity": 1
+      },
+      "binderAlt": {
+        "color": "#36282b",
+        "metallic": 0,
+        "roughness": 0.55,
+        "opacity": 1
+      },
+      "paper": {
+        "color": "#5e5f60",
+        "metallic": 0,
+        "roughness": 0.8,
+        "opacity": 1
+      },
+      "bin": {
+        "color": "#262c3a",
+        "metallic": 0,
+        "roughness": 0.6,
+        "opacity": 1
+      },
       "shadow": {
         "color": "#000000",
         "metallic": 0,
         "roughness": 1,
         "opacity": 0.7,
+        "specular": 0
+      },
+      "shadowAmbient": {
+        "color": "#000000",
+        "metallic": 0,
+        "roughness": 1,
+        "opacity": 0.35,
         "specular": 0
       }
     }
@@ -329,7 +366,7 @@
     "durationSec": 0.6,
     "cutaway": {
       "cap": "focus",
-      "capGain": 1.2,
+      "capGain": 0.4,
       "planes": {
         "default": {
           "normal": [0, 0, 1],
@@ -409,9 +446,10 @@
     "size": 0.06,
     "pool": {
       "center": [0, 0, 0],
-      "radius": 2.4,
-      "falloff": 2.2,
-      "spill": 0.18
+      "radius": 0.8,
+      "falloff": 3.4,
+      "spill": 0.18,
+      "stretch": 1.6
     }
   },
   "ambient": {

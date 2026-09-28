@@ -90,3 +90,14 @@ The analogy not landing for the human. Rework the copy and the beats; the model 
     - Pipes of block 2 show through block 1.
     - Labels at back azimuths point at the backs of readers.
     - Word tags can crowd when the rail is seen end-on.
+
+## Polish pass (2026-09-27)
+
+- **Title:** "Several readers and an assembly line" wrapped to three lines. It is now "Many
+  readers, one assembly line", two lines, and keeps both analogies of the ladder.
+- **Bloom runs hot: measured and accepted.** Across the loop, the share of near-white
+  pixels (luminance > 235) in chapter 8 is 0.52–0.58%, against 1.07% (chapter 0) and 1.04%
+  (chapter 5). The bright share (> 200) peaks at 4.3% at the pass beat, against 3.8% for
+  chapters 4–5. Dimming the back blocks' pipes (0.35 → 0.22) and the belts' boost moved this
+  by 0.1 point, so it was reverted. The chapter is dense, not hotter: many pipes, the same
+  bloom. Shots: `throwaway/shots/polish-bloom/`.

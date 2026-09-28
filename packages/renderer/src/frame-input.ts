@@ -226,9 +226,10 @@ export interface LookConfig {
     /**
      * The direct lights fall off outside a pool around the subject (horizontal distance from
      * `center`) to `spill` of their strength, so the room around it stays dim and the subject
-     * reads first.
+     * reads first. `stretch` elongates it along x (the ceiling tubes' axis): distance along x
+     * counts `1 / stretch` as much.
      */
-    pool: { center: Vec3; radius: number; falloff: number; spill: number };
+    pool: { center: Vec3; radius: number; falloff: number; spill: number; stretch: number };
   };
   ambient: LinearRgb;
   /** Presets bound by name: kit parts name one, prop nodes by their name's segments. */

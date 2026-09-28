@@ -42,7 +42,8 @@ struct Shading {
 fn shadeSurface(surface: Surface, n: vec3f, v: vec3f, worldPos: vec3f) -> Shading {
   let look = frameLayout.$.look;
   let occlusion = mix(1.0, surface.ao, look.aoStrength);
-  let reach = length(worldPos.xz - look.poolCenter.xz);
+  let offset = worldPos.xz - look.poolCenter.xz;
+  let reach = length(vec2f(offset.x / look.poolStretch, offset.y));
   let pool = mix(1.0, look.poolSpill, smoothstep(look.poolRadius, look.poolRadius + look.poolFalloff, reach));
   let alpha = max(surface.roughness * surface.roughness, look.lightSize);
   let alpha2 = alpha * alpha;

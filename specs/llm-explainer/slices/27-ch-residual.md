@@ -87,3 +87,16 @@ The analogy not landing for the human. Rework the copy and the beats; the model 
     - The best-guess card is one-sided, so it is blank from behind.
     - The kit turntables are dark on navy.
     - Stations are plain boxes, so the finish is a step down from chapter 6.
+
+## Polish pass (2026-09-27)
+
+- **The river reads as a stream, not a glass duct.** Light currents run down each stretch
+  that holds water: three lanes per stretch from the kit's `flows`, built in the stretch's
+  unit space and given its transform each frame, so they scale with the water. Their glow
+  follows the water (0 when a stretch is empty), and their pulses run on the loop clock. Paths
+  are in metres along x, so a lane keeps one pulse spacing in every stretch; each lane has its
+  own lag and pace (the top faster), after the critique saw the first cut's dashes line up
+  into a grid (new `current` preset, active blue).
+- Critique leftovers, accepted: the stretches still step in height at each station (that is
+  the data: the stream grows at each one), and the "this text" note sits over the river's end.
+  `SCENE_KIT.residual` gains `flows`. Shots: `throwaway/shots/polish-crops/07-river-*.png`.

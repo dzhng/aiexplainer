@@ -43,8 +43,12 @@ const BAYS: TriageBaysParams = {
   explode: [0, 0, -0.5],
 };
 const TILE: Vec3 = [0.36, 0.2, 0.06];
-/** Where queued words wait: a line in front of the desk, one pitch apart. */
-const QUEUE_AT = { dx: -0.2, dz: 0.55, pitch: 0.42 };
+/**
+ * Where queued words wait: a line in front of the desk running right along the bays, one
+ * pitch apart, the next word at its left end by the desk. So the queue reads left to right
+ * in story order, and each word steps left to the desk.
+ */
+const QUEUE_AT = { dx: 0.55, dz: 0.55, pitch: 0.42 };
 /** A usage bar's height per unit share (1.0 = every slot), metres. */
 const USAGE_HEIGHT = 3;
 const LAMP_ON = 2.4;
@@ -162,8 +166,8 @@ export const experts: SceneBuilder = {
     const anchors: SceneAnchor[] = [
       { id: "desk", part: "triage.desk", local: [0.5, 0.2, 0.5], priority: 3 },
       { id: "bays", part: "triage.bay.7", local: [0.5, 0.45, 0.5], priority: 2 },
-      // Beside the queue, on the desk's left face (the queue's own tiles move).
-      { id: "tokens", part: "triage.desk", local: [-0.5, 0.45, 0.5], priority: 2 },
+      // Where the queue starts, low on the desk's front right corner (the tiles themselves move).
+      { id: "tokens", part: "triage.desk", local: [0.5, -0.4, 0.5], priority: 2 },
       { id: "usage", part: "usage.0", local: [-0.5, 0, 0.5], priority: 1 },
     ];
     const scene: SceneDesc = { revision, parts, anchors, assets };
@@ -217,7 +221,7 @@ export const experts: SceneBuilder = {
     const usage = held ? 1 : (c.usage ?? 0);
     const n = Math.max(0, Math.min(at, run.tokens.length - 1));
 
-    // The queue: word n on the desk, the ones after it waiting to its left, the rest gone.
+    // The queue: word n on the desk, the ones after it waiting in front, the rest gone.
     for (let i = 0; i < QUEUE; i++) {
       const t = queue[i]!.transform;
       const word = run.tokens[i];
@@ -226,9 +230,9 @@ export const experts: SceneBuilder = {
         put(t, [0, HIDDEN_Y, 0]);
         continue;
       }
-      // Waiting words stand in a line in front of the desk, the next one nearest.
+      // Waiting words stand in a line from the desk rightward, the next one nearest.
       const waiting: Vec3 = [
-        desk[0] + QUEUE_AT.dx - (i - n - 1) * QUEUE_AT.pitch,
+        desk[0] + QUEUE_AT.dx + (i - n - 1) * QUEUE_AT.pitch,
         TILE[1] / 2 + 0.3,
         desk[2] + QUEUE_AT.dz,
       ];

@@ -78,7 +78,15 @@ export const sampling: ChapterDef = {
     { id: "die", label: "Die", anchor: "die" },
     { id: "word", label: "Your text", anchor: "word" },
   ],
-  slider: { id: "temperature", label: "Temperature", min: 0, max: 2, step: 0.1, initial: 1 },
+  slider: {
+    id: "temperature",
+    label: "Temperature",
+    min: 0,
+    max: 2,
+    step: 0.1,
+    initial: 1,
+    loop: "temperature",
+  },
   scenarios: [
     {
       id: "lots",

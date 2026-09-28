@@ -24,6 +24,7 @@ import {
   initialState,
   reduce,
   shownSlider,
+  snapSlider,
   type Action,
   type AppState,
 } from "../state/app-state.ts";
@@ -124,7 +125,8 @@ export function App({ hud, hudMotion, clock, probe, debug, onReady, arrival }: A
   const stage = useRef<Stage | null>(null);
   const sceneRef = useRef<ChapterScene | null>(null);
   // A loop that plays the slider (`SliderDef.loop`) shows its value in the HUD, sampled at
-  // 10 Hz: the chips follow the loop without a React render per frame.
+  // 10 Hz and snapped to the slider's steps: the chips follow the loop without a React render
+  // per frame.
   const [loopSlider, setLoopSlider] = useState<number | null>(null);
   const playsSlider = def.slider.loop !== undefined && !state.sliderSet;
   useEffect(() => {
@@ -133,7 +135,7 @@ export function App({ hud, hudMotion, clock, probe, debug, onReady, arrival }: A
     if (!playsSlider || channel === undefined) return;
     const sample = () => {
       const value = sceneRef.current?.channel(channel) ?? null;
-      setLoopSlider(value === null ? null : Math.round(value));
+      setLoopSlider(value === null ? null : snapSlider(def, value));
     };
     sample();
     const timer = setInterval(sample, 100);

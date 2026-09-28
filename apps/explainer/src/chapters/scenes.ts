@@ -65,7 +65,7 @@ const PART_KIT = {
   attention: ["block", "pipes", "sealed", "flows", "tube"],
   positions: ["block", "pipes", "sealed", "flows", "tube", "dial"],
   mlp: ["questionPanel", "tube", "block", "bars", "contactShadow"],
-  residual: ["block", "tube", "river", "volumeKnob", "contactShadow"],
+  residual: ["block", "tube", "river", "flows", "volumeKnob", "contactShadow"],
   stack: ["block", "tube", "pipes", "contactShadow"],
   generation: ["block", "tube", "bars", "contactShadow"],
   "kv-cache": ["block", "tube", "noteRack", "contactShadow"],

@@ -70,3 +70,16 @@ The analogy not landing for the human. Rework the copy and the beats; the model 
   fixed labels occluded by the heads' own capsules, a reverse-flying brick, weak pair glow,
   notes clipped under the title panel, arrow clutter in the failure beat. Still busy: the
   noun cluster's words overlap at the hero angle (inherent to 60 real positions).
+
+## Polish pass (2026-09-27)
+
+- **The noun cluster over its tags.** The words were hard to read where they sat over pin
+  heads and bright arrows. The cause was a bug, not the layout: the tag layer cleared its
+  inline `textShadow`/`color` with `""` on every text change, which also dropped the values
+  React set from `styles.tag`, so no scene word in any chapter ever had its dark halo. The
+  reset now restores the tag's own style, and the halo gets a tight 2–3 px rim under the
+  soft drop. Word positions are untouched: they are the model's. The size stays what tags have
+  always rendered at (1rem, now explicit). Shots: `throwaway/shots/polish-crops/02-cluster-*.png`.
+  Critique leftovers, accepted: a few words still sit over a pin cap ("king", "sun"), and the
+  emotion words crowd near the hub. The positions are the model's, and the tag layer already
+  hides any word that would overlap another.

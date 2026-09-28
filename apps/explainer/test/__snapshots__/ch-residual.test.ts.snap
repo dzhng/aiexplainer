@@ -5,7 +5,7 @@ exports[`the scene is built from its declared primitives, in stable slots 1`] = 
   [
     "shadow",
     "shadow",
-    24,
+    39,
   ],
   [
     "station.0",
@@ -118,6 +118,81 @@ exports[`the scene is built from its declared primitives, in stable slots 1`] = 
     14,
   ],
   [
+    "current.0",
+    "tube",
+    23,
+  ],
+  [
+    "current.1",
+    "tube",
+    24,
+  ],
+  [
+    "current.2",
+    "tube",
+    25,
+  ],
+  [
+    "current.3",
+    "tube",
+    26,
+  ],
+  [
+    "current.4",
+    "tube",
+    27,
+  ],
+  [
+    "current.5",
+    "tube",
+    28,
+  ],
+  [
+    "current.6",
+    "tube",
+    29,
+  ],
+  [
+    "current.7",
+    "tube",
+    30,
+  ],
+  [
+    "current.8",
+    "tube",
+    31,
+  ],
+  [
+    "current.9",
+    "tube",
+    32,
+  ],
+  [
+    "current.10",
+    "tube",
+    33,
+  ],
+  [
+    "current.11",
+    "tube",
+    34,
+  ],
+  [
+    "current.12",
+    "tube",
+    35,
+  ],
+  [
+    "current.13",
+    "tube",
+    36,
+  ],
+  [
+    "current.14",
+    "tube",
+    37,
+  ],
+  [
     "knob.0.dial",
     "tube",
     15,
@@ -160,7 +235,7 @@ exports[`the scene is built from its declared primitives, in stable slots 1`] = 
   [
     "readout",
     "block",
-    23,
+    38,
   ],
 ]
 `;
