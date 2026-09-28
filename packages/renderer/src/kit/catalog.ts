@@ -1,5 +1,5 @@
 /**
- * The kit catalogue: the only primitives a chapter's scene may build from (slice 13). The
+ * The kit catalogue: the only primitives a chapter's scene may build from. The
  * validator rejects a scene that declares anything else; adding one is a kit sub-step in the
  * chapter slice that needs it.
  */

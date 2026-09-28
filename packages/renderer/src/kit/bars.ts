@@ -25,7 +25,7 @@ export interface BarsParams extends KitCommon {
 }
 
 /** A bar with no value keeps a sliver of height (a zero scale has no normal matrix). */
-export const BAR_MIN_HEIGHT = 0.004;
+const BAR_MIN_HEIGHT = 0.004;
 
 /** Places bar `transform` in `slot` at `height` (allocation-free; for per-frame updates). */
 export function placeBar(transform: number[], slot: BarSlot, height: number): void {

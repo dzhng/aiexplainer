@@ -105,7 +105,7 @@ const SLOT = {
 } as const;
 
 /** The routing the scene shows for word `n`: its two bays and their weights, as shares. */
-export function routing(run: ExpertsRun, n: number) {
+function routing(run: ExpertsRun, n: number) {
   const token = run.tokens[Math.max(0, Math.min(n, run.tokens.length - 1))]!;
   return { text: token.text, bays: token.experts, weights: token.weights };
 }

@@ -3,7 +3,7 @@ import { readdir } from "node:fs/promises";
 import { ModelId, ModelManifest } from "../src/index.ts";
 
 const modelsDir = new URL("../../../apps/explainer/public/models/", import.meta.url);
-/** Slice 17: every model file of the ladder together, decimal megabytes. */
+/** Every model file of the ladder together, decimal megabytes. */
 const LADDER_BYTE_BUDGET = 25e6;
 
 async function shippedManifests(): Promise<{ dir: string; manifest: ModelManifest }[]> {

@@ -1,5 +1,5 @@
 /**
- * Chapter 5 (slice 25): the clock hands turn by the real RoPE angle, the two orders' pipes and
+ * Chapter 5: the clock hands turn by the real RoPE angle, the two orders' pipes and
  * guesses differ, and the difference shown is the `rope` model's own order probe.
  */
 import { describe, expect, test } from "bun:test";
@@ -30,7 +30,7 @@ const run = (await computeRun(positions, null, ctx)) as AttentionRun;
 /** A hand's angle clockwise from twelve, read back from its transform (its length axis). */
 const handAngle = (hand: BlockPart) => Math.atan2(hand.transform[4]!, hand.transform[5]!);
 
-describe("chapter 5: clock hands turned by position (slice 25)", () => {
+describe("chapter 5: clock hands turned by position", () => {
   test("the loop's orders and every scenario are the rope model's measured order pairs", async () => {
     const measured = await Bun.file(path.join(models, "rope/scenarios.json")).json();
     for (const s of positions.scenarios) expect(measured.order).toContain(s.prompt);

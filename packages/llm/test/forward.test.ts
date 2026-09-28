@@ -230,7 +230,7 @@ describe("forward properties", () => {
     }
     // With RoPE the same shuffle does change the prediction.
     const rope = await fixture("rope");
-    const shuffled = [...tokens.slice(0, -1)].reverse().concat(tokens.at(-1)!);
+    const shuffled = tokens.slice(0, -1).reverse().concat(tokens.at(-1)!);
     expect(
       maxAbsDiff(forward(rope.model, shuffled).logits, forward(rope.model, tokens).logits),
     ).toBeGreaterThan(1e-3);

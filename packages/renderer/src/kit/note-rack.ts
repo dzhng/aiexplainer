@@ -32,7 +32,7 @@ export function rackSize(p: NoteRackParams): { width: number; height: number } {
 }
 
 /** The centre of note `n` in (layer, column): shelves bottom to top, columns left to right. */
-export function noteCenter(p: NoteRackParams, layer: number, column: number, n: number): Vec3 {
+function noteCenter(p: NoteRackParams, layer: number, column: number, n: number): Vec3 {
   const [pw, ph] = p.pitch;
   const noteW = pw / p.notes;
   return [
@@ -43,7 +43,7 @@ export function noteCenter(p: NoteRackParams, layer: number, column: number, n: 
 }
 
 /** A note's slot in the dynamics: one per cell. */
-export function noteSlot(p: NoteRackParams, layer: number, column: number): number {
+function noteSlot(p: NoteRackParams, layer: number, column: number): number {
   return p.slot + 1 + layer * p.columns + column;
 }
 

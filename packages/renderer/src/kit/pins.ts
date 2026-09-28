@@ -11,7 +11,7 @@ import type { BlockPart, Part, TubePart } from "../frame-input.ts";
 import { unionBounds, type KitCommon, type KitPrimitive } from "./primitive.ts";
 
 /** Pin proportions, metres. */
-export const PIN = {
+const PIN = {
   headRadius: 0.032,
   headHeight: 0.028,
   needle: 0.009,

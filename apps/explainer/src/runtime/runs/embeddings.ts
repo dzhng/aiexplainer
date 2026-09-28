@@ -17,7 +17,7 @@ function transformer(model: LoadedModel): Transformer {
 }
 
 /** How nearly two embeddings point the same way: 1 same, 0 unrelated, −1 opposite. */
-export function cosineOf(a: ArrayLike<number>, b: ArrayLike<number>): number {
+function cosineOf(a: ArrayLike<number>, b: ArrayLike<number>): number {
   let dot = 0;
   let na = 0;
   let nb = 0;

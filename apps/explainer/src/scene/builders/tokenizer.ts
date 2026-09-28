@@ -86,14 +86,14 @@ export function faceText(piece: Piece, stamped: boolean): string {
 }
 
 /** Where each piece's brick stands: centre x, row z, and length in studs. */
-export interface BrickSpot {
+interface BrickSpot {
   x: number;
   z: number;
   length: number;
 }
 
 /** Lays pieces out in rows, centred on the plate; a new word leaves a gap. */
-export function layoutRow(pieces: readonly Piece[]): BrickSpot[] {
+function layoutRow(pieces: readonly Piece[]): BrickSpot[] {
   const lengths = pieces.map((p) =>
     Math.min(MAX_UNITS, Math.max(1, Math.ceil(p.text.trim().length / CHARS_PER_UNIT))),
   );

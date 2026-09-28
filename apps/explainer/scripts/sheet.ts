@@ -1,18 +1,20 @@
 /**
- * `bun run sheet --variable <crop> --chapters all`: one crop across every finished chapter,
- * side by side, the consistency check later slices run (slice 13). Each chapter is shot at
+ * `bun run --cwd apps/explainer sheet --variable <crop> --chapters all`: one crop across every finished chapter,
+ * side by side: the cross-chapter consistency check. Each chapter is shot at
  * `/#<n>` at its OG time (or `--t`) by `verify.ts`, which also checks it; the tiles are then
  * joined left to right in ladder order into `throwaway/shots/sheet/<variable>.png`.
  *
- *   bun run sheet --variable 'part:board*' --chapters all
- *   bun run sheet --variable panel:tl --chapters autocomplete --t 5.4
- *   bun run sheet --variable full --chapters all        # the whole frame
+ *   bun run --cwd apps/explainer sheet --variable 'part:board*' --chapters all
+ *   bun run --cwd apps/explainer sheet --variable panel:tl --chapters autocomplete --t 5.4
+ *   bun run --cwd apps/explainer sheet --variable full --chapters all        # the whole frame
  */
 import { mkdir, rm } from "node:fs/promises";
 import path from "node:path";
 import { parseArgs } from "node:util";
 import { CHAPTERS } from "../src/chapters/index.ts";
-import { displayNumber, LADDER, type ChapterSlug } from "../src/chapters/ladder.ts";
+import { displayNumber, type ChapterSlug } from "../src/chapters/ladder.ts";
+import { writtenChapters } from "../src/state/app-state.ts";
+import { FFMPEG, repoRoot as repo, run } from "./harness.ts";
 
 const { values: args } = parseArgs({
   options: {
@@ -24,14 +26,12 @@ const { values: args } = parseArgs({
   },
 });
 
-const repo = path.resolve(import.meta.dirname, "../../..");
 const here = import.meta.dirname;
 if (!args.variable) throw new Error("--variable <crop> is required (or `full`)");
 
-const written = LADDER.filter((slug) => CHAPTERS[slug]);
 const slugs: ChapterSlug[] =
   args.chapters === "all"
-    ? written
+    ? writtenChapters(CHAPTERS)
     : args.chapters!.split(",").map((slug) => {
         if (!CHAPTERS[slug as ChapterSlug]) throw new Error(`no written chapter "${slug}"`);
         return slug as ChapterSlug;
@@ -82,12 +82,7 @@ const joined =
   tiles.length === 1
     ? `${scaled};[t0]copy`
     : `${scaled};${tiles.map((_, i) => `[t${i}]`).join("")}hstack=inputs=${tiles.length}`;
-const ffmpeg = Bun.spawn(
-  ["ffmpeg", "-loglevel", "error", "-y", ...inputs, "-filter_complex", joined, sheet],
-  { stderr: "pipe" },
-);
-if ((await ffmpeg.exited) !== 0)
-  throw new Error(`ffmpeg failed: ${await new Response(ffmpeg.stderr).text()}`);
+run([FFMPEG, "-loglevel", "error", "-y", ...inputs, "-filter_complex", joined, sheet]);
 for (const tile of tiles) await rm(tile);
 console.log(
   `sheet ${path.relative(repo, sheet)} (${tiles.length} chapter${tiles.length > 1 ? "s" : ""})`,

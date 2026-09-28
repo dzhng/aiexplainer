@@ -85,10 +85,6 @@ export function parameterCounts(model: ModelSource): { total: number; perToken: 
 
 export type ModelMetric = keyof typeof MODEL_METRICS;
 
-export function isModelMetric(name: string): name is ModelMetric {
-  return Object.hasOwn(MODEL_METRICS, name);
-}
-
 export function modelMetric(model: ModelSource, metric: ModelMetric): number {
   return MODEL_METRICS[metric].read(model);
 }

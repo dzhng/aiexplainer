@@ -2,7 +2,7 @@
 
     uv run python -m probes.curate
 
-Deterministic (fixed seed). Each set has at least `MIN_PROMPTS` prompts (slice 16).
+Deterministic (fixed seed). Each set has at least `MIN_PROMPTS` prompts.
 """
 
 from __future__ import annotations
@@ -33,7 +33,7 @@ NEIGHBOUR_PAIRS = [
     ("friend", "friends"), ("one", "two"), ("he", "she"), ("eat", "drink"),
 ]  # fmt: skip
 
-# Chapter 6: fact-like prompts and the word that completes them. Hand-written (slice 17
+# Chapter 6: fact-like prompts and the word that completes them. Hand-written (the spec
 # names "the sky is ___" and "a cat says ___"); only single-token answers are used.
 FACT_PROMPTS = [
     ("The sky is", "blue"), ("The grass is", "green"), ("The sun is", "hot"),

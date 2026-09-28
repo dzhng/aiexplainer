@@ -28,11 +28,6 @@ export function createKvCache(model: Transformer, capacity = model.arch.ctx): Kv
   };
 }
 
-/** Forgets every position (the arrays are reused). */
-export function resetKvCache(kv: KvCache): void {
-  kv.length = 0;
-}
-
 /** The row position `pos` occupies. */
 export function kvRow(kv: KvCache, pos: number): number {
   return pos % kv.capacity;

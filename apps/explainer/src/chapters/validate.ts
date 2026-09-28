@@ -2,7 +2,7 @@
  * `validateChapter(def)` returns every way a chapter breaks the contract (empty when valid).
  * Chapters are TypeScript data, so the compiler checks shapes; this checks what types can't:
  * the copy budget (README Copy rules), the loop budget (D24), the caps (D18), and that every
- * anchor, shot, colour token and kit primitive exists (the frozen vocabulary, slice 13).
+ * anchor, shot, colour token and kit primitive exists (the frozen vocabulary).
  */
 import { ARITH, arithProblems, type ArithUnit } from "@repo/llm";
 import { isKitPrimitive } from "@repo/renderer";
@@ -19,9 +19,9 @@ import {
 } from "./types.ts";
 
 export const LOOP_SEC = { min: 20, max: 30 } as const;
-export const MAX_SENTENCE_WORDS = 25;
-export const MAX_FOLLOW = 3;
-export const MAX_LABELS = 5;
+const MAX_SENTENCE_WORDS = 25;
+const MAX_FOLLOW = 3;
+const MAX_LABELS = 5;
 
 /** Which chip formats can display each arithmetic unit. */
 const FORMATS_FOR_UNIT: Record<ArithUnit, readonly StatFormat[]> = {

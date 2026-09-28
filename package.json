@@ -26,7 +26,6 @@
     "format:check": "oxfmt --check .",
     "verify": "bun run format:check && bun run check-types && bun run lint && bun run test && bun run training:test",
     "training:test": "cd training && uv run pytest -q",
-    "sheet": "bun apps/explainer/scripts/sheet.ts",
     "props:build": "bun assets/blender/build.ts",
     "training:train": "cd training && uv run python train.py"
   },

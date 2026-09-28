@@ -38,7 +38,7 @@ export interface LookTokens {
   palette: Record<PaletteToken, string>;
   /**
    * HUD-only CSS values (any CSS colour syntax, or a length for the corner cuts): the game-UI
-   * frame (holo-tactical, slice 04b) is a cut-corner panel with a thin accent stroke and a faint
+   * frame (holo-tactical) is a cut-corner panel with a thin accent stroke and a faint
    * scanline fill; `accent` is the HUD's own cyan (the scene's `active` stays the scene's).
    */
   hud: {
@@ -136,7 +136,7 @@ export function srgbToLinear(c: number): number {
   return c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
 }
 
-export function hexToSrgb(hex: string): Rgb {
+function hexToSrgb(hex: string): Rgb {
   const match = /^#([0-9a-f]{6})$/i.exec(hex);
   if (!match) throw new Error(`not a #rrggbb colour: ${hex}`);
   const n = Number.parseInt(match[1]!, 16);
@@ -157,14 +157,14 @@ export function linear(token: PaletteToken): Rgb {
 }
 
 /** A palette token or a literal `#rrggbb`, in linear light. */
-export function colour(value: string): Rgb {
+function colour(value: string): Rgb {
   if (isPaletteToken(value)) return linear(value);
   if (value.startsWith("#")) return hexToLinear(value);
   throw new Error(`look: unknown colour token "${value}"`);
 }
 
 /** A token's glow: its linear colour × its `materials.emissive` gain. */
-export function emissive(token: PaletteToken): Rgb {
+function emissive(token: PaletteToken): Rgb {
   const gain = look.materials.emissive[token];
   if (gain === undefined) throw new Error(`look: "${token}" has no materials.emissive gain`);
   return linear(token).map((c) => c * positive(`materials.emissive.${token}`, gain)) as Rgb;

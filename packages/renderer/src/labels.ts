@@ -218,7 +218,7 @@ const triangleHit = raycast3.createIntersectsTriangleResult();
 const SURFACE_EPSILON = 0.02;
 
 /** Whether the ray `origin` → `origin + dir × length` hits the occluder. */
-export function occludes(occluder: Occluder, origin: Vec3, dir: Vec3, length: number): boolean {
+function occludes(occluder: Occluder, origin: Vec3, dir: Vec3, length: number): boolean {
   switch (occluder.kind) {
     case "box":
       return raycast3.intersectsBox3(origin, dir, length, occluder.bounds);

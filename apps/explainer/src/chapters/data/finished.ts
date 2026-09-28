@@ -76,7 +76,7 @@ export const FLOOR = {
 } as const;
 
 /** The tour's pacing, seconds: the wide opening, each move and hold, the return, the end. */
-export const TOUR = { open: 2, move: 0.45, hold: 1.15, back: 1.2, end: 2.4 } as const;
+const TOUR = { open: 2, move: 0.45, hold: 1.15, back: 1.2, end: 2.4 } as const;
 
 const STOPS = STATIONS.length;
 const STEP = TOUR.move + TOUR.hold;

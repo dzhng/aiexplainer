@@ -4,7 +4,7 @@
  * matrix, no dependencies). Chapter 2's map is the table's shadow on its top 3 directions.
  */
 
-export interface Pca {
+interface Pca {
   /** Per-dimension mean of the fitted rows (subtracted before projecting). */
   mean: number[];
   /** Unit, mutually orthogonal directions, largest variance first. */
@@ -22,13 +22,13 @@ export function row(table: ArrayLike<number>, d: number, i: number, unit: boolea
 }
 
 /** The covariance of `rows` (each of length d) about their mean. */
-export function covariance(rows: number[][]): { mean: number[]; cov: number[][] } {
+function covariance(rows: number[][]): { mean: number[]; cov: number[][] } {
   const d = rows[0]!.length;
   const mean = Array.from(
     { length: d },
     (_, k) => rows.reduce((s, r) => s + r[k]!, 0) / rows.length,
   );
-  const cov = Array.from({ length: d }, () => new Array<number>(d).fill(0));
+  const cov = Array.from({ length: d }, () => Array.from({ length: d }, () => 0));
   for (const r of rows)
     for (let a = 0; a < d; a++) {
       const da = r[a]! - mean[a]!;
@@ -43,7 +43,7 @@ export function covariance(rows: number[][]): { mean: number[]; cov: number[][] 
 }
 
 /** Eigenvalues and eigenvectors (columns of `vectors`) of a symmetric matrix. */
-export function jacobiEigen(matrix: number[][]): { values: number[]; vectors: number[][] } {
+function jacobiEigen(matrix: number[][]): { values: number[]; vectors: number[][] } {
   const n = matrix.length;
   const a = matrix.map((r) => [...r]);
   const v: number[][] = Array.from({ length: n }, (_, i) =>

@@ -51,7 +51,7 @@ export function lampCenter(p: QuestionPanelParams, i: number): Vec3 {
  * each side drops straight from its lamp's edge; rows further out run down the gutter left of
  * their column, so no pipe crosses another lamp.
  */
-export function pushEnds(p: QuestionPanelParams, i: number): { from: Vec3; to: Vec3 } {
+function pushEnds(p: QuestionPanelParams, i: number): { from: Vec3; to: Vec3 } {
   const [x, y, z] = lampCenter(p, i);
   const sign = y > p.arrow.y ? 1 : -1;
   // Rows between this lamp and the arrow.

@@ -1,5 +1,5 @@
 /**
- * The room every chapter's machine stands in (slice 11b): one prop, set once here so the app,
+ * The room every chapter's machine stands in: one prop, set once here so the app,
  * `/lab/scene/*` and room fixtures all draw it. The renderer draws it as `SceneDesc.environment`
  * — never a part, so it never occludes labels or gets a crop — and the orbit keeps the camera
  * inside it (`look.room.camera`).

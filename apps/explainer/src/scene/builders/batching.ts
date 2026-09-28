@@ -29,7 +29,7 @@ import type { SceneTags } from "../../hud/SceneTags.tsx";
 import type { SceneBuilder, SceneFrame } from "../build-frame.ts";
 
 export const SEATS = 16;
-export const QUEUE = 10;
+const QUEUE = 10;
 /** Rider places per seat or queue spot: a grid `COLS` wide and `ROWS` high. */
 const COLS = 3;
 const ROWS = 7;
@@ -74,7 +74,7 @@ export function occupancy(riders: number, capacity: number): { seated: number; w
 }
 
 /** The numbers the scene writes for `riders` on the bus, all from the arithmetic registry. */
-export function busReadout(riders: number) {
+function busReadout(riders: number) {
   const args = { batch: Math.max(1, riders), ...BUS_ARITH };
   return {
     tripSec: evalArith("decodeStepSeconds", args),

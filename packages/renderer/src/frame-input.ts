@@ -134,7 +134,7 @@ export interface CutPlane {
 }
 
 /**
- * The view vocabulary (slice 13), applied only by `partWorld` and `partCut`: Whole places
+ * The view vocabulary, applied only by `partWorld` and `partCut`: Whole places
  * parts as authored; Exploded moves each by its `explode` × `t`; Cutaway sweeps the cut
  * plane in by `t`, clipping `cutaway: "clip"` parts, whose cut faces show the look's cap.
  */

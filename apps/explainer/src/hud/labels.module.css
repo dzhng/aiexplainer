@@ -1,5 +1,5 @@
 /*
- * Pinned labels in the HUD's language (slice 04b): a reticle on the part, a thin glowing
+ * Pinned labels in the HUD's language: a reticle on the part, a thin glowing
  * leader, and a cut-corner tag with an accent bar. Geometry (the pill's offset and size, the
  * leader's length and angle) comes from the renderer's label box, inline in `Labels.tsx`.
  */

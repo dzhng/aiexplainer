@@ -1,5 +1,5 @@
 /**
- * The view transition (slice 13): Whole, Cutaway and Exploded ease in over
+ * The view transition: Whole, Cutaway and Exploded ease in over
  * `look.views.durationSec`. Leaving Cutaway or Exploded first eases the current view back
  * out, then the new one comes in; leaving Whole starts the new view at once. The renderer
  * reads only the result (`FrameView.mode` and eased `t`), through `partWorld`/`partCut`.

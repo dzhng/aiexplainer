@@ -1,5 +1,5 @@
 /**
- * A chapter is pure data (slice 03). The HUD, the loop, the stats and the scene are all
+ * A chapter is pure data. The HUD, the loop, the stats and the scene are all
  * driven by a `ChapterDef`; `validateChapter()` enforces the copy rules and references.
  */
 import type { ArithFnName, ModelId, ModelMetric } from "@repo/llm";

@@ -7,7 +7,7 @@ referent (a named character):
 - pronoun: the focus token is a "She"/"He" that refers to the character.
 For each prompt, the attention mass from the focus token onto the name's tokens is
 divided by what uniform attention would give them (their share of visible positions).
-An effect passes at a mean ratio of 2 (slice 16). Attention weights show what a word
+An effect passes at a mean ratio of 2. Attention weights show what a word
 draws from; they are not proof of meaning (copy rules).
 """
 

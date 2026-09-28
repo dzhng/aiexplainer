@@ -17,7 +17,7 @@ from probes.common import held_out_windows, next_token_probs, shipped, validatio
 from probes.evidence import result
 
 K = 4
-# The windows slice 17 chose the drafter on: (count, length).
+# The windows the drafter was chosen on: (count, length).
 CHOSEN_ON = (20, 128)
 ALPHA_THRESHOLD = 0.5
 SPEEDUP_THRESHOLD = 1.0
@@ -40,7 +40,7 @@ def drafter(model_id: str, model: Transformer) -> tuple[list[dict[str, Any]], li
     target = shipped("full")
     cost = parameters(model) / parameters(target)
     alpha, speedup = acceptance(target, model, validation_windows(*CHOSEN_ON))
-    # O3 (slice 33): the drafter was chosen on those windows, so it is re-measured on
+    # O3: the drafter was chosen on those windows, so it is re-measured on
     # stories they never touched before the choice is final.
     held_alpha, held_speedup = acceptance(target, model, held_out_windows(40, 128, used=(*CHOSEN_ON, 17)))
     evidence = [

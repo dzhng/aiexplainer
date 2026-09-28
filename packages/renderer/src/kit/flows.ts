@@ -21,7 +21,7 @@ export interface FlowsParams extends KitCommon {
 }
 
 /** A sleeve is this much wider than the pipe it wraps. */
-export const SLEEVE = 1.12;
+const SLEEVE = 1.12;
 
 export const flows: KitPrimitive<FlowsParams> = {
   build(p) {

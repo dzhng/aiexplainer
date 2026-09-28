@@ -11,8 +11,9 @@ from model import Arch, Mlp
 from paths import MODELS_DIR, TRAINING_DIR
 from schemas import validate
 
-# Slice 16 budgets each of its models at 4 MB; slice 17 budgets the whole ladder (a bun test).
-SLICE_16_MODELS = {"embed", "attn", "rope"}
+# The first single-effect models are budgeted at 4 MB each; the whole ladder has its own
+# budget (a bun test, `shipped-models.test.ts`).
+FOUR_MB_MODELS = {"embed", "attn", "rope"}
 CONFIGS = sorted((TRAINING_DIR / "configs").glob("*.toml"))
 TINY = Arch(d_model=32, n_layers=1, n_heads=2, n_kv_heads=1, ctx=32, vocab=4096, mlp=Mlp("swiglu", 64))
 
@@ -74,6 +75,6 @@ def test_every_trained_model_exports_a_valid_manifest_and_scenarios(path: Path):
     validate(manifest, "manifest.schema.json")
     validate(json.loads((model_dir / "scenarios.json").read_text()), "scenarios.schema.json")
     assert manifest["evidence"], "D25"
-    if path.stem in SLICE_16_MODELS:
-        assert (model_dir / "weights.bin").stat().st_size <= 4 * 1024 * 1024, "slice 16 size budget"
+    if path.stem in FOUR_MB_MODELS:
+        assert (model_dir / "weights.bin").stat().st_size <= 4 * 1024 * 1024, "4 MB size budget"
     assert (train.TRAINED_FIXTURES_DIR / f"{path.stem}.json").exists()

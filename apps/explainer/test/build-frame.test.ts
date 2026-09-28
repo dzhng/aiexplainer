@@ -90,7 +90,7 @@ test("typed text shows its last word's bars at full height; an unseen word shows
   expect(blank.frame.tags.text.slice(0, 10).every((t) => t === "")).toBe(true);
 });
 
-describe("chapter 0's loop (slice 11)", () => {
+describe("chapter 0's loop", () => {
   const inputs = autocomplete.loop.inputs!;
   const unseen = inputs.at(-1)!;
 

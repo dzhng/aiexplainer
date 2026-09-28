@@ -310,7 +310,7 @@ function layoutOf(step: AttentionStep): Layout {
 }
 
 /** Token indices up to the focus, widest pipe first (ties in reading order). */
-export function widestFirst(step: AttentionStep): number[] {
+function widestFirst(step: AttentionStep): number[] {
   return Array.from({ length: step.focus + 1 }, (_, i) => i).sort(
     (a, b) => step.weights[b]! - step.weights[a]! || a - b,
   );

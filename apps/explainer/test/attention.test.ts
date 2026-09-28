@@ -1,5 +1,5 @@
 /**
- * Chapter 4 (slice 22): every pipe's width is the real attention weight. The run is computed
+ * Chapter 4: every pipe's width is the real attention weight. The run is computed
  * the way the app computes it (through `computeRun`), and checked against a direct forward
  * pass of the shipped `attn` model.
  */
@@ -67,7 +67,7 @@ const pipeOf = (scene: SceneDesc, i: number) =>
 const run = (await computeRun(attention, null, ctx))!;
 const steps = run.kind === "attention" ? run.steps : [];
 
-describe("chapter 4: pipe width is the real attention weight (slice 22)", () => {
+describe("chapter 4: pipe width is the real attention weight", () => {
   test("the loop's prompt and every scenario are the attn model's measured prompts (O2)", async () => {
     const measured = await Bun.file(path.join(models, "attn/scenarios.json")).json();
     for (const s of attention.scenarios) {
@@ -179,7 +179,7 @@ describe("chapter 4: pipe width is the real attention weight (slice 22)", () => 
   });
 });
 
-describe("chapter 4: sealed pipes from the future (slice 23)", () => {
+describe("chapter 4: sealed pipes from the future", () => {
   const step = run.kind === "attention" ? run.steps[0]! : null;
   const miaIds = promptTokens(tokenizer, RECALL_PROMPTS.mia);
 
@@ -230,7 +230,7 @@ describe("chapter 4: sealed pipes from the future (slice 23)", () => {
   });
 });
 
-describe("chapter 4: flow and the failure beat (slice 24)", () => {
+describe("chapter 4: flow and the failure beat", () => {
   const [dogCat, catDog] = ORDER_PROMPTS;
   const logitsOf = (prompt: string) => forward(model, promptTokens(tokenizer, prompt)).logits;
 

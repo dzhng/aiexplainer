@@ -30,12 +30,12 @@ export {
 } from "./labels.ts";
 export { KIT, KIT_ENTRIES, isKitPrimitive, type KitPrimitiveId } from "./kit/catalog.ts";
 export type { KitBuild, KitCommon, KitPrimitive } from "./kit/primitive.ts";
-export { BAR_MIN_HEIGHT, placeBar, type BarSlot, type BarsParams } from "./kit/bars.ts";
+export { placeBar, type BarSlot, type BarsParams } from "./kit/bars.ts";
 export type { BlockParams } from "./kit/block.ts";
 export { BRICK, placeBrick, type BrickParams, type BrickPlacement } from "./kit/brick.ts";
 export { blockFootprint, type ContactShadowParams } from "./kit/contact-shadow.ts";
 export { faceAt, placeDie, type DieParams, type DiePose } from "./kit/die.ts";
-export { PIN, PIN_PARTS, placePin, type PinFieldParams } from "./kit/pins.ts";
+export { PIN_PARTS, placePin, type PinFieldParams } from "./kit/pins.ts";
 export type { MeshParams } from "./kit/mesh.ts";
 export {
   PIPE_SAMPLES,
@@ -53,12 +53,11 @@ export {
   lampCenter,
   panelSize,
   placePush,
-  pushEnds,
   type QuestionPanelParams,
 } from "./kit/question-panel.ts";
 export { placePour, placeStretch, stretchSpan, type RiverParams } from "./kit/river.ts";
 export { placeKnob, type VolumeKnobParams } from "./kit/volume-knob.ts";
-export { noteCenter, noteSlot, placeNote, rackSize, type NoteRackParams } from "./kit/note-rack.ts";
+export { placeNote, rackSize, type NoteRackParams } from "./kit/note-rack.ts";
 export {
   PARTS_PER_TILE,
   draftTileCenter,

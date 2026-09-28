@@ -10,8 +10,8 @@
     "check-types": "tsc --noEmit",
     "lint": "oxlint src scripts test",
     "test": "bun test test",
-    "verify:browser": "bun scripts/verify.ts",
-    "media": "bun scripts/record.ts"
+    "media": "bun scripts/record.ts",
+    "sheet": "bun scripts/sheet.ts"
   },
   "dependencies": {
     "@repo/llm": "workspace:*",

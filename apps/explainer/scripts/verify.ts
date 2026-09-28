@@ -1,5 +1,5 @@
 /**
- * Real-GPU browser harness (spec slice 01). Opens a route in headless Chrome with a
+ * Real-GPU browser harness. Opens a route in headless Chrome with a
  * hardware WebGPU adapter, optionally holds the clock and screenshots it, and fails on
  * a fallback adapter, a page error, or any console warning/error.
  *

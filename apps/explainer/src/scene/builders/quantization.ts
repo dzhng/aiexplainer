@@ -63,13 +63,13 @@ export function lensIndex(strip: QuantRun["strip"]): number {
 }
 
 /** The magnifier's zoom over the strip: how much taller one 8-bit step is drawn. */
-export function lensZoom(strip: QuantRun["strip"]): number {
+function lensZoom(strip: QuantRun["strip"]): number {
   const largest = Math.max(...strip.full.map(Math.abs));
   return LENS.step / ((strip.scale / largest) * BAR.half);
 }
 
 /** Words each machine shows, and how many of those match between the two. */
-export function wordsShown(run: QuantRun, count: number) {
+function wordsShown(run: QuantRun, count: number) {
   const n = Math.max(0, Math.min(count, run.full.length, run.q8.length));
   const full = run.full.slice(0, n);
   const q8 = run.q8.slice(0, n);

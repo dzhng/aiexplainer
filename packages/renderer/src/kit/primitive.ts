@@ -1,9 +1,8 @@
 /**
- * The kit contract (slice 13): every primitive is one module whose `build(params)` returns
+ * The kit contract: every primitive is one module whose `build(params)` returns
  * its parts, their bounds, its anchors and its explode vector from a single source, so the
  * meshes the GPU draws, the label occluders, the anchors and the Cutaway/Exploded views all
- * agree. A chapter composes scenes only from `KIT` (`kit/catalog.ts`); a new primitive is
- * added here, in the chapter slice that needs it, with its own shot.
+ * agree. A chapter composes scenes only from `KIT` (`kit/catalog.ts`).
  */
 import type { Vec3 } from "math";
 import type { Box3 } from "math/shapes";

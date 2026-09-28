@@ -2,7 +2,7 @@
  * Pinned labels: a dot on the part, a short leader and a pill with the label text. The
  * renderer's `placeLabels` decides where and whether each shows; this layer only moves DOM
  * nodes through refs every frame (no React render per frame). It sits above the canvas and
- * below the HUD panels (z-index 1 in slice 04's stage order).
+ * below the HUD panels (z-index 1).
  */
 import {
   DEFAULT_LABEL_BOX,

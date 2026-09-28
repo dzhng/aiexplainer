@@ -15,7 +15,7 @@ export interface StepClock extends Clock {
 }
 
 /** Real time, starting at 0 when created. */
-export function rafClock(): Clock {
+function rafClock(): Clock {
   const start = performance.now();
   return { now: () => (performance.now() - start) / 1000 };
 }

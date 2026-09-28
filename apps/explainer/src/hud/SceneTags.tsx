@@ -34,7 +34,6 @@ const styles = {
     top: 0,
     willChange: "transform",
     color: "var(--ink)",
-    // 1rem: the size tags have always rendered at (a reset below used to drop the token's).
     font: "600 1rem/1 var(--font-ui)",
     whiteSpace: "pre",
     textAlign: "center",

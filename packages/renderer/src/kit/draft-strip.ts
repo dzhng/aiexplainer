@@ -15,7 +15,7 @@ export type DraftTileState = "hidden" | "drafted" | "accepted" | "rejected" | "a
 type Face = Exclude<DraftTileState, "hidden">;
 
 /** The face material for each state (look presets). */
-export const STATE_MATERIALS: Record<Face, string> = {
+const STATE_MATERIALS: Record<Face, string> = {
   drafted: "card",
   accepted: "draftAccepted",
   rejected: "draftRejected",

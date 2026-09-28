@@ -6,8 +6,8 @@ top `TOP_NEURONS` by |activation| at the last position, per prompt), and with th
 MLP switched off. The drop is relative and weighted by how much probability the model
 gave the answer (1 − Σ p_off / Σ p): a plain mean of per-prompt relative drops is
 dominated by prompts where the tiny model never knew the answer (p ≈ 0.001), whose
-"relative change" is noise. The effect passes at a 30% drop with the top neurons off
-(slice 17). The copy says "a lot of what the model knows is stored here", never "facts
+"relative change" is noise. The effect passes at a 30% drop with the top neurons off.
+The copy says "a lot of what the model knows is stored here", never "facts
 live here".
 """
 

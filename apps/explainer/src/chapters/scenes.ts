@@ -1,7 +1,7 @@
 /**
  * The scene builders a chapter can name, and the anchors each one exposes. A chapter's
  * follow targets, labels and beat focus must use its scene's anchors; the builder
- * (`scene/builders/<id>.ts`, slice 10 onward) places a part at every anchor listed here.
+ * (`scene/builders/<id>.ts`) places a part at every anchor listed here.
  */
 export const SCENE_ANCHORS = {
   /** Chapter 0: the counter board, its count bars, and the word rail. */
@@ -12,11 +12,11 @@ export const SCENE_ANCHORS = {
   embeddings: ["map", "pins", "arrows", "origin", "text"],
   /** Chapter 3: the die, the score strip, and the word on the card. */
   sampling: ["die", "scores", "word"],
-  /** Chapter 6: the question panel, the token arrow, the readout bars, the no-river teaser. */
   /** Chapter 4: the word blocks, the widest pipe, the focus word's mix, the sealed later words. */
   attention: ["sentence", "pipes", "mix", "sealed"],
   /** Chapter 5: chapter 4 scene with a clock dial on every word. */
   positions: ["sentence", "pipes", "mix", "dials"],
+  /** Chapter 6: the question panel, the token arrow, the readout bars, the no-river teaser. */
   mlp: ["panel", "arrow", "readout", "teaser"],
   /** Chapter 7: the stations, the river under them, their volume knobs, the best guess. */
   residual: ["stations", "river", "knob", "readout"],

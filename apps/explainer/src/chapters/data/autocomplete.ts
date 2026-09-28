@@ -1,5 +1,5 @@
 /**
- * Chapter 0: next-word guessing from word-pair counts. Final copy (slice 11); the example
+ * Chapter 0: next-word guessing from word-pair counts. The example
  * words come from the `counts` model itself: "upon" is its top next word after "once", its
  * top-successor probe measures "a" after "upon", and "onse" is a misspelling it never kept.
  * The loop shows the rule twice (once → upon → a), then the failure that chapter 1 fixes.

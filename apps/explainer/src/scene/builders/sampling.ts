@@ -32,7 +32,7 @@ import {
 import { probabilities, seededRng } from "@repo/llm";
 import type { Vec3 } from "math";
 import type { SceneTags } from "../../hud/SceneTags.tsx";
-import type { SceneBuilder, SceneFrame, SceneRun } from "../build-frame.ts";
+import type { SceneBuilder, SceneFrame } from "../build-frame.ts";
 import { tableParts, tableTop, type TableSpec } from "./table.ts";
 
 const TABLE: TableSpec = { center: [0, 0.74, 0], size: [3.0, 0.08, 1.7], legHeight: 0.7 };
@@ -95,7 +95,7 @@ export function faceShares(step: LogitsStep, probs: ArrayLike<number>, out: numb
 }
 
 /** Roll `n`'s draw in [0, 1): the one number `sample()` takes from roll n's seeded generator. */
-export const rollDraw = (n: number) => seededRng(ROLL_SEED + n)();
+const rollDraw = (n: number) => seededRng(ROLL_SEED + n)();
 
 /**
  * Where roll `n` stops: after `TURNS` more turns than the last roll, with the reading line at
@@ -249,7 +249,7 @@ export const sampling: SceneBuilder = {
       tagOf,
       staveIds,
       faceAnchors,
-      shares: new Array<number>(FACES).fill(1 / FACES),
+      shares: Array.from({ length: FACES }, () => 1 / FACES),
       pose: {
         center: [DIE.x, TOP + DIE.radius, DIE.z0],
         radius: DIE.radius,

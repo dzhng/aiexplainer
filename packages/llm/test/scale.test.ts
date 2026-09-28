@@ -41,7 +41,7 @@ describe("Llama-3-8B constants", () => {
   });
 });
 
-describe("the slice 18 reference numbers", () => {
+describe("the published reference numbers", () => {
   test("KV cache is 128 KiB per token in bf16", () => {
     expect<number>(kvBytesPerToken(cfg, 2)).toBe(131_072);
   });

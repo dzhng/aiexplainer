@@ -7,7 +7,6 @@ import {
   generate,
   kvBytes,
   kvHeld,
-  resetKvCache,
   seededRng,
   transformerModel,
 } from "../src/index.ts";
@@ -37,8 +36,6 @@ test("cached and uncached logits are equal, token by token", () => {
   }
   expect(kv.length).toBe(text.length);
   expect(kvBytes(kv, model)).toBe(text.length * cacheBytesPerToken(model));
-  resetKvCache(kv);
-  expect(kvHeld(kv)).toBe(0);
 });
 
 test("a ring cache of the window's size equals a windowed reference, not the full context", () => {

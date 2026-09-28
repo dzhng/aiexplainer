@@ -39,4 +39,4 @@ export function projectRow(row: ArrayLike<number>, map: EmbedMap = EMBED_MAP): V
 export const MAX_PINNED_INPUT = 8;
 
 /** The all-zeros embedding's shadow: where every arrow starts. */
-export const ORIGIN = projectRow(new Array<number>(EMBED_MAP.mean.length).fill(0));
+export const ORIGIN = projectRow(Array.from(EMBED_MAP.mean, () => 0));

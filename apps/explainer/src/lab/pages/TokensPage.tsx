@@ -1,5 +1,5 @@
 /**
- * `/lab/tokens`: the house style on one page (slice 13), the reference every chapter is
+ * `/lab/tokens`: the house style on one page, the reference every chapter is
  * judged against. Each section is a specimen built from the same tokens and components the
  * app uses, so a token change shows here first:
  *   palette (DOM swatches, and through the real renderer and bloom at every emissive level),

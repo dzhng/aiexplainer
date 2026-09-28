@@ -3,7 +3,7 @@ import type { TubePart } from "../frame-input.ts";
 import { boundsOf, type Geometry } from "./geometry.ts";
 import type { KitCommon, KitPrimitive } from "./primitive.ts";
 
-export const TUBE_SIDES = 24;
+const TUBE_SIDES = 24;
 
 /**
  * Sweeps a circle along a polyline. Rings sit in the bisecting plane at each joint and are

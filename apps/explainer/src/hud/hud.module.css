@@ -1,7 +1,7 @@
 /*
- * The HUD (Night lab, holo-tactical game UI, slice 04b). Every colour, font, type size and
+ * The HUD (Night lab, holo-tactical game UI). Every colour, font, type size and
  * corner cut is a variable from `cssVars()`; only spacing is local. Layers: canvas (0) <
- * labels (1, slice 09) < HUD (2) < help (3).
+ * labels (1) < HUD (2) < help (3).
  *
  * The frame language: a panel is a cut-corner plate (top-left and bottom-right corners cut)
  * with a thin accent stroke, a faint scanline fill and accent brackets on the two square

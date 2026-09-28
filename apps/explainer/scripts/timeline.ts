@@ -1,17 +1,18 @@
 /**
- * Prints a chapter loop's channel values and active beat at 1-second steps (slice 03).
+ * Prints a chapter loop's channel values and active beat at 1-second steps.
  *
  *   bun scripts/timeline.ts autocomplete
  */
 import { CHAPTERS } from "../src/chapters/index.ts";
-import { LADDER, type ChapterSlug } from "../src/chapters/ladder.ts";
+import type { ChapterSlug } from "../src/chapters/ladder.ts";
 import { createTimelineState, evalTimeline } from "../src/chapters/timeline.ts";
+import { writtenChapters } from "../src/state/app-state.ts";
 
 const slug = process.argv[2] as ChapterSlug | undefined;
 const def = slug && CHAPTERS[slug];
 if (!def) {
   console.error(
-    `usage: bun scripts/timeline.ts <slug>\nwritten: ${LADDER.filter((s) => CHAPTERS[s]).join(", ")}`,
+    `usage: bun scripts/timeline.ts <slug>\nwritten: ${writtenChapters(CHAPTERS).join(", ")}`,
   );
   process.exit(1);
 }

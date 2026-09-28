@@ -1,6 +1,6 @@
 // Bun Snapshot v1, https://bun.sh/docs/test/snapshots
 
-exports[`chapter 4: pipe width is the real attention weight (slice 22) the hero frame's structure is stable 1`] = `
+exports[`chapter 4: pipe width is the real attention weight the hero frame's structure is stable 1`] = `
 [
   [
     "stand.0",

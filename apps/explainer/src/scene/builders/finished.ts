@@ -123,13 +123,13 @@ function tourPoses(def: ChapterDef): OrbitPose[] {
 }
 
 /** Where the tour is: stops counted from the wide shot (0), fractional while moving. */
-export function tourStop(def: ChapterDef, tl: TimelineState, ui: SceneUi): number {
+function tourStop(def: ChapterDef, tl: TimelineState, ui: SceneUi): number {
   if (ui.sliderSet) return ui.slider;
   return def.tour ? (tl.channels[def.tour.channel] ?? 0) : 0;
 }
 
 /** The station in view (0-based), or -1 while the camera moves or shows the whole machine. */
-export function stationInView(stop: number): number {
+function stationInView(stop: number): number {
   const nearest = Math.round(stop);
   if (Math.abs(stop - nearest) > IN_VIEW || nearest < 1 || nearest > STOPS) return -1;
   return nearest - 1;

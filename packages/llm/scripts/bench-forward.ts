@@ -1,4 +1,4 @@
-// CPU forward timing at the largest `full` size slice 17 may choose (dModel 256), with
+// CPU forward timing at dModel 256 (above the shipped `full` model), with
 // random weights. The budget is ≤ 50 ms per token (README performance gates).
 //
 //   bun packages/llm/scripts/bench-forward.ts

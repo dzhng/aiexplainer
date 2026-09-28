@@ -20,7 +20,7 @@ import {
 } from "../scene/build-frame.ts";
 import { ENVIRONMENT } from "../scene/environment.ts";
 import { shotPose } from "../scene/shots.ts";
-import { loadFixture, type LabScene } from "./fixtures.ts";
+import type { LabScene } from "./fixtures.ts";
 import type { ProbeApi } from "./probe.ts";
 
 const runs = import.meta.glob<SceneRun>("./fixtures/runs/*.json", {

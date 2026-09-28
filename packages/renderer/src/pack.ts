@@ -108,7 +108,7 @@ export const LookUniform = d
   .$name("LookUniform");
 export const LOOK_UNIFORM_BYTES = 256;
 
-export function packVec3(out: Float32Array, offset: number, v: Vec3): void {
+function packVec3(out: Float32Array, offset: number, v: Vec3): void {
   out[offset] = v[0];
   out[offset + 1] = v[1];
   out[offset + 2] = v[2];
@@ -140,12 +140,12 @@ export function packVertices(
   }
 }
 
-export function packMat4(out: Float32Array, offset: number, m: Mat4): void {
+function packMat4(out: Float32Array, offset: number, m: Mat4): void {
   for (let i = 0; i < 16; i++) out[offset + i] = m[i]!;
 }
 
 /** WGSL `mat3x3f` stores each column padded to 16 bytes. */
-export function packMat3(out: Float32Array, offset: number, m: Mat3): void {
+function packMat3(out: Float32Array, offset: number, m: Mat3): void {
   for (let c = 0; c < 3; c++) {
     out[offset + c * 4] = m[c * 3]!;
     out[offset + c * 4 + 1] = m[c * 3 + 1]!;
