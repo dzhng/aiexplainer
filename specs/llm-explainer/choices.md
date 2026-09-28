@@ -540,3 +540,25 @@ standalone. Entries are appended per pass and consolidated when the spec closes.
 - **Polish items:** chapter 8's violet-plus-blue bloom runs hot, long words overhang their tiles
   in chapters 9–10, chapter 7's river reads as a glass duct, and labels at back angles can point
   at hidden parts. Verdict: backlog.
+
+## Slice 35 (chapter 15)
+
+- **The finished machine owns no chapter parts:** each station is its own chapter's builder and
+  run, copied into one scene (slug-prefixed, slot-offset, scaled) on a 5-wide serpentine
+  grid. Its only part is a flowing floor route in tour order. A test pins "union of stations,
+  nothing twice". Verdict: sound, one owner per part.
+- **The tour follows a word's path:** board, then bricks → pins → pipes → clocks → panel → bays
+  → river → assembly line → die → rail → notes, then the serving tricks (junior, crates, bus).
+  1.6 s per stop, a 29.6 s loop, and each stop reuses its chapter's hero shot, scaled.
+  Verdict: sound; the busiest stops show more text than 1.6 s allows (accepted, since the loop is
+  at the cap).
+- **The D18 label cap of 5 is waived for a toured chapter, because only one station's label
+  shows at a time.** Verdict: sound.
+- **The stage's `update` can steer the camera, and orbiting hands it back to the reader;
+  `RunContext.source` loads another chapter's model once.** Verdict: sound.
+- **Bug fixed: the app only loaded the first chapter's props** (the board and bus never drew
+  when arriving from another chapter). Verdict: sound fix.
+- **D21 audit: 16 loops = 388.6 s, plus 16 arrival moves = 428.6 s (7 min 9 s), within the
+  10-minute skim.** Verdict: sound.
+- **Chips: 1.51 million weights (the `full` model) vs 8.03 billion (Llama-3-8B), and Llama's 32
+  blocks; no scenarios (no single probe to cite).** Verdict: sound.
