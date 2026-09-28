@@ -9,7 +9,8 @@ import type { FrameInput, SceneDesc } from "@repo/renderer";
 import { useEffect, useRef } from "react";
 import { CHAPTERS } from "../../chapters/index.ts";
 import type { ChapterSlug } from "../../chapters/ladder.ts";
-import { Labels, type LabelReading, type LabelsHandle } from "../../hud/Labels.tsx";
+import { Labels, type LabelsHandle } from "../../hud/Labels.tsx";
+import type { LabelMode } from "../../state/app-state.ts";
 import { SceneTagsLayer, type SceneTagsHandle } from "../../hud/SceneTags.tsx";
 import { lookConfig } from "../../look/look.ts";
 import { defaultUi, SCENE_BUILDERS } from "../../scene/build-frame.ts";
@@ -22,7 +23,7 @@ import type { ProbeApi } from "../probe.ts";
 
 export interface ScenePageProps {
   slug: string;
-  reading: LabelReading | null;
+  reading: LabelMode | null;
   debug: FrameInput["debug"];
   clock: Clock;
   probe: ProbeApi;

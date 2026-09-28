@@ -1,9 +1,10 @@
 /**
  * `/lab/perf?fixture=board-room`, or `/lab/perf?scene=<slug>&t=<loop time>` for a chapter's
- * scene on its fixture run (the camera at its shot, or its tour's pose): whole-frame GPU time with bloom on vs off, interleaved in
- * short alternating blocks on one renderer so machine load hits both equally. Readback
- * lags a few frames, so each block's first frames are dropped. Results go to
- * `probe.results`; the budget check is the harness's job (it prints them).
+ * scene on its fixture run (the camera at its shot, or its tour's pose): whole-frame GPU time
+ * with bloom on vs off, interleaved in short alternating blocks on one renderer so machine load
+ * hits both equally. Readback lags a few frames, so each block's first frames are dropped.
+ * Results go to `probe.results`, which `verify.ts` prints; judging them against the budget is
+ * the reader's call.
  */
 import { createRenderer, type FrameInput, type SceneDesc } from "@repo/renderer";
 import { CHAPTERS } from "../chapters/index.ts";

@@ -6,26 +6,15 @@ import {
   probabilities,
   promptTokens,
   type ForwardResult,
-  type ModelId,
+  ModelId,
   type Neighbour,
   type Tokenizer,
 } from "@repo/llm";
 import { useEffect, useState, type CSSProperties } from "react";
 import { createSession, type ModelInfo } from "../../runtime/session.ts";
 
-const MODELS: ModelId[] = [
-  "embed",
-  "attn",
-  "rope",
-  "mlp",
-  "noresidual",
-  "residual",
-  "full",
-  "full-q8",
-  "drafter-64",
-  "drafter-96",
-  "moe",
-];
+// Every trained model (counts has no forward pass to show).
+const MODELS = ModelId.options.filter((id) => id !== "counts");
 
 interface Report {
   info: ModelInfo;

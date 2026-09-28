@@ -15,7 +15,8 @@ import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 
 import { autocomplete } from "../../chapters/data/autocomplete.ts";
 import { STAT_SCALES, type StatChip as StatChipDef, type StatScale } from "../../chapters/types.ts";
 import hudCss from "../../hud/hud.module.css";
-import { Labels, type LabelReading, type LabelsHandle } from "../../hud/Labels.tsx";
+import { Labels, type LabelsHandle } from "../../hud/Labels.tsx";
+import type { LabelMode } from "../../state/app-state.ts";
 import { StatChip } from "../../hud/StatChip.tsx";
 import { look, type PaletteToken, type TypeSize } from "../../look/look.ts";
 import { fetchModel } from "../../runtime/models.ts";
@@ -255,7 +256,7 @@ function ChipsSection({ onReady }: { onReady: () => void }) {
 }
 
 /** The real label layer, pinned in a box: a transformed parent makes its fixed layer local. */
-function LabelSpecimen({ reading }: { reading: LabelReading }) {
+function LabelSpecimen({ reading }: { reading: LabelMode }) {
   const labels = useRef<LabelsHandle>(null);
   const defs = autocomplete.labels;
   useEffect(() => {

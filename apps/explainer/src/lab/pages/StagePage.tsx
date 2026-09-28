@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { LabelDef } from "../../chapters/types.ts";
-import { Labels, type LabelReading, type LabelsHandle } from "../../hud/Labels.tsx";
+import { Labels, type LabelsHandle } from "../../hud/Labels.tsx";
+import type { LabelMode } from "../../state/app-state.ts";
 import type { Clock } from "../../runtime/clock.ts";
 import type { ProbeApi } from "../probe.ts";
 import { runStage, type StageOptions } from "../../runtime/stage.ts";
@@ -11,7 +12,7 @@ export interface StagePageProps {
   scene: () => StageScene | Promise<StageScene>;
   debug?: StageOptions["debug"];
   /** `null` hides the label layer (`?labels=0`). */
-  reading: LabelReading | null;
+  reading: LabelMode | null;
   clock: Clock;
   probe: ProbeApi;
   onReady: () => void;

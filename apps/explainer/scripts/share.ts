@@ -18,6 +18,7 @@ import type { ChapterDef } from "../src/chapters/types.ts";
 import { SERIES_TITLE } from "../src/look/brand.ts";
 import { CARD_SIZE, mediaFor } from "../src/runtime/media.ts";
 import { hashFor, sharePathFor, writtenChapters } from "../src/state/app-state.ts";
+import { preview } from "vite";
 import { appRoot, launch, openPage } from "./harness.ts";
 
 const PREVIEW_ORIGIN = "http://localhost:4173";
@@ -114,14 +115,15 @@ if (import.meta.main) {
   });
   if (!values.check) await write();
   else {
-    const preview = values.base
+    // The built site on the origin `write` baked into the pages, once it is listening.
+    const server = values.base
       ? undefined
-      : Bun.spawn(["bunx", "vite", "preview", "--port", "4173", "--strictPort"], {
-          cwd: appRoot,
-          stdout: "ignore",
+      : await preview({
+          root: appRoot,
+          logLevel: "error",
+          preview: { port: 4173, strictPort: true },
         });
-    if (preview) await Bun.sleep(1500);
-    const failures = await check(values.base ?? PREVIEW_ORIGIN).finally(() => preview?.kill());
+    const failures = await check(values.base ?? PREVIEW_ORIGIN).finally(() => server?.close());
     if (failures.length) {
       console.error(failures.map((f) => `FAIL ${f}`).join("\n"));
       process.exit(1);
