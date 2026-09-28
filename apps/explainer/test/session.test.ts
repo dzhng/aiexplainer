@@ -49,6 +49,19 @@ describe("inference session (worker)", () => {
     expect(top?.word).toBe("upon");
   });
 
+  test("keeps every model it loads, so requests can name a second one", async () => {
+    await session.load("counts");
+    const a = await session.continueText("full", "Once upon a", 3);
+    const b = await session.continueText("full-q8", "Once upon a", 3);
+    expect(a.tokens).toHaveLength(3);
+    expect(b.tokens.map((t) => t.text)).toEqual(a.tokens.map((t) => t.text));
+    const weights = await session.weights("full-q8", "layers.0.attn.wq", 0, 32);
+    expect(weights.q8!.q.map((q) => q * weights.q8!.scale)).toEqual(weights.values);
+    // The current model is still the one `load` chose.
+    const [top] = await session.nextWords("once", 1);
+    expect(top?.word).toBe("upon");
+  });
+
   test("errors come back as rejections", async () => {
     await session.load("counts");
     expect((await rejection(session.run([1, 2])))?.message).toContain("needs a loaded transformer");

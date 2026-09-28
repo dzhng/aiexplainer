@@ -10,8 +10,10 @@ import type {
   Neighbour,
   NextWord,
   ProbeResult,
+  TextContinuation,
   TraceSpec,
   TransformerArch,
+  WeightSlice,
 } from "@repo/llm";
 import { modelManifestUrl } from "./models.ts";
 
@@ -27,6 +29,10 @@ export type WorkerRequest = { id: number } & (
   | { type: "run"; tokens: number[]; trace?: TraceSpec; window?: number }
   | { type: "nextWords"; word: string; k: number }
   | { type: "neighbours"; token: number; k: number }
+  // These name their model: the worker keeps every model it has loaded, so a chapter can
+  // compare two (chapter 12's full and 8-bit copies) without reloading either.
+  | { type: "continue"; manifestUrl: string; text: string; count: number }
+  | { type: "weights"; manifestUrl: string; tensor: string; start: number; count: number }
 );
 
 export type WorkerReply = { id: number } & (
@@ -48,6 +54,10 @@ export interface Session {
   nextWords(word: string, k: number): Promise<NextWord[]>;
   /** The loaded transformer's nearest tokens in its input embedding table. */
   neighbours(token: number, k: number): Promise<Neighbour[]>;
+  /** A shipped transformer's greedy continuation of `text` (loaded on first use, then kept). */
+  continueText(model: ModelId, text: string, count: number): Promise<TextContinuation>;
+  /** A run of a shipped model's stored weights (`weightSlice`). */
+  weights(model: ModelId, tensor: string, start: number, count: number): Promise<WeightSlice>;
   /** Rejects the live request, if any, and drops its eventual reply. */
   cancel(): void;
   dispose(): void;
@@ -113,6 +123,27 @@ export function createSession(options: SessionOptions = {}): Session {
     },
     neighbours(token, k) {
       return send<Neighbour[]>({ id: nextId++, type: "neighbours", token, k });
+    },
+    continueText(model, text, count) {
+      const manifestUrl = modelManifestUrl(model, options.modelsUrl).href;
+      return exclusive<TextContinuation>({
+        id: nextId++,
+        type: "continue",
+        manifestUrl,
+        text,
+        count,
+      });
+    },
+    weights(model, tensor, start, count) {
+      const manifestUrl = modelManifestUrl(model, options.modelsUrl).href;
+      return send<WeightSlice>({
+        id: nextId++,
+        type: "weights",
+        manifestUrl,
+        tensor,
+        start,
+        count,
+      });
     },
     cancel,
     dispose() {

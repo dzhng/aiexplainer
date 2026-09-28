@@ -4,7 +4,14 @@
  * worker (D38); table lookups (chapter 0's word rule, chapter 1's tokenizer) read the model the
  * main thread already holds for the HUD's stats. The run's shape is the scene builder's.
  */
-import { countsModel, type LoadedModel, type ModelSource } from "@repo/llm";
+import {
+  countsModel,
+  probeResult,
+  sourceEvidence,
+  type LoadedModel,
+  type ModelSource,
+} from "@repo/llm";
+import { CONTINUE_WORDS, STRIP } from "../chapters/data/quantization.ts";
 import type { ChapterDef } from "../chapters/types.ts";
 import type { SceneRun } from "../scene/build-frame.ts";
 import type { Session } from "./session.ts";
@@ -13,7 +20,7 @@ export interface RunContext {
   /** The chapter's model on the main thread (the same one the HUD's stats read). */
   model: ModelSource;
   /** The inference worker, holding the chapter's model. Requests run one after another. */
-  session: Pick<Session, "nextWords">;
+  session: Pick<Session, "nextWords" | "continueText" | "weights">;
 }
 
 /** Each counts model's word rule, decoded once (the vocabulary is thousands of words). */
@@ -58,6 +65,25 @@ export async function computeRun(
         return { text: input, pieces };
       });
       return { kind: "pieces", vocab: tokenizer.vocabSize, steps };
+    }
+    case "quantization": {
+      // Both machines continue the same text; the strip reads both models' stored weights.
+      const prompt = inputsOf(def, text)[0] ?? "";
+      const { session } = ctx;
+      const full = await session.continueText("full", prompt, CONTINUE_WORDS);
+      const q8 = await session.continueText("full-q8", prompt, CONTINUE_WORDS);
+      const f16 = await session.weights("full", STRIP.tensor, STRIP.start, STRIP.count);
+      const int8 = await session.weights("full-q8", STRIP.tensor, STRIP.start, STRIP.count);
+      if (!int8.q8) throw new Error(`full-q8's ${STRIP.tensor} is not q8_0`);
+      const words = (c: typeof full) => c.tokens.map(({ text, p }) => ({ text, p }));
+      return {
+        kind: "quantization",
+        prompt,
+        full: words(full),
+        q8: words(q8),
+        strip: { ...STRIP, full: f16.values, q8: int8.values, ...int8.q8 },
+        byteRatio: probeResult(sourceEvidence(model), "q8-bytes").value,
+      };
     }
     case "batching":
       // Chapter 11 is arithmetic only (D27): no model runs.

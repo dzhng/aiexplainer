@@ -24,7 +24,6 @@ import {
   initialState,
   reduce,
   shownSlider,
-  writtenChapters,
   type Action,
   type AppState,
 } from "../state/app-state.ts";

@@ -1,23 +1,50 @@
-// The inference worker (D38): holds one loaded model and answers requests in order.
+// The inference worker (D38): holds the current model and answers requests in order; every
+// model it loads stays cached by manifest URL, for requests that name their model.
 // Its only client is session.ts, which owns cancellation and drops stale replies.
 import {
+  continueText,
   countsModel,
   fetchModel,
   forward,
   nearestTokens,
   nextWords,
   transformerModel,
+  weightSlice,
   type CountsModel,
   type ForwardTrace,
+  type LoadedModel,
   type Transformer,
 } from "@repo/llm";
 import type { ModelInfo, WorkerReply, WorkerRequest } from "./session.ts";
 
 declare const self: Worker;
 
-let model:
-  | { kind: "transformer"; transformer: Transformer }
-  | { kind: "counts"; counts: CountsModel };
+type Held =
+  | { kind: "transformer"; loaded: LoadedModel; transformer: Transformer }
+  | { kind: "counts"; loaded: LoadedModel; counts: CountsModel };
+
+let model: Held | undefined;
+const cache = new Map<string, Promise<Held>>();
+
+/** The model at `manifestUrl`, fetched and prepared once. */
+function held(manifestUrl: string): Promise<Held> {
+  let entry = cache.get(manifestUrl);
+  if (!entry) {
+    entry = fetchModel(new URL(manifestUrl)).then((loaded) =>
+      loaded.manifest.kind === "transformer"
+        ? { kind: "transformer", loaded, transformer: transformerModel(loaded) }
+        : { kind: "counts", loaded, counts: countsModel(loaded) },
+    );
+    cache.set(manifestUrl, entry);
+  }
+  return entry;
+}
+
+async function heldTransformer(manifestUrl: string): Promise<Transformer> {
+  const h = await held(manifestUrl);
+  if (h.kind !== "transformer") throw new Error(`${h.loaded.manifest.id} is not a transformer`);
+  return h.transformer;
+}
 
 self.onmessage = async ({ data }: MessageEvent<WorkerRequest>) => {
   try {
@@ -32,12 +59,8 @@ self.onmessage = async ({ data }: MessageEvent<WorkerRequest>) => {
 async function handle(request: WorkerRequest): Promise<[unknown, Transferable[]]> {
   switch (request.type) {
     case "load": {
-      const loaded = await fetchModel(new URL(request.manifestUrl));
-      const { manifest } = loaded;
-      model =
-        manifest.kind === "transformer"
-          ? { kind: "transformer", transformer: transformerModel(loaded) }
-          : { kind: "counts", counts: countsModel(loaded) };
+      model = await held(request.manifestUrl);
+      const { manifest } = model.loaded;
       const info: ModelInfo = { id: manifest.id, kind: manifest.kind, evidence: manifest.evidence };
       if (manifest.kind === "transformer") info.arch = manifest.arch;
       return [info, []];
@@ -53,6 +76,14 @@ async function handle(request: WorkerRequest): Promise<[unknown, Transferable[]]
     case "neighbours": {
       if (model?.kind !== "transformer") throw new Error("neighbours needs a loaded transformer");
       return [nearestTokens(model.transformer, request.token, request.k), []];
+    }
+    case "continue": {
+      const transformer = await heldTransformer(request.manifestUrl);
+      return [continueText(transformer, request.text, request.count), []];
+    }
+    case "weights": {
+      const { loaded } = await held(request.manifestUrl);
+      return [weightSlice(loaded, request.tensor, request.start, request.count), []];
     }
     case "nextWords": {
       if (model?.kind !== "counts") throw new Error("nextWords needs a loaded counts model");

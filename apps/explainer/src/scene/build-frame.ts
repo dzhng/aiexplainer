@@ -12,6 +12,7 @@ import type { SceneTags } from "../hud/SceneTags.tsx";
 import { autocomplete } from "./builders/autocomplete.ts";
 import { tokenizer } from "./builders/tokenizer.ts";
 import { batching } from "./builders/batching.ts";
+import { quantization } from "./builders/quantization.ts";
 import { withEnvironment } from "./environment.ts";
 
 /** The HUD controls a scene reads. */
@@ -41,6 +42,29 @@ export type SceneRun =
        * each with its id, its text (a leading space included) and its length in bytes.
        */
       steps: { text: string; pieces: { id: number; text: string; bytes: number }[] }[];
+    }
+  | {
+      kind: "quantization";
+      /** The text both machines continue (the loop's input, or the reader's text). */
+      prompt: string;
+      /** Each machine's greedy words after it: the 16-bit `full` and its 8-bit copy. */
+      full: { text: string; p: number }[];
+      q8: { text: string; p: number }[];
+      /**
+       * One q8_0 group of weights: `full`'s stored 16-bit values, and `full-q8`'s `scale · q`
+       * with its scale and integers.
+       */
+      strip: {
+        tensor: string;
+        start: number;
+        count: number;
+        full: number[];
+        q8: number[];
+        scale: number;
+        q: number[];
+      };
+      /** The measured weights-file ratio, 8-bit ÷ 16-bit (the `q8-bytes` probe). */
+      byteRatio: number;
     };
 
 export interface SceneBuilder {
@@ -62,6 +86,7 @@ export const SCENE_BUILDERS: Record<SceneBuilderId, SceneBuilder> = {
   autocomplete,
   tokenizer,
   batching,
+  quantization,
 };
 
 /** What one frame of a chapter's scene is: the renderer's input and the overlay's text. */
