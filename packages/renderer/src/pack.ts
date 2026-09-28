@@ -17,7 +17,10 @@ export const FrameUniform = d
     eye: d.vec4f,
     /** Device pixels: width, height, 1/width, 1/height. */
     viewport: d.vec4f,
-    /** x: emission scale (0 when the emissive layer is off); y: bloom scale (0 when off). */
+    /**
+     * x: emission scale (0 when the emissive layer is off); y: bloom scale (0 when off);
+     * z: flow pulse scale (0 when the flows layer is off).
+     */
     debug: d.vec4f,
     /** The Cutaway plane: xyz normal, w offset. */
     cutPlane: d.vec4f,
@@ -26,11 +29,19 @@ export const FrameUniform = d
 export const FRAME_UNIFORM_BYTES = 192;
 
 /**
- * One vertex: position, baked AO, normal, baked (warm, cool) light as two unorm16s, and the
- * axis point its width scales away from (`FrameDynamics.widthScale`).
+ * One vertex: position, baked AO, normal, baked (warm, cool) light as two unorm16s, the axis
+ * point its width scales away from (`FrameDynamics.widthScale`), and how far along the part it
+ * sits (a tube's arc length, where flow pulses are drawn).
  */
 export const Vertex = d
-  .struct({ position: d.vec3f, ao: d.f32, normal: d.vec3f, light: d.u32, axis: d.vec3f })
+  .struct({
+    position: d.vec3f,
+    ao: d.f32,
+    normal: d.vec3f,
+    light: d.u32,
+    axis: d.vec3f,
+    along: d.f32,
+  })
   .$name("Vertex");
 export const VERTEX_BYTES = 48;
 
@@ -54,11 +65,13 @@ export const Material = d
     metallic: d.f32,
     roughness: d.f32,
     specular: d.f32,
+    /** 1: the surface shows only moving flow pulses (`LookConfig.flow`, `flowPhase`). */
+    pulses: d.f32,
   })
   .$name("Material");
 export const MATERIAL_BYTES = 48;
 
-/** Per part slot: intensity, width scale, flow phase, unused. */
+/** Per part slot: intensity, width scale, flow phase (cycles), unused. */
 export const DYNAMICS_BYTES_PER_SLOT = 16;
 
 export const Light = d.struct({ direction: d.vec3f, radiance: d.vec3f }).$name("Light");
@@ -85,6 +98,8 @@ export const LookUniform = d
     bloomRadius: d.f32,
     saturation: d.f32,
     poolSpill: d.f32,
+    flowSpacing: d.f32,
+    flowDuty: d.f32,
     bakeWarm: d.vec3f,
     bakeCool: d.vec3f,
     capColor: d.vec3f,
@@ -107,7 +122,7 @@ const unorm16 = (v: number) => Math.round(Math.min(1, Math.max(0, v)) * 65535);
 export function packVertices(
   out: Float32Array,
   first: number,
-  g: Pick<Geometry, "positions" | "normals" | "ao" | "light" | "axis">,
+  g: Pick<Geometry, "positions" | "normals" | "ao" | "light" | "axis" | "along">,
 ): void {
   const u32 = new Uint32Array(out.buffer, out.byteOffset, out.length);
   for (let i = 0; i < g.positions.length / 3; i++) {
@@ -120,7 +135,7 @@ export function packVertices(
       ? (unorm16(g.light[i * 2]!) | (unorm16(g.light[i * 2 + 1]!) << 16)) >>> 0
       : 0;
     out.set((g.axis ?? g.positions).subarray(i * 3, i * 3 + 3), o + 8);
-    out[o + 11] = 0;
+    out[o + 11] = g.along?.[i] ?? 0;
   }
 }
 
@@ -146,6 +161,7 @@ export function packFrame(
   pixelHeight: number,
   emissiveScale: number,
   bloomScale: number,
+  flowScale: number,
   cut: CutPlane,
 ): void {
   packMat4(out, 0, m.viewProj);
@@ -158,7 +174,7 @@ export function packFrame(
   out[39] = 1 / pixelHeight;
   out[40] = emissiveScale;
   out[41] = bloomScale;
-  out[42] = 0;
+  out[42] = flowScale;
   out[43] = 0;
   packVec3(out, 44, cut.normal);
   out[47] = cut.offset;
@@ -192,7 +208,7 @@ export function packMaterial(out: Float32Array, index: number, m: MaterialLook):
   out[base + 7] = m.metallic;
   out[base + 8] = m.roughness;
   out[base + 9] = m.specular ?? 1;
-  out[base + 10] = 0;
+  out[base + 10] = m.pulses ? 1 : 0;
   out[base + 11] = 0;
 }
 
@@ -222,8 +238,8 @@ export function packLook(out: Float32Array, look: LookConfig): void {
   out[47] = look.bloom.radius;
   out[48] = look.tonemap.saturation;
   out[49] = look.lights.pool.spill;
-  out[50] = 0;
-  out[51] = 0;
+  out[50] = look.flow.spacing;
+  out[51] = look.flow.duty;
   packVec3(out, 52, look.room.bake.warm);
   out[55] = 0;
   packVec3(out, 56, look.room.bake.cool);

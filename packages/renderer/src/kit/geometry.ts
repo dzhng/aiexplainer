@@ -15,6 +15,8 @@ export interface Geometry {
    * (a tube's centreline). Absent means the vertex itself, so width scaling leaves it alone.
    */
   axis?: Float32Array;
+  /** Metres along the part's length per vertex (a tube's arc length), for flow pulses. */
+  along?: Float32Array;
   indices: Uint32Array;
   bounds: Box3;
 }

@@ -1,9 +1,10 @@
-import { Layer, probeAdapter } from "@repo/renderer";
+import { probeAdapter } from "@repo/renderer";
 import { createRoot } from "react-dom/client";
 import { CHAPTERS } from "./chapters/index.ts";
 import { Fallback } from "./fallback/Fallback.tsx";
 import { installProbe } from "./lab/probe.ts";
 import "./look/global.css";
+import { layersFrom } from "./runtime/debug-layers.ts";
 import { applyCssVars } from "./look/look.ts";
 import { App } from "./runtime/app.tsx";
 import { arrivalFromSearch, clockFromSearch, clockIsDriven } from "./runtime/clock.ts";
@@ -21,9 +22,9 @@ probe.support = detectSupport(
   browserSupportEnv(probe.adapter !== null && !probe.adapter.isFallbackAdapter),
 );
 if (probe.support === "webgpu") {
-  // `?emissive=0` and `?bloom=0` isolate the renderer's layers for shots.
+  // `?emissive=0`, `?layers=` and `?bloom=0` isolate the renderer's layers for shots.
   const debug = {
-    layers: params.get("emissive") === "0" ? ~Layer.emissive : ~0,
+    layers: layersFrom(params),
     bloom: params.get("bloom") !== "0",
   };
   root.render(

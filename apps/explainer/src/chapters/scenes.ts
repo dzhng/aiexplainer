@@ -19,7 +19,7 @@ export const SCENE_ANCHORS = {
 export const SCENE_KIT: Record<keyof typeof SCENE_ANCHORS, readonly string[]> = {
   autocomplete: ["mesh", "bars", "block", "contactShadow"],
   tokenizer: ["block", "brick", "contactShadow"],
-  attention: ["block", "pipes", "sealed"],
+  attention: ["block", "pipes", "sealed", "flows", "tube"],
 };
 
 export type SceneBuilderId = keyof typeof SCENE_ANCHORS;

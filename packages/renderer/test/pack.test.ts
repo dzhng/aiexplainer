@@ -55,7 +55,7 @@ test("packFrame fills exactly FRAME_UNIFORM_BYTES", () => {
     createCameraMatrices(),
   );
   const out = packed(FRAME_UNIFORM_BYTES, (o) =>
-    packFrame(o, m, 1.5, 640, 480, 1, 0, { normal: [0, 0, 1], offset: 0.25 }),
+    packFrame(o, m, 1.5, 640, 480, 1, 0, 1, { normal: [0, 0, 1], offset: 0.25 }),
   );
   expectFillsExactly(out, FRAME_UNIFORM_BYTES);
   expect(out[35]).toBe(1.5);
@@ -94,15 +94,17 @@ test("packVertices packs AO, baked light and the axis; plain geometry is open, u
   const ao = new Float32Array([0.25, 0.75]);
   const light = new Float32Array([1, 0, 0.5, 1]);
   const axis = new Float32Array([0, 2, 3, 4, 0, 6]);
+  const along = new Float32Array([0.5, 2.5]);
   const stride = VERTEX_BYTES / 4;
   const baked = packed(2 * VERTEX_BYTES, (out) =>
-    packVertices(out, 0, { positions, normals, ao, light, axis }),
+    packVertices(out, 0, { positions, normals, ao, light, axis, along }),
   );
   expect(Number.isNaN(baked[2 * stride]!)).toBe(true); // the next record is untouched
   expect([...baked.subarray(0, 7)]).toEqual([1, 2, 3, 0.25, 0, 1, 0]);
   expect(baked[stride + 3]).toBe(0.75);
   expect([...baked.subarray(8, 11)]).toEqual([0, 2, 3]);
   expect([...baked.subarray(stride + 8, stride + 11)]).toEqual([4, 0, 6]);
+  expect([baked[11], baked[stride + 11]]).toEqual([0.5, 2.5]);
   // unpack2x16unorm order: warm in the low 16 bits, cool in the high.
   const u32 = new Uint32Array(baked.buffer);
   expect(u32[7]).toBe(0x0000ffff);

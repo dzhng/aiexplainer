@@ -73,8 +73,9 @@ export async function computeRun(
 /**
  * The prompt's last token (the focus) and its attention over every token, with the words the
  * model writes next (greedy) after it: those stand sealed, and the trace gives them weight 0.
- * Text longer than the scene holds keeps `<bos>` and its last tokens, and the model reads
- * exactly what the scene shows.
+ * Also the model's guess for the next word, and how far attention turned the focus word's
+ * vector toward the word it drew the most from. Text longer than the scene holds keeps
+ * `<bos>` and its last tokens, and the model reads exactly what the scene shows.
  */
 export async function attentionStep(
   session: Pick<Session, "run">,
@@ -87,18 +88,62 @@ export async function attentionStep(
   const room = MAX_TOKENS - FUTURE_WORDS;
   const ids = all.length > room ? [all[0]!, ...all.slice(1 - room)] : all;
   const focus = ids.length - 1;
+  let guess: AttentionStep["guess"] | undefined;
   for (let k = 0; k < FUTURE_WORDS; k++) {
     const { logits } = await session.run(ids);
-    let next = 0;
-    for (let v = 1; v < logits.length; v++) if (logits[v]! > logits[next]!) next = v;
+    const next = argmax(logits);
+    guess ??= { token: tokenizer.decode([next]), p: softmaxAt(logits, next) };
     ids.push(next);
   }
-  const { trace } = await session.run(ids, { tokens: [focus], heads: [0], layers: [0] });
-  const weights = trace?.layers[0]?.attn?.weights.data;
-  if (!weights) throw new Error("the attention trace is missing its weights");
+  // Every token traced: the focus row's weights, and the vectors before and after attention.
+  const { trace } = await session.run(ids, { heads: [0], layers: [0] });
+  const attn = trace?.layers[0]?.attn;
+  if (!attn) throw new Error("the attention trace is missing");
+  const keys = attn.weights.shape[2]!;
+  const weights = Array.from(attn.weights.data.subarray(focus * keys, (focus + 1) * keys));
+  // The word the focus draws the most from, other than itself.
+  let referent = 0;
+  for (let i = 1; i < focus; i++) if (weights[i]! > weights[referent]!) referent = i;
+  const d = attn.residual.residualIn.shape[1]!;
+  const row = (t: { data: Float32Array }, i: number) => t.data.subarray(i * d, (i + 1) * d);
+  const target = row(attn.residual.residualIn, referent);
   return {
     tokens: ids.map((id) => tokenizer.decode([id])),
     focus,
-    weights: Array.from(weights),
+    weights,
+    guess: guess!,
+    turn: {
+      referent,
+      before: angleDeg(row(attn.residual.residualIn, focus), target),
+      after: angleDeg(row(attn.residual.sum, focus), target),
+    },
   };
+}
+
+function argmax(values: ArrayLike<number>): number {
+  let best = 0;
+  for (let i = 1; i < values.length; i++) if (values[i]! > values[best]!) best = i;
+  return best;
+}
+
+/** softmax(logits)[i], summed in f64. */
+function softmaxAt(logits: ArrayLike<number>, i: number): number {
+  let max = -Infinity;
+  for (let j = 0; j < logits.length; j++) max = Math.max(max, logits[j]!);
+  let sum = 0;
+  for (let j = 0; j < logits.length; j++) sum += Math.exp(logits[j]! - max);
+  return Math.exp(logits[i]! - max) / sum;
+}
+
+/** The angle between two vectors, in degrees. */
+export function angleDeg(a: ArrayLike<number>, b: ArrayLike<number>): number {
+  let dot = 0;
+  let na = 0;
+  let nb = 0;
+  for (let i = 0; i < a.length; i++) {
+    dot += a[i]! * b[i]!;
+    na += a[i]! * a[i]!;
+    nb += b[i]! * b[i]!;
+  }
+  return (Math.acos(Math.max(-1, Math.min(1, dot / Math.sqrt(na * nb)))) * 180) / Math.PI;
 }

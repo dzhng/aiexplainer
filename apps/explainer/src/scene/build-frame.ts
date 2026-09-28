@@ -58,6 +58,13 @@ export interface AttentionStep {
    * mask makes every weight after the focus exactly 0.
    */
   weights: number[];
+  /** The model's top guess for the word after the focus, and its probability. */
+  guess: { token: string; p: number };
+  /**
+   * How attention turned the focus token's vector toward `referent` (the token it draws the
+   * most from, other than itself): the angle between them before and after, in degrees.
+   */
+  turn: { referent: number; before: number; after: number };
 }
 
 export interface SceneBuilder {

@@ -97,6 +97,12 @@
         "roughness": 0.7,
         "opacity": 1
       },
+      "pulse": {
+        "color": "flow",
+        "emissive": "flow",
+        "opacity": 0.5,
+        "pulses": true
+      },
       "focusWord": {
         "color": "focus",
         "emissive": "focus",
@@ -213,8 +219,9 @@
     "radius": 1.0
   },
   "flow": {
-    "cyclesPerSec": 0.6,
-    "spacing": 0.25
+    "cyclesPerSec": 1.4,
+    "spacing": 0.3,
+    "duty": 0.4
   },
   "views": {
     "durationSec": 0.6,

@@ -7,13 +7,24 @@ import { bars } from "./bars.ts";
 import { block } from "./block.ts";
 import { brick } from "./brick.ts";
 import { contactShadow } from "./contact-shadow.ts";
+import { flows } from "./flows.ts";
 import { mesh } from "./mesh.ts";
 import { pipes } from "./pipes.ts";
 import { sealed } from "./sealed.ts";
 import type { KitPrimitive } from "./primitive.ts";
 import { tube } from "./tube.ts";
 
-export const KIT = { block, tube, mesh, bars, contactShadow, brick, pipes, sealed } as const;
+export const KIT = {
+  block,
+  tube,
+  mesh,
+  bars,
+  contactShadow,
+  brick,
+  pipes,
+  sealed,
+  flows,
+} as const;
 export type KitPrimitiveId = keyof typeof KIT;
 
 export function isKitPrimitive(id: string): id is KitPrimitiveId {

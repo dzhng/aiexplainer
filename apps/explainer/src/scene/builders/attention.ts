@@ -9,11 +9,19 @@
  *
  * Views: Exploded lifts the mix and its pipes off the words and drops the stand away.
  *
- * Loop channels read: `blocks` (0 → 1 as the words rise into place), `pipes` (0 → 1: hairline
- * pipes reach up from each word in reading order), `settle` (0 → 1: widths go from hairline
- * to the real weights), `fill` (0 → 1: the mix block lights up as the blend arrives),
- * `future` (0 → 1: the later words rise with their sealed stubs).
- * Typed text shows everything settled at once, without the loop's motion.
+ * Pulses of light run up every pipe into the mix (kit: `flows`), as bright as the pipe is wide,
+ * and a needle on the mix (kit: `tube`) tilts toward the word it drew the most from, by the
+ * angle attention really turned the focus word's vector. The run can hold several prompts
+ * (steps); a step that reorders the last one's words (chapter 4's failure) moves each block
+ * from its old place to its new one, and the mix shows the model's guess for the next word.
+ *
+ * Loop channels read: `step` (which prompt), `blocks` (0 → 1 as the words rise into place),
+ * `pipes` (0 → 1: hairline pipes reach up from each word in reading order), `settle` (0 → 1:
+ * widths go from hairline to the real weights), `fill` (0 → 1: the mix lights up), `flow`
+ * (0 → 1: the pulses come on), `needle` (the needle shows), `turn` (0 → 1: it tilts), `future` (0 → 1: the later
+ * words rise with their sealed stubs), `swap` (0 → 1: reordered words move to their new
+ * places), `guess` (the next-word guess shows), `lost` (the order note shows).
+ * Typed text shows its prompt settled at once, without the loop's motion.
  */
 import {
   KIT,
@@ -27,6 +35,7 @@ import {
 } from "@repo/renderer";
 import type { Mat4, Vec3 } from "math";
 import { share } from "../../chapters/format.ts";
+import { look } from "../../look/look.ts";
 import type { SceneTags } from "../../hud/SceneTags.tsx";
 import type { AttentionStep, SceneBuilder, SceneFrame } from "../build-frame.ts";
 import { nextRevision } from "../revision.ts";
@@ -82,12 +91,24 @@ const EXPLODE = { mix: [0, 0.45, 0] as Vec3, stand: [0, -0.3, 0] as Vec3 };
  * the word (the slider picks how many); their blocks are laid out wide enough for it.
  */
 const MAX_SHARES = 5;
-const SHARE_ROOM = " 00%";
+const SHARE_ROOM = " 00%  ";
 /** The note over the sealed words (the chapter's analogy, from the map's ladder). */
 export const SEALED_NOTE = "you can't read tomorrow's newspaper";
 
-/** Scene text slots: the mix's word, the focus word, the sealed note, then one per word. */
-const TAG = { mix: 0, focus: 1, sealed: 2, words: 3 } as const;
+/** The note while a reordered prompt gives the very same mix. */
+export const ORDER_NOTE = "same mix, same guess: the order is lost";
+
+/**
+ * Scene text slots: the mix's word, the focus word, the sealed note, the guess, the needle's
+ * angle, the order note, then one per word.
+ */
+const TAG = { mix: 0, focus: 1, sealed: 2, guess: 3, turn: 4, lost: 5, words: 6 } as const;
+/** Pulses are this bright at full flow (they add light over the pipe). */
+const FLOW_GLOW = 0.5;
+/** The needle on the mix: its length and radius, metres. */
+const NEEDLE = { length: 0.26, radius: 0.012, glow: 0.35 };
+/** A block moving to its new place in a reorder rises this high at mid-move, metres. */
+const HOP = 0.28;
 
 /** Dynamics slots. */
 const SLOT = {
@@ -96,7 +117,9 @@ const SLOT = {
   focus: 2,
   mix: 3,
   sealed: 4,
-  pipes: 4 + FUTURE_WORDS,
+  needle: 4 + FUTURE_WORDS,
+  pipes: 5 + FUTURE_WORDS,
+  flows: 5 + FUTURE_WORDS + MAX_TOKENS,
 } as const;
 
 /** What a word block shows: `<bos>` is the start marker every prompt begins with. */
@@ -204,6 +227,9 @@ interface Built {
   pipes: TubePart[];
   /** Stub then cap, per later word. */
   sealed: TubePart[];
+  /** A pulse sleeve over each pipe. */
+  flows: TubePart[];
+  needle: TubePart;
   shown: AttentionStep | null;
   layout: Layout | null;
   /** Labels that ride a part of the step shown, and where on it. */
@@ -239,6 +265,7 @@ function followStep(scene: SceneDesc, b: Built, step: AttentionStep): void {
   const paths = pipePaths(layout.fan);
   b.pipes.forEach((pipe, i) => {
     pipe.path = paths[Math.min(i, step.focus)]!;
+    b.flows[i]!.path = pipe.path;
   });
   // Each later word's sealed stub rises from the middle of its block's top.
   const later = Array.from({ length: FUTURE_WORDS }, (_, j): Vec3 => {
@@ -262,6 +289,59 @@ function followStep(scene: SceneDesc, b: Built, step: AttentionStep): void {
 }
 
 const clamp01 = (v: number) => Math.min(1, Math.max(0, v));
+
+/**
+ * When `next` holds exactly `prev`'s tokens in another order (a reorder), where each of its
+ * tokens stood in `prev` (the same word keeps its place when it can); otherwise null.
+ */
+export function reorderFrom(prev: AttentionStep, next: AttentionStep): number[] | null {
+  if (prev.tokens.length !== next.tokens.length || prev.focus !== next.focus) return null;
+  const from = next.tokens.map((token, i) => (prev.tokens[i] === token ? i : -1));
+  const taken = new Set(from.filter((k) => k >= 0));
+  for (const [i, token] of next.tokens.entries()) {
+    if (from[i]! >= 0) continue;
+    const k = prev.tokens.findIndex((t, k) => t === token && !taken.has(k));
+    if (k < 0) return null;
+    taken.add(k);
+    from[i] = k;
+  }
+  return from;
+}
+
+/**
+ * The needle's transform: a unit rod up +y, stood at `base`, tilted from upright by `tilt`
+ * radians toward the horizontal unit direction `toward`, `NEEDLE.length` long.
+ */
+function standNeedle(transform: Mat4, base: Vec3, toward: Vec3, tilt: number): void {
+  const up: Vec3 = [toward[0] * Math.sin(tilt), Math.cos(tilt), toward[2] * Math.sin(tilt)];
+  // The rod's own width axes: horizontal across the tilt, and the one completing the frame.
+  const across: Vec3 = [-toward[2], 0, toward[0]];
+  const other: Vec3 = [
+    across[1] * up[2] - across[2] * up[1],
+    across[2] * up[0] - across[0] * up[2],
+    across[0] * up[1] - across[1] * up[0],
+  ];
+  transform.splice(
+    0,
+    16,
+    across[0],
+    across[1],
+    across[2],
+    0,
+    up[0] * NEEDLE.length,
+    up[1] * NEEDLE.length,
+    up[2] * NEEDLE.length,
+    0,
+    other[0],
+    other[1],
+    other[2],
+    0,
+    base[0],
+    base[1],
+    base[2],
+    1,
+  );
+}
 
 export const attention: SceneBuilder = {
   assets: {},
@@ -302,6 +382,26 @@ export const attention: SceneBuilder = {
       radius: SEALED_RADIUS,
       sources: placeholder.sources.slice(0, FUTURE_WORDS),
     });
+    const flows = KIT.flows.build({
+      id: "flow",
+      slot: SLOT.flows,
+      material: "pulse",
+      radius: PIPE_RADIUS,
+      paths: pipes.parts.map((p) => (p as TubePart).path),
+      explode: EXPLODE.mix,
+    });
+    // A unit rod up +y; each frame's transform stands it on the mix and tilts it.
+    const needle = KIT.tube.build({
+      id: "needle",
+      slot: SLOT.needle,
+      material: "focusWord",
+      path: [
+        [0, 0, 0],
+        [0, 1, 0],
+      ],
+      radius: NEEDLE.radius,
+      explode: EXPLODE.mix,
+    });
     const parts = [
       ...stand.flatMap((s) => s.parts),
       ...words.flatMap((w) => w.parts),
@@ -310,6 +410,8 @@ export const attention: SceneBuilder = {
       ...mix.parts,
       ...pipes.parts,
       ...sealed.parts,
+      ...flows.parts,
+      ...needle.parts,
     ];
     const pipesAnchor: SceneAnchor = { ...pipes.anchors[0]!, id: "pipes", priority: 2 };
     const sealedAnchor: SceneAnchor = { ...sealed.anchors[0]!, id: "sealed", priority: 1 };
@@ -331,6 +433,8 @@ export const attention: SceneBuilder = {
       mix: mix.parts[0] as BlockPart,
       pipes: pipes.parts as TubePart[],
       sealed: sealed.parts as TubePart[],
+      flows: flows.parts as TubePart[],
+      needle: needle.parts[0] as TubePart,
       shown: null,
       layout: null,
       pipesAnchor,
@@ -347,6 +451,11 @@ export const attention: SceneBuilder = {
         { id: "focus-word", part: "focus-word", local: [0, 0, 0.5], priority: 0 },
         // On the riser of the later words' step, under them.
         { id: "sealed-note", part: "stand.0", local: [0, 0, 0.5], priority: 0 },
+        // Clear above the mix, and at the needle's tip.
+        { id: "guess", part: "mix", local: [0, 2.2, 0], priority: 0 },
+        { id: "turn", part: "needle", local: [0, 1, 0], priority: 0 },
+        // On the front of the stand, under the words.
+        { id: "lost-note", part: "stand.0", local: [0, -0.1, 0.5], priority: 0 },
         ...Array.from({ length: MAX_TOKENS }, (_, i) => ({
           id: `word.${i}`,
           part: `word.${i}`,
@@ -355,7 +464,7 @@ export const attention: SceneBuilder = {
         })),
       ],
       text: Array.from({ length: TAG.words + MAX_TOKENS }, () => ""),
-      emphasis: [true, true, false, ...Array.from({ length: MAX_TOKENS }, () => false)],
+      emphasis: [true, true, ...Array.from({ length: TAG.words - 2 + MAX_TOKENS }, () => false)],
     };
     return { scene, tags };
   },
@@ -364,7 +473,10 @@ export const attention: SceneBuilder = {
     const { scene, dynamics } = frame.input;
     const b = built.get(scene)!;
     const text = frame.tags.text;
-    const step = run?.kind === "attention" ? run.steps[0] : undefined;
+    const typed = ui.text !== null;
+    const steps = run?.kind === "attention" ? run.steps : [];
+    const at = typed ? 0 : Math.round(tl.channels.step ?? 0);
+    const step = steps[Math.min(Math.max(0, at), steps.length - 1)];
     if (!step) {
       text.fill("");
       dynamics.widthScale.fill(0, SLOT.sealed);
@@ -372,24 +484,43 @@ export const attention: SceneBuilder = {
     }
     if (b.shown !== step) followStep(scene, b, step);
     const layout = b.layout!;
-    const typed = ui.text !== null;
-    const channel = (id: string) => (typed ? 1 : clamp01(tl.channels[id] ?? 1));
+    // Typed text shows its prompt settled; the loop-only moments (a reorder, its note) are off.
+    const channel = (id: string, typedValue = 1) =>
+      typed ? typedValue : clamp01(tl.channels[id] ?? typedValue);
     const blocks = channel("blocks");
     const grow = channel("pipes");
     const settle = channel("settle");
     const fill = channel("fill");
     const future = channel("future");
+    const flow = channel("flow");
+    const turn = channel("turn");
+    const swap = channel("swap");
+    const guessShown = channel("guess") > 0.5;
+    const lostShown = channel("lost", 0) > 0.5;
+    // A reorder of the previous step: each block starts from where its word stood there.
+    const before = at > 0 ? steps[at - 1] : undefined;
+    const from = swap < 1 && before ? reorderFrom(before, step) : null;
+    const fromLayout = from ? layoutOf(before!) : null;
     const n = step.focus + 1;
     const laterCount = step.tokens.length - n;
 
     b.steps.forEach((part, i) => {
       const s = layout.steps[i];
-      place(part.transform, s?.centre ?? PARKED, s?.size ?? SLIVER);
+      // The stand rises with the words, so the loop's seam and a change of story start flat.
+      const rise = Math.max(0.02, blocks);
+      if (s)
+        place(
+          part.transform,
+          [s.centre[0], s.centre[1] * rise, s.centre[2]],
+          [s.size[0], s.size[1] * rise, s.size[2]],
+        );
+      else place(part.transform, PARKED, SLIVER);
     });
 
     // The widest pipes' shares, written on their words once the widths have settled.
     const order = widestFirst(step);
-    const shown = settle >= 0.9 ? Math.min(ui.slider, MAX_SHARES) : 0;
+    // Shares stay on the words while a reorder carries them to their new places.
+    const shown = settle >= 0.9 || swap < 1 ? Math.min(ui.slider, MAX_SHARES) : 0;
     const label = (i: number) => {
       const rank = order.indexOf(i);
       const word = tokenLabel(step.tokens[i]!);
@@ -402,14 +533,21 @@ export const attention: SceneBuilder = {
     const rise = (part: BlockPart, i: number, up: number) => {
       const c = layout.centres[i]!;
       const sunk = BLOCK.height * 1.1 * (1 - up);
-      place(
-        part.transform,
-        [c[0], c[1] - sunk, c[2]],
-        [layout.widths[i]!, BLOCK.height, BLOCK.depth],
-      );
+      const moved = from && i <= step.focus && from[i] !== i;
+      const was = moved ? fromLayout!.centres[from[i]!]! : undefined;
+      // Moving in a reorder: from the old place to the new one, hopping over the others.
+      const centre: Vec3 = was
+        ? [
+            was[0] + (c[0] - was[0]) * swap,
+            was[1] + (c[1] - was[1]) * swap + Math.sin(Math.PI * swap) * HOP,
+            was[2] + (c[2] - was[2]) * swap,
+          ]
+        : [c[0], c[1] - sunk, c[2]];
+      place(part.transform, centre, [layout.widths[i]!, BLOCK.height, BLOCK.depth]);
       return sunk;
     };
-    const lineUp = (i: number) => clamp01(blocks * (layout.rows + 1) - layout.rowOf[i]!);
+    const lineUp = (i: number) =>
+      from ? blocks : clamp01(blocks * (layout.rows + 1) - layout.rowOf[i]!);
     for (let i = 0; i < MAX_TOKENS; i++) {
       const part = b.words[i]!;
       const earlier = i < step.focus;
@@ -472,6 +610,29 @@ export const attention: SceneBuilder = {
     b.mixAnchor.local = blocks >= 0.9 ? MIX_PIN : OUT_OF_SIGHT;
     dynamics.intensity[SLOT.mix] = MIX.glow * (0.3 + 0.7 * fill);
     text[TAG.mix] = wordsShown ? tokenLabel(step.tokens[step.focus]!) : "";
+    text[TAG.guess] =
+      wordsShown && guessShown
+        ? `guess for the next word: “${tokenLabel(step.guess.token)}”, ${share(step.guess.p)} sure`
+        : "";
+    text[TAG.lost] = lostShown ? ORDER_NOTE : "";
+
+    // The needle stands on the mix and tilts toward the word it drew the most from, by as many
+    // degrees as attention turned the focus word's vector toward that word's.
+    const { referent, before: from90, after } = step.turn;
+    const tilt = ((from90 - after) * Math.PI) / 180;
+    const target = layout.centres[referent]!;
+    const [mx, my, mz] = layout.mix.centre;
+    const top: Vec3 = [mx, my + MIX.height / 2, mz];
+    const toward: Vec3 = [target[0] - top[0], 0, target[2] - top[2]];
+    const flat = Math.hypot(toward[0], toward[2]) || 1;
+    const needleShown = channel("needle") > 0.5 && blocks >= 0.9;
+    standNeedle(b.needle.transform, top, [toward[0] / flat, 0, toward[2] / flat], tilt * turn);
+    dynamics.widthScale[SLOT.needle] = needleShown ? 1 : 0;
+    dynamics.intensity[SLOT.needle] = NEEDLE.glow;
+    text[TAG.turn] =
+      needleShown && turn >= 0.9
+        ? `${Math.round(from90 - after)}° closer to “${tokenLabel(step.tokens[referent]!)}”`
+        : "";
 
     // A hairline reaches up from each word in reading order, then every pipe settles to its
     // real weight. Settled, widthScale is exactly the weight, so width ∝ weight.
@@ -489,6 +650,17 @@ export const attention: SceneBuilder = {
           ? w
           : HAIRLINE + (w - HAIRLINE) * settle;
       dynamics.intensity[slot] = PIPE_GLOW;
+    }
+    // Pulses ride every pipe at its width, carrying light up into the mix.
+    const phase = tl.t * look.flow.cyclesPerSec;
+    const widestWeight = step.weights[order[0]!]!;
+    for (let i = 0; i < MAX_TOKENS; i++) {
+      const slot = SLOT.flows + i;
+      dynamics.widthScale[slot] = dynamics.widthScale[SLOT.pipes + i]!;
+      // As bright as the pipe is wide next to the widest, so hairlines carry almost nothing.
+      const weight = i <= step.focus ? step.weights[i]! : 0;
+      dynamics.intensity[slot] = FLOW_GLOW * flow * (weight / widestWeight);
+      dynamics.flowPhase[slot] = phase;
     }
 
     // The "pipes" label pins to the widest pipe once it has opened; until then it waits out

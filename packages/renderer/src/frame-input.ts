@@ -125,7 +125,7 @@ export interface FrameDynamics {
 }
 
 /** Bits of `FrameInput.debug.layers`; a cleared bit hides that layer. */
-export const Layer = { emissive: 1 } as const;
+export const Layer = { emissive: 1, flows: 2 } as const;
 
 /** A plane: `normal · p = offset`. The Cutaway view removes the side `normal` points to. */
 export interface CutPlane {
@@ -179,6 +179,13 @@ export interface MaterialLook {
   /** 1 is opaque; anything lower draws in the translucent pass. */
   opacity: number;
   /**
+   * The surface shows only flow pulses: dashes `LookConfig.flow.spacing` apart along the part
+   * (a tube's arc length), each `flow.duty` of a spacing long, brightest at its leading end,
+   * shifted along by the slot's `flowPhase` (in spacings). Needs `opacity` < 1 (it draws in
+   * the translucent pass, adding light); hidden with the flows layer.
+   */
+  pulses?: boolean;
+  /**
    * Scales specular (lights and reflection); default 1. A contact shadow is 0: it only
    * darkens what is under it.
    */
@@ -230,6 +237,8 @@ export interface LookConfig {
   /** The Cutaway view's default plane and the colour its cut faces are capped with. */
   cutaway: { plane: CutPlane; cap: LinearRgb };
   tonemap: { exposure: number; saturation: number };
+  /** Flow pulses: world-space gap from one pulse to the next, and the lit share of that gap. */
+  flow: { spacing: number; duty: number };
   bloom: {
     /** Brightest-channel radiance where bloom starts, and the width of its soft knee. */
     threshold: number;

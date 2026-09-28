@@ -147,6 +147,47 @@ test("sealed: a short stub rises from each source and ends in a wider cap, one s
   }
 });
 
+test("tube: each vertex carries the arc length to its ring, for flow pulses", () => {
+  const path: Vec3[] = [
+    [0, 0, 0],
+    [0, 3, 0],
+    [4, 3, 0],
+  ];
+  const g = tubeGeometry(path, 0.1, 8);
+  const along = g.along!;
+  for (let s = 0; s < 8; s++) {
+    expect(along[s]).toBe(0);
+    expect(along[8 + s]).toBe(3);
+    expect(along[16 + s]).toBe(7);
+  }
+  // Cap vertices take their end's length.
+  expect(Math.max(...along)).toBe(7);
+  expect(along[along.length - 1]).toBe(7);
+});
+
+test("flows: a sleeve over each path, a little wider than its pipe, one slot each", () => {
+  const paths: Vec3[][] = [
+    [
+      [0, 0, 0],
+      [0, 1, 0],
+    ],
+    [
+      [1, 0, 0],
+      [1, 1, 0],
+    ],
+  ];
+  const built = KIT.flows.build({ id: "f", slot: 5, material: "pulse", paths, radius: 0.1 });
+  expect(built.parts.map((p) => [p.id, p.slot])).toEqual([
+    ["f.0", 5],
+    ["f.1", 6],
+  ]);
+  for (const part of built.parts) {
+    const tube = part as { path: Vec3[]; radius: number };
+    expect(tube.radius).toBeGreaterThan(0.1);
+  }
+  expect((built.parts[1] as { path: Vec3[] }).path).toEqual(paths[1]!);
+});
+
 test("tube: a path needs two points", () => {
   expect(() => tubeGeometry([[0, 0, 0]], 1)).toThrow();
 });

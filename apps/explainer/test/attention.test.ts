@@ -7,16 +7,18 @@ import { describe, expect, test } from "bun:test";
 import { forward, promptTokens, transformerModel } from "@repo/llm";
 import { compileScene, VERTEX_BYTES, type SceneDesc, type TubePart } from "@repo/renderer";
 import path from "node:path";
-import { attention, RECALL_PROMPTS } from "../src/chapters/data/attention.ts";
+import { attention, ORDER_PROMPTS, RECALL_PROMPTS } from "../src/chapters/data/attention.ts";
 import { SCENE_KIT } from "../src/chapters/scenes.ts";
 import { createTimelineState, evalTimeline } from "../src/chapters/timeline.ts";
-import { lookConfig } from "../src/look/look.ts";
-import { computeRun } from "../src/runtime/scene-run.ts";
+import { look, lookConfig } from "../src/look/look.ts";
+import { angleDeg, computeRun } from "../src/runtime/scene-run.ts";
 import { directSession } from "../scripts/direct-session.ts";
 import { shippedModel } from "../scripts/shipped.ts";
 import {
   FUTURE_WORDS,
+  ORDER_NOTE,
   SEALED_NOTE,
+  reorderFrom,
   layoutTokens,
   MAX_LINES,
   MAX_TOKENS,
@@ -63,6 +65,7 @@ const pipeOf = (scene: SceneDesc, i: number) =>
   scene.parts.find((p) => p.id === `pipe.${i}`) as TubePart;
 
 const run = (await computeRun(attention, null, ctx))!;
+const steps = run.kind === "attention" ? run.steps : [];
 
 describe("chapter 4: pipe width is the real attention weight (slice 22)", () => {
   test("the loop's prompt and every scenario are the attn model's measured prompts (O2)", async () => {
@@ -71,7 +74,7 @@ describe("chapter 4: pipe width is the real attention weight (slice 22)", () => 
       expect(measured.attention).toContain(s.prompt);
       expect(loaded.manifest.evidence.find((e) => e.probe === s.probe)?.pass).toBe(true);
     }
-    expect(attention.loop.inputs).toEqual([RECALL_PROMPTS.mia]);
+    expect(attention.loop.inputs).toEqual([RECALL_PROMPTS.mia, ...ORDER_PROMPTS]);
     // The passing per-prompt probe is on the loop's prompt itself.
     const probe = loaded.manifest.evidence.find(
       (e) => e.probe === "recall-attention" && e.prompt === RECALL_PROMPTS.mia,
@@ -224,5 +227,86 @@ describe("chapter 4: sealed pipes from the future (slice 23)", () => {
     for (const b of blocks) expect(b.stub).toBeCloseTo(b.x, 6);
     expect(frame.tags.text).toContain(SEALED_NOTE);
     expect(frame.tags.text).toContain(tokenLabel(step!.tokens.at(-1)!));
+  });
+});
+
+describe("chapter 4: flow and the failure beat (slice 24)", () => {
+  const [dogCat, catDog] = ORDER_PROMPTS;
+  const logitsOf = (prompt: string) => forward(model, promptTokens(tokenizer, prompt)).logits;
+
+  test("D35: the order pair is the attn model's measured order probe, and it passes at 0", async () => {
+    const measured = await Bun.file(path.join(models, "attn/scenarios.json")).json();
+    expect(measured.order).toContain(ORDER_PROMPTS.join(" / "));
+    const probe = loaded.manifest.evidence.find(
+      (e) => e.probe === "order-invariance" && e.prompt === ORDER_PROMPTS.join(" / "),
+    );
+    expect(probe?.value).toBe(0);
+    expect(probe?.pass).toBe(true);
+  });
+
+  test("D35: shuffled and unshuffled last-position logits are bit-identical", () => {
+    const a = logitsOf(dogCat);
+    const b = logitsOf(catDog);
+    expect(promptTokens(tokenizer, dogCat)).not.toEqual(promptTokens(tokenizer, catDog));
+    expect(Array.from(b)).toEqual(Array.from(a));
+  });
+
+  test("the on-screen claim comes from that run: same guess, same mix, pipes rearranged", () => {
+    const [, first, second] = steps;
+    // The loop's second and third steps are the two orders, run like the app runs them.
+    expect(first!.tokens.slice(0, first!.focus + 1).join("")).toBe(`<bos>${dogCat}`);
+    expect(second!.tokens.slice(0, second!.focus + 1).join("")).toBe(`<bos>${catDog}`);
+    // The guess each shows is the logits' top word and its share, identical in both orders.
+    const logits = logitsOf(dogCat);
+    const top = logits.indexOf(Math.max(...logits));
+    expect(first!.guess.token).toBe(tokenizer.decode([top]));
+    expect(second!.guess).toEqual(first!.guess);
+    // The pipes rearrange: each word keeps its weight, wherever it now stands.
+    const from = reorderFrom(first!, second!)!;
+    expect(from).not.toBeNull();
+    for (let i = 0; i <= second!.focus; i++)
+      expect(second!.weights[i]).toBe(first!.weights[from[i]!]);
+    expect(second!.weights).not.toEqual(first!.weights);
+    expect(second!.turn.after).toBe(first!.turn.after);
+    // The note shows over the second order only, after its pipes have settled.
+    const note = (t: number) => frameAt(t, run).frame.tags.text.includes(ORDER_NOTE);
+    expect(note(25)).toBe(true);
+    expect(note(19)).toBe(false);
+    expect(frameAt(25, run).frame.tags.text).toContain(
+      `guess for the next word: “cat”, ${Math.round(first!.guess.p * 100)}% sure`,
+    );
+  });
+
+  test("pulses ride every pipe at its width, and move with the loop clock", () => {
+    const at = (t: number) => frameAt(t, run).input;
+    const a = at(attention.ogTimeSec);
+    const b = at(attention.ogTimeSec + 0.25);
+    for (let i = 0; i <= steps[0]!.focus; i++) {
+      const pipe = pipeOf(a.scene, i);
+      const flow = a.scene.parts.find((p) => p.id === `flow.${i}`) as TubePart;
+      expect(flow.path).toBe(pipe.path);
+      expect(a.dynamics.widthScale[flow.slot]).toBe(a.dynamics.widthScale[pipe.slot]!);
+      expect(a.dynamics.intensity[flow.slot]).toBeGreaterThan(0);
+      expect(b.dynamics.flowPhase[flow.slot]! - a.dynamics.flowPhase[flow.slot]!).toBeCloseTo(
+        0.25 * look.flow.cyclesPerSec,
+        6,
+      );
+    }
+  });
+
+  test("the needle tilts by the real turn of the focus word's vector toward its referent", () => {
+    const mia = steps[0]!;
+    const ids = promptTokens(tokenizer, RECALL_PROMPTS.mia);
+    const { trace } = forward(model, ids, { trace: {} });
+    const res = trace!.layers[0]!.attn!.residual;
+    const d = res.residualIn.shape[1]!;
+    const row = (t: { data: Float32Array }, i: number) => t.data.subarray(i * d, (i + 1) * d);
+    expect(mia.tokens[mia.turn.referent]).toBe(" Mia");
+    const target = row(res.residualIn, mia.turn.referent);
+    expect(mia.turn.before).toBeCloseTo(angleDeg(row(res.residualIn, mia.focus), target), 9);
+    expect(mia.turn.after).toBeCloseTo(angleDeg(row(res.sum, mia.focus), target), 9);
+    expect(mia.turn.after).toBeLessThan(mia.turn.before);
+    const shown = frameAt(attention.ogTimeSec, run).frame.tags.text;
+    expect(shown).toContain(`${Math.round(mia.turn.before - mia.turn.after)}° closer to “Mia”`);
   });
 });
