@@ -1,15 +1,17 @@
 /**
  * Chapter 0's scene, built from the kit (`mesh`, `bars`, `block`, `contactShadow`): the
  * counter board split into its nodes on a soft contact shadow, a count bar in each of its
- * slots, and a word card on its rail. Bar heights are the real `nextWords` shares for the
- * word on the card; the slot and rail positions come from the prop's own nodes, so the
+ * slots, and the text as word cards on its rail. Bar heights are the real `nextWords` shares
+ * for the last word; the slot and rail positions come from the prop's own nodes, so the
  * Blender script stays their only owner. The header strip names the lookup ("after “upon”…"),
- * so the bars read as that word's row of the tally, and the rail holds the whole text: the
- * earlier words muted, the last one on the lit card, the only word the machine looks at.
+ * so the bars read as that word's row of the tally, and the rail holds the whole text: a dim
+ * card per earlier word, and the last word on the lit card at the right end, the only word the
+ * machine looks at. A text too long for the rail keeps its end, and its first card reads "…".
  *
- * Loop channels read: `railWord` (which step's word is on the card), `barsWord` (which step's
- * counts the bars show; it may lag the card), `railSlide` (0 → 1 as the card slides in),
- * `bars` (0 → 1 bar growth), `topFlash` (glow on the tallest bar).
+ * Loop channels read: `railWord` (which step's text is on the rail), `barsWord` (which step's
+ * counts the bars show; it may lag the card), `railSlide` (0 → 1 as the lit card slides in;
+ * a word the text just gained unfolds on its dim card meanwhile), `bars` (0 → 1 bar growth),
+ * `topFlash` (glow on the tallest bar).
  * Typed text shows its word's bars at full height, without the loop's motion.
  */
 import {
@@ -43,14 +45,21 @@ export interface CountsRun {
 /** The board's count slots: how many successors the run looks up. */
 export const BOARD_SLOTS = 10;
 const SLOTS = BOARD_SLOTS;
-/** The most characters of earlier words the rail shows; longer text keeps its end. */
-const BEFORE_CHARS = 36;
+/** Dim cards for the earlier words; a text with more keeps its end. */
+const EARLIER = 12;
 /** Bars are this share of their slot's width and depth, so the channel walls stay visible. */
 const BAR_WIDTH = 0.72;
 const BAR_DEPTH = 0.6;
 /** Clearance below the slot top and above its floor, metres. */
 const SLOT_MARGIN = 0.03;
 const CARD = { width: 0.5, height: 0.12, depth: 0.02 };
+/**
+ * A dim card's width: its word's characters at the scene text's size (about 4 cm each in the
+ * hero shot), plus a margin, and never narrower than `min`. `gap` is the space between cards.
+ */
+const DIM_CARD = { perChar: 0.042, margin: 0.09, min: 0.2, gap: 0.035 };
+/** Where the text starts: clear of the rail's left end, metres. */
+const RAIL_MARGIN = 0.1;
 /** How far right of its resting place the card starts its slide, metres. */
 const CARD_TRAVEL = 1.4;
 /** The width (x) of each of the stand's feet in `counter_board.py`, metres. */
@@ -74,12 +83,17 @@ function nodeBox(asset: MeshAsset, name: string): Box {
 interface Layout {
   slots: BarSlot[];
   card: { x: number; y: number; z: number };
+  /** The leftmost x a dim card may reach. */
+  railStart: number;
   /** The middle of the slot row, on its front face: where "no counts" is written. */
   middle: [number, number, number];
 }
 
 /** The layout and the parts `update` moves, per built scene. */
-const built = new WeakMap<SceneDesc, { layout: Layout; bars: BlockPart[]; card: BlockPart }>();
+const built = new WeakMap<
+  SceneDesc,
+  { layout: Layout; bars: BlockPart[]; card: BlockPart; earlier: BlockPart[] }
+>();
 
 function layoutOf(asset: MeshAsset): Layout {
   const slots = Array.from({ length: SLOTS }, (_, i) => {
@@ -100,6 +114,7 @@ function layoutOf(asset: MeshAsset): Layout {
   return {
     slots,
     middle: [(first.x + last.x) / 2, first.floor + first.maxHeight / 2, first.z + first.depth],
+    railStart: rail.min[0] + RAIL_MARGIN,
     card: {
       x: rail.max[0] - CARD.width / 2 - 0.08,
       y: rail.min[1] + CARD.height / 2 + 0.035,
@@ -108,28 +123,60 @@ function layoutOf(asset: MeshAsset): Layout {
   };
 }
 
-function placeCard(transform: Mat4, x: number, y: number, z: number) {
-  transform[0] = CARD.width;
-  transform[5] = CARD.height;
+function placeCard(transform: Mat4, x: number, y: number, z: number, width = CARD.width) {
+  transform[0] = width;
+  transform[5] = width > 1e-3 ? CARD.height : 1e-4;
   transform[10] = CARD.depth;
   transform[12] = x;
   transform[13] = y;
   transform[14] = z;
 }
 
-/** The earlier words as the rail shows them: the end of the text, cut at a word, if long. */
-function earlier(words: readonly string[]): string {
-  const text = words.join(" ");
-  if (text.length <= BEFORE_CHARS) return text;
-  const tail = text.slice(-BEFORE_CHARS);
-  return `…${tail.slice(tail.indexOf(" ") + 1)}`;
+const dimWidth = (word: string) =>
+  Math.max(DIM_CARD.min, word.length * DIM_CARD.perChar + DIM_CARD.margin);
+
+/** A dim card on the rail: its word, its centre's x and its width. */
+export interface DimCard {
+  word: string;
+  x: number;
+  width: number;
+}
+
+/**
+ * The earlier words' cards, laid right to left from the lit card. A text too long for the rail
+ * (or for the `EARLIER` cards) keeps its end: the cards that do not fit give way to one reading
+ * "…", which says the text goes on before it.
+ */
+export function earlierCards(
+  words: readonly string[],
+  layout: Pick<Layout, "card" | "railStart">,
+): DimCard[] {
+  const cards: DimCard[] = [];
+  let right = layout.card.x - CARD.width / 2 - DIM_CARD.gap;
+  const fits = (width: number) => right - width >= layout.railStart;
+  for (let i = words.length - 1; i >= 0; i--) {
+    const width = dimWidth(words[i]!);
+    if (cards.length < EARLIER && fits(width)) {
+      cards.push({ word: words[i]!, x: right - width / 2, width });
+      right -= width + DIM_CARD.gap;
+      continue;
+    }
+    const ellipsis = dimWidth("…");
+    while (cards.length > 0 && (cards.length >= EARLIER || !fits(ellipsis))) {
+      const dropped = cards.pop()!;
+      right = dropped.x + dropped.width / 2;
+    }
+    cards.push({ word: "…", x: right - ellipsis / 2, width: ellipsis });
+    break;
+  }
+  return cards.reverse();
 }
 
 export const autocomplete: SceneBuilder = {
   assets: { board: "/props/counter_board.glb" },
-  // A word per bar, the card's word, the note for a word with no counts, the earlier words
-  // and the header.
-  tagCount: SLOTS + 4,
+  // A word per bar, the lit card's word, the note for a word with no counts, the header, and
+  // a word per dim card.
+  tagCount: SLOTS + 3 + EARLIER,
 
   create(assets, revision) {
     const board = assets.board;
@@ -171,7 +218,25 @@ export const autocomplete: SceneBuilder = {
       // The feet are broad plates: a wider soft edge keeps them dark right along their sides.
       footSoftness: 0.18,
     });
-    const parts = [...shadowKit.parts, ...boardKit.parts, ...barsKit.parts, ...cardKit.parts];
+    // The earlier words' cards, built parked; `update` lays them out for the text.
+    const earlierParts = Array.from(
+      { length: EARLIER },
+      (_, i) =>
+        KIT.block.build({
+          id: `earlier.${i}`,
+          slot: SLOTS + 3,
+          material: "cardDim",
+          center: [layout.card.x, layout.card.y, layout.card.z],
+          size: [1e-4, 1e-4, CARD.depth],
+        }).parts[0] as BlockPart,
+    );
+    const parts = [
+      ...shadowKit.parts,
+      ...boardKit.parts,
+      ...barsKit.parts,
+      ...earlierParts,
+      ...cardKit.parts,
+    ];
     const housing = nodeBox(board, "board.housing");
     // The header plate, centred high on the panel face.
     const header: [number, number, number] = [0, housing.max[1] - 0.14, housing.max[2]];
@@ -187,6 +252,7 @@ export const autocomplete: SceneBuilder = {
       layout,
       bars: barsKit.parts as BlockPart[],
       card: cardKit.parts[0] as BlockPart,
+      earlier: earlierParts,
     });
     const tags: SceneTags = {
       anchors: [
@@ -198,28 +264,22 @@ export const autocomplete: SceneBuilder = {
         })),
         { id: "card", part: "card", local: [0, 0, 0.5], priority: 0 },
         { id: "no-counts", part: "board.housing", local: layout.middle, priority: 0 },
-        // Just left of the card at rest, so the earlier words end where the card begins; they
-        // stay on the rail while the card slides out and in.
-        {
-          id: "before",
-          part: "board.rail",
-          // A little above the card's middle: the smaller muted words then share its baseline.
-          local: [
-            layout.card.x - CARD.width * 0.62,
-            layout.card.y + 0.012,
-            layout.card.z + CARD.depth / 2,
-          ],
-          priority: 0,
-        },
         { id: "header", part: "board.housing", local: header, priority: 0 },
+        // A little above each dim card's middle: the rail's lip hides the card's lower edge.
+        ...Array.from({ length: EARLIER }, (_, i) => ({
+          id: `earlier.${i}`,
+          part: `earlier.${i}`,
+          local: [0, 0.18, 0.5] as [number, number, number],
+          priority: 0,
+        })),
       ],
-      text: Array.from({ length: SLOTS + 4 }, () => ""),
+      text: Array.from({ length: SLOTS + 3 + EARLIER }, () => ""),
       style: [
         ...Array.from({ length: SLOTS }, () => "above" as const),
         "onPart",
         "above",
-        "before",
         "heading",
+        ...Array.from({ length: EARLIER }, () => "dim" as const),
       ],
     };
     return { scene, tags };
@@ -227,7 +287,7 @@ export const autocomplete: SceneBuilder = {
 
   update(frame: SceneFrame, _def, tl, ui, run) {
     const { scene, dynamics } = frame.input;
-    const { layout, bars, card: cardPart } = built.get(scene)!;
+    const { layout, bars, card: cardPart, earlier } = built.get(scene)!;
     const steps = run?.kind === "counts" ? run.steps : [];
     const typed = ui.text !== null;
     const pick = (channel: number | undefined) => stepAt(steps, typed, channel);
@@ -253,8 +313,25 @@ export const autocomplete: SceneBuilder = {
     // A word the model never kept has no row: say so once the bars would have risen.
     const empty = step !== undefined && step.next.length === 0 && growth > 0.5;
     frame.tags.text[SLOTS + 1] = empty ? `never seen “${step.word}”: no counts` : "";
-    frame.tags.text[SLOTS + 2] = onCard ? earlier(onCard.before) : "";
     // The bars are one row of the tally: the row for the word they were looked up after.
-    frame.tags.text[SLOTS + 3] = step ? `After “${step.word}”…` : "";
+    frame.tags.text[SLOTS + 2] = step ? `After “${step.word}”…` : "";
+
+    // The earlier words stay put while the lit card slides. A word the text just gained (the
+    // one the lit card last held) unfolds on its dim card as the new last word slides in.
+    const cards = onCard ? earlierCards(onCard.before, layout) : [];
+    const prev = onCard ? steps[steps.indexOf(onCard) - 1] : undefined;
+    const gained = prev !== undefined && onCard!.before.at(-1) === prev.word;
+    for (let i = 0; i < EARLIER; i++) {
+      const dim = cards[i];
+      const unfold = dim && gained && i === cards.length - 1 ? slide : 1;
+      placeCard(
+        earlier[i]!.transform,
+        dim?.x ?? card.x,
+        card.y,
+        card.z,
+        dim ? dim.width * unfold : 0,
+      );
+      frame.tags.text[SLOTS + 3 + i] = dim && unfold > 0.6 ? dim.word : "";
+    }
   },
 };

@@ -13,11 +13,11 @@ import { forwardRef, useImperativeHandle, useRef } from "react";
  * - `above`: centred just above it, in ink (the word over a bar);
  * - `onPart`: the one word that matters most (a card's), larger and centred on the point in
  *   dark ink, as if written on the part;
- * - `before`: ending at the point, vertically centred, in muted ink (the earlier words that
- *   lead up to a card);
+ * - `dim`: centred on the point in muted ink, written on a dim part (an earlier word's card,
+ *   which the machine does not read);
  * - `heading`: centred on the point, larger, in the glowing display face (a board's header).
  */
-export type TagStyle = "above" | "onPart" | "before" | "heading";
+export type TagStyle = "above" | "onPart" | "dim" | "heading";
 
 /** What a scene builder hands the overlay: anchors and their text, both updated in place. */
 export interface SceneTags {
@@ -70,11 +70,11 @@ const LOOK: Record<
     x: 0.5,
     y: 0.5,
   },
-  before: {
+  dim: {
     font: styles.tag.font,
     color: "var(--hud-muted)",
     shadow: styles.tag.textShadow,
-    x: 1,
+    x: 0.5,
     y: 0.5,
   },
   heading: {

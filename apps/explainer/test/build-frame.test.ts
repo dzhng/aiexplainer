@@ -42,7 +42,7 @@ function frameAt(t: number, ui: Partial<SceneUi> = {}, text: string | null = nul
 const heights = (scene: SceneDesc) =>
   Array.from({ length: 10 }, (_, i) => scene.parts.find((p) => p.id === `bar.${i}`)!.transform[5]);
 
-test("the scene is the board, ten bars and a card, in stable slots", async () => {
+test("the scene is the board, ten bars and the text's cards, in stable slots", async () => {
   const run = await computeRun(autocomplete, null);
   const { frame, tl, ui } = frameAt(5);
   const input = buildFrame(autocomplete, tl, ui, run, frame);
@@ -103,15 +103,39 @@ describe("chapter 0's loop", () => {
     expect(model.index.has(unseen)).toBe(false);
   });
 
-  test("the rail shows the whole text, the header names the lookup", async () => {
+  test("the rail holds the whole text as cards, the header names the lookup", async () => {
     const run = (await computeRun(autocomplete, null))!;
     const { frame, tl, ui } = frameAt(12.5);
     buildFrame(autocomplete, tl, ui, run, frame);
-    // Card, earlier words, header: "once upon" muted, "a" on the card, bars for "a".
+    // "a" on the lit card, "once" and "upon" on dim cards left of it, bars for "a".
     expect(frame.tags.text[10]).toBe("a");
-    expect(frame.tags.text[12]).toBe("once upon");
-    expect(frame.tags.text[13]).toBe("After “a”…");
-    expect(frame.tags.style.slice(10)).toEqual(["onPart", "above", "before", "heading"]);
+    expect(frame.tags.text[12]).toBe("After “a”…");
+    expect(frame.tags.text.slice(13).filter(Boolean)).toEqual(["once", "upon"]);
+    expect(frame.tags.style.slice(10, 14)).toEqual(["onPart", "above", "heading", "dim"]);
+  });
+
+  test("a long text keeps its end on the rail, and its first card says it goes on", async () => {
+    const words =
+      "once upon a time there was a little girl named lily who loved to play in the big green park with her dog and her friend tom every sunny day".split(
+        " ",
+      );
+    const run = (await computeRun(autocomplete, words.join(" ")))!;
+    const { frame, tl, ui } = frameAt(0, {}, words.join(" "));
+    const input = buildFrame(autocomplete, tl, ui, run, frame);
+    const shown = frame.tags.text.slice(13).filter(Boolean);
+    expect(shown[0]).toBe("…");
+    expect(shown.slice(1)).toEqual(words.slice(-shown.length, -1));
+    // Every dim card shown sits on the rail, left of the lit card and clear of each other.
+    const cards = input.scene.parts
+      .filter((p) => p.id.startsWith("earlier.") && p.transform[0]! > 1e-3)
+      .map((p) => ({
+        l: p.transform[12]! - p.transform[0]! / 2,
+        r: p.transform[12]! + p.transform[0]! / 2,
+      }));
+    const lit = input.scene.parts.find((p) => p.id === "card")!.transform;
+    expect(cards).toHaveLength(shown.length);
+    for (let i = 1; i < cards.length; i++) expect(cards[i]!.l).toBeGreaterThan(cards[i - 1]!.r);
+    expect(cards.at(-1)!.r).toBeLessThan(lit[12]! - lit[0]! / 2);
   });
 
   test("the point lands by 10 s: two picks light up before then", () => {
@@ -127,7 +151,8 @@ describe("chapter 0's loop", () => {
     const at = (t: number) => {
       const { frame, tl, ui } = frameAt(t);
       const input = buildFrame(autocomplete, tl, ui, run, frame);
-      return { h: heights(input.scene), text: frame.tags.text, card: input.scene.parts.at(-1)! };
+      const card = input.scene.parts.find((p) => p.id === "card")!;
+      return { h: heights(input.scene), text: frame.tags.text, card };
     };
     const failure = at(17);
     expect(failure.text[10]).toBe(unseen);

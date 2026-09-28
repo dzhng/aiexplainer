@@ -1,6 +1,6 @@
 // Bun Snapshot v1, https://bun.sh/docs/test/snapshots
 
-exports[`the scene is the board, ten bars and a card, in stable slots 1`] = `
+exports[`the scene is the board, ten bars and the text's cards, in stable slots 1`] = `
 [
   [
     "shadow",
@@ -131,6 +131,66 @@ exports[`the scene is the board, ten bars and a card, in stable slots 1`] = `
     "bar.9",
     "block",
     10,
+  ],
+  [
+    "earlier.0",
+    "block",
+    13,
+  ],
+  [
+    "earlier.1",
+    "block",
+    13,
+  ],
+  [
+    "earlier.2",
+    "block",
+    13,
+  ],
+  [
+    "earlier.3",
+    "block",
+    13,
+  ],
+  [
+    "earlier.4",
+    "block",
+    13,
+  ],
+  [
+    "earlier.5",
+    "block",
+    13,
+  ],
+  [
+    "earlier.6",
+    "block",
+    13,
+  ],
+  [
+    "earlier.7",
+    "block",
+    13,
+  ],
+  [
+    "earlier.8",
+    "block",
+    13,
+  ],
+  [
+    "earlier.9",
+    "block",
+    13,
+  ],
+  [
+    "earlier.10",
+    "block",
+    13,
+  ],
+  [
+    "earlier.11",
+    "block",
+    13,
   ],
   [
     "card",

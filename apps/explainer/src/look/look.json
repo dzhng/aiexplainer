@@ -144,6 +144,12 @@
         "roughness": 0.7,
         "opacity": 1
       },
+      "cardDim": {
+        "color": "metal",
+        "metallic": 0,
+        "roughness": 0.7,
+        "opacity": 1
+      },
       "brickLetter": {
         "color": "#b9c1d9",
         "emissive": "active",
