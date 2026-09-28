@@ -34,7 +34,7 @@ test("?clock=step&fps= selects a step clock (the recorder)", () => {
   expect(clock.now()).toBe(1 / 30);
 });
 
-test("only clock.ts reads the wall clock", async () => {
+test("only clock.ts reads the wall clock, and nothing draws unseeded randomness", async () => {
   const repo = path.resolve(import.meta.dirname, "../../..");
   const allowed = path.join(repo, "apps/explainer/src/runtime/clock.ts");
   const offenders: string[] = [];
@@ -42,7 +42,8 @@ test("only clock.ts reads the wall clock", async () => {
     for (const entry of await readdir(path.join(repo, dir), { recursive: true })) {
       const file = path.join(repo, dir, entry);
       if (!/\.(ts|tsx)$/.test(file) || file.includes("node_modules") || file === allowed) continue;
-      if (/performance\.now|Date\.now/.test(await readFile(file, "utf8"))) offenders.push(entry);
+      if (/performance\.now|Date\.now|new Date\(|Math\.random/.test(await readFile(file, "utf8")))
+        offenders.push(entry);
     }
   }
   expect(offenders).toEqual([]);

@@ -1,8 +1,8 @@
 /**
  * `createRenderer`: owns the device, the registry and the resources, and updates each at its
  * own frequency — targets on resize, the scene (the environment room included) on `revision`
- * change, look numbers on `setLook`, and instances (part transforms), camera and dynamics every frame. Drawing
- * itself is `encodeFrame`.
+ * change, look numbers on `setLook`, and instances (part transforms), camera and dynamics
+ * every frame. Drawing itself is `encodeFrame`.
  */
 import { d, type TgpuBuffer, type TgpuRoot, type TgpuSampler, type TgpuTextureView } from "typegpu";
 import type { AnyData } from "typegpu/data";
