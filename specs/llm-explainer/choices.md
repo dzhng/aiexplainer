@@ -466,3 +466,13 @@ standalone. Entries are appended per pass and consolidated when the spec closes.
   needs.** Verdict: acceptable.
 - **The failure beat: two stories ending in "it" roll the identical die** (the model sees only
   one word). Verdict: sound.
+
+## Slice 29 (chapter 9)
+
+- **The work counter adds each step's real `fed` token count (+10, +11, …),** and the failure
+  beat spells out the sum; the Llama chips use new arith `rereadTokens` (32,896 tokens reread
+  to write 256) and `maxContext`. Verdict: sound, and it counts operations, not time (D27).
+- **The slider is "Words to write" (1–6).** Verdict: sound.
+- **Chapter 9's line helpers (`LINE`, `buildLine`, `placeFeed`, `placeTile`) are exported from
+  `builders/generation.ts` for chapter 10 to reuse.** Verdict: sound; one owner for the text
+  line.
