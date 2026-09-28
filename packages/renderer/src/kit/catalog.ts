@@ -8,6 +8,7 @@ import { block } from "./block.ts";
 import { brick } from "./brick.ts";
 import { pins } from "./pins.ts";
 import { contactShadow } from "./contact-shadow.ts";
+import { die } from "./die.ts";
 import { draftStrip } from "./draft-strip.ts";
 import { mesh } from "./mesh.ts";
 import type { KitPrimitive } from "./primitive.ts";
@@ -27,6 +28,7 @@ export const KIT = {
   questionPanel,
   river,
   volumeKnob,
+  die,
   draftStrip,
 } as const;
 export type KitPrimitiveId = keyof typeof KIT;

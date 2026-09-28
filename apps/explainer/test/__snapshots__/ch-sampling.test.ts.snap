@@ -1,0 +1,35 @@
+// Bun Snapshot v1, https://bun.sh/docs/test/snapshots
+
+exports[`chapter 3's numbers and loop the hero frame (snapshot of its words) 1`] = `
+[
+  "rolled “was” (76% of the rim)",
+  
+"was
+76%"
+,
+  
+"lived
+6%"
+,
+  
+"were
+4%"
+,
+  
+"“.”
+4%"
+,
+  
+"every other word
+6%"
+,
+  "was",
+  "lived",
+  "were",
+  "“.”",
+  "“,”",
+  "is",
+  "there",
+  "…Once upon a time, there",
+]
+`;

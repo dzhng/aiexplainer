@@ -11,10 +11,12 @@ import type { ChapterDef } from "../chapters/types.ts";
 import type { SceneRun } from "../scene/build-frame.ts";
 import { autocompleteRun } from "./runs/autocomplete.ts";
 import { embeddingsRun } from "./runs/embeddings.ts";
+import { generationRun } from "./runs/generation.ts";
 import { mlpRun } from "./runs/mlp.ts";
 import { quantizationRun } from "./runs/quantization.ts";
 import { speculativeRun } from "./runs/speculative.ts";
 import { residualRun } from "./runs/residual.ts";
+import { samplingRun } from "./runs/sampling.ts";
 import { stackRun } from "./runs/stack.ts";
 import { tokenizerRun } from "./runs/tokenizer.ts";
 import type { Session } from "./session.ts";
@@ -41,9 +43,11 @@ const RUNS: Partial<Record<SceneBuilderId, SceneRunFn>> = {
   autocomplete: autocompleteRun,
   tokenizer: tokenizerRun,
   embeddings: embeddingsRun,
+  sampling: samplingRun,
   mlp: mlpRun,
   residual: residualRun,
   stack: stackRun,
+  generation: generationRun,
   quantization: quantizationRun,
   speculative: speculativeRun,
 };
