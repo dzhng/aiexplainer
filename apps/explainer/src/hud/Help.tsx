@@ -34,17 +34,23 @@ export function Help({ dispatch, def, model, slider }: HudProps) {
           <CloseIcon />
         </button>
         <p>
-          Each chapter adds one part to the machine and plays a short loop to show what it does.
-          Touch any control and the loop pauses so you can look around; ▶ plays it again.
+          Each chapter adds one part to the machine and is a short lesson: a brief, then a one-time
+          animation that shows what the part does, then your turn.
         </p>
         <ul>
           <li>
-            The numbered panel on the left holds every control, in order: type your own text (a real
-            model runs it in your browser) or try an example, then turn the chapter&apos;s knob
-            where it has one.
+            <b>Start</b> plays the lesson; <b>Skip</b> jumps to its end. Either way, the controls
+            are then yours, and <b>Replay lesson</b> plays it again.
           </li>
           <li>
-            The left and right arrow keys, or the ladder at the bottom, move between chapters.
+            On your turn, the numbered panel on the left holds every control, in order: type your
+            own text (a real model runs it in your browser) or try an example, then turn the
+            chapter&apos;s knob where it has one.
+          </li>
+          <li>
+            <b>Next</b>, under the panel, opens once the lesson ends or is skipped. The ladder at
+            the bottom jumps to any chapter; the left arrow key goes back one, and the right arrow
+            key goes on once Next is open.
           </li>
           <li>
             <b>Labels: Analogy / Technical</b>, at the foot of the panel, switches the part labels
@@ -52,8 +58,8 @@ export function Help({ dispatch, def, model, slider }: HudProps) {
             gives the exact claim.
           </li>
           <li>
-            <kbd>Space</kbd> plays or pauses, <kbd>?</kbd> opens this panel, <kbd>Esc</kbd> closes
-            it.
+            <kbd>Enter</kbd> starts the lesson, <kbd>Space</kbd> pauses or resumes it, <kbd>?</kbd>{" "}
+            opens this panel, <kbd>Esc</kbd> closes it.
           </li>
         </ul>
 

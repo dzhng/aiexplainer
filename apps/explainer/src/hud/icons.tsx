@@ -23,6 +23,21 @@ export const PauseIcon = () => (
   </Icon>
 );
 
+/** Play to the end: a play mark against a bar. */
+export const SkipIcon = () => (
+  <Icon>
+    <path d="M2.5 2.5v11l8-5.5z" />
+    <rect x="11" y="2.5" width="2.5" height="11" rx="0.8" />
+  </Icon>
+);
+
+/** Play again: an arrow coming round. */
+export const ReplayIcon = () => (
+  <Icon>
+    <path d="M8 2.5a5.5 5.5 0 1 1-5.2 7.3l1.9-.6A3.5 3.5 0 1 0 8 4.5V7L4 3.5 8 0z" />
+  </Icon>
+);
+
 export const HelpIcon = () => (
   <Icon>
     <path d="M8 1.5a4 4 0 0 0-4 4h2.2a1.8 1.8 0 1 1 2.6 1.6C7.7 7.7 6.9 8.6 6.9 10v.8h2.2V10c0-.5.3-.8 1-1.2A4 4 0 0 0 8 1.5zM6.9 12.3h2.2v2.2H6.9z" />

@@ -30,8 +30,13 @@ export interface ProbeApi {
   labels?: () => LabelPlacement[];
   /** The app only: go to a chapter by slug, as the ladder does. */
   goto?: (slug: string) => void;
-  /** The app only: set HUD controls (`text`, `slider`, `scenario`, `playing: false`). */
+  /**
+   * The app only: set HUD controls (`text`, `slider`, `scenario`), first skipping to the
+   * reader's turn as a reader must; `paused: true` pauses the lesson's pass.
+   */
   setUi?: (ui: Record<string, unknown>) => void;
+  /** The app only: the lesson's phase (`state/lesson.ts`) and whether Next is open. */
+  lesson?: () => { phase: string; next: boolean };
   /** A chapter scene (the app or `/lab/scene/*`): the loop's current time and beat, for filmstrips. */
   beat?: () => { t: number; id: string; note: string } | null;
   /** Free-form results of in-page checks, printed by the harness. */

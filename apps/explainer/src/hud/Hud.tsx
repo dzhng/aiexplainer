@@ -1,11 +1,13 @@
 /**
  * The HUD over the canvas, drawn from the current `ChapterDef` and `AppState`. One column on
  * the left reads top to bottom: the title panel (what this chapter is and says), then the
- * story panel, every scene control in the order a reader meets them (type your own text, or
- * try an example, turn the knob, then the label wording, play and help), numbered, with the
- * steps a chapter doesn't have left out. The scene keeps the rest of the screen; the
- * ladder sits at the bottom and the share links in the corner. Every control dispatches an
- * `Action`; the keyboard (`state/keys.ts`) sends the same.
+ * story panel, headed by the lesson bar (`Lesson.tsx`), with every scene control in the order
+ * a reader meets them (type your own text, or try an example, turn the knob, then the label
+ * wording and help), numbered, with the steps a chapter doesn't have left out; the controls
+ * are locked until the lesson is over. Next closes the column. The brief card sits over the
+ * scene before the lesson starts. The scene keeps the rest of the screen; the ladder sits at
+ * the bottom and the share links in the corner. Every control dispatches an `Action`; the
+ * keyboard (`state/keys.ts`) sends the same.
  */
 import type { ModelSource } from "@repo/llm";
 import { useRef, useState, type CSSProperties, type Dispatch, type ReactNode } from "react";
@@ -13,18 +15,12 @@ import { LADDER, chapterBadge, chapterName } from "../chapters/ladder.ts";
 import type { ChapterDef, SliderDef } from "../chapters/types.ts";
 import { BRAND_NAME, SERIES_TITLE, X_PROFILE } from "../look/brand.ts";
 import { sharePathFor, type Action, type AppState, type Chapters } from "../state/app-state.ts";
+import { controlsUnlocked } from "../state/lesson.ts";
 import { copyOrShow } from "../fallback/copy.ts";
 import { Help } from "./Help.tsx";
 import css from "./hud.module.css";
-import {
-  BrandMark,
-  ChevronIcon,
-  HelpIcon,
-  PauseIcon,
-  PlayIcon,
-  ShareIcon,
-  XIcon,
-} from "./icons.tsx";
+import { BrandMark, ChevronIcon, HelpIcon, ShareIcon, XIcon } from "./icons.tsx";
+import { LessonBar, LessonBrief, NextButton } from "./Lesson.tsx";
 import { prefersReducedMotion, useArrivalIntro } from "./motion.ts";
 import { liveModel } from "./live.ts";
 import { StatChip } from "./StatChip.tsx";
@@ -45,21 +41,26 @@ export interface HudProps {
   slider: number;
   /** The text the scene's last finished run answered (`null`: the loop's own inputs). */
   answered: string | null;
+  /** How far the lesson's pass has played, 0–1 (`null` before the scene runs). */
+  progress: () => number | null;
 }
 
 export function Hud(props: HudProps) {
   const root = useRef<HTMLDivElement>(null);
   const [reduced] = useState(prefersReducedMotion);
   const motion = props.motion && !reduced;
-  // Arrival is the chapter's loop epoch (it bumps on every arrival, D32).
-  useArrivalIntro(root, props.state.loopEpoch, motion);
+  useArrivalIntro(root, props.state.visit, motion);
   const hudProps = { ...props, motion };
   return (
     <div className={css.hud} ref={root} data-hud>
       <div className={css.column}>
-        <TitlePanel {...hudProps} />
-        <StoryPanel {...hudProps} />
+        <div className={css.columnScroll}>
+          <TitlePanel {...hudProps} />
+          <StoryPanel {...hudProps} />
+        </div>
+        <NextButton {...hudProps} />
       </div>
+      {props.state.lesson === "briefing" && <LessonBrief {...hudProps} />}
       <Ladder {...hudProps} />
       <Corner {...hudProps} />
       {props.state.helpOpen && <Help {...hudProps} />}
@@ -88,7 +89,7 @@ function TitlePanel({ state, dispatch, def, model, motion, slider }: HudProps) {
             stat={stat}
             model={model}
             slider={slider}
-            countKey={motion ? state.loopEpoch : null}
+            countKey={motion ? state.visit : null}
           />
         ))}
       </div>
@@ -198,6 +199,7 @@ function Step({
  */
 function StoryPanel(props: HudProps) {
   const { state, dispatch, def, slider: value, motion } = props;
+  const locked = !controlsUnlocked(state.lesson);
   const steps: { title: string; aside?: ReactNode; body: ReactNode }[] = [];
   if (def.model !== null)
     steps.push({
@@ -241,11 +243,17 @@ function StoryPanel(props: HudProps) {
       data-intro="left"
       aria-label="Controls"
     >
-      {steps.map((step, i) => (
-        <Step key={step.title} n={i + 1} title={step.title} aside={step.aside}>
-          {step.body}
-        </Step>
-      ))}
+      <LessonBar {...props} />
+      {steps.length > 0 && (
+        // Locked while the lesson runs: every control inside is disabled at once.
+        <fieldset className={css.steps} disabled={locked}>
+          {steps.map((step, i) => (
+            <Step key={step.title} n={i + 1} title={step.title} aside={step.aside}>
+              {step.body}
+            </Step>
+          ))}
+        </fieldset>
+      )}
       <div className={css.storyFoot}>
         <div className={css.labelMode} title={LABEL_MODE_HINT}>
           <span className={css.labelModeHead}>Labels</span>
@@ -260,14 +268,6 @@ function StoryPanel(props: HudProps) {
           />
         </div>
         <div className={css.loopControls}>
-          <button
-            className={css.iconButton}
-            aria-label={state.playing ? "Pause the loop" : "Play the loop"}
-            title={state.playing ? "Pause the loop (Space)" : "Play the loop (Space)"}
-            onClick={() => dispatch({ type: "togglePlay" })}
-          >
-            {state.playing ? <PauseIcon /> : <PlayIcon />}
-          </button>
           <button
             className={css.iconButton}
             aria-label="Help"
