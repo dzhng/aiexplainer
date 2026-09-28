@@ -7,9 +7,9 @@
  * transform, so all studs in a scene draw as one instanced draw. All of a brick's parts share
  * its dynamics slot, so it glows as one piece. Its anchor is the centre of its face.
  */
-import type { Mat4, Vec3 } from "math";
+import { type Vec3, mat4 } from "math";
 import type { BlockPart, Part, TubePart } from "../frame-input.ts";
-import type { KitCommon, KitPrimitive } from "./primitive.ts";
+import { type KitCommon, type KitPrimitive, PARKED_Y } from "./primitive.ts";
 
 /** Brick proportions, as fractions of one unit (a toy brick is 9.6 mm tall on an 8 mm pitch). */
 export const BRICK = {
@@ -25,7 +25,6 @@ const STUD_PATH: Vec3[] = [
 ];
 
 /** A stud not in use: far below the room, at a sliver of size (a zero scale has no normal). */
-const PARKED_Y = -50;
 
 export interface BrickParams extends KitCommon {
   material: string;
@@ -84,17 +83,16 @@ function setBox(t: number[], x: number, y: number, z: number, sx: number, sy: nu
 export const brick: KitPrimitive<BrickParams> = {
   build(p) {
     const common = { slot: p.slot, explode: p.explode, cutaway: p.cutaway, primitive: "brick" };
-    const identity = (): Mat4 => [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1];
     const body: BlockPart = {
       ...common,
-      transform: identity(),
+      transform: mat4.create(),
       kind: "block",
       id: p.id,
       material: p.material,
     };
     const studs: TubePart[] = Array.from({ length: p.studs }, (_, k) => ({
       ...common,
-      transform: identity(),
+      transform: mat4.create(),
       kind: "tube",
       id: `${p.id}.stud.${k}`,
       material: p.material,

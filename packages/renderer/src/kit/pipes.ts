@@ -8,7 +8,7 @@
  * arrangement as their sources, so a fan of many pipes never knots into one bundle and each
  * stays traceable from its word into the sink.
  */
-import { vec3, type Vec3 } from "math";
+import { vec3, type Vec3, mat4 } from "math";
 import type { TubePart } from "../frame-input.ts";
 import { unionBounds, type KitCommon, type KitPrimitive } from "./primitive.ts";
 import { tubeGeometry } from "./tube.ts";
@@ -106,7 +106,7 @@ export const pipes: KitPrimitive<PipesParams> = {
       material: p.material,
       path,
       radius: p.radius,
-      transform: [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1],
+      transform: mat4.create(),
       explode: p.explode,
       cutaway: p.cutaway,
       primitive: "pipes",

@@ -22,6 +22,7 @@ import {
   type Part,
   type SceneAnchor,
   type SceneDesc,
+  PARKED_Y,
 } from "@repo/renderer";
 import type { Vec3 } from "math";
 import type { SceneTags } from "../../hud/SceneTags.tsx";
@@ -106,7 +107,7 @@ function landing(fly: number, n: number, i: number): number {
 }
 /** The progress at which a word's brick has become its pin. */
 const LANDED = 0.85;
-const PARKED = { center: [0, -50, 0] as Vec3, unit: BRICK_UNIT, length: 1 };
+const PARKED = { center: [0, PARKED_Y, 0] as Vec3, unit: BRICK_UNIT, length: 1 };
 
 function mapParts(): Part[] {
   const [w, h, d] = MAP.size;
@@ -188,7 +189,7 @@ export const embeddings: SceneBuilder = {
           id: `brick.${colour}.${i}`,
           slot,
           material: colour,
-          center: [0, -50, 0],
+          center: [0, PARKED_Y, 0],
           unit: BRICK_UNIT,
           length: 1,
           studs: 2,

@@ -7,9 +7,9 @@
  * colour. A scene writes each tile's word on its face as scene text. Its anchor is the centre
  * of the first tile's face.
  */
-import type { Mat4, Vec3 } from "math";
+import { type Vec3, mat4 } from "math";
 import type { BlockPart, Part } from "../frame-input.ts";
-import { unionBounds, type KitCommon, type KitPrimitive } from "./primitive.ts";
+import { unionBounds, type KitCommon, type KitPrimitive, PARKED_Y } from "./primitive.ts";
 
 export type DraftTileState = "hidden" | "drafted" | "accepted" | "rejected" | "added";
 type Face = Exclude<DraftTileState, "hidden">;
@@ -24,7 +24,6 @@ const STATE_MATERIALS: Record<Face, string> = {
 const FACES = Object.keys(STATE_MATERIALS) as Face[];
 /** Parts per tile, in `build`'s order: one face per state. */
 export const PARTS_PER_TILE = FACES.length;
-const PARKED_Y = -50;
 
 export interface DraftStripParams extends KitCommon {
   /** Centre of the row. */
@@ -85,7 +84,6 @@ export function faceId(id: string, i: number, state: DraftTileState = "drafted")
 export const draftStrip: KitPrimitive<DraftStripParams> = {
   build(p) {
     const parts: BlockPart[] = [];
-    const identity: Mat4 = [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1];
     for (let i = 0; i < p.count; i++) {
       FACES.forEach((face, k) =>
         parts.push({
@@ -94,7 +92,7 @@ export const draftStrip: KitPrimitive<DraftStripParams> = {
           // One slot per state, shared by every tile, so a scene can dim a state as a whole.
           slot: p.slot + k,
           material: STATE_MATERIALS[face],
-          transform: [...identity] as Mat4,
+          transform: mat4.create(),
           explode: p.explode,
           cutaway: p.cutaway,
           primitive: "draftStrip",

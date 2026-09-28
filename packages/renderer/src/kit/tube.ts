@@ -1,4 +1,4 @@
-import { vec3, type Vec3 } from "math";
+import { vec3, type Vec3, mat4 } from "math";
 import type { TubePart } from "../frame-input.ts";
 import { boundsOf, type Geometry } from "./geometry.ts";
 import type { KitCommon, KitPrimitive } from "./primitive.ts";
@@ -207,7 +207,7 @@ export const tube: KitPrimitive<TubeParams> = {
       material: p.material,
       path: p.path,
       radius: p.radius,
-      transform: [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1],
+      transform: mat4.create(),
       explode: p.explode,
       cutaway: p.cutaway,
       primitive: "tube",

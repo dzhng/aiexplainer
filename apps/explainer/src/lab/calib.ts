@@ -1,4 +1,5 @@
 /** `/lab/calib`: a unit grid on the floor plane and an X/Y/Z axis gizmo at the origin. */
+import { mat4 } from "math";
 import type { Part } from "@repo/renderer";
 import { lookConfig } from "../look/look.ts";
 import { frameFromParts } from "./fixtures.ts";
@@ -45,7 +46,7 @@ export function calibScene() {
       material: `axis${name.toUpperCase()}`,
       radius: 0.04,
       path: [[0, 0, 0], dir.map((c) => c * AXIS_LENGTH) as [number, number, number]],
-      transform: [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1],
+      transform: mat4.create(),
     });
     parts.push(
       block(

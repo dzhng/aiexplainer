@@ -5,7 +5,7 @@
  * Dial `i` is `<id>.<i>` (face), `<id>.<i>.tick` and `<id>.<i>.hand`, all in slot `slot + i`
  * (its glow).
  */
-import type { Mat4, Vec3 } from "math";
+import { type Mat4, type Vec3, mat4 } from "math";
 import type { BlockPart, Part, TubePart } from "../frame-input.ts";
 import { unionBounds, type KitCommon, type KitPrimitive } from "./primitive.ts";
 
@@ -62,7 +62,7 @@ export const dial: KitPrimitive<DialParams> = {
           [x, y, z],
         ],
         radius: r,
-        transform: [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1],
+        transform: mat4.create(),
         explode: p.explode,
         cutaway: p.cutaway,
         primitive: "dial",
@@ -72,7 +72,7 @@ export const dial: KitPrimitive<DialParams> = {
         id,
         slot: p.slot + i,
         material: p.handMaterial,
-        transform: [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1],
+        transform: mat4.create(),
         explode: p.explode,
         cutaway: p.cutaway,
         primitive: "dial",

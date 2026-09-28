@@ -44,3 +44,6 @@ export function unionBounds(boxes: Box3[]): Box3 {
     }
   return out;
 }
+
+/** Where pooled parts wait out of sight, below the floor, until a scene shows them. */
+export const PARKED_Y = -50;

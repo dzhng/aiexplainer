@@ -11,7 +11,7 @@
  * (allocation-free). Angles run from +y towards +z around the drum's axis (+x); face 0 starts
  * at `angle` and the faces follow in order.
  */
-import type { Mat4, Vec3 } from "math";
+import { type Mat4, type Vec3, mat4 } from "math";
 import type { BlockPart, Part, TubePart } from "../frame-input.ts";
 import type { KitCommon, KitPrimitive } from "./primitive.ts";
 
@@ -123,7 +123,6 @@ export const die: KitPrimitive<DieParams> = {
   build(p) {
     const faces = p.materials.length;
     const common = { explode: p.explode, cutaway: p.cutaway, primitive: "die" };
-    const identity = (): Mat4 => [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1];
     const parts: Part[] = [];
     for (let f = 0; f < faces; f++)
       for (let s = 0; s < p.staves; s++) {
@@ -133,7 +132,7 @@ export const die: KitPrimitive<DieParams> = {
           id: `${p.id}.face.${f}.${s}`,
           slot: p.slot + f,
           material: p.materials[f]!,
-          transform: identity(),
+          transform: mat4.create(),
         };
         parts.push(stave);
       }
@@ -148,7 +147,7 @@ export const die: KitPrimitive<DieParams> = {
         [1, 0, 0],
       ],
       radius: p.radius - p.thickness * 0.98,
-      transform: identity(),
+      transform: mat4.create(),
     };
     parts.push(core);
     const shares = p.shares ?? p.materials.map(() => 1 / faces);

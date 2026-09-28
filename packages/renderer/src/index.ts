@@ -33,7 +33,7 @@ export {
   type WorldAnchor,
 } from "./labels.ts";
 export { KIT, KIT_ENTRIES, isKitPrimitive, type KitPrimitiveId } from "./kit/catalog.ts";
-export type { KitBuild, KitCommon, KitPrimitive } from "./kit/primitive.ts";
+export { PARKED_Y, type KitBuild, type KitCommon, type KitPrimitive } from "./kit/primitive.ts";
 export { placeBar, type BarSlot, type BarsParams } from "./kit/bars.ts";
 export type { BlockParams } from "./kit/block.ts";
 export { BRICK, placeBrick, type BrickParams, type BrickPlacement } from "./kit/brick.ts";

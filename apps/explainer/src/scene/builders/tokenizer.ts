@@ -25,6 +25,7 @@ import {
   type Part,
   type SceneAnchor,
   type SceneDesc,
+  PARKED_Y,
 } from "@repo/renderer";
 import type { Vec3 } from "math";
 import type { SceneTags } from "../../hud/SceneTags.tsx";
@@ -149,7 +150,7 @@ interface Built {
 }
 
 const built = new WeakMap<SceneDesc, Built>();
-const PARKED = { center: [0, -50, 0] as Vec3, unit: UNIT, length: 1 };
+const PARKED = { center: [0, PARKED_Y, 0] as Vec3, unit: UNIT, length: 1 };
 
 /** The step's first `count` pieces and their spots, laid out again only when either changes. */
 function laidOut(b: Built, from: readonly Piece[] | undefined, count: number) {
@@ -296,7 +297,7 @@ export const tokenizer: SceneBuilder = {
           slot,
           material: colour,
           // Built parked below the room; `update` places the ones on show.
-          center: [0, -50, 0],
+          center: [0, PARKED_Y, 0],
           unit: UNIT,
           length: 1,
           studs: MAX_UNITS,
@@ -309,7 +310,7 @@ export const tokenizer: SceneBuilder = {
       id: "card",
       slot: CARD_SLOT,
       material: "card",
-      center: [0, -50, 0],
+      center: [0, PARKED_Y, 0],
       size: [CARD.width, CARD.height, CARD.depth],
     }).parts[0] as BlockPart;
     parts.push(card);
@@ -432,7 +433,7 @@ export const tokenizer: SceneBuilder = {
     card[5] = CARD.height;
     card[10] = CARD.depth;
     card[12] = (1 - slide) * CARD.travel;
-    card[13] = shown ? PLATE_TOP + CARD.height / 2 : -50;
+    card[13] = shown ? PLATE_TOP + CARD.height / 2 : PARKED_Y;
     card[14] = ROW_Z[0][0];
     frame.tags.text[b.cardTag] = shown ? step.text : "";
 

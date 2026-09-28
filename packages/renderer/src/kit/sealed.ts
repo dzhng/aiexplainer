@@ -5,7 +5,7 @@
  * `material`) and its cap `<id>.<i>.cap` (in `capMaterial`), both in dynamics slot `slot + i`,
  * so a scene brings each one in with `widthScale` (0 → 1).
  */
-import { vec3, type Vec3 } from "math";
+import { vec3, type Vec3, mat4 } from "math";
 import type { TubePart } from "../frame-input.ts";
 import { unionBounds, type KitCommon, type KitPrimitive } from "./primitive.ts";
 import { tubeGeometry } from "./tube.ts";
@@ -60,7 +60,7 @@ export const sealed: KitPrimitive<SealedParams> = {
       material,
       path,
       radius,
-      transform: [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1],
+      transform: mat4.create(),
       explode: p.explode,
       cutaway: p.cutaway,
       primitive: "sealed",

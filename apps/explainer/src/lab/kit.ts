@@ -3,6 +3,7 @@
  * `mesh`, `bars`: its `example` build) on a turntable. The camera turns 45° per second, so a
  * held clock at t = 0…7 gives the eight review azimuths.
  */
+import { mat4 } from "math";
 import { isKitPrimitive, KIT_ENTRIES, type OrbitPose, type Part } from "@repo/renderer";
 import { box3 } from "math/shapes";
 import { lookConfig } from "../look/look.ts";
@@ -60,7 +61,7 @@ export async function kitScene(name: string): Promise<StageScene> {
     id: name,
     slot: 0,
     asset: name,
-    transform: [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1],
+    transform: mat4.create(),
   };
   return {
     // The axis probe's markers use its own glTF material names.

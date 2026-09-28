@@ -3,7 +3,7 @@
  * a value per bar (chapter 0's counts). It builds them at `values` (or empty); the scene
  * sets each bar's height every frame with `placeBar`. Its anchor is on the first bar.
  */
-import type { Vec3 } from "math";
+import { type Vec3, mat4 } from "math";
 import type { BlockPart } from "../frame-input.ts";
 import { unionBounds, type KitCommon, type KitPrimitive } from "./primitive.ts";
 
@@ -46,7 +46,7 @@ export const bars: KitPrimitive<BarsParams> = {
         id: `${p.id}.${i}`,
         slot: p.slot + i,
         material: p.material,
-        transform: [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1],
+        transform: mat4.create(),
         explode: p.explode,
         cutaway: p.cutaway,
         primitive: "bars",

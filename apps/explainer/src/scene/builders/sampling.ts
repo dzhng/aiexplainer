@@ -29,6 +29,7 @@ import {
   type Part,
   type SceneAnchor,
   type SceneDesc,
+  PARKED_Y,
 } from "@repo/renderer";
 import { probabilities, seededRng } from "@repo/llm";
 import type { Vec3 } from "math";
@@ -190,7 +191,7 @@ export const sampling: SceneBuilder = {
       id: "pointer",
       slot: POINTER_SLOT,
       material: "arrow",
-      center: [DIE.x, -50, 0],
+      center: [DIE.x, PARKED_Y, 0],
       size: [1, 1, 1],
     }).parts[0] as BlockPart;
     const parts = [...tableParts(TABLE), ...barsKit.parts, card, ...dieKit.parts, pointer];
@@ -343,7 +344,7 @@ export const sampling: SceneBuilder = {
     line[10] = 0.012 * s;
     line[12] = pose.center[0];
     // Until the die has formed, the line (and the die's label riding it) is out of sight.
-    line[13] = form < 0.05 ? -50 : pose.center[1] + Math.cos(READING) * out;
+    line[13] = form < 0.05 ? PARKED_Y : pose.center[1] + Math.cos(READING) * out;
     line[14] = pose.center[2] + Math.sin(READING) * out;
     dynamics.intensity[POINTER_SLOT] = landed ? 1.5 : 0.6;
 

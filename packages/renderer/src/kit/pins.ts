@@ -6,9 +6,9 @@
  * draw, whatever the number of pins. Scenes move pins every frame with `placePin`; its anchor
  * is the first pin's head.
  */
-import type { Mat4, Vec3 } from "math";
+import { type Mat4, type Vec3, mat4 } from "math";
 import type { BlockPart, Part, TubePart } from "../frame-input.ts";
-import { unionBounds, type KitCommon, type KitPrimitive } from "./primitive.ts";
+import { unionBounds, type KitCommon, type KitPrimitive, PARKED_Y } from "./primitive.ts";
 
 /** Pin proportions, metres. */
 const PIN = {
@@ -44,8 +44,6 @@ export interface PinFieldParams extends KitCommon {
   /** One dynamics slot for every arrow (they glow together); by default each pin's own. */
   arrowSlot?: number;
 }
-
-const PARKED_Y = -50;
 
 /**
  * Places pin `i` of a built field (`parts` as `build` returned them): its head at `head`
@@ -138,7 +136,6 @@ function axes(
 export const pins: KitPrimitive<PinFieldParams> = {
   build(p) {
     const common = { explode: p.explode, cutaway: p.cutaway, primitive: "pins" };
-    const identity = (): Mat4 => [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1];
     const parts: Part[] = p.heads.flatMap((_, i) => {
       const slot = p.slot + i;
       const id = `${p.id}.${i}`;
@@ -150,7 +147,7 @@ export const pins: KitPrimitive<PinFieldParams> = {
         material: p.headMaterial,
         path: UP,
         radius: 1,
-        transform: identity(),
+        transform: mat4.create(),
       };
       const needle: BlockPart = {
         ...common,
@@ -158,7 +155,7 @@ export const pins: KitPrimitive<PinFieldParams> = {
         id: `${id}.needle`,
         slot,
         material: p.needleMaterial,
-        transform: identity(),
+        transform: mat4.create(),
       };
       const arrow: TubePart = {
         ...common,
@@ -168,7 +165,7 @@ export const pins: KitPrimitive<PinFieldParams> = {
         material: p.arrowMaterial,
         path: ALONG,
         radius: PIN.arrowRadius,
-        transform: identity(),
+        transform: mat4.create(),
       };
       return [head, needle, arrow];
     });
