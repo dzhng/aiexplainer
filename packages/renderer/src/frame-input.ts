@@ -23,7 +23,6 @@ export interface Viewport {
   /** CSS pixels. */
   width: number;
   height: number;
-  dpr: number;
 }
 
 export type ViewMode = "whole" | "cutaway" | "exploded";

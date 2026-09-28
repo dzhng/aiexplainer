@@ -63,7 +63,7 @@ export async function measureBloom(
   const frame: FrameInput = {
     ...input,
     timeSec: 0,
-    viewport: { width: canvas.clientWidth, height: canvas.clientHeight, dpr: devicePixelRatio },
+    viewport: { width: canvas.clientWidth, height: canvas.clientHeight },
     debug: { bloom: true },
   };
   const samples: Record<"on" | "off", number[]> = { on: [], off: [] };

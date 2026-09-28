@@ -23,7 +23,7 @@ function expectMat(actual: Mat4, expected: number[]) {
 
 test("cameraMatrices: eye on +Z looking at the origin", () => {
   const pose: OrbitPose = { target: [0, 0, 0], yaw: 0, pitch: 0, distance: 5, fovY: Math.PI / 2 };
-  const m = cameraMatrices(pose, { width: 200, height: 100, dpr: 1 }, createCameraMatrices());
+  const m = cameraMatrices(pose, { width: 200, height: 100 }, createCameraMatrices());
   expect(m.eye).toEqual([0, 0, 5]);
   expectMat(m.view, [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, -5, 1]);
   // f = 1 / tan(45°) = 1, aspect 2; reverse-Z depth terms A and B.
@@ -38,7 +38,7 @@ test("cameraMatrices: yaw 90° looks down −X at an offset target", () => {
     distance: 2,
     fovY: Math.PI / 3,
   };
-  const m = cameraMatrices(pose, { width: 100, height: 100, dpr: 2 }, createCameraMatrices());
+  const m = cameraMatrices(pose, { width: 100, height: 100 }, createCameraMatrices());
   expect(m.eye[0]).toBeCloseTo(3, 6);
   expect(m.eye[1]).toBeCloseTo(2, 6);
   expect(m.eye[2]).toBeCloseTo(3, 6);
@@ -59,7 +59,7 @@ test("orbitEye: pitch raises the eye along the orbit sphere", () => {
 test("project: reverse-Z maps near to 1 and far to 0, and flags points behind", () => {
   const m = cameraMatrices(
     { target: [0, 0, 0], yaw: 0, pitch: 0, distance: 5, fovY: 1 },
-    { width: 800, height: 600, dpr: 1 },
+    { width: 800, height: 600 },
     createCameraMatrices(),
   );
   const out = createProjected();
@@ -70,7 +70,7 @@ test("project: reverse-Z maps near to 1 and far to 0, and flags points behind", 
 });
 
 test("project agrees with the packed uniform within 0.5 px", () => {
-  const viewport = { width: 1440, height: 900, dpr: 1 };
+  const viewport = { width: 1440, height: 900 };
   const m = cameraMatrices(
     { target: [0.3, 0.6, -0.2], yaw: 0.7, pitch: 0.4, distance: 6.5, fovY: 0.75 },
     viewport,

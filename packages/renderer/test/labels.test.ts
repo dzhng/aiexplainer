@@ -40,7 +40,7 @@ function place(
   const scene: SceneDesc = { revision: 1, parts: [...parts, carrier], anchors, assets: {} };
   const matrices = cameraMatrices(
     { target: [0, 0, 0], yaw: 0, pitch: 0, distance: 10, fovY: 0.8 },
-    { width: 800, height: 600, dpr: 1 },
+    { width: 800, height: 600 },
     createCameraMatrices(),
   );
   const placements = placeLabels(

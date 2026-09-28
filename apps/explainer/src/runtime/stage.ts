@@ -93,7 +93,7 @@ export async function runStage(o: StageOptions): Promise<Stage | null> {
   const input: FrameInput = {
     ...o.input,
     timeSec: 0,
-    viewport: { width: 1, height: 1, dpr: 1 },
+    viewport: { width: 1, height: 1 },
     debug: o.debug,
   };
   // Inside a room the camera stays inside it; a bare fixture keeps the open-stage limits.
@@ -168,7 +168,6 @@ export async function runStage(o: StageOptions): Promise<Stage | null> {
     input.timeSec = now;
     input.viewport.width = canvas.clientWidth;
     input.viewport.height = canvas.clientHeight;
-    input.viewport.dpr = devicePixelRatio;
     if (o.update?.(input, now) === true) orbit.jumpTo(input.camera);
     receipt = renderer.frame(input);
     placeAll();

@@ -51,7 +51,7 @@ function expectFillsExactly(out: Float32Array, bytes: number) {
 test("packFrame fills exactly FRAME_UNIFORM_BYTES", () => {
   const m = cameraMatrices(
     { target: [0, 0, 0], yaw: 0.3, pitch: 0.2, distance: 4, fovY: 0.8 },
-    { width: 640, height: 480, dpr: 1 },
+    { width: 640, height: 480 },
     createCameraMatrices(),
   );
   const out = packed(FRAME_UNIFORM_BYTES, (o) =>

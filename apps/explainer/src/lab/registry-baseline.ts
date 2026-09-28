@@ -39,7 +39,7 @@ export async function registryBaseline(canvas: HTMLCanvasElement, probe: ProbeAp
   const frameInput: FrameInput = {
     ...input,
     timeSec: 0,
-    viewport: { width: 800, height: 500, dpr: 1 },
+    viewport: { width: 800, height: 500 },
   };
   const stats = (): RegistryStats => ({ ...renderer.frame(frameInput).registry });
   const setSize = (width: number, height: number) => {
