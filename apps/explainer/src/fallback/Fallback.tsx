@@ -11,6 +11,7 @@ import { BRAND_NAME, SERIES_TITLE, X_PROFILE } from "../look/brand.ts";
 import { mediaFor } from "../runtime/media.ts";
 import type { Support } from "../runtime/support.ts";
 import { sharePathFor } from "../state/app-state.ts";
+import { copyOrShow } from "./copy.ts";
 import css from "./fallback.module.css";
 
 /** Why this visitor sees a video, and what the link is for. */
@@ -24,13 +25,14 @@ export function Fallback({ def, reason }: { def: ChapterDef; reason: Exclude<Sup
   const media = mediaFor(def.slug);
   const copy = () => {
     const url = `${location.origin}${sharePathFor(def.slug)}`;
-    navigator.clipboard.writeText(url).then(
-      () => {
+    // No clipboard (an insecure context) or a refused one: the link is shown to copy by hand.
+    const clipboard = navigator.clipboard as Clipboard | undefined;
+    void copyOrShow(url, clipboard, (text) => window.prompt("Copy this link", text)).then(
+      (copied) => {
+        if (!copied) return;
         setCopied(true);
         setTimeout(() => setCopied(false), 1500);
       },
-      // Clipboard access can be refused (permissions, insecure context): show the link instead.
-      () => window.prompt("Copy this link", url),
     );
   };
   return (
