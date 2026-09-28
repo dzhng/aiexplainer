@@ -7,8 +7,8 @@
  * block to block. The camera stays on block 1 except for the one zoom-out (D5, the chapter's
  * `pullBack`), and the text the whole line goes on to write appears above block 1.
  *
- * Head pipes are straight tube segments (`placeSegment`): an interim stand-in for chapter 4's
- * pipe network, which lives on another lane and is not in the kit yet.
+ * Head pipes are chapter 4's pipe network (kit `pipes`): each rises from its word and curves
+ * into the reader's underside, its radius scaled by the weight through `widthScale`.
  *
  * Loop channels read: `tokens` (0 → 1 the words land on the rail), `heads` (0 → 1 the readers'
  * pipes grow, one head after another), `zoom` (the pull-back, read by the chapter scene),
@@ -17,6 +17,7 @@
  */
 import {
   KIT,
+  pipePaths,
   placeSegment,
   UNIT_SEGMENT,
   type BlockPart,
@@ -29,6 +30,7 @@ import { evalArith } from "@repo/llm";
 import type { Vec3 } from "math";
 import type { SceneTags } from "../../hud/SceneTags.tsx";
 import type { SceneBuilder, SceneFrame } from "../build-frame.ts";
+import { nextRevision } from "../revision.ts";
 
 /** Chapter 8's run (`runtime/runs/stack.ts`). */
 export interface StackRun {
@@ -62,6 +64,8 @@ const RAIL = { y: 0.25, z: 0.35, pitch: 0.24, tile: [0.2, 0.11, 0.06] as Vec3 };
 const READER = { y: 1.95, z: -0.35, pitch: 0.7, size: [0.5, 0.32, 0.3] as Vec3 };
 /** Pipe radius: a hairline floor, plus the weight's share (linear, so strong pulls stand out). */
 const PIPE = { min: 0.0015, span: 0.05 };
+/** How far a pipe rises straight out of its word before curving to its reader, metres. */
+const PIPE_LIFT = 0.35;
 /** The pipe and lamp material of each key/value group. */
 const GROUP_MATERIAL = ["bar", "barAlt"];
 const BELT = { y: 1.1, radius: 0.05 };
@@ -73,7 +77,10 @@ const readerX = (h: number) => (h - (HEADS - 1) / 2) * READER.pitch;
 
 interface Built {
   tiles: BlockPart[];
+  /** `[block][head][word]`, a dynamics slot each (`slots.pipes` + the flat index). */
   pipes: TubePart[][][];
+  /** How many words the pipes were last laid out for. */
+  laidFor: number;
   belts: TubePart[];
   page: BlockPart;
   slots: { pipes: number; lamps: number; belts: number };
@@ -94,11 +101,16 @@ function wordTop(b: number, i: number, n: number): Vec3 {
   const [cx, cz] = CENTRES[b]!;
   return [cx + tokenX(i, n), RAIL.y + 0.1 + RAIL.tile[1], cz + RAIL.z];
 }
-function readerFoot(b: number, h: number, i: number, n: number): Vec3 {
+/** Block `b`'s pipes into reader `h` from `n` words: they arrive side by side along its underside. */
+function headPaths(b: number, h: number, n: number): Vec3[][] {
   const [cx, cz] = CENTRES[b]!;
-  // Each reader's pipes arrive side by side along its underside, in word order.
-  const spread = ((i - (n - 1) / 2) / Math.max(1, n - 1)) * READER.size[0] * 0.8;
-  return [cx + readerX(h) + spread, READER.y - READER.size[1] / 2, cz + READER.z];
+  const sources = Array.from({ length: STACK_TOKENS }, (_, i) => wordTop(b, Math.min(i, n - 1), n));
+  return pipePaths({
+    sources,
+    sink: [cx + readerX(h), READER.y - READER.size[1] / 2, cz + READER.z],
+    spread: [READER.size[0] * 0.8, 0],
+    lift: PIPE_LIFT,
+  });
 }
 
 export const stack: SceneBuilder = {
@@ -173,17 +185,20 @@ export const stack: SceneBuilder = {
     // A slot per block and head, so the slider's block can glow brighter than the rest.
     const pipesSlot = slot;
     const pipes = Array.from({ length: BLOCKS }, (_, b) =>
-      Array.from({ length: HEADS }, (_, h) =>
-        Array.from({ length: STACK_TOKENS }, (_, i) =>
-          segment(
-            `block.${b}.pipe.${h}.${i}`,
-            pipesSlot + b * HEADS + h,
-            GROUP_MATERIAL[Math.floor(h / 2)]!,
-          ),
-        ),
+      Array.from(
+        { length: HEADS },
+        (_, h) =>
+          KIT.pipes.build({
+            id: `block.${b}.pipe.${h}`,
+            slot: pipesSlot + (b * HEADS + h) * STACK_TOKENS,
+            material: GROUP_MATERIAL[Math.floor(h / 2)]!,
+            sources: headPaths(b, h, STACK_TOKENS).map((p) => p[0]!),
+            sink: headPaths(b, h, STACK_TOKENS)[0]!.at(-1)!,
+            radius: PIPE.span,
+          }).parts as TubePart[],
       ),
     );
-    slot += BLOCKS * HEADS;
+    slot += BLOCKS * HEADS * STACK_TOKENS;
     for (const perBlock of pipes) for (const perHead of perBlock) parts.push(...perHead);
     // Belts: into block 1, between blocks, and out of block 4.
     // A slot per belt, so one pass can light the line belt by belt.
@@ -214,12 +229,13 @@ export const stack: SceneBuilder = {
     const b: Built = {
       tiles,
       pipes,
+      laidFor: 0,
       belts,
       page,
       slots: { pipes: pipesSlot, lamps: lampsSlot, belts: beltSlot },
     };
     built.set(scene, b);
-    pose(b, BUILT_POSE, null, null, null);
+    pose(b, BUILT_POSE, null, null, null, null);
 
     const tags: SceneTags = {
       anchors: [
@@ -257,11 +273,19 @@ export const stack: SceneBuilder = {
       lit: ui.slider,
     };
     const data = run?.kind === "stack" ? run : null;
+    const b = built.get(frame.input.scene)!;
+    // A text of another length lays the pipes out afresh: a new structure for the renderer.
+    const n = data?.tokens.length ?? STACK_TOKENS;
+    if (b.laidFor !== n) {
+      layPipes(b, n);
+      frame.input.scene.revision = nextRevision();
+    }
     pose(
-      built.get(frame.input.scene)!,
+      b,
       state,
       data,
       frame.input.dynamics.intensity,
+      frame.input.dynamics.widthScale,
       frame.tags.text,
     );
   },
@@ -288,11 +312,24 @@ export function pipeRadius(w: number): number {
   return PIPE.min + PIPE.span * w;
 }
 
+/** Points every block's head pipes at `n` words (words past the text share the last one's). */
+function layPipes(b: Built, n: number): void {
+  for (let blk = 0; blk < BLOCKS; blk++)
+    for (let h = 0; h < HEADS; h++) {
+      const paths = headPaths(blk, h, n);
+      b.pipes[blk]![h]!.forEach((pipe, i) => {
+        pipe.path = paths[i]!;
+      });
+    }
+  b.laidFor = n;
+}
+
 function pose(
   b: Built,
   state: Pose,
   data: StackRun | null,
   intensity: Float32Array | null,
+  widthScale: Float32Array | null,
   text: string[] | null,
 ): void {
   const n = data?.tokens.length ?? STACK_TOKENS;
@@ -317,11 +354,11 @@ function pose(
       const grow = Math.min(1, Math.max(0, state.heads * HEADS - h));
       for (let i = 0; i < STACK_TOKENS; i++) {
         const w = data && i < n ? data.weights[blk]![h]![i]! : 0;
-        const from = wordTop(blk, i, n);
-        const to = readerFoot(blk, h, i, n);
-        for (let a = 0; a < 3; a++) to[a] = from[a]! + (to[a]! - from[a]!) * Math.max(grow, 1e-3);
         const shown = (data === null || i < n) && grow > 0;
-        placeSegment(b.pipes[blk]![h]![i]!.transform, from, to, shown ? pipeRadius(w) : 1e-4);
+        // The kit pipe is built at `PIPE.span`; widthScale scales it to this weight's radius,
+        // opening from nothing as the head's pipes grow.
+        const slot = b.pipes[blk]![h]![i]!.slot;
+        if (widthScale) widthScale[slot] = shown ? (pipeRadius(w) / PIPE.span) * grow : 0;
       }
     }
   }
@@ -346,8 +383,8 @@ function pose(
       const grow = Math.min(1, Math.max(0, state.heads * HEADS - h));
       intensity[b.slots.lamps + h] = 0.2 + 0.9 * grow;
       for (let blk = 0; blk < BLOCKS; blk++)
-        intensity[b.slots.pipes + blk * HEADS + h] =
-          (0.3 + 0.7 * grow) * (blk + 1 === state.lit ? 1 : DIM);
+        for (const pipe of b.pipes[blk]![h]!)
+          intensity[pipe.slot] = (0.3 + 0.7 * grow) * (blk + 1 === state.lit ? 1 : DIM);
     }
   }
   if (!text) return;

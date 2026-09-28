@@ -40,7 +40,7 @@ export const SCENE_KIT: Record<keyof typeof SCENE_ANCHORS, readonly string[]> = 
   attention: ["block", "pipes", "sealed", "flows", "tube"],
   mlp: ["questionPanel", "tube", "block", "bars", "contactShadow"],
   residual: ["block", "tube", "river", "volumeKnob", "contactShadow"],
-  stack: ["block", "tube", "contactShadow"],
+  stack: ["block", "tube", "pipes", "contactShadow"],
   generation: ["block", "tube", "bars", "contactShadow"],
   batching: ["mesh", "block", "contactShadow"],
   quantization: ["block", "contactShadow"],
