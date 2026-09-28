@@ -359,6 +359,9 @@
   position: absolute;
   top: 20px;
   right: 24px;
+  /* Never over the title column (.tl's left + width, plus a 16px gap). */
+  box-sizing: border-box;
+  max-width: calc(100vw - 24px - 408px - 16px);
   display: grid;
   grid-template-columns: auto auto;
   gap: 12px 20px;
@@ -405,6 +408,8 @@
 .seg {
   display: inline-flex;
   gap: 3px;
+  min-width: 0;
+  max-width: 100%;
 }
 
 .seg button {
@@ -436,10 +441,13 @@
   box-shadow: none;
 }
 
-/* A scenario is quoted prompt text: it keeps its own case. */
+/* A scenario is quoted prompt text: it keeps its own case, and shortens (…) in a narrow window. */
 .quoted button {
   text-transform: none;
   letter-spacing: 0.02em;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .slider {

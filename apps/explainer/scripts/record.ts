@@ -5,6 +5,7 @@
  *   bun run --cwd apps/explainer media              # every written chapter
  *   bun run --cwd apps/explainer media autocomplete # one chapter
  *   bun scripts/record.ts --repeat                  # record twice and compare frame by frame
+ *   bun scripts/record.ts --cards                   # only the link-preview cards (a HUD change)
  *
  * For each chapter it opens `/#N` with `?clock=step&fps=30` (the probe's `step()` advances
  * exactly one frame, so recording is independent of how fast the browser runs) at
@@ -179,7 +180,11 @@ async function record(browser: Browser, base: string, slug: ChapterSlug, repeat:
 if (import.meta.main) {
   const { values: args, positionals } = parseArgs({
     allowPositionals: true,
-    options: { base: { type: "string" }, repeat: { type: "boolean", default: false } },
+    options: {
+      base: { type: "string" },
+      repeat: { type: "boolean", default: false },
+      cards: { type: "boolean", default: false },
+    },
   });
   const slugs = positionals.length ? (positionals as ChapterSlug[]) : writtenChapters(CHAPTERS);
   for (const slug of slugs) if (!CHAPTERS[slug]) throw new Error(`no written chapter "${slug}"`);
@@ -187,7 +192,13 @@ if (import.meta.main) {
   const server = await serve(args.base);
   const browser = await launch("chrome");
   try {
-    for (const slug of slugs) await record(browser, server.base, slug, args.repeat);
+    for (const slug of slugs) {
+      if (!args.cards) await record(browser, server.base, slug, args.repeat);
+      else {
+        await shootCard(browser, server.base, CHAPTERS[slug]!, out(mediaFor(slug).card));
+        console.log(`${slug}: card → ${mediaFor(slug).card}`);
+      }
+    }
   } finally {
     await browser.close();
     await server.close();
