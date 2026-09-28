@@ -11,9 +11,24 @@ import { contactShadow } from "./contact-shadow.ts";
 import { die } from "./die.ts";
 import { mesh } from "./mesh.ts";
 import type { KitPrimitive } from "./primitive.ts";
+import { questionPanel } from "./question-panel.ts";
+import { river } from "./river.ts";
 import { tube } from "./tube.ts";
+import { volumeKnob } from "./volume-knob.ts";
 
-export const KIT = { block, tube, mesh, bars, contactShadow, brick, pins, die } as const;
+export const KIT = {
+  block,
+  tube,
+  mesh,
+  bars,
+  contactShadow,
+  brick,
+  pins,
+  questionPanel,
+  river,
+  volumeKnob,
+  die,
+} as const;
 export type KitPrimitiveId = keyof typeof KIT;
 
 export function isKitPrimitive(id: string): id is KitPrimitiveId {

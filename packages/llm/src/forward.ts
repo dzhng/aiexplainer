@@ -94,6 +94,11 @@ export interface ForwardOptions {
   window?: number;
   /** Return logits after every token of this call (speculative decoding's verify step). */
   allPositions?: boolean;
+  /**
+   * Switches MLP neurons off: their activations are zeroed before `w2` in `layer`, at every
+   * position (chapter 6's ablation; the same edit as the `mlp` probe's hook).
+   */
+  mlpOff?: { layer: number; neurons: number[] };
 }
 
 export function createKvCache(model: Transformer): KvCache {
@@ -221,7 +226,8 @@ export function forward(
     if (layer.mlp || layer.moe) {
       normRows(h, x, T, d, layer.mlpNorm, arch.normEps);
       if (layer.mlp) {
-        const parts = swiglu(layer.mlp, h, T, d, branch, lt !== undefined);
+        const off = options.mlpOff?.layer === l ? options.mlpOff.neurons : undefined;
+        const parts = swiglu(layer.mlp, h, T, d, branch, lt !== undefined, off);
         if (lt && parts) lt.mlp = tracer!.mlp(parts, branch, d);
       } else {
         const routing = moe(layer.moe!, arch, h, T, d, branch);
@@ -339,7 +345,10 @@ interface SwigluParts {
   hidden: number;
 }
 
-/** Writes `w2 · (silu(w1·h) ⊙ w3·h)` into `out`; returns the parts when asked to keep them. */
+/**
+ * Writes `w2 · (silu(w1·h) ⊙ w3·h)` into `out`, with the `off` neurons' activations zeroed;
+ * returns the parts when asked to keep them.
+ */
 function swiglu(
   w: SwigluWeights,
   h: Float32Array,
@@ -347,6 +356,7 @@ function swiglu(
   d: number,
   out: Float32Array,
   keep: boolean,
+  off?: number[],
 ): SwigluParts | undefined {
   const hidden = w.w1.length / d;
   const gate = matmulRows(w.w1, h, rows, hidden, d);
@@ -355,6 +365,10 @@ function swiglu(
   for (let i = 0; i < act.length; i++) {
     const g = gate[i]!;
     act[i] = (g / (1 + Math.exp(-g))) * up[i]!;
+  }
+  for (const n of off ?? []) {
+    if (!(n >= 0 && n < hidden)) throw new Error(`no MLP neuron ${n}`);
+    for (let r = 0; r < rows; r++) act[r * hidden + n] = 0;
   }
   matmulRowsInto(out, w.w2, act, rows, d, hidden);
   return keep ? { gate, up, act, hidden } : undefined;

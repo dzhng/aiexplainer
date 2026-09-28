@@ -7,14 +7,13 @@ import {
   seededRng,
   transformerModel,
 } from "@repo/llm";
-import { directSession } from "../scripts/direct-session.ts";
-import { shippedModel } from "../scripts/shipped.ts";
+import { shippedContext, shippedModel } from "../scripts/shipped.ts";
 import { sampling as chapter } from "../src/chapters/data/sampling.ts";
 import { SCENE_KIT } from "../src/chapters/scenes.ts";
 import { resolveStat } from "../src/chapters/stats.ts";
 import { createTimelineState, evalTimeline } from "../src/chapters/timeline.ts";
 import { computeRun } from "../src/runtime/scene-run.ts";
-import { buildFrame, createSceneFrame, type SceneRun } from "../src/scene/build-frame.ts";
+import { buildFrame, createSceneFrame } from "../src/scene/build-frame.ts";
 import {
   ROLL_SEED,
   WORD_FACES,
@@ -22,13 +21,14 @@ import {
   faceRead,
   faceShares,
   landingAngle,
+  type LogitsRun,
 } from "../src/scene/builders/sampling.ts";
 
 const loaded = await shippedModel("embed");
 const model = transformerModel(loaded);
 const tokenizer = loaded.tokenizer!;
-const ctx = { model: loaded, session: directSession(loaded) };
-type LogitsRun = Extract<SceneRun, { kind: "logits" }>;
+const ctx = { ...(await shippedContext("embed")), model: loaded };
+
 const runFor = async (text: string | null) => (await computeRun(chapter, text, ctx)) as LogitsRun;
 const loopRun = await runFor(null);
 const FACES = WORD_FACES + 1;

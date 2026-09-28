@@ -44,5 +44,7 @@ export function formatStat(value: number, format: StatFormat): string {
       return `${sig3(value * 100)}%`;
     case "x":
       return `${sig3(value)}×`;
+    case "nats":
+      return `${sig3(value)} nats`;
   }
 }

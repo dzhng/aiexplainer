@@ -59,7 +59,24 @@ const POINTER_SLOT = DIE_SLOT + FACES + 1;
 /** Where the roll is read: radians round the drum from its top towards the camera. */
 const READING = 0.75;
 
-type LogitsStep = Extract<SceneRun, { kind: "logits" }>["steps"][number];
+/** Chapter 3's run (`runtime/runs/sampling.ts`). */
+export interface LogitsRun {
+  kind: "logits";
+  /**
+   * One step per loop input (or one for typed text): the prompt, its last token (the only one
+   * this model reads), the forward pass's next-token scores over the whole vocabulary, their
+   * mean, and the highest-scoring tokens in order.
+   */
+  steps: {
+    text: string;
+    last: string;
+    logits: number[];
+    meanLogit: number;
+    top: { id: number; text: string; logit: number }[];
+  }[];
+}
+
+type LogitsStep = LogitsRun["steps"][number];
 
 /**
  * The die's face shares at temperature `t`: the top six words' probabilities (in score order)

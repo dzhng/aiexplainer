@@ -1,25 +1,22 @@
-// The inference worker (D38): holds one loaded model and answers requests in order.
-// Its only client is session.ts, which owns cancellation and drops stale replies.
-import {
-  countsModel,
-  fetchModel,
-  forward,
-  nearestTokens,
-  nextWords,
-  transformerModel,
-  type CountsModel,
-  type ForwardTrace,
-  type Transformer,
-} from "@repo/llm";
-import type { ModelInfo, WorkerReply, WorkerRequest } from "./session.ts";
+// The inference worker (D38): answers requests in order with `createInference`. Its only
+// client is session.ts, which owns cancellation and drops stale replies.
+import type { ForwardTrace } from "@repo/llm";
+import { createInference } from "./inference.ts";
+import type { WorkerReply, WorkerRequest } from "./session.ts";
 
 declare const self: Worker;
 
-let model:
-  | { kind: "transformer"; transformer: Transformer }
-  | { kind: "counts"; counts: CountsModel };
+const inference = createInference();
+/** Generations told to stop (by request id); checked between tokens. */
+const cancelled = new Set<number>();
+/** A macrotask break, so a `cancel` message can arrive between tokens. */
+const breather = () => new Promise<void>((resolve) => setTimeout(resolve, 0));
 
 self.onmessage = async ({ data }: MessageEvent<WorkerRequest>) => {
+  if (data.type === "cancel") {
+    cancelled.add(data.target);
+    return;
+  }
   try {
     const [result, transfer] = await handle(data);
     self.postMessage({ id: data.id, ok: true, result } satisfies WorkerReply, { transfer });
@@ -29,35 +26,27 @@ self.onmessage = async ({ data }: MessageEvent<WorkerRequest>) => {
   }
 };
 
-async function handle(request: WorkerRequest): Promise<[unknown, Transferable[]]> {
+async function handle(
+  request: Exclude<WorkerRequest, { type: "cancel" }>,
+): Promise<[unknown, Transferable[]]> {
   switch (request.type) {
-    case "load": {
-      const loaded = await fetchModel(new URL(request.manifestUrl));
-      const { manifest } = loaded;
-      model =
-        manifest.kind === "transformer"
-          ? { kind: "transformer", transformer: transformerModel(loaded) }
-          : { kind: "counts", counts: countsModel(loaded) };
-      const info: ModelInfo = { id: manifest.id, kind: manifest.kind, evidence: manifest.evidence };
-      if (manifest.kind === "transformer") info.arch = manifest.arch;
-      return [info, []];
-    }
+    case "load":
+      return [await inference.load(new URL(request.manifestUrl)), []];
     case "run": {
-      if (model?.kind !== "transformer") throw new Error("run needs a loaded transformer");
-      const result = forward(model.transformer, request.tokens, {
-        trace: request.trace,
-        window: request.window,
-      });
+      const result = inference.run(request.tokens, request.options);
       return [result, [result.logits.buffer, ...traceBuffers(result.trace)]];
     }
-    case "neighbours": {
-      if (model?.kind !== "transformer") throw new Error("neighbours needs a loaded transformer");
-      return [nearestTokens(model.transformer, request.token, request.k), []];
+    case "generate": {
+      const steps = await inference.generate(request.tokens, request.options, breather, () =>
+        cancelled.has(request.id),
+      );
+      cancelled.delete(request.id);
+      return [steps, []];
     }
-    case "nextWords": {
-      if (model?.kind !== "counts") throw new Error("nextWords needs a loaded counts model");
-      return [nextWords(model.counts, request.word, request.k), []];
-    }
+    case "neighbours":
+      return [inference.neighbours(request.token, request.k), []];
+    case "nextWords":
+      return [inference.nextWords(request.word, request.k), []];
   }
 }
 

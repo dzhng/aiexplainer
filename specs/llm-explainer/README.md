@@ -33,6 +33,9 @@ Work the slices in the order of the ladder below. Each slice file is a contract:
   whenever the slice names a target.
 - Record any decision the slice did not delegate in [choices.md](choices.md).
 
+To find code by what it does ("where is the label occlusion computed?"), use `jg`
+([jevgrep skill](../../.agents/skills/jevgrep/SKILL.md)) before grepping by hand.
+
 Before you start any GPU slice, read [the renderer skill](../../.agents/skills/renderer/SKILL.md).
 Before you write any on-screen copy, read [Copy rules](#copy-rules).
 
@@ -55,7 +58,7 @@ the checklist below, and any new blockers.
 - [x] M1 — Chapter 0 through every layer (D14): slices ✅[01](slices/01-scaffold-harness.md) · ✅[02](slices/02-manifest-and-counts-model.md) · ✅[03](slices/03-chapter-contract.md) · ✅[04](slices/04-hud-shell.md) · ✅[05](slices/05-renderer-foundation.md) · ✅[06](slices/06-gltf-pipeline.md) · ✅[07](slices/07-room-lighting.md) · ✅[08](slices/08-bloom.md) · ✅[09](slices/09-labels-occlusion.md) · ✅[10](slices/10-ch0-compose-framing.md) · ✅[11](slices/11-ch0-loop-pacing.md) · ✅[11b](slices/11b-lab-room.md) · ✅[11c](slices/11c-rich-room-arrival.md) · ✅[04b](slices/04b-game-ui.md) · ✅[12](slices/12-fallback-share-deploy.md)
 - [x] M2 — Vocabulary lock: ✅[13](slices/13-vocabulary-lock.md)
 - [ ] M3 — Model lab: ✅[14](slices/14-tokenizer.md) · ✅[15](slices/15-transformer-core.md) · ✅[16](slices/16-model-lab-early.md) · ✅[17](slices/17-model-lab-late.md) · ✅[18](slices/18-production-arithmetic.md)
-- [ ] M4 — Chapters: [19](slices/19-ch-tokenizer.md) · [20](slices/20-ch-embeddings.md) · [21](slices/21-ch-sampling.md) · [22](slices/22-ch-attention-width.md) · [23](slices/23-ch-attention-sealed.md) · [24](slices/24-ch-attention-flow.md) · [25](slices/25-ch-positions.md) · [26](slices/26-ch-mlp.md) · [27](slices/27-ch-residual.md) · [28](slices/28-ch-stack.md) · [29](slices/29-ch-generation.md) · [30](slices/30-ch-kv-cache.md) · [31](slices/31-ch-batching.md) · [32](slices/32-ch-quantization.md) · [33](slices/33-ch-speculative.md) · [34](slices/34-ch-experts.md) · [35](slices/35-ch-finished.md)
+- [ ] M4 — Chapters: ✅[19](slices/19-ch-tokenizer.md) · ✅[20](slices/20-ch-embeddings.md) · [21](slices/21-ch-sampling.md) · [22](slices/22-ch-attention-width.md) · [23](slices/23-ch-attention-sealed.md) · [24](slices/24-ch-attention-flow.md) · [25](slices/25-ch-positions.md) · ✅[26](slices/26-ch-mlp.md) · ✅[27](slices/27-ch-residual.md) · ✅[28](slices/28-ch-stack.md) · [29](slices/29-ch-generation.md) · [30](slices/30-ch-kv-cache.md) · [31](slices/31-ch-batching.md) · [32](slices/32-ch-quantization.md) · [33](slices/33-ch-speculative.md) · [34](slices/34-ch-experts.md) · [35](slices/35-ch-finished.md)
 - [ ] M5 — Release candidate: [36](slices/36-release.md)
 
 ## Goal and non-goals
@@ -207,6 +210,8 @@ exactly one owner. A second copy is a bug.
 | Verification harness, named crops, layer masks                                                                                          | `apps/explainer/scripts/verify.ts` plus `apps/explainer/src/lab/probe.ts`                                                                                        |
 
 **Short-lived seams:**
+
+- **Chapter 8's head pipes are interim tube segments → replaced by lane B's `pipes` kit primitive (slice 22) when both are merged.**
 
 - **Slice 05 → removed in slice 05.** The `/lab/typegpu-smoke` reproduction of an official example is deleted once `frame.ts` passes.
 
