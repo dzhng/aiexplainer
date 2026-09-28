@@ -24,7 +24,7 @@ skim is 7 min 9 s.
 1. The polish pass over the backlog below.
 2. The whole-spec review (refactor-clean → code-review → write-docs) over the full diff.
 3. Re-record all media (`bun run --cwd apps/explainer media`).
-4. Slice 36 (release candidate). O5 and the production merge into `main` are the human's call.
+4. Slice 36 (release candidate), then merge `llm-explainer` into `main` (production). The human authorized this (2026-09-27). O5 (the domain) and turning off Vercel Authentication for the public post stay the human's call.
 5. Consolidate `choices.md`, then close-spec.
 
 **Polish backlog** (from the choices ledger; judge each at the whole-spec review):
@@ -170,6 +170,8 @@ the human says otherwise.
 | D41 | **ffmpeg** (Homebrew) is a build-time tool for the fallback video. It is never used at runtime.                                                                                                                                                | D29 needs recordings. The map's toolchain audit (D30) missed it.                                                                      |
 
 **Human notes:**
+
+- **"you can merge to main whenever you want"** (2026-09-27): the production merge is authorized; do it after slice 36 is green.
 
 - **A richer room, an arrival move and a game UI** (2026-09-27, on the 11b shots): "the zoom is
   fine, but richer room … animate starting pulled back then zoom in when first going to the
