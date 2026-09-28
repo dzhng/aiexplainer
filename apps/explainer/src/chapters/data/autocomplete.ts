@@ -2,7 +2,9 @@
  * Chapter 0: next-word guessing from word-pair counts. The example
  * words come from the `counts` model itself: "upon" is its top next word after "once", its
  * top-successor probe measures "a" after "upon", and "onse" is a misspelling it never kept.
- * The loop shows the rule twice (once → upon → a), then the failure that chapter 1 fixes.
+ * The loop shows the rule twice (once → upon → a), then the failure that chapter 1 fixes. The
+ * loop's inputs are whole texts, like the reader's: the rail shows each, and the machine looks
+ * only at its last word.
  */
 import type { ChapterDef } from "../types.ts";
 
@@ -40,7 +42,7 @@ export const autocomplete: ChapterDef = {
       },
       text: {
         story: [
-          "The machine only ever looks at the last word on the card, however long your sentence is.",
+          "The machine only ever looks at the last word, the one on the card, however long your sentence is.",
           "Give it a word it never saw, like the misspelt “onse”, and there is no row to read, so no bars appear.",
         ],
         technical:
@@ -80,19 +82,18 @@ export const autocomplete: ChapterDef = {
   scenarios: [{ id: "once", label: "Once upon a", prompt: "once upon a", probe: "top-successor" }],
   views: ["whole", "cutaway", "exploded"],
   labels: [
-    { anchor: "board", analogy: "The tally board", technical: "Word-pair count table" },
     {
       anchor: "bars",
       analogy: "How often each word came next",
       technical: "Share of the kept next-word counts",
     },
-    { anchor: "rail", analogy: "The last word so far", technical: "Context: one word" },
+    { anchor: "rail", analogy: "The only word it looks at", technical: "Context: one word" },
   ],
   loop: {
     durationSec: 20,
-    inputs: ["once", "upon", "a", "onse"],
+    inputs: ["once", "once upon", "once upon a", "onse"],
     channels: {
-      /** Which input is written on the card; it changes only while the card is off the rail. */
+      /** Which input is on the rail; it changes only while the card is off the rail. */
       railWord: [
         { t: 0, v: 0, ease: "step" },
         { t: 5, v: 1, ease: "step" },

@@ -244,7 +244,7 @@ export const residual: SceneBuilder = {
         })),
       ],
       text: ["", "", "", "", "", "", ""],
-      emphasis: [false, true, false, false, false, false, false],
+      style: ["above", "onPart", "above", "above", "above", "above", "above"],
     };
     return { scene, tags };
   },

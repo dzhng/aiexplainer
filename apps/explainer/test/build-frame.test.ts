@@ -93,12 +93,26 @@ test("typed text shows its last word's bars at full height; an unseen word shows
 describe("chapter 0's loop", () => {
   const inputs = autocomplete.loop.inputs!;
   const unseen = inputs.at(-1)!;
+  const last = (text: string) => text.split(" ").at(-1)!;
 
-  test("its example words are the model's own (O2): each is the last one's top pick", () => {
-    for (let i = 1; i < inputs.length - 1; i++)
-      expect(nextWords(model, inputs[i - 1]!, 1)[0]!.word).toBe(inputs[i]!);
-    expect(inputs.slice(0, 3)).toEqual(["once", "upon", "a"]);
+  test("its texts grow by the model's own picks (O2): each adds the last word's top pick", () => {
+    for (let i = 1; i < inputs.length - 1; i++) {
+      const pick = nextWords(model, last(inputs[i - 1]!), 1)[0]!.word;
+      expect(inputs[i]).toBe(`${inputs[i - 1]} ${pick}`);
+    }
+    expect(inputs.slice(0, 3)).toEqual(["once", "once upon", "once upon a"]);
     expect(model.index.has(unseen)).toBe(false);
+  });
+
+  test("the rail shows the whole text, the header names the lookup", async () => {
+    const run = (await computeRun(autocomplete, null))!;
+    const { frame, tl, ui } = frameAt(12.5);
+    buildFrame(autocomplete, tl, ui, run, frame);
+    // Card, earlier words, header: "once upon" muted, "a" on the card, bars for "a".
+    expect(frame.tags.text[10]).toBe("a");
+    expect(frame.tags.text[12]).toBe("once upon");
+    expect(frame.tags.text[13]).toBe("After “a”…");
+    expect(frame.tags.style.slice(10)).toEqual(["onPart", "above", "before", "heading"]);
   });
 
   test("the point lands by 10 s: two picks light up before then", () => {

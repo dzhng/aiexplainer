@@ -1,6 +1,6 @@
 /**
  * Scene text: small words drawn at points in the scene (the word on each count bar, the word
- * on the rail card). They are data, not labels: no pill or leader, centred above their point,
+ * on the rail card). They are data, not labels: no pill or leader, placed by their `TagStyle`,
  * and they hide exactly like labels (behind the eye, off-screen, occluded); a tag that would
  * overlap an earlier one (builders list the most important first) hides too. Positioned through
  * refs every frame; text only changes the DOM when it changes. Same layer as the labels.
@@ -8,16 +8,24 @@
 import type { LabelPlacement, SceneAnchor, ScreenRect } from "@repo/renderer";
 import { forwardRef, useImperativeHandle, useRef } from "react";
 
+/**
+ * How a tag sits on its point and reads:
+ * - `above`: centred just above it, in ink (the word over a bar);
+ * - `onPart`: the one word that matters most (a card's), larger and centred on the point in
+ *   dark ink, as if written on the part;
+ * - `before`: ending at the point, vertically centred, in muted ink (the earlier words that
+ *   lead up to a card);
+ * - `heading`: centred on the point, larger, in the glowing display face (a board's header).
+ */
+export type TagStyle = "above" | "onPart" | "before" | "heading";
+
 /** What a scene builder hands the overlay: anchors and their text, both updated in place. */
 export interface SceneTags {
   anchors: SceneAnchor[];
   /** Parallel to `anchors`; an empty string hides that tag. */
   text: string[];
-  /**
-   * Parallel to `anchors`: the one word that matters most (the card's), printed larger and
-   * centred on its point in dark ink, as if written on the part. Others sit above their point.
-   */
-  emphasis: boolean[];
+  /** Parallel to `anchors`: how each tag sits and reads. */
+  style: TagStyle[];
 }
 
 export interface SceneTagsHandle {
@@ -42,6 +50,41 @@ const styles = {
     textShadow: "0 0 2px var(--bg-deep), 0 0 3px var(--bg-deep), 0 1px 6px var(--bg-deep)",
   },
 } satisfies Record<string, React.CSSProperties>;
+
+/** Each style's type and ink, and where the tag's box sits on its point (fractions of its size). */
+const LOOK: Record<
+  TagStyle,
+  { font: string; color: string; shadow: string; x: number; y: number }
+> = {
+  above: {
+    font: styles.tag.font,
+    color: styles.tag.color,
+    shadow: styles.tag.textShadow,
+    x: 0.5,
+    y: 1.45,
+  },
+  onPart: {
+    font: "600 var(--text-lg)/1 var(--font-ui)",
+    color: "var(--bg-deep)",
+    shadow: "none",
+    x: 0.5,
+    y: 0.5,
+  },
+  before: {
+    font: styles.tag.font,
+    color: "var(--hud-muted)",
+    shadow: styles.tag.textShadow,
+    x: 1,
+    y: 0.5,
+  },
+  heading: {
+    font: "700 var(--text-lg)/1 var(--font-display)",
+    color: "var(--hud-accent)",
+    shadow: "0 0 10px var(--hud-glow), 0 0 2px var(--bg-deep)",
+    x: 0.5,
+    y: 0.5,
+  },
+};
 
 /** A 2 px gap counts as touching: tags need air between them to read. */
 function overlaps(a: ScreenRect, b: ScreenRect): boolean {
@@ -77,20 +120,21 @@ export const SceneTagsLayer = forwardRef<SceneTagsHandle, { count: number }>(
             if (!show) continue;
             if (shown.current[i] !== text) {
               node.textContent = text;
-              const onPart = tags.emphasis[i];
-              // Back to the tag's own style, not "": clearing an inline property drops the
+              // Always the style's own values, never "": clearing an inline property drops the
               // value React set from `styles.tag` too (the halo and ink were being lost).
-              node.style.fontSize = onPart ? "var(--text-lg)" : "1rem";
-              node.style.color = onPart ? "var(--bg-deep)" : styles.tag.color;
-              node.style.textShadow = onPart ? "none" : styles.tag.textShadow;
+              const look = LOOK[tags.style[i] ?? "above"];
+              node.style.font = look.font;
+              node.style.lineHeight = String(styles.tag.lineHeight);
+              node.style.color = look.color;
+              node.style.textShadow = look.shadow;
               shown.current[i] = text;
               sizes.current[i] = { width: node.offsetWidth, height: node.offsetHeight };
             }
-            const lift = tags.emphasis[i] ? 0.5 : 1.45;
+            const look = LOOK[tags.style[i] ?? "above"];
             const size = sizes.current[i]!;
             const rect = (rects.current[i] ??= { x: 0, y: 0, width: 0, height: 0 });
-            rect.x = p!.x - size.width / 2;
-            rect.y = p!.y - size.height * lift;
+            rect.x = p!.x - size.width * look.x;
+            rect.y = p!.y - size.height * look.y;
             rect.width = size.width;
             rect.height = size.height;
             for (let j = 0; j < i && visible.current[i]; j++) {

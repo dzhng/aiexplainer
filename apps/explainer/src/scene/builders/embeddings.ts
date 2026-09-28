@@ -256,10 +256,12 @@ export const embeddings: SceneBuilder = {
         })),
       ],
       text: [],
-      emphasis: [],
+      style: [],
     };
     tags.text = tags.anchors.map(() => "");
-    tags.emphasis = tags.anchors.map((_, i) => i >= tagOf.brick && i < tagOf.background);
+    tags.style = tags.anchors.map((_, i) =>
+      i >= tagOf.brick && i < tagOf.background ? "onPart" : "above",
+    );
     built.set(scene, {
       background,
       input,

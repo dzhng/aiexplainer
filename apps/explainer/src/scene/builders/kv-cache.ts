@@ -176,7 +176,7 @@ export const kvCache: SceneBuilder = {
         { id: "note", part: "rack.frame.board", local: [0.62, 0, 0.5], priority: 0 },
       ],
       text: Array.from({ length: RAIL_SLOTS + 3 }, () => ""),
-      emphasis: [...Array.from({ length: RAIL_SLOTS + 1 }, () => true), false, false],
+      style: [...Array.from({ length: RAIL_SLOTS + 1 }, () => "onPart" as const), "above", "above"],
     };
     return { scene, tags };
   },

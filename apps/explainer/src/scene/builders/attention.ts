@@ -542,7 +542,11 @@ function attentionScene(o: { dials: boolean }): SceneBuilder {
           })),
         ],
         text: Array.from({ length: TAG.words + MAX_TOKENS }, () => ""),
-        emphasis: [true, true, ...Array.from({ length: TAG.words - 2 + MAX_TOKENS }, () => false)],
+        style: [
+          "onPart",
+          "onPart",
+          ...Array.from({ length: TAG.words - 2 + MAX_TOKENS }, () => "above" as const),
+        ],
       };
       return { scene, tags };
     },

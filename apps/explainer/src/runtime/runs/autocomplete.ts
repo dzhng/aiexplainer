@@ -1,10 +1,10 @@
 /**
- * Chapter 0's run: each loop word's real successors from the counts model, or the successors
- * of the last word the reader typed (split by the counts manifest's own rule).
+ * Chapter 0's run: for each loop text (or the reader's), its words by the counts manifest's own
+ * rule, and the real successors of the last one: the only word the machine looks at.
  */
 import { countsModel, type LoadedModel } from "@repo/llm";
-import type { CountsRun } from "../../scene/builders/autocomplete.ts";
-import type { SceneRunFn } from "../scene-run.ts";
+import { BOARD_SLOTS, type CountsRun } from "../../scene/builders/autocomplete.ts";
+import { inputsOf, type SceneRunFn } from "../scene-run.ts";
 
 /** Each loaded model's word rule, decoded once (the vocabulary is thousands of words). */
 const splitters = new WeakMap<LoadedModel, (text: string) => string[]>();
@@ -16,10 +16,13 @@ function splitter(model: LoadedModel): (text: string) => string[] {
 
 export const autocompleteRun: SceneRunFn = async (def, text, { model, session }) => {
   if (!("manifest" in model)) throw new Error("autocomplete needs the counts model");
-  const typed = text === null ? [] : splitter(model)(text);
-  const words = text === null ? (def.loop.inputs ?? []) : [typed.at(-1) ?? text.trim()];
+  const split = splitter(model);
   const steps: CountsRun["steps"] = [];
-  for (const word of words)
-    steps.push({ word, next: await session.nextWords(model.manifest.id, word, def.slider.max) });
+  for (const input of inputsOf(def, text)) {
+    const words = split(input);
+    const word = words.at(-1) ?? input.trim();
+    const next = await session.nextWords(model.manifest.id, word, BOARD_SLOTS);
+    steps.push({ before: words.slice(0, -1), word, next });
+  }
   return { kind: "counts", steps };
 };

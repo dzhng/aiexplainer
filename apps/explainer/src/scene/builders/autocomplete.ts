@@ -3,7 +3,9 @@
  * counter board split into its nodes on a soft contact shadow, a count bar in each of its
  * slots, and a word card on its rail. Bar heights are the real `nextWords` shares for the
  * word on the card; the slot and rail positions come from the prop's own nodes, so the
- * Blender script stays their only owner.
+ * Blender script stays their only owner. The header strip names the lookup ("after “upon”…"),
+ * so the bars read as that word's row of the tally, and the rail holds the whole text: the
+ * earlier words muted, the last one on the lit card, the only word the machine looks at.
  *
  * Views: Exploded pulls the housing back and the slots, bars, rail and card forward in
  * layers; Cutaway takes a section through the front of the slot channels, rail and housing
@@ -35,11 +37,18 @@ import { stepAt } from "../step.ts";
 /** Chapter 0's run (`runtime/runs/autocomplete.ts`). */
 export interface CountsRun {
   kind: "counts";
-  /** One step per loop input (or one for typed text): the word and its real successors. */
-  steps: { word: string; next: NextWord[] }[];
+  /**
+   * One step per loop text (or one for typed text): its earlier words, its last word, and
+   * that last word's real successors.
+   */
+  steps: { before: string[]; word: string; next: NextWord[] }[];
 }
 
-const SLOTS = 10;
+/** The board's count slots: how many successors the run looks up. */
+export const BOARD_SLOTS = 10;
+const SLOTS = BOARD_SLOTS;
+/** The most characters of earlier words the rail shows; longer text keeps its end. */
+const BEFORE_CHARS = 36;
 /** Bars are this share of their slot's width and depth, so the channel walls stay visible. */
 const BAR_WIDTH = 0.72;
 const BAR_DEPTH = 0.6;
@@ -122,10 +131,19 @@ function placeCard(transform: Mat4, x: number, y: number, z: number) {
   transform[14] = z;
 }
 
+/** The earlier words as the rail shows them: the end of the text, cut at a word, if long. */
+function earlier(words: readonly string[]): string {
+  const text = words.join(" ");
+  if (text.length <= BEFORE_CHARS) return text;
+  const tail = text.slice(-BEFORE_CHARS);
+  return `…${tail.slice(tail.indexOf(" ") + 1)}`;
+}
+
 export const autocomplete: SceneBuilder = {
   assets: { board: "/props/counter_board.glb" },
-  // A word per bar, the card's word, and the note for a word with no counts.
-  tagCount: SLOTS + 2,
+  // A word per bar, the card's word, the note for a word with no counts, the earlier words
+  // and the header.
+  tagCount: SLOTS + 4,
 
   create(assets, revision) {
     const board = assets.board;
@@ -173,14 +191,10 @@ export const autocomplete: SceneBuilder = {
     });
     const parts = [...shadowKit.parts, ...boardKit.parts, ...barsKit.parts, ...cardKit.parts];
     const housing = nodeBox(board, "board.housing");
+    // The header plate, centred high on the panel face.
+    const header: [number, number, number] = [0, housing.max[1] - 0.14, housing.max[2]];
     const anchors: SceneAnchor[] = [
-      // The header plate, centred high on the panel face.
-      {
-        id: "board",
-        part: "board.housing",
-        local: [0, housing.max[1] - 0.14, housing.max[2]],
-        priority: 1,
-      },
+      { id: "board", part: "board.housing", local: header, priority: 1 },
       // Halfway up the tallest bar's right side, so the pill clears the bar's own word.
       { id: "bars", part: "bar.0", local: [0.5, 0, 0.5], priority: 3 },
       // The card's right edge, so the pill clears the word written above the card.
@@ -202,9 +216,24 @@ export const autocomplete: SceneBuilder = {
         })),
         { id: "card", part: "card", local: [0, 0, 0.5], priority: 0 },
         { id: "no-counts", part: "board.housing", local: layout.middle, priority: 0 },
+        // Just left of the card at rest, so the earlier words end where the card begins; they
+        // stay on the rail while the card slides out and in.
+        {
+          id: "before",
+          part: "board.rail",
+          local: [layout.card.x - CARD.width * 0.62, layout.card.y, layout.card.z + CARD.depth / 2],
+          priority: 0,
+        },
+        { id: "header", part: "board.housing", local: header, priority: 0 },
       ],
-      text: Array.from({ length: SLOTS + 2 }, () => ""),
-      emphasis: [...Array.from({ length: SLOTS }, () => false), true, false],
+      text: Array.from({ length: SLOTS + 4 }, () => ""),
+      style: [
+        ...Array.from({ length: SLOTS }, () => "above" as const),
+        "onPart",
+        "above",
+        "before",
+        "heading",
+      ],
     };
     return { scene, tags };
   },
@@ -237,5 +266,8 @@ export const autocomplete: SceneBuilder = {
     // A word the model never kept has no row: say so once the bars would have risen.
     const empty = step !== undefined && step.next.length === 0 && growth > 0.5;
     frame.tags.text[SLOTS + 1] = empty ? `never seen “${step.word}”: no counts` : "";
+    frame.tags.text[SLOTS + 2] = onCard ? earlier(onCard.before) : "";
+    // The bars are one row of the tally: the row for the word they were looked up after.
+    frame.tags.text[SLOTS + 3] = step ? `After “${step.word}”…` : "";
   },
 };

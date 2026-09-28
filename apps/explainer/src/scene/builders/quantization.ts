@@ -277,7 +277,7 @@ export const quantization: SceneBuilder = {
         { id: "ratio", part: "crate.8", local: [0, 0.5, 0.5], priority: 0 },
       ],
       text: Array.from({ length: 6 }, () => ""),
-      emphasis: [false, false, false, false, false, false],
+      style: ["above", "above", "above", "above", "above", "above"],
     };
     return { scene, tags };
   },

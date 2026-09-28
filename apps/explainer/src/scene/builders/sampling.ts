@@ -238,12 +238,12 @@ export const sampling: SceneBuilder = {
         { id: "prompt", part: "card", local: [0, -0.45, 12], priority: 0 },
       ],
       text: [],
-      emphasis: [],
+      style: [],
     };
     tags.text = tags.anchors.map(() => "");
     // The card's word and the faces' words are written on their parts, in dark ink.
-    tags.emphasis = tags.anchors.map(
-      (_, i) => i === tagOf.card || (i >= tagOf.faces && i < tagOf.faces + FACES),
+    tags.style = tags.anchors.map((_, i) =>
+      i === tagOf.card || (i >= tagOf.faces && i < tagOf.faces + FACES) ? "onPart" : "above",
     );
     built.set(scene, {
       die: dieKit.parts,

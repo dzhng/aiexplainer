@@ -239,7 +239,7 @@ export function finishedScene(
 
     create(assets, revision) {
       const b: Built = { placed: [], route: [], routeSlot: 0, ids: new Map() };
-      const tags: SceneTags = { anchors: [], text: [], emphasis: [] };
+      const tags: SceneTags = { anchors: [], text: [], style: [] };
       let slotBase = 0;
       STATIONS.forEach((station, n) => {
         const frame: SceneFrame = {
@@ -254,7 +254,7 @@ export function finishedScene(
               flowPhase: new Float32Array(1),
             },
           },
-          tags: { anchors: [], text: [], emphasis: [] },
+          tags: { anchors: [], text: [], style: [] },
         };
         const ui: SceneUi = {
           follow: null,
@@ -285,7 +285,7 @@ export function finishedScene(
         for (const a of frame.tags.anchors)
           tags.anchors.push({ ...a, id: prefix + a.id, part: prefix + a.part });
         tags.text.push(...frame.tags.text.map(() => ""));
-        tags.emphasis.push(...frame.tags.emphasis);
+        tags.style.push(...frame.tags.style);
         b.placed.push(placed);
       });
       b.routeSlot = slotBase;

@@ -161,7 +161,13 @@ export const speculative: SceneBuilder = {
         { id: "heavy", part: "senior", local: [0, 0.62, 0.5], priority: 0 },
       ],
       text: Array.from({ length: TILES + 4 }, () => ""),
-      emphasis: [...Array.from({ length: TILES }, () => true), false, false, false, false],
+      style: [
+        ...Array.from({ length: TILES }, () => "onPart" as const),
+        "above",
+        "above",
+        "above",
+        "above",
+      ],
     };
     return { scene, tags };
   },

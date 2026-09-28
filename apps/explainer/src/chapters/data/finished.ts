@@ -38,12 +38,12 @@ export interface Station {
 }
 
 /**
- * The tour, in the order a word meets the parts: where it began (the tally board), then in
+ * The tour, in the order a word meets the parts: where it began (the tally board's bars), then in
  * through the bricks and pins, the block's parts, the stack, out through the die and round the
  * generation loop, then the serving tricks.
  */
 export const STATIONS: readonly Station[] = [
-  { def: autocomplete, label: "board", scale: 0.42 },
+  { def: autocomplete, label: "bars", scale: 0.42 },
   { def: tokenizer, label: "bricks", scale: 0.42 },
   { def: embeddings, label: "pins", scale: 0.42 },
   { def: attention, label: "pipes", scale: 0.38 },

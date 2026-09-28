@@ -246,7 +246,7 @@ export const generation: SceneBuilder = {
       ],
       text: Array.from({ length: RAIL_SLOTS + 3 }, () => ""),
       // Words are written on their tiles, in dark ink.
-      emphasis: [...Array.from({ length: RAIL_SLOTS + 1 }, () => true), false, false],
+      style: [...Array.from({ length: RAIL_SLOTS + 1 }, () => "onPart" as const), "above", "above"],
     };
     return { scene, tags };
   },

@@ -199,9 +199,9 @@ export const experts: SceneBuilder = {
         })),
       ],
       text: Array.from({ length: TAG_COUNT }, () => ""),
-      emphasis: [
-        ...Array.from({ length: QUEUE + 2 }, () => true),
-        ...Array.from({ length: 1 + 3 * EXPERTS }, () => false),
+      style: [
+        ...Array.from({ length: QUEUE + 2 }, () => "onPart" as const),
+        ...Array.from({ length: 1 + 3 * EXPERTS }, () => "above" as const),
       ],
     };
     return { scene, tags };

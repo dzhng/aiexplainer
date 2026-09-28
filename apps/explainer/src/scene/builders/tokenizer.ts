@@ -351,7 +351,7 @@ export const tokenizer: SceneBuilder = {
         noteAnchor,
       ],
       text: Array.from({ length: faceAnchors.length + 2 }, () => ""),
-      emphasis: [...faceAnchors.map(() => true), true, false],
+      style: [...faceAnchors.map(() => "onPart" as const), "onPart", "above"],
     };
     built.set(scene, {
       pools,

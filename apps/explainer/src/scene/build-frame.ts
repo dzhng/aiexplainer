@@ -214,7 +214,7 @@ export interface SceneFrame {
 }
 
 export function createSceneFrame(input: SceneFrame["input"]): SceneFrame {
-  return { builder: null, input, tags: { anchors: [], text: [], emphasis: [] } };
+  return { builder: null, input, tags: { anchors: [], text: [], style: [] } };
 }
 
 /**

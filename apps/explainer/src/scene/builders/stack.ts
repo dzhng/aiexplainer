@@ -248,7 +248,7 @@ export const stack: SceneBuilder = {
         })),
       ],
       text: Array.from({ length: STACK_TOKENS + 1 + BLOCKS }, () => ""),
-      emphasis: Array.from({ length: STACK_TOKENS + 1 + BLOCKS }, () => false),
+      style: Array.from({ length: STACK_TOKENS + 1 + BLOCKS }, () => "above"),
     };
     return { scene, tags };
   },

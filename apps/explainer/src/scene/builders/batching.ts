@@ -305,7 +305,7 @@ export const batching: SceneBuilder = {
         },
       ],
       text: ["", "", ""],
-      emphasis: [false, false, false],
+      style: ["above", "above", "above"],
     };
     return { scene, tags };
   },

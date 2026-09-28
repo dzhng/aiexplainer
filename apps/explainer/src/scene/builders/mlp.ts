@@ -284,7 +284,7 @@ export const mlp: SceneBuilder = {
         },
       ],
       text: Array.from({ length: 6 }, () => ""),
-      emphasis: Array.from({ length: 6 }, () => false),
+      style: Array.from({ length: 6 }, () => "above"),
     };
     return { scene, tags };
   },
