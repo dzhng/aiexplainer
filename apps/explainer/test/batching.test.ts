@@ -119,7 +119,7 @@ describe("chapter 11's scene", () => {
     const riders = Math.round(tl.channels.batch!);
     expect(riders).toBeGreaterThan(busCapacity());
     expect(text[0]).toBe(
-      `${riders} riders · ${formatStat(evalArith("batchThroughput", args(riders)), "tok/s")} in total\none trip: ${formatStat(evalArith("decodeStepSeconds", args(riders)), "s")}`,
+      `${riders} riders · ${formatStat(evalArith("batchThroughput", args(riders)), "tok/s")} in total · one trip: ${formatStat(evalArith("decodeStepSeconds", args(riders)), "s")}`,
     );
     expect(text[2]).not.toBe("");
     const prefill = frameAt(15).text[0]!;

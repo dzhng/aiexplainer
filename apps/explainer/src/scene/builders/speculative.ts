@@ -69,8 +69,8 @@ export function storyAfter(rounds: SpeculativeRun["byK"][number]["rounds"], coun
 
 /** Font sizes (em), metres: a tile's word, the senior's notes, the story on the rail. */
 const TEXT = { tile: 0.1, note: 0.1, story: 0.11 };
-/** The senior's notes sit this far down its front (unit block), under its lamp. */
-const NOTE_Y = -0.12;
+/** The senior's notes sit this far up its front (unit block): under its lamp, clear of the rail. */
+const NOTE_Y = -0.02;
 /** Each tile's ink by the face showing: a discarded guess reads dim on its dark face. */
 const TILE_STYLE: Record<DraftTileState, string> = {
   hidden: "ink",

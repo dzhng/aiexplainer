@@ -364,7 +364,7 @@
       "weight": 600,
       "color": "ink",
       "gain": 1.6,
-      "outline": { "color": "bgDeep", "width": 0.08 }
+      "outline": { "color": "bgDeep", "width": 0.05 }
     },
     "ink": {
       "face": "ui",

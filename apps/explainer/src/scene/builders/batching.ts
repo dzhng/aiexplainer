@@ -350,9 +350,9 @@ export const batching: SceneBuilder = {
     const riderWord = onBus === 1 ? "rider" : "riders";
     texts.trip.text =
       prefill > 0.5
-        ? `prefill: one ${PREFILL_TOKENS}-token prompt boards at once\none trip: ${formatStat(readout.prefillSec, "s")}`
+        ? `prefill: one ${PREFILL_TOKENS}-token prompt boards at once · one trip: ${formatStat(readout.prefillSec, "s")}`
         : onBus > 0
-          ? `${onBus} ${riderWord} · ${formatStat(readout.totalTokPerSec, "tok/s")} in total\none trip: ${formatStat(readout.tripSec, "s")}`
+          ? `${onBus} ${riderWord} · ${formatStat(readout.totalTokPerSec, "tok/s")} in total · one trip: ${formatStat(readout.tripSec, "s")}`
           : "";
     texts.crates.text =
       heavy > 0.3 ? `${formatStat(readout.weightBytes, "bytes")}\nof weights,\nevery trip` : "";
