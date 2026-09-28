@@ -615,3 +615,23 @@ standalone. Entries are appended per pass and consolidated when the spec closes.
   behaviour-neutral review.
 - **The `sheet` script moved into `apps/explainer`** (`bun run --cwd apps/explainer sheet`).
   Verdict: sound; the spec references were updated.
+
+## Codex correctness review (second opinion)
+
+All 7 findings were confirmed and fixed with tests:
+
+- **Speculative decoding stops at an accepted `<eos>` (`next` may be `null`), checks context room
+  before each round, and `speculativeStep` throws `RangeError` when the context is full.**
+- **Every inference request names its model (no "current" model in the worker), and each run's
+  session calls are wrapped in `sessionScope`,** so a superseded chapter's late replies are
+  dropped.
+- **Only generations get cancel messages, and the worker's stop flags live only while a
+  generation runs.**
+- **Renderer or device failure after a successful adapter probe now shows the video fallback
+  (`withGpu`, `App.onUnsupported`) and destroys the partial GPU root.** The App → Fallback
+  switch has no DOM test; it was checked by type-checking and reading the code.
+- **"Copy link" feature-detects the clipboard (`copyOrShow`).**
+- **Chapter 13's speedup chip is now computed from the slider's k, the held-out α and the
+  drafter/full weight ratio (`specSpeedup`, Leviathan Theorem 3.8).** Below 1× the old label
+  read wrong, so it is now "speed vs no junior, drafting included". Verdict: sound; honest at
+  every k (0.912× at k=8).

@@ -82,7 +82,7 @@ export const speculative: ChapterDef = {
     },
     {
       id: "speedup",
-      label: "faster overall, drafting included",
+      label: "speed vs no junior, drafting included",
       format: "x",
       scale: "this tiny model",
       value: {
