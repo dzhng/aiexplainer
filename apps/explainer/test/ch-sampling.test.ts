@@ -34,12 +34,8 @@ const loopRun = await runFor(null);
 const FACES = WORD_FACES + 1;
 const STAVES = 12;
 
-function sceneAt(
-  t: number,
-  run: LogitsRun,
-  slider = chapter.slider.initial,
-  text: string | null = null,
-) {
+/** The scene at loop time `t`; a `slider` value is the reader's (the loop no longer plays it). */
+function sceneAt(t: number, run: LogitsRun, slider?: number, text: string | null = null) {
   const frame = createSceneFrame({
     camera: { target: [0, 1, 0], yaw: -0.3, pitch: 0.35, distance: 5, fovY: 0.7 },
     view: { mode: "whole", t: 0 },
@@ -54,7 +50,13 @@ function sceneAt(
   const input = buildFrame(
     chapter,
     tl,
-    { follow: null, slider, sliderSet: true, view: "whole", text },
+    {
+      follow: null,
+      slider: slider ?? chapter.slider.initial,
+      sliderSet: slider !== undefined,
+      view: "whole",
+      text,
+    },
     run,
     frame,
   );

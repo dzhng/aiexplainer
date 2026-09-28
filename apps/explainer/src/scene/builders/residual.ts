@@ -3,7 +3,9 @@
  * from station to station through pipes, each station's output replacing it, and it fades to
  * nothing. With the river, a translucent channel (the kit's `river`) runs under the row, each
  * station pours what it computed into it, and a volume knob on each station (`volumeKnob`,
- * RMSNorm) turns the station's input back down as the river grows.
+ * RMSNorm) turns the station's input back down as the river grows. Light currents (the kit's
+ * `flows`) run down each stretch of water that is there, so it reads as a stream moving
+ * toward the readout, not a still glass duct.
  *
  * Every size is the run's (`runtime/runs/residual.ts`), from each model's trace at the last
  * token: pipe and river sizes are the stream's RMS as a share of the embedding's (square-root
@@ -22,6 +24,7 @@ import {
   placePour,
   placeSegment,
   placeStretch,
+  stretchSpan,
   UNIT_SEGMENT,
   type BlockPart,
   type Part,
@@ -34,6 +37,7 @@ import {
 import type { ModelId } from "@repo/llm";
 import type { Vec3 } from "math";
 import type { SceneTags } from "../../hud/SceneTags.tsx";
+import { look } from "../../look/look.ts";
 import type { SceneBuilder, SceneFrame } from "../build-frame.ts";
 import { share } from "../../chapters/format.ts";
 
@@ -81,6 +85,18 @@ const RIVER: RiverParams = {
 const RIVER_BASE = 0.07;
 /** Chute radius per √(station output ÷ embedding). */
 const POUR = { base: 0.012, max: 0.05 };
+/**
+ * The currents in each stretch: lanes as (height, depth) shares of the stretch's box, so they
+ * scale with the water. Each has its own pulse lag (in pulse spacings) and `pace`, which
+ * divides its pulse spacing and speed together (the top, pace < 1, runs faster than the
+ * bottom), so the light never marches in step or lines up into a grid.
+ */
+const CURRENTS: { at: [number, number]; lag: number; pace: number }[] = [
+  { at: [0.3, -0.25], lag: 0, pace: 0.75 },
+  { at: [0.05, 0.2], lag: 0.43, pace: 1 },
+  { at: [-0.25, -0.05], lag: 0.71, pace: 1.35 },
+];
+const CURRENT = { radius: 0.06, glow: 1.1 };
 /** Knob angle: pointing right at the first station's input, turning down with its log size. */
 const KNOB = { radius: 0.14, start: 1.1, turn: 1.8 };
 
@@ -88,10 +104,12 @@ interface Built {
   pipes: TubePart[];
   stretches: BlockPart[];
   pours: TubePart[];
+  /** Per stretch, its current lanes (sleeves drawn only where a flow pulse is). */
+  currents: TubePart[][];
   dials: TubePart[];
   pointers: BlockPart[];
   knobs: VolumeKnobParams[];
-  slots: { pipes: number; river: number; pointers: number[] };
+  slots: { pipes: number; river: number; pointers: number[]; currents: number };
 }
 
 const built = new WeakMap<SceneDesc, Built>();
@@ -157,6 +175,24 @@ export const residual: SceneBuilder = {
       slot += 2;
       return KIT.volumeKnob.build(knob).parts;
     });
+    // Currents: metres along the stretch (× the lane's pace, so a lane's pulses keep one
+    // spacing in every stretch), and shares of its height and depth; `pose` scales them.
+    const currentsSlot = slot;
+    const currents = KIT.flows.build({
+      id: "current",
+      slot: currentsSlot,
+      material: "current",
+      radius: CURRENT.radius,
+      paths: STATIONS.concat(0).flatMap((_, i) => {
+        const [left, right] = stretchSpan(RIVER, i);
+        return CURRENTS.map(({ at: [h, d], pace }): Vec3[] => [
+          [((left - right) / 2) * pace, h, d],
+          [((right - left) / 2) * pace, h, d],
+        ]);
+      }),
+      explode: RIVER.explode,
+    }).parts as TubePart[];
+    slot += currents.length;
     const card = box(
       "readout",
       slot++,
@@ -176,6 +212,7 @@ export const residual: SceneBuilder = {
       ...stations,
       ...pipes,
       ...river.parts,
+      ...currents,
       ...knobParts,
       card,
     ];
@@ -191,10 +228,13 @@ export const residual: SceneBuilder = {
       pipes,
       stretches: river.parts.filter((p) => p.id.startsWith("river.stretch.")) as BlockPart[],
       pours: river.parts.filter((p) => p.id.startsWith("river.pour.")) as TubePart[],
+      currents: STATIONS.concat(0).map((_, i) =>
+        currents.slice(i * CURRENTS.length, (i + 1) * CURRENTS.length),
+      ),
       dials: knobParts.filter((p) => p.id.endsWith(".dial")) as TubePart[],
       pointers: knobParts.filter((p) => p.id.endsWith(".pointer")) as BlockPart[],
       knobs,
-      slots: { pipes: pipesSlot, river: riverSlot, pointers: pointerSlots },
+      slots: { pipes: pipesSlot, river: riverSlot, pointers: pointerSlots, currents: currentsSlot },
     };
     built.set(scene, b);
     // Built with the river full, so label occluders match the hero.
@@ -230,7 +270,12 @@ export const residual: SceneBuilder = {
     };
     const b = built.get(frame.input.scene)!;
     const data = run?.kind === "residual" ? run : null;
-    pose(b, state, data, frame.input.dynamics.intensity, frame.tags.text);
+    const { dynamics } = frame.input;
+    pose(b, state, data, dynamics.intensity, frame.tags.text);
+    // The currents run on the loop's clock, each lane a little behind the one before.
+    const phase = tl.t * look.flow.cyclesPerSec;
+    for (let k = 0; k < (STATIONS.length + 1) * CURRENTS.length; k++)
+      dynamics.flowPhase[b.slots.currents + k] = phase + CURRENTS[k % CURRENTS.length]!.lag;
   },
 };
 
@@ -292,8 +337,18 @@ function pose(
   for (let i = 0; i <= n; i++) {
     const filled = clamp01(state.flowB * (n + 1) - i);
     const ratio = withRiver ? withRiver.stream[i]! / embed : 1;
-    placeStretch(b.stretches[i]!.transform, RIVER, i, riverHeight(ratio) * river * filled);
+    const water = river * filled;
+    placeStretch(b.stretches[i]!.transform, RIVER, i, riverHeight(ratio) * water);
     if (intensity) intensity[b.slots.river + i] = 0.2 + 0.15 * filled;
+    b.currents[i]!.forEach((current, lane) => {
+      // The stretch's own transform, but along x undoing the lane's pace (its path is in
+      // metres × pace there).
+      const stretch = b.stretches[i]!.transform;
+      for (let j = 0; j < 16; j++) current.transform[j] = stretch[j]!;
+      current.transform[0] = 1 / CURRENTS[lane]!.pace;
+      if (intensity)
+        intensity[b.slots.currents + i * CURRENTS.length + lane] = CURRENT.glow * water;
+    });
   }
   for (let k = 0; k < n; k++) {
     const reached = clamp01(state.flowB * (n + 1) - k - 0.5);

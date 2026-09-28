@@ -73,3 +73,14 @@ The analogy not landing for the human. Rework the copy and the beats; the model 
   plus other; the landed face equals `sample()` with the held seed; the two "it" stories have
   identical logits). One critique round: fixed floating face labels, the die hitting the
   bars, washed-out bar glow, unreadable punctuation (now quoted), the missing prompt text.
+
+## Polish pass (2026-09-27)
+
+- **The HUD slider follows the loop's temperature demo.** Chapter 3 adopts `SliderDef.loop`
+  (`temperature`), as chapters 11 and 12 do. The scene reads the channel until the reader
+  moves the slider (`ui.sliderSet`, instead of comparing the value to its initial one). The
+  app snaps the sampled channel to the slider's steps (`snapSlider`, which now also drops
+  the float residue of a 0.1 step, e.g. 0.30000000000000004). Checked: t = 11.5 s, scene
+  "temperature 0.2" and HUD 0.2; t = 14 s, scene 2.0 and HUD 2 (`throwaway/shots/polish-ch3/`).
+  A multi-time `--t` session can show the HUD one sample behind, because it samples at 10 Hz;
+  single shots agree.

@@ -7,8 +7,9 @@
  * rolls to a stop angle drawn from the seeded generator, so the face on top is exactly
  * `sample()` over the faces.
  *
- * Temperature: while the reader leaves the slider at its starting value the loop's
- * `temperature` channel drives it (the cold → hot demo); once they move it, the slider does.
+ * Temperature: until the reader moves the slider, the loop's `temperature` channel drives it
+ * (the cold → hot demo), and the HUD slider plays along (`SliderDef.loop`); once they move
+ * it, the slider does.
  *
  * The roll is read at a line across the drum just off its rim, towards the camera: the face
  * under that line is the next word.
@@ -263,7 +264,7 @@ export const sampling: SceneBuilder = {
     return { scene, tags };
   },
 
-  update(frame: SceneFrame, def, tl, ui, run) {
+  update(frame: SceneFrame, _def, tl, ui, run) {
     const { scene, dynamics, camera } = frame.input;
     const b = built.get(scene)!;
     const steps = run?.kind === "logits" ? run.steps : [];
@@ -271,7 +272,7 @@ export const sampling: SceneBuilder = {
     const index = typed ? 0 : Math.round(tl.channels.input ?? 0);
     const step = steps[Math.min(steps.length - 1, Math.max(0, index))];
     const temperature =
-      !typed && ui.slider === def.slider.initial && tl.channels.temperature !== undefined
+      !typed && !ui.sliderSet && tl.channels.temperature !== undefined
         ? tl.channels.temperature
         : ui.slider;
     const grow = typed ? 1 : (tl.channels.bars ?? 1);

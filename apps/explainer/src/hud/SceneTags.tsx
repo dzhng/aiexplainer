@@ -34,11 +34,13 @@ const styles = {
     top: 0,
     willChange: "transform",
     color: "var(--ink)",
-    font: "600 var(--text-sm)/1 var(--font-ui)",
+    // 1rem: the size tags have always rendered at (a reset below used to drop the token's).
+    font: "600 1rem/1 var(--font-ui)",
     whiteSpace: "pre",
     textAlign: "center",
     lineHeight: 1.25,
-    textShadow: "0 1px 6px var(--bg-deep)",
+    // A tight dark rim under the soft drop: the words read over bright pins and pipes too.
+    textShadow: "0 0 2px var(--bg-deep), 0 0 3px var(--bg-deep), 0 1px 6px var(--bg-deep)",
   },
 } satisfies Record<string, React.CSSProperties>;
 
@@ -77,9 +79,11 @@ export const SceneTagsLayer = forwardRef<SceneTagsHandle, { count: number }>(
             if (shown.current[i] !== text) {
               node.textContent = text;
               const onPart = tags.emphasis[i];
-              node.style.fontSize = onPart ? "var(--text-lg)" : "";
-              node.style.color = onPart ? "var(--bg-deep)" : "";
-              node.style.textShadow = onPart ? "none" : "";
+              // Back to the tag's own style, not "": clearing an inline property drops the
+              // value React set from `styles.tag` too (the halo and ink were being lost).
+              node.style.fontSize = onPart ? "var(--text-lg)" : "1rem";
+              node.style.color = onPart ? "var(--bg-deep)" : styles.tag.color;
+              node.style.textShadow = onPart ? "none" : styles.tag.textShadow;
               shown.current[i] = text;
               sizes.current[i] = { width: node.offsetWidth, height: node.offsetHeight };
             }

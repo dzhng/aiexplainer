@@ -47,7 +47,7 @@ const LAYERS = 4;
 
 /** The shared layout of chapters 9 and 10: the rail in front, the machine behind it. */
 export const LINE = {
-  rail: { y: 0.28, z: 0.9, pitch: 0.36, tile: [0.3, 0.14, 0.07] as Vec3 },
+  rail: { y: 0.28, z: 0.9, pitch: 0.36, tile: [0.34, 0.14, 0.07] as Vec3 },
   machine: { center: [0, 1.45, -0.7] as Vec3, size: [2.4, 1.5, 1.0] as Vec3 },
   /** Where a new word appears, above the machine. */
   birth: [0, 2.55, -0.2] as Vec3,

@@ -7,7 +7,7 @@ import type { ChapterDef } from "../types.ts";
 
 export const stack: ChapterDef = {
   slug: "stack",
-  title: "Several readers and an assembly line",
+  title: "Many readers, one assembly line",
   why: "One reader looking once, then one pass through the stations, leaves the machine unsure.",
   model: "full",
   scene: "stack",

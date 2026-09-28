@@ -86,9 +86,11 @@ export function initialState(chapters: Chapters, slug: ChapterSlug): AppState {
 const clamp = (v: number, min: number, max: number) => Math.min(max, Math.max(min, v));
 
 /** `value` on the chapter slider's step, inside its range. */
-function snapSlider(def: ChapterDef, value: number): number {
+export function snapSlider(def: ChapterDef, value: number): number {
   const { min, max, step } = def.slider;
-  return clamp(min + Math.round((value - min) / step) * step, min, max);
+  // `toFixed` drops the float residue of a fractional step (3 × 0.1 is 0.30000000000000004).
+  const snapped = Number((min + Math.round((value - min) / step) * step).toFixed(9));
+  return clamp(snapped, min, max);
 }
 
 /**

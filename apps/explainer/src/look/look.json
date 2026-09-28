@@ -103,6 +103,12 @@
         "opacity": 0.5,
         "pulses": true
       },
+      "current": {
+        "color": "active",
+        "emissive": "active",
+        "opacity": 0.5,
+        "pulses": true
+      },
       "focusWord": {
         "color": "focus",
         "emissive": "focus",

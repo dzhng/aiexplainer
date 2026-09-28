@@ -85,3 +85,11 @@ The analogy not landing for the human. Rework the copy and the beats; the model 
   - The hands unwind at the seam.
   - Dials have no back face.
   - It confirmed the hands visibly step by position.
+
+## Polish pass (2026-09-27)
+
+- **Hands no longer unwind at the seam.** The `dial` channel holds at 1 through the drain
+  and resets (step) only at 23.75 s, once the words are gone. Each dial now shrinks with
+  its word block (`blocks`) and leaves below 40% (before a shrunk face pokes through the
+  sinking word), its label with it. Strips:
+  `throwaway/shots/polish-ch5/before-strip.png` → `after-strip.png` (22–24 s, 0.25 s steps).
