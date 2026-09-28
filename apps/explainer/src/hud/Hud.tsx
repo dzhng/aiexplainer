@@ -9,6 +9,7 @@ import { LADDER, displayNumber } from "../chapters/ladder.ts";
 import type { ChapterDef, ViewMode } from "../chapters/types.ts";
 import { BRAND_NAME, SERIES_TITLE, X_PROFILE } from "../look/brand.ts";
 import { sharePathFor, type Action, type AppState, type Chapters } from "../state/app-state.ts";
+import { copyOrShow } from "../fallback/copy.ts";
 import { Help } from "./Help.tsx";
 import css from "./hud.module.css";
 import {
@@ -275,13 +276,12 @@ function Corner({ state, dispatch, def }: HudProps) {
   const share = () => {
     // The share route carries the chapter's own link-preview card, then opens `/#N` (D34).
     const url = `${location.origin}${sharePathFor(def.slug)}`;
-    navigator.clipboard.writeText(url).then(
-      () => {
+    void copyOrShow(url, navigator.clipboard, (link) => window.prompt("Copy this link", link)).then(
+      (copied) => {
+        if (!copied) return;
         setCopied(true);
         setTimeout(() => setCopied(false), 1500);
       },
-      // Clipboard access can be refused (permissions, insecure context): show the link instead.
-      () => window.prompt("Copy this link", url),
     );
   };
   return (
