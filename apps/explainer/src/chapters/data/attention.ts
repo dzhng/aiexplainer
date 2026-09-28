@@ -44,7 +44,7 @@ export const attention: ChapterDef = {
         "In Mia's story the widest pipe runs back to her name; shuffle a short sentence and its pipes just trade places.",
       ],
       precisely:
-        "Attention: the last token asks a question (its query), every token offers a label (its key), and their dot products, through a softmax, become weights that add up to 1. Each pipe's cross-section area is one weight of this tiny one-layer model. Weights show what a word draws from; they are not proof of meaning.",
+        "Attention: the last token asks a question (its query), every token offers a label (its key), and their dot products, through a softmax, become weights that add up to 1. Each pipe's width is one weight of this tiny one-layer model. Weights show what a word draws from; they are not proof of meaning.",
     },
     byFollow: {
       pipes: {
@@ -53,7 +53,7 @@ export const attention: ChapterDef = {
           "All the pipes together always carry exactly one full share, so a wide pipe leaves less for the rest.",
         ],
         precisely:
-          "Pipe cross-section area = the attention weight softmax(q·k/√d) for that position, from layer 0 of this tiny model; the weights over every position sum to 1.",
+          "Pipe width = the attention weight softmax(q·k/√d) for that position, from layer 0 of this tiny model; the weights over every position sum to 1.",
       },
       mix: {
         story: [
