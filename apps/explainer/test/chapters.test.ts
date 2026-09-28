@@ -96,6 +96,29 @@ test("rejects more than 3 follow targets and more than 5 labels", () => {
   expect(validateChapter(labels)).toContain("6 labels (max 5)");
 });
 
+test("a knob needs a one-line hint, and a chip can follow a slider only where there is one", () => {
+  const knob = { id: "k", label: "K", hint: "", min: 1, max: 4, step: 1, initial: 2 };
+  expect(validateChapter(broken((d) => void (d.slider = knob)))).toContain(
+    "slider k: missing hint",
+  );
+  const long = { ...knob, hint: "One. Two." };
+  expect(validateChapter(broken((d) => void (d.slider = long)))).toContain(
+    "slider k: the hint must be one sentence of at most 12 words",
+  );
+  const follows = broken((d) => {
+    d.stats[0] = {
+      id: "w",
+      label: "weights",
+      format: "bytes",
+      scale: "Llama-3-8B",
+      value: { kind: "arith", fn: "weightBytes", args: { weightBytes: { slider: true } } },
+    };
+  });
+  expect(validateChapter(follows)).toContain(
+    "stat w: weightBytes follows the slider but the chapter has none",
+  );
+});
+
 describe("arith stats resolve through the registry", () => {
   type Chip = ChapterDef["stats"][0];
   const withArith = (value: Chip["value"], patch: Partial<Chip> = {}) =>

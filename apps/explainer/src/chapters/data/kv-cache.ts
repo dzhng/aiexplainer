@@ -83,6 +83,7 @@ export const kvCache: ChapterDef = {
   slider: {
     id: "window",
     label: "Notes kept per block (words)",
+    hint: "Fewer notes save memory but can change the words.",
     min: 4,
     max: 9,
     step: 1,

@@ -81,6 +81,7 @@ export const sampling: ChapterDef = {
   slider: {
     id: "temperature",
     label: "Temperature",
+    hint: "Cold, the favourite nearly always wins; hot, anything goes.",
     min: 0,
     max: 2,
     step: 0.1,

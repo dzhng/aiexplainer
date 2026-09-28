@@ -97,6 +97,7 @@ export const batching: ChapterDef = {
   slider: {
     id: "batch",
     label: "Riders (batch size)",
+    hint: "More texts share each trip through the weights.",
     min: 1,
     max: 512,
     step: 1,

@@ -211,8 +211,10 @@ function HudSection() {
           </div>
         </div>
         <div className={hudCss.box} style={{ position: "relative", padding: "12px 14px" }}>
-          <div className={hudCss.group}>
-            <div className={hudCss.groupHead}>Follow</div>
+          <div className={hudCss.step}>
+            <div className={hudCss.stepHead}>
+              <span className={hudCss.stepNum}>1</span>Follow a part
+            </div>
             <div className={hudCss.seg} role="group" aria-label="Follow">
               {[{ id: null, label: "All" }, ...autocomplete.follow].map((f) => (
                 <button

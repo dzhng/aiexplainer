@@ -116,6 +116,8 @@ export interface LabelDef {
 export interface SliderDef {
   id: string;
   label: string;
+  /** One sentence under the knob: what turning it changes (the story panel's step). */
+  hint: string;
   min: number;
   max: number;
   step: number;

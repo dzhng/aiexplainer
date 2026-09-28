@@ -20,6 +20,7 @@ import {
 
 export const LOOP_SEC = { min: 20, max: 30 } as const;
 const MAX_SENTENCE_WORDS = 25;
+const MAX_HINT_WORDS = 12;
 const MAX_FOLLOW = 3;
 const MAX_LABELS = 5;
 
@@ -170,6 +171,12 @@ export function validateChapter(
   if (def.slider) {
     const { id, min, max, initial, loop } = def.slider;
     if (!(min <= initial && initial <= max)) problems.push(`slider ${id}: initial outside range`);
+    const hint = def.slider.hint?.trim() ?? "";
+    if (!hint) problems.push(`slider ${id}: missing hint`);
+    else if (holdsTwoSentences(hint) || wordCount(hint) > MAX_HINT_WORDS)
+      problems.push(
+        `slider ${id}: the hint must be one sentence of at most ${MAX_HINT_WORDS} words`,
+      );
     if (loop !== undefined && !Object.hasOwn(def.loop.channels, loop))
       problems.push(`slider ${id}: no loop channel ${loop}`);
   }

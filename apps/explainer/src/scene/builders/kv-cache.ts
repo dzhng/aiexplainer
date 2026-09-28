@@ -170,7 +170,7 @@ export const kvCache: SceneBuilder = {
           priority: 0,
         })),
         { id: "card", part: "card", local: [0, 0, 0.5], priority: 0 },
-        // What the rack holds: just under the board (its top edge sits beneath the controls panel).
+        // What the rack holds: just under the board.
         { id: "memory", part: "rack.frame.board", local: [0, -0.78, 0.5], priority: 0 },
         // The phase note (sharing, the window, the trip): on the floor in front, right.
         { id: "note", part: "rack.frame.board", local: [0.62, 0, 0.5], priority: 0 },

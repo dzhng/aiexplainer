@@ -9,9 +9,7 @@ import { modelMetric, sourceId, type ModelSource } from "@repo/llm";
 import { formatStat } from "../chapters/format.ts";
 
 export interface LiveModel {
-  /** After "LIVE ·": what is running, in the reader's browser. */
-  what: string;
-  /** The line under the empty text box: what typing will do. */
+  /** The line under the empty text box: what is running in the browser, and what typing does. */
   invite: string;
   /** The line under the box once a run has answered the reader's text. */
   receipt: string;
@@ -22,21 +20,18 @@ const count = (n: number) => formatStat(n, "int");
 export function liveModel(model: ModelSource): LiveModel {
   if (!("manifest" in model))
     return {
-      what: "the real tokenizer every model here reads with, running in your browser",
-      invite: "It splits your text into pieces as you type.",
+      invite: "The real tokenizer every model here uses splits your text as you type.",
       receipt: `split by the tokenizer: ${count(modelMetric(model, "vocabSize"))} pieces it knows`,
     };
   const { manifest } = model;
   if (manifest.kind === "word-counts")
     return {
-      what: "a real word-pair counts model, running in your browser",
-      invite: "It looks up your last word as you type.",
+      invite: "A real word-pair counts model looks up your last word as you type.",
       receipt: `looked up in the counts model: ${count(modelMetric(model, "vocabSize"))} words it kept`,
     };
   const layers = manifest.arch.nLayers;
   return {
-    what: "a real tiny language model, running in your browser",
-    invite: "The model answers as you type.",
+    invite: "A real tiny language model in your browser answers as you type.",
     receipt: `answered by the “${sourceId(model)}” model: ${layers} ${layers === 1 ? "layer" : "layers"}, ${count(modelMetric(model, "params.total"))} weights`,
   };
 }

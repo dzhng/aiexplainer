@@ -85,6 +85,7 @@ export const quantization: ChapterDef = {
   slider: {
     id: "bytes",
     label: "Bytes per weight",
+    hint: "2 is 16-bit, 1 is 8-bit: half the bytes per word.",
     min: 1,
     max: 2,
     step: 1,

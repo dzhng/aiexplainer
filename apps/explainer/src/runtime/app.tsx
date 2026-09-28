@@ -66,15 +66,14 @@ function sceneUi(state: AppState, def: ChapterDef): SceneUi {
 
 const SAFE_MARGIN = 16;
 
-/** The canvas minus the HUD panels: right of the title panel, below the controls, above the ladder. */
+/** The canvas minus the HUD: right of the left column's panels, above the ladder and corner. */
 function safeRect(): ScreenRect {
   const rect = (id: string) =>
     document.querySelector(`[data-crop="${id}"]`)?.getBoundingClientRect();
-  const tl = rect("panel:tl");
-  const tr = rect("panel:tr");
+  const left = [rect("panel:tl"), rect("panel:story")].filter((r) => r !== undefined);
   const bottoms = [rect("panel:ladder"), rect("panel:corner")].filter((r) => r !== undefined);
-  const x = (tl?.right ?? 0) + SAFE_MARGIN;
-  const y = (tr?.bottom ?? 0) + SAFE_MARGIN;
+  const x = Math.max(0, ...left.map((r) => r.right)) + SAFE_MARGIN;
+  const y = SAFE_MARGIN;
   const bottom = Math.min(innerHeight, ...bottoms.map((r) => r.top)) - SAFE_MARGIN;
   return { x, y, width: innerWidth - SAFE_MARGIN - x, height: bottom - y };
 }

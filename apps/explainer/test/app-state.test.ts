@@ -13,7 +13,7 @@ import {
 import { actionForKey } from "../src/state/keys.ts";
 
 /** A knob for the test chapters (chapter 0 itself has none). */
-const KNOB = { id: "knob", label: "Knob", min: 1, max: 10, step: 1, initial: 5 };
+const KNOB = { id: "knob", label: "Knob", hint: "Turns.", min: 1, max: 10, step: 1, initial: 5 };
 /** Chapter 0's data with a knob. */
 const base: ChapterDef = { ...structuredClone(autocomplete), slider: KNOB };
 

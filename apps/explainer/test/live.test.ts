@@ -8,10 +8,11 @@ test("only a transformer is called a language model; the others say what they ar
   const counts = liveModel(await shippedModel("counts"));
   const tokenizer = liveModel(await shippedTokenizer());
   const rope = liveModel(await shippedModel("rope"));
-  expect(counts.what).toContain("word-pair counts model");
-  expect(tokenizer.what).toContain("tokenizer");
-  for (const line of [counts.what, tokenizer.what]) expect(line).not.toContain("language model");
-  expect(rope.what).toContain("tiny language model");
+  expect(counts.invite).toContain("word-pair counts model");
+  expect(tokenizer.invite).toContain("tokenizer");
+  for (const line of [counts.invite, tokenizer.invite])
+    expect(line).not.toContain("language model");
+  expect(rope.invite).toContain("tiny language model");
 });
 
 test("the receipt's numbers are the model's own, and no time is shown (D27)", async () => {
