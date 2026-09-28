@@ -6,6 +6,7 @@ import { parseGlb } from "../src/gltf.ts";
 import { blockGeometry } from "../src/kit/block.ts";
 import { placeBrick } from "../src/kit/brick.ts";
 import { KIT, KIT_ENTRIES } from "../src/kit/catalog.ts";
+import { PARTS_PER_TILE, setDraftTile } from "../src/kit/draft-strip.ts";
 import { shadowGeometry } from "../src/kit/contact-shadow.ts";
 import { PIN_PARTS, placePin } from "../src/kit/pins.ts";
 import type { Geometry } from "../src/kit/geometry.ts";
@@ -228,4 +229,21 @@ test("pins: each arrow runs from the origin exactly to its head, at its own thin
   expect(half[0]!).toBeCloseTo((origin[0] + head[0]) / 2, 6);
   placePin(built.parts, 0, null, 0, origin, 1);
   expect(built.parts[0]!.transform[13]!).toBeLessThan(-10);
+});
+
+test("draft strip: each tile shows exactly one face, the one for its state", () => {
+  const params = KIT.draftStrip.example({});
+  const { parts } = KIT.draftStrip.build(params);
+  expect(parts).toHaveLength(params.count * PARTS_PER_TILE);
+  const visible = (i: number) =>
+    parts
+      .slice(i * PARTS_PER_TILE, (i + 1) * PARTS_PER_TILE)
+      .filter((p) => p.transform[13]! > -1)
+      .map((p) => p.id);
+  expect(visible(0)).toEqual(["draft.0.accepted"]);
+  expect(visible(2)).toEqual(["draft.2.rejected"]);
+  expect(visible(3)).toEqual(["draft.3.added"]);
+  expect(visible(4)).toEqual(["draft.4"]);
+  setDraftTile(parts, 4, "hidden", [0, 1, 0], params.tile);
+  expect(visible(4)).toEqual([]);
 });

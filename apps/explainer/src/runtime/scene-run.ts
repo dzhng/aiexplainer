@@ -13,6 +13,7 @@ import { autocompleteRun } from "./runs/autocomplete.ts";
 import { embeddingsRun } from "./runs/embeddings.ts";
 import { mlpRun } from "./runs/mlp.ts";
 import { quantizationRun } from "./runs/quantization.ts";
+import { speculativeRun } from "./runs/speculative.ts";
 import { residualRun } from "./runs/residual.ts";
 import { stackRun } from "./runs/stack.ts";
 import { tokenizerRun } from "./runs/tokenizer.ts";
@@ -26,7 +27,7 @@ export interface RunContext {
    * The inference worker, holding the chapter's model (and any other a run loads and names).
    * Requests run one after another: the session cancels a live request when a new one starts.
    */
-  session: Pick<Session, "load" | "run" | "generate" | "nextWords" | "weights">;
+  session: Pick<Session, "load" | "run" | "generate" | "nextWords" | "weights" | "speculate">;
 }
 
 /** Computes one scene's run for the loop's inputs, or for the reader's text alone. */
@@ -44,6 +45,7 @@ const RUNS: Partial<Record<SceneBuilderId, SceneRunFn>> = {
   residual: residualRun,
   stack: stackRun,
   quantization: quantizationRun,
+  speculative: speculativeRun,
 };
 
 /** The scene's run, or null for a chapter whose scene shows no model output. */

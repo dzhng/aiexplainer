@@ -20,6 +20,8 @@ export const SCENE_ANCHORS = {
   batching: ["bus", "riders", "crates", "stop"],
   /** Chapter 12: the weight strip, the magnifier, the two crates and the two machines. */
   quantization: ["strip", "lens", "crates", "machines"],
+  /** Chapter 13: the junior, the senior, the draft strip, and the story so far. */
+  speculative: ["junior", "senior", "draft", "output"],
 } as const satisfies Record<string, readonly string[]>;
 
 /**
@@ -35,6 +37,7 @@ export const SCENE_KIT: Record<keyof typeof SCENE_ANCHORS, readonly string[]> = 
   stack: ["block", "tube", "contactShadow"],
   batching: ["mesh", "block", "contactShadow"],
   quantization: ["block", "contactShadow"],
+  speculative: ["block", "draftStrip", "contactShadow"],
 };
 
 export type SceneBuilderId = keyof typeof SCENE_ANCHORS;

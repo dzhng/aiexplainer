@@ -47,3 +47,21 @@ Every earlier slice.
 ## Feedback that would change this slice
 
 The analogy not landing for the human. Rework the copy and the beats; the model and seam stay the same.
+
+## Results (2026-09-27)
+
+- **O3 is final: `drafter-64`.** The drafter probe now re-measures α on 40 held-out stories that the 20 selection windows never touched (`held_out_windows` in `training/probes/common.py`), and records it as `draft-acceptance-heldout` / `draft-speedup-heldout`:
+
+  | drafter    | α (chosen on) | α (held out) | speedup k=4 (held out) |
+  | ---------- | ------------- | ------------ | ---------------------- |
+  | drafter-64 | 0.595         | **0.601**    | **1.24**               |
+  | drafter-96 | 0.638         | 0.643        | 1.03                   |
+
+  drafter-96 keeps more guesses, but costs 0.353 of the target per guess against 0.215, so drafter-64 stays the faster pair. The original evidence re-measured bit for bit.
+
+- **`speculativeStep`** (`packages/llm/src/speculative.ts`) runs one round on a `SpeculativeState` (the committed tokens and both KV caches, rolled back to the committed prefix after each round); `speculate` loops it. The acceptance rule itself is the pure `verifyDrafts(p, q, drafted, rng)` (min(1, p/q), the residual max(0, p − q) at the first rejection, the bonus row after k). Tests: χ² over 10k seeded samples on a 5-token fixture vocabulary (first token and the two-token joint both match p; q fails by 10× the critical value), forced all-accept + bonus / first-reject / mid-reject branches, and KV rollback checked against a fresh forward pass.
+- **k is the slider** (delegated, default 4): the run holds the seeded rounds for every k from 1 to 8, so the tiles, the story and the "words per senior check" chip (`specExpectedTokens` fed α from the probe through an `ArithArg` binding) all follow it.
+- **The seed (11) was picked**, from seeds 1–12 on the drafter's scenario prompt, as one whose first three k=4 rounds show all kept + a bonus ("girl named Lucy." + " She"), a mid-draft correction ("had a rich [boy]" → " toy") and an early rejection ("car" + " that"). The chips are the held-out averages, not this run.
+- **DraftStrip** (`packages/renderer/src/kit/draft-strip.ts`): a face per tile and one shell per verdict (`draftAccepted` gold, `draftRejected` dark, `draftAdded` blue); `setDraftTile` shows exactly one, allocation-free. Rejected tiles also drop, so the grouping reads by height as well as colour.
+- **The session gained `speculate`** (worker, `createInference`, `localSession`), naming both models.
+- **Shots** (`throwaway/shots/33/`): `strip-turn-t{0,1,3}`, `app-t4`, `app-t10`, `app-t21`, `loop-strip`, `sweep-sheet`, `exploded`.
