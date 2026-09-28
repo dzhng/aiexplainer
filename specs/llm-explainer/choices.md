@@ -1,656 +1,569 @@
 # Choices ledger
 
-Decisions made during implementation where the spec was silent, with a verdict.
-Per [audit-choices](../../.agents/skills/audit-choices/SKILL.md): each entry is
-standalone. Entries are appended per pass and consolidated when the spec closes.
-
-## Slice 01
-
-- **The harness serves the Vite dev server, not a production build.** Why: seconds to
-  start versus a full build per run; slice 12 adds `--base <url>` runs against the
-  deployed preview, which covers the built output. Verdict: sound, reversible.
-- **The dev server binds to 127.0.0.1 on a random free port.** Why: port 5199 was
-  already taken by another local project and silently served its page. Loopback
-  still counts as a secure context, so WebGPU is exposed. Verdict: sound.
-- **`/lab/*` routes come from one `lab/index.html` entry via a small Vite
-  middleware, and the lab entry is left out of builds when
-  `VERCEL_ENV=production`.** Why: D40 wants lab pages on previews only. Vercel
-  rewrites for `/lab/*` land with the deploy in slice 12. Verdict: sound.
-- **Both HTML entries carry an empty data-URI favicon.** Why: the browser's
-  automatic `/favicon.ico` request produced a 404 console error, which the
-  harness (correctly) treats as a failure. Slice 04 can replace it with a real
-  icon. Verdict: sound.
-- **`packages/llm` passes with no tests until slice 02 adds some (`bun test
---pass-with-no-tests`).** Verdict: sound; remove the flag once tests exist.
-- **Python pins: torch 2.14.0, tokenizers 0.23.2, numpy 2.5.3, pytest 9.1.1,
-  jsonschema 4.26.0 (latest stable on 2026-09-27).** `bun run verify` now also
-  runs `training:test`, whose smoke test fails if Apple's MPS backend is
-  unavailable. Verdict: sound, but it makes `verify` Mac-only; revisit if CI is added.
-
-## Slice 03
-
-- **Chapter validation is hand-written, not zod.** Chapter files are TypeScript, so the
-  compiler checks shapes; `validateChapter` only checks what types cannot (loop length,
-  caption budget, unknown anchors/shots/tokens, stat scales) and returns a problem list.
-  Verdict: sound.
-- **Each scene declares its anchor ids in `chapters/scenes.ts`, so the validator can check
-  anchors before any builder exists.** Verdict: provisional; slice 10 may move the list next
-  to the builder so one module owns it.
-- **Timelines are cyclic: after the last keyframe the value blends back to the first.**
-  Why: the D24 loop must have an invisible seam. Verdict: sound.
-- **`shots.json` is seeded with a provisional `bench-close` pose, not left empty.** Why: the
-  validator rejects unknown shots, so chapter 0 needs one; the spec said "starts empty".
-  Slice 10 owns the real values. Verdict: sound (spec wording was wrong).
-- **`look.json` has sections palette (sRGB hex), hud, type, materials.emissive (HDR
-  multipliers), bloom (seeded from LearnOpenGL), flow, and empty room/lights for slice 07.**
-  `lookConfig()` hands the renderer linear colours with emissive applied. Verdict: sound.
-- **`ModelId` is a local union until slice 02 merges, then comes from `@repo/llm`.**
-  Verdict: short-lived; the integrator removes it.
-
-## Slice 18
-
-- **Every speed is a roofline ceiling: a step costs max(bytes ÷ bandwidth, FLOPs ÷ dense
-  FLOP/s).** FLOPs per token = 2 × matmul params + attention (4 × layers × heads × headDim
-  × context). Verdict: sound; matches kipply's inference arithmetic.
-- **Two decode numbers: per sequence (`decodeCeilingTokPerSec`) and whole batch
-  (`batchThroughput`), both with optional precision `{weightBytes, kvBytes}`.** Why:
-  chapter 12 sweeps precision. Verdict: sound.
-- **Units are branded types (`Bytes`, `Seconds`, `TokensPerSec`), with compile-time tests
-  that they cannot mix.** Verdict: sound.
-- **The MoE counterfactual is a named assumption, `llamaAsMoe()`:** attention and
-  embeddings shared, each expert a full copy of the MLPs, labelled hypothetical.
-  Verdict: sound; chapter 14 copy must say "if Llama were an MoE".
-- **Numbers show 3 significant figures with decimal SI bytes ("131 kB", "16.1 GB").** Why:
-  it matches the H100 spec sheet's "80 GB"; precise copy can still say 128 KiB.
-  Verdict: sound, reversible.
-- **A stat-chip format `"s"` (seconds) was added so prefill time can appear on a chip.**
-  Verdict: sound.
-- **The scale-label prominence shot moved to slice 04,** because the HUD chip doesn't exist
-  until then. Verdict: sound.
-
-## Slice 02
-
-- **`loadModel` is async.** Why: browsers only offer sha256 through `crypto.subtle`, which is
-  async. Verdict: sound.
-- **Counts model size: V = 8192 words × K = 20 successors (1.84 MB).** Why: 99.9% of held-out
-  words are in the vocabulary and 71.9% of held-out next words are in the table; bigger
-  tables gain little. Verdict: sound, measured.
-- **Chapter 0's word splitter is the regex `[a-z]+(?:'[a-z]+)*|[.!?]` after lowercasing.**
-  Commas and quotes are dropped. Verdict: provisional. The regex lives only in
-  `training/counts.py`; slice 10 must move it into the manifest (one owner) before
-  TypeScript splits typed prompts.
-- **`p` in `nextWords` is the share among the 20 kept successors, not the true corpus
-  share.** Why: the contract requires probabilities that sum to 1. Verdict: sound, but
-  chapter 0 copy must say "among the words it kept track of".
-- **The word vocabulary is stored as a zero-padded u32 code-point tensor.** Why: it keeps one
-  `vocabTensor` within the contract's dtypes. Verdict: sound.
-- **Tensors are 64-byte aligned and little-endian.** Verdict: sound.
-- **The `q8_0` dtype is deferred to slice 17, which defines its byte layout.** Verdict: sound.
-- **Generated JSON (models, schemas, fixtures) is excluded from the formatter.** Why:
-  reformatting `tokenizer.json` would change its frozen hash. Verdict: sound.
-- **The chapter-0 probe prompt is the single word "upon" (p(a) = 0.999), not "once upon
-  a".** Why: the counts model reads one word. Verdict: sound; slice 02's example was wrong.
-
-## Slice 14
-
-- **Orchestrator override: the vocabulary is frozen at 4096, not 2048.** Why: chapters
-  4–8 draw per-token pipes and clocks, so tokens must mostly be whole words. At 4096,
-  99.3% of the 2000 most common words are one piece; at 2048 it is 48.5%. The slice's
-  90% rule was too weak to decide anything, and llama2.c also used 4096. Verdict: sound.
-  The rule in slice 14 is rewritten.
-- **Byte-level BPE is trained once at 4096 and truncated for the size sweep.** Truncating
-  equals training at the smaller size (tested). Verdict: sound.
-- **Chapter-1 probes live in a separate `evidence.json` with its own schema.** Why:
-  `tokenizer.json` has no manifest, and adding evidence to it would change its frozen hash.
-  Verdict: sound.
-- **`encode` never turns literal "<bos>"/"<eos>" text into special tokens.** Model code adds
-  specials by id. Verdict: sound.
-- **`rng.ts` (mulberry32) arrived early, as the single owner of seeded randomness, because
-  a property test needed it.** Verdict: sound; slice 15 builds on it.
-
-## Slice 04
-
-- **AppState carries a `loopEpoch` counter.** Why: the reducer stays pure; the frame loop
-  restarts the chapter's loop whenever the epoch changes. Verdict: sound.
-- **Only scene controls pause the loop** (Follow, slider, scenario, view). The reading aids
-  (Analogy/Precise, Precisely, help) only change text. Verdict: sound reading of D32.
-- **Arriving at a chapter resets its Follow, slider, scenario, view and Precisely.** The label
-  reading and the help state persist across chapters. Verdict: sound.
-- **←/→ and the ladder reach written chapters only.** An unknown or unwritten `/#N` loads the
-  first written chapter and rewrites the hash in place. Verdict: sound until all 16 exist.
-- **Extra keys: Space plays or pauses, ? toggles help, Esc closes it.** Verdict: sound.
-- **Model metrics have one owner, `MODEL_METRICS` in `packages/llm/src/metrics.ts`.**
-  `validateChapter` rejects a model or probe stat on a chapter with no model. Verdict: sound.
-- **`pct` stats show 3 significant figures** ("99.9%", not "100%"). Verdict: sound.
-- **TinyStories is credited once, in the help panel, for every chapter.** It is not listed per
-  chapter. Verdict: sound, single owner.
-- **Fonts are self-hosted: Inter Variable and JetBrains Mono Variable, latin subset only**
-  (plus Inter greek, for Σ), from @fontsource-variable 5.3.0 under OFL-1.1. Verdict: sound.
-  Human checkpoint: kept the delegated default; shots shown for review.
-- **"Follow on X" links to https://x.com/dzhng.** Verdict: user-only. Provisional call:
-  keep it until the human names another handle.
-- **Share copies the `/#N` link for now.** Slice 12 switches it to the `/c/N/` share route
-  (D34). Verdict: short-lived; slice 12 owns the change.
-- **The brand slot is a text wordmark "dzhng" with a placeholder two-block mark, and there is
-  no favicon.** Verdict: provisional; revisit at release (slice 36).
-- **The probe has no `goto`/`setUi`.** The harness drives the UI with real key presses
-  (`--press`) instead. Verdict: sound; slice 10's probe list is superseded.
-- **The HUD created `/lab/tokens` (chips section).** Slice 08 adds its emissive section
-  there. Verdict: sound; the ordering in the spec was wrong.
-
-## Slice 15
-
-- **Attention sums its keys in a fixed order (highest score first).** Why: D35's "shuffling
-  earlier words changes nothing" must hold bit for bit, and floating-point addition depends
-  on order. Verdict: sound.
-- **The trace is split into attn (with its own residual record), mlp, router and
-  mlpResidual.** Why: each layer has two residual additions, so one flat record per layer
-  would blur them. Verdict: sound.
-- **Every prompt starts with the `<bos>` token (`promptTokens`).** Verdict: sound.
-- **Manifests require a matching tokenizer and an arch for transformers, and the arch adds
-  `normEps`.** Verdict: sound.
-- **The 9 random-init parity fixtures cost 2.6 MB,** because every token table must span the
-  full 4096 vocabulary. Verdict: acceptable; revisit if repo size matters.
-- **Plain JS loops for the forward pass.** The `full` size measured 2.9 ms per prompt token
-  and 3.9 ms per cached token, far under the 50 ms budget. Verdict: sound.
-
-## Slice 16
-
-- **Embeddings start from N(0, 0.02), GPT-2's init; the random-init fixtures were
-  regenerated.** Why: N(0, 1) with tied embeddings starts at a loss of about 30.
-  Verdict: sound.
-- **The chapter-4 probe added a name-recall prompt set after the pronoun set failed.** Both
-  are recorded; chapter 4 uses the passing set, and the README human note explains it.
-  Verdict: sound per D33, but post hoc. The human should know it was not planned up front.
-- **MPS training is not bit-deterministic across processes, so the MPS test checks
-  agreement within 1e-5.** CPU runs are bit-identical. Verdict: sound.
-- **The trained-model parity fixtures keep every 16th logit plus the top 8** (about 100 KB
-  each). Verdict: sound.
-- **The lab middleware no longer serves the main app for `/lab` URLs whose query has a
-  "."** (a harness bug). Verdict: sound fix.
-- **`runtime/models.ts` now delegates to `@repo/llm` `fetchModel`, which resolves the
-  tokenizer path against the manifest's directory.** Why: slice 04 had duplicated it with the
-  wrong base. Verdict: sound.
-- **`bun run verify` now takes about 2 minutes, because the training tests train on MPS.**
-  Verdict: acceptable for now; a later maintenance pass may split slow training tests into
-  their own script.
-
-## Slices 05–09 (renderer lane)
-
-- **Shaders are WGSL templates resolved by `tgpu.resolve`, so structs come from the TypeGPU
-  schemas. Pipelines are raw WebGPU with every bind-group index pinned.** Why: frame encoding
-  stays allocation-free. This departs from the skill's "pin only group 0", which assumes
-  TypeGPU-managed pipelines. Verdict: sound, but the renderer skill's wording should mention
-  this case.
-- **Group 0 carries both the frame uniform and the look uniform.** Verdict: sound.
-- **`Renderer.setLook()` swaps a new look in without recreating the renderer.** It is the
-  "pipeline rebuild" in the registry-baseline test. Verdict: sound.
-- **`LookConfig` carries linear numbers only; token → linear conversion lives in the app's
-  `look.ts`.** Verdict: sound, single owner.
-- **Every part has a `transform: Mat4`, blocks included; `partWorld` returns it unchanged
-  until slice 13.** Verdict: sound.
-- **Mesh materials bind to presets by the last dotted node-name segment, then fall back to
-  the glTF material name.** Blender materials are named after the presets. Verdict: sound.
-- **Props export without UVs, so builds are byte-reproducible.** Verdict: sound; revisit if
-  a prop ever needs a texture.
-- **The counter board became a tally board on two posts; the first design read as a
-  monitor.** Verdict: sound.
-- **The room is world geometry with depth read-only, outside the prepass.** Verdict: sound.
-- **Specular reflects the room gradient analytically, and lights have an apparent size.**
-  Why: metal and glass didn't read with direct lighting alone. This is a lightweight stand-in
-  for image-based lighting, which the slice's default had left out. Verdict: sound; the human
-  approved the resulting look.
-- **Glass has no diffuse term; its absorption rises with Fresnel toward grazing angles.**
-  Verdict: sound.
-- **Added an AgX saturation knob (1.25) so glows keep their colour.** Verdict: sound.
-- **GPU timing is opt-in (`createRenderer(…, { timing: true })`) and reports
-  `receipt.gpuMs`.** Verdict: sound.
-- **The bloom chain starts at half resolution with 5 mips.** Measured cost: 0.46 ms at
-  1440×900. Verdict: sound.
-- **Translucent parts never occlude labels, and mesh occlusion is tested per triangle.**
-  Why: node bounding boxes are too coarse (the two-post stand spans the whole board).
-  Verdict: sound.
-- **Label overlap is resolved by pill-vs-pill and pill-vs-dot tests using measured pill
-  widths; lab pills are 150 px wide at most.** Verdict: sound.
-- **`placeLabels` takes no viewport (the camera matrices carry it), `sceneOccluders` takes the
-  look, and `hiddenBy` gains `'overlap'`.** Verdict: sound; small contract deltas from the
-  slice text.
-- **Research: `root.destroy()` does NOT free buffers the root created** (measured with a
-  control buffer). This confirms the renderer skill; the registry is required.
-
-## Slice 10
-
-- **Part transforms are per-frame data.** The renderer repacks instances every frame
-  (allocation-free), and `revision` only signals a change in structure. Verdict: sound.
-- **Labels take the first side (up-right, up-left, down-right, down-left) that avoids other
-  labels, scene text and the screen edge.** Verdict: sound.
-- **Bar words and the card word are "scene text", a separate overlay using the same
-  placement code.** They are not labels, so D18's five-label cap still holds. Verdict: sound.
-- **Chapter 0's loop words live in chapter data as `loop.inputs` (once, upon, onse); typed
-  text or a scenario replaces them.** Verdict: sound.
-- **The word-splitting regex lives in the counts manifest (`tokenizer.pattern`/`replace`),
-  pinned by a Python/TS fixture.** Verdict: sound; this closes the slice-02 provisional entry.
-- **No synchronous inference seam was ever built:** chapter 0 used slice 15's worker from
-  the start. Verdict: sound; the README's short-lived seam is removed.
-- **`buildFrame` returns `SceneFrame` (frame input plus scene-text tags).** Verdict: sound;
-  a small deviation from the slice's signature.
-- **Occluders are rebuilt only on a revision or view change, not when parts move.** Moving
-  bars can therefore be slightly stale as occluders. Verdict: acceptable, because labels
-  anchor to static parts; revisit if a chapter labels a moving part.
-- **The prompt box sits inside the title panel.** Verdict: sound (delegated).
-
-## Slice 11
-
-- **Chapter 0's loop runs 20 s and shows the rule twice (once → upon → a), then the failure
-  ("onse": never seen, no bars).** A test checks that each input is the previous one's top
-  successor and that "onse" is not in the vocabulary. Verdict: sound.
-- **A `barsWord` channel lets the bars lag the card.** Verdict: sound.
-- **A "never seen" scene note makes the failure beat readable.** Verdict: sound.
-- **Lower-ranked scene tags hide when they collide with higher-ranked ones, and labels also
-  avoid the HUD panel rects (measured on render and resize).** Verdict: sound.
-- **Shares never round to a false 0% or 100%: they show "<1%" or ">99%".** Verdict: sound.
-- **The third stat is "“a” after “upon”" (the top-successor probe), not a generic "chance of
-  the top next word".** Verdict: sound; it is more concrete.
-- **Human checkpoint (copy read): accepted by the lane after three unprimed critique rounds,**
-  which fixed an off-camera hand-off, a 6 s static hold, a card bounce at the seam, and a
-  label sliding behind the title panel.
-
-## Slice 17
-
-- **`moe` is 4.6 MB, over slice 16's 4 MB per-model cap.** The cap is read as applying only to
-  slice 16's models, since slice 17 names only the 25 MB ladder total. Measured total:
-  22.98 MB, enforced by a test. Verdict: sound.
-- **Slice 17 models use tied embeddings (apart from `mlp`) to fit the budget.** Verdict:
-  sound.
-- **The drafter's acceptance rate is Leviathan's β averaged over teacher-forced validation
-  positions; its cost is the ratio of parameter counts.** Results: drafter-64 α 0.595
-  (expected speedup 1.23), drafter-96 α 0.638 (speedup 1.03). O3 is provisionally
-  drafter-64; slice 33 finalises it. Verdict: sound.
-- **Two probe metrics were changed after their first measurement.** Both first values are
-  recorded in slice 17's file. Verdict: sound, but post hoc, so the human should know.
-  - `mlp`: the mean per-prompt relative drop (0.12) was replaced by the drop in total
-    correct-answer probability (94.9% with the top 16 neurons off). Why: prompts where the
-    model assigns the answer about 0.001 dominated the mean.
-  - `residual`: an embedding-cosine metric was replaced by the residual-norm trace the
-    contract names (21.5 vs exactly 0 for `noresidual`).
-- **`q8_0` is an f16 scale plus 32 int8 values per group.** TypeScript dequantization matches
-  Python bit for bit. Verdict: sound.
-- **Every probe measures the exported f16 weights; the D35 probe runs on the shipped
-  TypeScript runtime.** Verdict: sound; the probes measure what ships.
-- **`noresidual` never learns (val loss 8.3 = ln 4096).** That is chapter 7's visible
-  failure, as intended. Verdict: sound.
-
-## Slice 11b
-
-- **The environment's vertex colours carry more than AO:** R = ambient occlusion, G/B = baked
-  warm and cool practical light, tinted by `look.room.practicals.*.spill`. Why: AO alone left
-  the room black, because the renderer has no local lights. Verdict: sound; the slice's
-  `COLOR_0` seam was widened.
-- **`SceneDesc.environment` is drawn in its own slot, never in `scene.parts`,** so the room
-  never occludes labels or gets a crop. Verdict: sound.
-- **Direct lights fall off outside `look.lights.pool`, and `OrbitLimits.bounds` keeps the
-  camera inside the room.** Verdict: sound.
-- **The floor light pool reads as a stage spotlight; this is kept deliberately.** Verdict:
-  provisional; the human asked for a richer room (11c).
-
-## Slice 13
-
-- **A mesh prop can be split per node, with explode and clip set per node.** Verdict: sound.
-- **Cutaway is a fragment-stage plane from `look.views.cutaway.planes`.** Back faces seen
-  through the cut are capped in a flat cap colour. Discard/no-cull pipeline variants run only
-  while cutting. Verdict: sound; the flat, bright cap is a known polish item.
-- **View changes ease in over 0.6 s.** Verdict: sound.
-- **The counter board's bezel and ticks are lifted 2 mm off the panel face,** because coplanar
-  faces z-fought in the cut. Verdict: sound.
-- **From the hero angle, Exploded reads mostly as a depth shift.** Verdict: accepted for
-  chapter 0; later chapters with more parts should explode sideways.
-
-## Slice 04b
-
-- **Direction: holo-tactical, taken whole (the human's pick).** Verdict: sound.
-- **The HUD cyan is a HUD-only `hud.accent`, not the palette's `active`,** so restyling the
-  HUD can never change the scene. Verdict: sound.
-- **Body copy stays in Inter.** Chakra Petch (caps) is for headings, controls, chips and
-  labels only, for legibility. Verdict: sound.
-- **Labels are sentence case, not the mock's caps,** because caps overflow the renderer's
-  220 px label box. Verdict: sound.
-- **The help panel's plate is opaque.** Verdict: sound.
-- **Stat chips count up over 400 ms and then show the exact settled text; a held clock or
-  reduced motion skips it.** Verdict: sound; tested.
-- **Panels slide in over 360 ms on arrival via `useArrivalIntro`, keyed on `loopEpoch`.**
-  11c may key it to the camera-move start. Verdict: sound.
-- **Only Chakra Petch weights 600 and 700 ship.** Verdict: sound.
-- **The brand mark is not redrawn;** brand art is deferred to slice 36. Verdict: sound.
-
-## Slice 11c
-
-- **The contact shadow is a `shadow` part kind with a soft footprint.** Materials gain a
-  `specular` knob, and the shadow's is 0, so it only darkens. Verdict: sound; it is one blob,
-  not per-foot contact (polish item).
-- **The arrival move is a smoothstep from `room-wide` to the hero pose over 2.5 s
-  (`runtime/arrival.ts`).** The loop clock is paused until landing. Verdict: sound, per D42.
-- **Known polish items, accepted for now:** the shelf props are plain boxes, the floor light
-  pool reads as a stage spotlight, and the "once" card's label hides for about 1 s mid-move.
-  Verdict: provisional; revisit at the whole-spec review.
-
-## Slice 12
-
-- **Incident: the first `vercel deploy` went to production** (a new project with no git
-  connection defaults to the production target). It was aliased to `aiexplainer-red.vercel.app`
-  and removed within minutes; the alias returns 404 now, and every later deploy uses
-  `--target=preview`. The production domain may have been publicly reachable for those minutes.
-  Verdict: mistake, remediated. The rule is always `vercel deploy --yes --target=preview`.
-- **Previews are behind Vercel Authentication (Standard Protection).** One automation-bypass
-  secret (note "harness") exists for the harness; it is not in the repo. Verdict: sound.
-- **The fallback video shows the scene only (HUD hidden but laid out), cropped to the safe
-  rect.** The link-preview card is the whole app, HUD included. Why: at phone width the full-app
-  video repeated the title as unreadable text. Verdict: sound.
-- **The recorder uses a new `?clock=step` plus `probe.step()`.** `clockIsHeld` became
-  `clockIsDriven` (held or step), so HUD motion and the arrival move are skipped while
-  recording. Verdict: sound; a looping video must not open with a one-off camera move.
-- **Media is committed under `public/media/`, not generated on Vercel,** because Vercel's
-  builders have no WebGPU Chrome. Re-run `bun run --cwd apps/explainer media` after any look or
-  loop change; a test fails when a written chapter has no media. Verdict: sound.
-- **Video: H.264 at the best CRF between 18 and 33 that fits 3 MB, poster = first frame.**
-  Chapter 0 is 548 KB, and repeat recordings are byte-identical. Verdict: sound.
-- **Share pages redirect with both a meta refresh and `location.replace`. The `og:image`
-  origin is `SITE_URL`, else `https://$VERCEL_URL`.** Verdict: sound; slice 36 sets `SITE_URL`
-  once O5 is picked.
-- **`detectSupport(env)` takes an environment so it is testable; small-screen is < 900 px or a
-  coarse-only pointer.** Verdict: sound.
-- **The device line differs by reason** ("send yourself the link" vs "needs WebGPU: try
-  desktop Chrome or Edge"). Verdict: sound.
-- **The Vercel project was created via the CLI plus the REST API**, because the CLI has no
-  root-directory flag. Verdict: sound.
-
-## Slice 19 (chapter 1)
-
-- **The tokenizer is a chapter "model" (`model: "tokenizer"`, a `LoadedTokenizer` as a
-  `ModelSource`),** so stats, the HUD text box and the run treat it like any model.
-  Verdict: sound.
-- **`computeRun` takes `{ model, session }` and switches on the scene.** Verdict: sound.
-- **Brick colour encodes merge order:** pale = a single byte, yellow = id < 1024, coral =
-  later merges. A test proves ids follow merge order. Verdict: sound.
-- **`SceneDesc.layout` was added: a builder bumps it, and the stage re-tests label occlusion.**
-  Why: moving parts left stale occluders (the slice-10 caveat). Verdict: sound; it closes that
-  provisional entry.
-- **Identical tubes share one geometry (a content-keyed cache), so brick studs instance.**
-  Verdict: sound.
-- **The app hands the HUD only the model that matches the current chapter.** Why: a page error
-  on ←/→ otherwise. Verdict: sound fix.
-- **A new `ARITH.vocab` entry supplies Llama-3-8B's 128,256.** Verdict: sound.
-
-## GitHub and Vercel Git link (human request, 2026-09-27)
-
-- **Public repo `github.com/dzhng/aiexplainer`; the working branch `llm-explainer` is the GitHub
-  default branch.** The human asked for a public repo linked to the Vercel project. Verdict:
-  sound. Note: the 5 airsup reference frames in `specs/llm-explainer/assets/reference/` are
-  public with it (small design references, credited to their source); remove them if unwanted.
-- **Vercel's production branch is `main`, created at the bootstrap commit, which has no app, so
-  its builds fail and nothing ships.** Every push to `llm-explainer` (and other branches) builds
-  a protected preview. Releasing to production is the deliberate act of merging into `main`,
-  which is the human's call (O5, slice 36). Why: linking defaulted production to
-  `llm-explainer`, which would have made every push a production deploy. Verdict: sound.
-
-## Slice 20 (chapter 2)
-
-- **The PCA display projection is fitted to the 60 pinned rows, not all 4,096.** Measured: it
-  keeps pairs tighter (pair/mean distance 0.30 vs 0.37). The help panel discloses it via a new
-  `ChapterDef.help.notes`. Verdict: sound; honest, because it is disclosed.
-- **The pinned words are the 30 probe pairs whose partners are nearest by the probe's own cosine
-  measure.** Verdict: acceptable, but these are the best-case pairs; the chip (96.7% partner
-  nearer than a random word) states the average honestly.
-- **Height is the third PCA direction, and arrows start at the zero vector's projection.**
-  Verdict: sound.
-- **Typed words are looked up with a leading space (as mid-sentence), up to 8.** Verdict: sound.
-- **The table is a shared `builders/table.ts` for chapters 1–3.** Verdict: sound.
-- **The noun cluster overlaps its word tags at the hero angle, because those are the real
-  positions.** Verdict: polish item for the whole-spec review.
-
-## Slices 26–28 (chapters 6–8)
-
-- **Every chapter run is one file, `runtime/runs/<scene>.ts`, dispatched by `computeRun`.**
-  Verdict: sound; one owner per scene.
-- **One in-process inference core, `createInference`, is shared by the worker and
-  `localSession`.** `direct-session.ts`, which duplicated it, is deleted. Verdict: sound.
-- **`session.run(tokens, {trace, window, model, mlpOff})` takes an options object, and the
-  worker keeps every model it has loaded, keyed by id.** Verdict: sound; other lanes adapt on merge.
-- **Tube occluders ignore stretch along the path.** Why: a stretched unit tube occluded the whole
-  scene. Verdict: sound fix.
-- **A new stat format `nats` shows chapter 7's two val-loss chips,** backed by new
-  `val-loss-residual`/`val-loss-noresidual` evidence written by re-probing (`--probe-only`).
-  Verdict: sound.
-- **Chapter 8's prompt is "One day, a little bird was looking for"**, because on "Once upon a
-  time…" three of layer 0's four heads peak on the same word, which hides "readers look for
-  different things". Verdict: acceptable; picked for the effect, but it is a real model
-  output (D25).
-- **D5's zoom-out is `ChapterDef.pullBack {shot, channel}`, blended with `arrivalPose`.**
-  Verdict: sound; it reuses the one camera-tween owner.
-- **Chapter 8's head pipes are interim tube segments until lane B's `pipes` primitive lands.**
-  Verdict: short-lived seam; removed when slice 22's primitive merges.
-- **Polish items for review:** chapter 8's three-line title and a stray tube at the left edge
-  of the hero frame.
-
-## Slices 31–32 (chapters 11–12)
-
-- **Chapter 11 shows the ridge beat as the knee at batch 329 (new `ARITH.computeBoundBatch`,
-  where a step's arithmetic time equals its memory time), not the raw ridge figure of about
-  295 FLOP/byte.** Why: that is the batch where the seats fill. Verdict: sound, and the
-  arithmetic is exact.
-- **Stat chips take `ArithArg` bindings (`{slider: true}` or `{probe}`),** so chips follow the
-  slider or feed a probe into a formula without typing a number. Verdict: sound, and it
-  strengthens D25.
-- **`SliderDef.loop` plus `AppState.sliderSet`: the loop plays the slider until the reader moves
-  it,** and the HUD samples the channel at 10 Hz. Verdict: sound; it is compatible with D32
-  (a reader's input takes over).
-- **Chapter 11's prefill is a loop beat, not a HUD scenario,** because a model-less chapter has
-  no probe for a scenario to cite. Verdict: sound.
-- **Chapter 11 has no Cutaway view (the bus sides are windows).** Verdict: sound.
-- **Chapter 12's fp16/int8 toggle is the slider, and the HUD scenarios are `full-q8`'s two
-  KL-chosen prompts.** Verdict: sound.
-- **A `weights` request (Inference, Session, worker, local) serves raw tensor slices for the
-  weight strip.** Verdict: sound; one path through `weightSlice`.
-- **Copy violation found at merge:** the chapter-12 chip label "KL divergence (nats)" is jargon
-  (D2). Sent back for a plain relabel. Verdict: fix pending in lane D.
-
-## Slice 21 (chapter 3)
-
-- **The die is a barrel whose faces are the top six words plus "every other word", each face
-  exactly as wide around the rim as its probability at the current temperature.** The stop
-  angle comes from the seeded generator, so the landed face equals `sample()` (tested).
-  Verdict: sound.
-- **The loop's temperature channel drives the die until the reader moves the slider; the HUD
-  slider itself doesn't move during the demo, and a scene note shows the live temperature.**
-  Verdict: acceptable; lane D's later `SliderDef.loop` pattern could unify this in review.
-- **The chapter-3 fixture run is 353 kB, because it stores the full logits the honesty test
-  needs.** Verdict: acceptable.
-- **The failure beat: two stories ending in "it" roll the identical die** (the model sees only
-  one word). Verdict: sound.
-
-## Slice 29 (chapter 9)
-
-- **The work counter adds each step's real `fed` token count (+10, +11, …),** and the failure
-  beat spells out the sum; the Llama chips use new arith `rereadTokens` (32,896 tokens reread
-  to write 256) and `maxContext`. Verdict: sound, and it counts operations, not time (D27).
-- **The slider is "Words to write" (1–6).** Verdict: sound.
-- **Chapter 9's line helpers (`LINE`, `buildLine`, `placeFeed`, `placeTile`) are exported from
-  `builders/generation.ts` for chapter 10 to reuse.** Verdict: sound; one owner for the text
-  line.
-
-## Slices 22–24 (chapter 4)
-
-- **Pipe width is linear in the attention weight (not area-proportional).** Why: with area
-  proportional to weight, an unprimed reviewer couldn't tell 22% from 7%. Verdict: sound; the
-  CPU-mirror test pins radius × widthScale to the weights.
-- **Tubes carry a per-vertex axis (Vertex is now 48 bytes, plus `along` for flow pulses), and
-  the GPU scales the radius by `widthScale`.** Verdict: sound.
-- **The focus word's self-pipe is kept, so the widths sum to 1.** `<bos>` shows as "start".
-  Verdict: sound.
-- **The sealed future words are the model's own greedy continuation, traced from the focus
-  position; their weights are exactly 0.** Verdict: sound.
-- **Flow pulse brightness scales with each pipe's weight relative to the widest, and the look
-  token `flow.cyclesPerSec` is 1.4.** Verdict: sound.
-- **A needle on the mix shows the real angle change of the focus word's vector toward "Mia"
-  (90.1° → 74.2°).** Verdict: sound, and a real value.
-- **The failure beat uses the attn order-probe pair: the cat↔dog swap gives bit-identical
-  logits ("cat", 35%).** Verdict: sound (D35).
-- **Chapter 8's head pipes moved onto the pipes kit; the interim tube seam is removed.**
-  Verdict: sound.
-
-## Slices 33–34 (chapters 13–14)
-
-- **O3 is final: drafter-64** (held-out α 0.601, speedup 1.24×; drafter-96 α 0.643, 1.03×), on
-  40 held-out stories disjoint from selection. Verdict: sound.
-- **Chapter 13's slider is k (1–8); the run holds seeded rounds for every k.** The loop uses
-  seed 11 of 1–12, picked so the three rounds show a bonus, a correction and an early reject.
-  The chips show the held-out averages, not this run. Verdict: acceptable; the choice of seed
-  is disclosed in the slice file.
-- **The senior's correction takes the first rejected slot, and rejected tiles drop out of the
-  row.** Verdict: sound.
-- **Chapter 14's router choices are real, from layer 1 of 4, and its histogram comes from new
-  `expert-usage-<e>` evidence.** The Llama chip uses `moeActiveParams` under the named
-  hypothetical `llamaAsMoe` (13.7 billion per word). No specialisation claims. Verdict: sound.
-- **Cutaway is omitted in chapters 11–14; a section adds nothing there.** Verdict: sound.
-- **Polish nits left:** chapter 14's queue reads right to left, some sweep azimuths are blocked
-  by room geometry, and a ceiling rafter crosses the HUD kicker (house-wide).
-
-## Slice 25 (chapter 5)
-
-- **Clock hands turn by position × pair 5's real RoPE angle (about 22° a word), not the slowest
-  pair.** Why: pair 5 needs no visibility scaling, so there is nothing to disclose. Verdict:
-  sound; it amends the slice's default.
-- **The shown difference between orders (7.45%) equals the probe value to 1e-12; the guess
-  differs ("dog" 32% vs "cat" 30%).** Verdict: sound.
-- **Polish items:** in chapter 4, front-row pipes cross back-row words and pipes regrow rather
-  than move during the swap. In chapter 5, the pair angle is written but not drawn, the last
-  dial washes out, and the hands unwind at the loop seam. Verdict: backlog.
-
-## Slice 30 (chapter 10)
-
-- **`packages/llm/src/kvcache.ts` owns the KV cache (moved out of `forward.ts`); a cache
-  smaller than the context is a ring that evicts old positions.** Tests: cached equals
-  uncached, and the ring equals a windowed reference. Verdict: sound.
-- **The sliding window shown is 4, because at 8, 6 and 5 this prompt's words don't change.**
-  With 4, the model writes "girl named Lily." instead of "boy named Tim.", and the caption says
-  this is not how Llama-3-8B runs. Verdict: sound, and honest.
-- **The memory chips use a new `kvBytesPerToken` metric (2.05 kB, this tiny model) against
-  arith (131 kB, Llama-3-8B).** Verdict: sound.
-- **GQA is shown as unshared notes that are then dropped.** Verdict: sound; it is the real
-  2-for-4 sharing.
-- **Polish items:** chapter 8's violet-plus-blue bloom runs hot, long words overhang their tiles
-  in chapters 9–10, chapter 7's river reads as a glass duct, and labels at back angles can point
-  at hidden parts. Verdict: backlog.
-
-## Slice 35 (chapter 15)
-
-- **The finished machine owns no chapter parts:** each station is its own chapter's builder and
-  run, copied into one scene (slug-prefixed, slot-offset, scaled) on a 5-wide serpentine
-  grid. Its only part is a flowing floor route in tour order. A test pins "union of stations,
-  nothing twice". Verdict: sound, one owner per part.
-- **The tour follows a word's path:** board, then bricks → pins → pipes → clocks → panel → bays
-  → river → assembly line → die → rail → notes, then the serving tricks (junior, crates, bus).
-  1.6 s per stop, a 29.6 s loop, and each stop reuses its chapter's hero shot, scaled.
-  Verdict: sound; the busiest stops show more text than 1.6 s allows (accepted, since the loop is
-  at the cap).
-- **The D18 label cap of 5 is waived for a toured chapter, because only one station's label
-  shows at a time.** Verdict: sound.
-- **The stage's `update` can steer the camera, and orbiting hands it back to the reader;
-  `RunContext.source` loads another chapter's model once.** Verdict: sound.
-- **Bug fixed: the app only loaded the first chapter's props** (the board and bus never drew
-  when arriving from another chapter). Verdict: sound fix.
-- **D21 audit: 16 loops = 388.6 s, plus 16 arrival moves = 428.6 s (7 min 9 s), within the
-  10-minute skim.** Verdict: sound.
-- **Chips: 1.51 million weights (the `full` model) vs 8.03 billion (Llama-3-8B), and Llama's 32
-  blocks; no scenarios (no single probe to cite).** Verdict: sound.
-
-## Release setup (human decisions, 2026-09-27)
-
-- **No custom domain: production is `https://aiexplainer-red.vercel.app`.** `SITE_URL` is set
-  for the production target on Vercel, so `/c/N/` link-preview cards use the stable domain.
-  The human disabled Vercel Authentication, so previews are public too. Verdict: the human's
-  call; O5 is closed.
-
-## Polish pass
-
-- **The HUD's top-left corner stays clear of busy room geometry,** chosen over keeping the left
-  strip light and conduit. Trade-off: the left back wall reads plainer. Verdict: sound.
-- **The floor pool is a long soft falloff stretched 1.6× along the ceiling tubes
-  (`lights.pool.stretch`).** Verdict: sound; no more stage-spotlight disc.
-- **Contact shadows are per foot (`contactShadow` feet, `blockFootprint`)** for subjects on
-  legs. Solid-bodied subjects keep one blob. Verdict: sound.
-- **Scene-text bug fixed:** a style reset wiped every scene word's dark halo in all chapters.
-  The text is now pinned at the 1rem it always rendered at, not the `--text-sm` token the code
-  named. Verdict: sound; the approved look only gains the halo.
-- **Chapter 3's HUD slider now plays the loop's temperature (the `SliderDef.loop` pattern), and
-  `snapSlider` drops float residue.** Verdict: sound; it closes the slice-21 provisional entry.
-- **Chapter 8's title is "Many readers, one assembly line".** Its bloom was measured
-  (0.52–0.58% near-white vs about 1.05% elsewhere) and accepted as dense, not hot. Verdict:
-  sound.
-- **Chapter 7's river gets flowing currents (the kit's `flows`); chapter 5's hands shrink with
-  their words at the seam instead of unwinding; chapter 14's queue reads left to right; the
-  rail tiles in chapters 9–10 widen to 0.34 m.** Verdict: sound.
-- **Accepted:** chapter 4's thin low-weight pipes cross back-row words at the hero angle,
-  because of the projection. Verdict: sound, the reason is recorded.
-- **Left for the release check:** chapter 10's scene note sits under the controls panel, a
-  lavender input bar floats beside chapter 8's left HUD, and chapter 3's ":" and "," words are
-  tiny.
-
-## Whole-spec review
-
-- **Duplicated helpers across about 20 parallel passes were collapsed into single owners:**
-  - scene helpers: builder parts, easing, loop-step lookup, token labels, generation's flying
-    card;
-  - runs, llm and renderer: run inputs, `argmax`, camera pose math, dynamics packing, the kit's
-    parked height;
-  - clamps now use `math`'s `clamp`;
-  - training: the story separator, story starts, and the MoE entropy gate.
-
-  About 35 dead exports were un-exported, and tests that pinned config values were rewritten to
-  check behaviour. Verdict: sound; the full sheet is pixel-identical.
-
-- **Deliberately left:** some per-frame allocations (occluders during a view transition, kit
-  place helpers), shader and orbit constants in code (each has one owner), camera matrices
-  computed twice per frame (stage and renderer), and low-payoff duplication in tests and
-  type mirrors. Verdict: acceptable; performance and boundary changes are out of scope for a
-  behaviour-neutral review.
-- **The `sheet` script moved into `apps/explainer`** (`bun run --cwd apps/explainer sheet`).
-  Verdict: sound; the spec references were updated.
-
-## Codex correctness review (second opinion)
-
-All 7 findings were confirmed and fixed with tests:
-
-- **Speculative decoding stops at an accepted `<eos>` (`next` may be `null`), checks context room
-  before each round, and `speculativeStep` throws `RangeError` when the context is full.**
-- **Every inference request names its model (no "current" model in the worker), and each run's
-  session calls are wrapped in `sessionScope`,** so a superseded chapter's late replies are
-  dropped.
-- **Only generations get cancel messages, and the worker's stop flags live only while a
-  generation runs.**
-- **Renderer or device failure after a successful adapter probe now shows the video fallback
-  (`withGpu`, `App.onUnsupported`) and destroys the partial GPU root.** The App → Fallback
-  switch has no DOM test; it was checked by type-checking and reading the code.
-- **"Copy link" feature-detects the clipboard (`copyOrShow`).**
-- **Chapter 13's speedup chip is now computed from the slider's k, the held-out α and the
-  drafter/full weight ratio (`specSpeedup`, Leviathan Theorem 3.8).** Below 1× the old label
-  read wrong, so it is now "speed vs no junior, drafting included". Verdict: sound; honest at
-  every k (0.912× at k=8).
-
-## Slice 36 and release
-
-- **Labels and scene tags snap to whole pixels.** Why: text drawn at a fractional offset
-  rendered differently run to run (the chapter-3 label). Verdict: sound; card shots are now
-  deterministic.
-- **The controls panel is capped to the space right of the title column (scenario chips shorten
-  with "…"); below 1400 px the ladder anchors left and stops short of the corner.** Views
-  ≥ 1440 px are unchanged. Verdict: sound; crowding at 1200 px remains a follow-up.
-- **Link-preview cards are laid out at 1440×756 and scaled to 1200×630 (text ×0.83).** Verdict:
-  sound; uncrowded scenes beat larger text on a card.
-- **Chapter 3 writes punctuation by name ("period", "comma").** Verdict: acceptable; on one
-  frame "comma" hides behind "period".
-- **`drafter-96` is removed (1.0 MB); its measured α stays documented in slices 17 and 33.**
-  Verdict: sound.
-- **Two videos needed more compression to fit 3 MB (stack CRF 24, finished CRF 27).**
-  Verdict: acceptable.
-- **Production release: `main` was fast-forwarded to `llm-explainer` (aabfdb0), as the human
-  authorized.** Verdict: sound.
+These are the decisions the implementation made where the plan was silent. Each entry
+is checked against the shipped code, not against the pass where it first landed. An
+entry that a later pass replaced shows only where it ended up. The recorded decisions
+(D1–D42, L1 and the human notes) live in the [README](README.md), not here.
+
+Entries are grouped by verdict. Within each group, the ones the human is least likely
+to share come first. Each entry stands alone. "When" names the build slice where the
+choice was made; the slice files themselves are gone, and this ledger keeps what they
+decided.
+
+- **Incidents and post-hoc selections** (7): things the human should know happened.
+- **Defaults for the human to confirm** (3): taste or identity calls held
+  provisionally.
+- **Acceptable, with a known cost** (12): trade-offs that shipped with a limit.
+- **Sound** (72): choices the agent stands behind with no reservation.
+
+## Incidents and post-hoc selections
+
+1. **The first deploy accidentally went to production (2026-09-27).** When the Vercel
+   project was first created, it had no git connection, and in that state `vercel deploy`
+   targets production by default. The explainer was therefore briefly public at
+   `aiexplainer-red.vercel.app` before anyone had approved a release. It was removed
+   within minutes, and every later deploy used `--target=preview` until the human
+   authorized the real release. Consequence: the site may have been publicly reachable
+   for those few minutes. The later real release was a deliberate fast-forward of `main`.
+   When: slice 12. Verdict: a mistake, remediated.
+
+2. **Two probe metrics were changed after their first measurement.** A probe is the
+   test that decides whether a tiny model really shows its chapter's effect (D25).
+   - Chapter 6 (`mlp`): the first metric was the mean of each prompt's relative drop in
+     answer probability when neurons are switched off. It measured 0.12 with the 16 most
+     active neurons off and −3.8 with the whole MLP off, because prompts where the model
+     never knew the answer (p ≈ 0.001) dominated the mean. It was replaced with the drop
+     in total answer probability: 94.9% with those 16 neurons off, 99.3% with the whole
+     MLP off.
+   - Chapter 7 (`residual`): the first metric, the cosine between the embedding and the
+     top of the stream, measured 0.064 (`residual`) and 0.0 (`noresidual`). It was
+     replaced with the residual-norm trace the model contract actually names (last-layer
+     RMS ÷ embedding RMS): 21.5 with the residual, and exactly 0 without.
+
+   The agent stands behind both new metrics as the better measure, but they were picked
+   after seeing a number, so the human should know. When: slice 17.
+
+3. **Chapter 4 teaches name recall, not pronouns.** The plan's example was a pronoun
+   ("she") looking back at a character. The one-layer `attn` model fails that: its
+   attention on the character is 0.58× what an even spread would give. A second prompt
+   set was then added, where the next word is a character's name seen earlier, and that
+   one passes at 2.98×. Chapter 4's example and copy use name recall and make no pronoun
+   claim. Both probe sets and their results are recorded in the `attn` manifest. The
+   second set was added after the first failed, so the human should know it was not the
+   plan. When: slice 16. See also the README human note.
+
+4. **Chapter 13's loop replays a hand-picked seed.** Chapter 13 (speculative decoding)
+   shows three rounds of a junior model guessing words and a senior model checking them.
+   Seed 11 out of 1–12 was chosen because its three rounds show all three outcomes: a
+   bonus word, a correction and an early reject. The rounds themselves are real model
+   output. The stat chips don't use this run; they show averages over 40 held-out stories.
+   Alternative declined: seed 1, which could show three look-alike rounds. The code
+   (`SPEC_RUN` in `chapters/data/speculative.ts`) and this entry record the pick. When:
+   slice 33.
+
+5. **Chapter 8's prompt was chosen to show the effect.** The prompt is "One day, a little
+   bird was looking for". On "Once upon a time…", three of layer 0's four attention heads
+   look at the same word, which hides the chapter's point that different heads look for
+   different things. The output is still real (D25). When: slice 28.
+
+6. **Chapter 10's sliding window is 4 words, because larger windows change nothing
+   here.** At window sizes 8, 6 and 5, this prompt's continuation doesn't change, so
+   there is nothing to see. At 4, the model writes "girl named Lily." instead of "boy
+   named Tim.". The caption says a window changes outputs and is not how Llama-3-8B
+   runs. When: slice 30.
+
+7. **Chapter 2 shows the best-case word pairs, and its map is fitted to them.** The 3D
+   map shows 30 word pairs (the probe pairs whose partners are closest), and the 2D/3D
+   projection is fitted to those 60 words, not all 4,096. That keeps pairs visibly tighter
+   (pair distance ÷ mean distance: 0.30 versus 0.37 with a projection fitted to all
+   4,096 words). The stat chip still reports the honest average (96.7% of partners are
+   closer than a random word), and the help panel discloses the fit (`help.notes`).
+   When: slice 20.
+
+## Defaults for the human to confirm
+
+1. **The brand is a placeholder, and there is no favicon.** The brand slot shows the
+   text wordmark "dzhng" next to a placeholder two-block mark (`BrandMark` in
+   `hud/icons.tsx`). Both HTML entries use an empty data-URI icon (`data:,`), which exists
+   only to stop the browser's automatic `/favicon.ico` request from logging a 404 (which
+   the harness treats as a failure). The plan deferred brand art to the release slice,
+   but none was made, so production ships the placeholder. Real brand art is a drop-in
+   change to `BrandMark`, the favicon link and the link-preview cards. When: slices 01,
+   04 and 04b.
+
+2. **The airsup reference frames are public.** The five airsup.ai frames in
+   `assets/reference/` were the visual standard the look was matched against. They
+   became public when the human asked for a public GitHub repo. They are small, credited
+   design references, but they are someone else's screenshots, so delete them if they
+   are unwanted. When: the GitHub link (2026-09-27).
+
+3. **"Follow on X" links to https://x.com/dzhng.** The only owner is `X_PROFILE` in
+   `look/brand.ts`, used by the HUD and the fallback page. It matches the dzhng brand
+   (D23), but no one named the handle explicitly. When: slice 04.
+
+## Acceptable, with a known cost
+
+1. **The HUD crowds the scene on screens about 1200 px wide.** From 1440 px up the
+   layout is as designed. Below 1400 px, the chapter ladder anchors left and stops short
+   of the corner, and the controls panel is capped to the space right of the title
+   column, with long scenario names cut short with "…". At about 1200 px the panels
+   still cover part of the scene. That is a follow-up, not a release blocker, because
+   the target is a desktop screen (D20) and small screens get the video. When: slice 36.
+
+2. **Some visual nits shipped.** Each was judged smaller than the cost of fixing it:
+   - Chapter 4: thin low-weight pipes cross back-row words at the hero angle (a
+     projection effect), and during the word swap the pipes regrow instead of moving.
+   - Chapter 5: the last clock dial washes out under bloom.
+   - Chapter 2: the noun cluster's word tags overlap at the hero angle, because those
+     are the words' real positions.
+   - Chapter 3: on one frame, the word "comma" hides behind "period".
+   - Chapter 14: some camera sweep angles are blocked by room geometry.
+   - At some back angles, labels point at parts that are hidden.
+   - Chapter 0: from the hero angle, the Exploded view reads mostly as a shift in depth.
+
+   When: slices 13, 20, 25, 30 and 34, and the polish pass.
+
+3. **Chapter 14 says "Llama-3-8B is not a mixture of experts" through its chip and help,
+   not its caption.** The copy rule asks MoE numbers to name their assumption. The Llama
+   chip reads "per word, as 8 experts (hypothetical)", its help source says "if
+   Llama-3-8B's MLPs were split into experts (hypothetical)", and chapter 15 states it
+   outright. The caption talks only about the tiny model. Adding a caption sentence
+   would mean re-recording chapter 14's media for a claim the chip already qualifies.
+   When: slice 34, confirmed at close.
+
+4. **The generation and KV-cache chapters' prompt chips cite the model's validation
+   loss.** Every prompt chip (scenario) must cite a probe (D25). Chapters 9 and 10
+   show rereading and note reuse, which happen for any prompt, so there is no
+   prompt-specific effect to measure. Their two prompts cite `full`'s validation loss
+   instead of a probe made for them. When: slices 29 and 30, confirmed at close.
+
+5. **Chapter 15's tour gives each station 1.6 s.** The finished-machine chapter tours
+   16 stations in a 29.6 s loop, near the 30 s loop cap (D24). The busiest stations show
+   more text than 1.6 s allows. The stack station uses its wide shot instead of the hero
+   shot, so the whole assembly line fits. When: slice 35.
+
+6. **`bun run verify` only runs on a Mac and takes about 2 minutes.** It ends with the
+   training tests, which train small models on Apple's MPS GPU backend and fail when MPS
+   is missing. The alternative, a separate slow-test script, was never needed because
+   there is no CI. The Python pins are exact (torch 2.14.0, tokenizers 0.23.2, numpy
+   2.5.3, pytest 9.1.1, jsonschema 4.26.0). When: slices 01 and 16.
+
+7. **Some per-frame work was left in place.** The whole-spec review collapsed about 20
+   passes' duplicated helpers into single owners. It left alone a few per-frame
+   allocations (occluders during a view transition, some kit placement helpers), camera
+   matrices computed twice per frame (once by the stage and once by the renderer), and
+   shader and orbit constants kept in code (each with one owner). Every frame budget is
+   met, and changing these would not have been behaviour-neutral. When: the whole-spec
+   review.
+
+8. **Test fixtures cost some repo size.** The nine random-init parity fixtures take
+   2.6 MB, because every token table spans the full 4,096-word vocabulary. The chapter-3
+   scene fixture is 279 kB, because it stores the full logits that the honesty test
+   needs. Both are small against the models. When: slices 15 and 21.
+
+9. **The `moe` model is 4.6 MB, over the early per-model 4 MB guide.** That guide was
+   scoped to the first three trained models. The binding limit is the whole ladder's
+   25 MB, which a bun test enforces. Slice-17 models use tied embeddings (the input and
+   output word tables share weights), apart from `mlp`, to stay inside it. When:
+   slice 17.
+
+10. **Two fallback videos trade quality for size.** Every video uses the best quality
+    setting between H.264 CRF 18 and 33 that fits 3 MB. The stack and finished chapters
+    needed CRF 24 and 27, so they are visibly softer than the rest. When: slice 36.
+
+11. **Chapter 3 writes punctuation as words.** The die shows "period" and "comma"
+    instead of "." and ",", because the bare marks were unreadably small. Cost: the long
+    words can overlap on one frame (see nit 2). When: slice 36.
+
+12. **The production `vercel.json` keeps a `/lab/*` rewrite.** Lab pages are only built
+    for previews (D40), but one `vercel.json` serves both targets, so in production the
+    rewrite points at a file that doesn't exist and `/lab` returns a 404. It is harmless.
+    When: slice 12.
+
+## Sound
+
+Each entry carries a subject tag: [data], [arith], [app], [renderer], [scene],
+[runtime] or [deploy].
+
+1. **[scene] Chapter 3's temperature has both a live scene note and a moving slider.**
+   The loop drives the die's temperature. The HUD slider plays along (`SliderDef.loop`)
+   until the reader moves it, and a scene note shows the live value. `snapSlider` removes
+   float residue from the displayed value. When: slice 21 and the polish pass.
+
+2. **[scene] The chapter-15 tour waives the five-label cap.** D18 allows at most 5
+   labels per chapter. The toured chapter defines one label per station, but only the
+   in-view station's label is ever shown, so the reader never sees more than one.
+   `validateChapter` skips the cap only when a chapter has a `tour`. When: slice 35.
+
+3. **[app] Scene anchor ids are declared in `chapters/scenes.ts`, not beside each
+   builder.** An anchor is a named point on a part that a label or the camera can target.
+   Declaring the ids in the chapter layer lets `validateChapter` check a chapter's anchors
+   without loading renderer code; each builder must place a part at every anchor listed
+   there. Moving the list into the builders was considered and declined, because the
+   list then has no single owner the validator can read. When: slice 03.
+
+4. **[deploy] The browser harness runs against the Vite dev server.** It starts in
+   seconds instead of needing a production build per run. It binds to 127.0.0.1 on a
+   random free port, because a fixed port was once silently served by another local
+   project. Loopback is a secure context, so WebGPU is still exposed. `--base` runs cover
+   the deployed build. When: slice 01.
+
+5. **[scene] Chapter 0's loop runs 20 s: the rule twice, then the failure.** It walks
+   once → upon → a, where each word is the previous word's top successor, and then
+   "onse", a misspelling the counts table never saw, so no bars appear and a "never seen"
+   note explains why. A `barsWord` channel lets the bars lag the card. A test checks the
+   successor chain and that "onse" is not in the vocabulary. When: slices 10 and 11.
+
+6. **[scene] Chapter 11 shows the batching knee at batch 329, not the ridge of about
+   295 FLOP/byte.** The knee is the batch size at which a decode step's arithmetic time
+   equals its memory time (`ARITH.computeBoundBatch`). It is the point where "the bus
+   seats fill", which a reader can compare with the seats; FLOP/byte has no seat meaning.
+   Prefill is a loop beat, not a scenario, because a chapter with no model has no probe
+   for a scenario to cite. When: slice 31.
+
+7. **[scene] Chapter 5's clock hands turn at pair 5's real RoPE angle.** RoPE rotates
+   pairs of numbers by position, and each pair turns at its own speed. Pair 5 turns about
+   22° per word, which is visible without scaling. The slowest pair would have needed a
+   disclosed visibility boost. The shown difference between word orders (7.45%) equals
+   the probe value to 1e-12. At the loop seam, the hands shrink with their words instead
+   of unwinding. When: slice 25 and the polish pass.
+
+8. **[scene] Chapter 4's needle shows the real angle change of the focus word's vector
+   toward "Mia" (90.1° → 74.2°).** It is a measured value, not an illustration.
+   When: slice 24.
+
+9. **[scene] Chapter 12's fp16/int8 switch is the slider ("Bytes per weight").** Its
+   drift chip reads "how far its guesses drift" (the KL divergence is named only in the
+   help). Its two prompt chips are the `full-q8` prompts picked by measured KL. The
+   weight strip reads raw tensor slices through one `weights` request (`weightSlice`).
+   When: slice 32.
+
+10. **[arith] Chapter 13's speedup chip is computed live from the slider's k.** It uses
+    the held-out acceptance rate α and the drafter/full cost ratio in Leviathan et al.'s
+    Theorem 3.8 (`specSpeedup`). The label is "speed vs no junior, drafting included",
+    so values below 1× read correctly (0.912× at k = 8). When: slice 33 and the Codex
+    review.
+
+11. **[scene] Chapter 14's router choices come from layer 1 of 4.** The usage
+    histogram comes from `expert-usage-<e>` evidence measured on held-out text. The chips
+    make no claim that experts specialise, because none was measured. When: slice 34.
+
+12. **[scene] The finished machine owns no chapter parts.** Each station is its own
+    chapter's builder and run, copied into one scene (prefixed, offset and scaled) on a
+    5-wide serpentine floor. Its only own part is the floor route. A test pins "union of
+    stations, nothing twice". The tour follows one word's path through the machine, then
+    the serving tricks. Stage `update` can steer the camera, and orbiting hands control
+    back to the reader. When: slice 35.
+
+13. **[scene] Chapter 9's work counter adds each step's real fed token count (+10,
+    +11, …).** The failure beat spells out the sum, and the Llama chips come from
+    `rereadTokens` (32,896 tokens reread to write 256) and `maxContext`. It counts
+    operations, not time (D27). The slider is "Words to write" (1–6). The text-line
+    helpers are exported from `builders/generation.ts` for chapter 10. When: slice 29.
+
+14. **[scene] Chapter 10 shows GQA as unshared notes that then drop away.** GQA
+    (grouped-query attention) lets 4 query heads share 2 key/value heads. The scene first
+    shows what unshared readers would store, then drops the extra. The memory chips pair
+    the tiny model's measured 2.05 kB per token with Llama-3-8B's 131 kB. When: slice 30.
+
+15. **[scene] Chapter 13's correction takes the first rejected slot, and rejected tiles
+    drop out of the row.** The slider is k (1–8), and the run holds seeded rounds for
+    every k. When: slice 33.
+
+16. **[scene] Chapter 4's pipe width is linear in the attention weight.** With pipe
+    area proportional to weight, an unprimed reviewer couldn't tell 22% from 7%. A CPU
+    test pins radius × width scale to the weights. The focus word's pipe to itself is
+    kept, so the widths sum to 1. `<bos>` shows as "start". Flow pulse brightness
+    follows each pipe's weight relative to the widest, at 1.4 cycles per second. When:
+    slices 22–24.
+
+17. **[scene] Chapter 4's sealed future words are the model's own greedy
+    continuation.** Their attention weights are exactly 0. The failure beat swaps "cat"
+    and "dog" and gets bit-identical logits ("cat", 35%) (D35). When: slices 23–24.
+
+18. **[scene] Chapter 3's die is a barrel whose faces are exactly as wide as their
+    probabilities.** It shows the top six words plus "every other word" at the current
+    temperature. The stop angle comes from the seeded generator, so the landed face
+    equals `sample()`, which a test checks. The failure beat rolls the identical die for
+    two stories that both end in "it", because the model sees only one word. When:
+    slice 21.
+
+19. **[scene] Chapter 2's map uses PCA directions 1–3, with height as the third.**
+    Arrows start at the zero vector's projection. Typed words are looked up with a
+    leading space (as if mid-sentence), up to 8. Chapters 1–3 share one table builder.
+    When: slice 20.
+
+20. **[scene] Chapter 1's brick colour encodes merge order.** Pale is a single byte,
+    yellow is an id below 1024 (an early merge), and coral is a later merge. A test proves
+    ids follow merge order. When: slice 19.
+
+21. **[scene] Chapter 7's two val-loss chips use a `nats` format and dedicated
+    evidence.** `val-loss-residual` and `val-loss-noresidual` were written by re-running
+    the probes (`--probe-only`), not by retraining. `noresidual` never learns (val loss
+    8.3 = ln 4096, a uniform guess), which is the chapter's intended visible failure.
+    The river gets flowing currents. When: slices 17 and 27, and the polish pass.
+
+22. **[scene] Chapter 8's zoom-out is `ChapterDef.pullBack`.** D5 allows one brief
+    zoom-out ("this repeats 32 times"). It blends a shot into the arrival pose, so the one
+    camera-tween owner is reused. The head pipes use the shared pipes kit. Its bloom was
+    measured at 0.52–0.58% near-white pixels (about 1.05% elsewhere) and judged dense,
+    not hot. The title is "Many readers, one assembly line". When: slice 28 and the
+    polish pass.
+
+23. **[scene] Cutaway is left out of chapters 11–14.** Chapter 11's bus already has
+    windows, and a cross-section shows nothing new in 12–14. Whole and Exploded remain.
+    When: slices 31–34.
+
+24. **[data] The counts model keeps 20 successors for each of 8,192 words (1.84 MB).**
+    99.9% of held-out words are in its vocabulary, and 71.9% of held-out next words are
+    in the table; bigger tables gain little. Its probabilities are shares among the kept
+    successors, not true corpus shares, because the contract requires probabilities that
+    sum to 1; the chapter-0 copy says "kept counts". When: slice 02.
+
+25. **[data] Chapter 0's word splitter lives in the counts manifest.** The regex
+    `[a-z]+(?:'[a-z]+)*|[.!?]` after lowercasing is stored as `tokenizer.pattern` and
+    `replace`, and a shared fixture pins that Python and TypeScript split alike. Commas
+    and quotes are dropped. The chapter-0 probe prompt is the single word "upon" (p("a")
+    = 0.999), because the counts model reads one word. When: slices 02 and 10.
+
+26. **[data] The shared vocabulary is 4,096 tokens.** Chapters 4–8 draw a pipe or
+    clock per token, so tokens should mostly be whole words. At 4,096, 99.3% of the 2,000
+    most common words are one token; at 2,048 only 48.5% are. llama2.c also uses 4,096.
+    Byte-level BPE is trained once at 4,096 and truncated for the chapter-1 size sweep,
+    which a test proves equals training at the smaller size. When: slice 14.
+
+27. **[data] The drafter is `drafter-64`.** Acceptance is Leviathan's β averaged over
+    teacher-forced held-out positions, and its cost is the ratio of parameter counts.
+    On 40 held-out stories disjoint from selection, drafter-64 gets α 0.601 and an
+    expected 1.24× speedup; drafter-96 accepts more (α 0.643) but its cost leaves 1.03×.
+    drafter-96 was removed from the ladder (1.0 MB) and its parity fixture removed at
+    close; its numbers stay here. When: slices 17, 33 and 36.
+
+28. **[data] The attention sum runs in a fixed order, highest score first.**
+    Floating-point addition depends on order, and D35's "shuffling earlier words changes
+    nothing" must hold bit for bit. When: slice 15.
+
+29. **[data] Every probe measures the shipped weights.** Probes run on the exported f16
+    weights, and the D35 order probe runs on the TypeScript runtime, so what is measured
+    is what ships. When: slice 17.
+
+30. **[data] Embeddings start from N(0, 0.02), GPT-2's initialisation.** With N(0, 1)
+    and tied embeddings, training starts at a loss of about 30. The random-init fixtures
+    were regenerated. When: slice 16.
+
+31. **[data] The trace records each layer's attention, MLP, router and both residual
+    additions separately.** Each layer adds to the residual twice, and one record per
+    layer would blur them. When: slice 15.
+
+32. **[data] The KV cache has its own module, and a cache smaller than the context is a
+    ring.** `packages/llm/src/kvcache.ts` evicts the oldest positions. Tests check that
+    cached equals uncached and that the ring equals a windowed reference. When: slice 30.
+
+33. **[data] `q8_0` is an f16 scale plus 32 int8 values per group.** TypeScript
+    dequantization matches Python bit for bit. When: slice 17.
+
+34. **[data] Chapter-1 evidence lives in its own `evidence.json`.** `tokenizer.json` has
+    no manifest, and adding evidence to it would change its frozen hash. For the same
+    reason, all generated JSON (models, schemas, fixtures) is excluded from the formatter.
+    When: slices 02 and 14.
+
+35. **[data] Special tokens are added by id only.** `encode` never turns literal
+    "<bos>" or "<eos>" text into special tokens, and every prompt starts with `<bos>`
+    (`promptTokens`). When: slices 14 and 15.
+
+36. **[data] Model tensors are 64-byte aligned and little-endian.** The word vocabulary is
+    a zero-padded u32 code-point tensor, so it fits the contract's dtypes. `loadModel` is
+    async, because browsers only offer SHA-256 through the async `crypto.subtle`. When:
+    slice 02.
+
+37. **[data] Training on MPS is checked to 1e-5, not bit for bit.** Apple's MPS backend
+    is not bit-deterministic across processes; CPU runs are. Trained parity fixtures keep
+    every 16th logit plus the top 8 (about 100 kB each). When: slice 16.
+
+38. **[data] The forward pass is plain JavaScript loops.** The `full` model measured
+    2.9 ms per prompt token and 3.9 ms per cached token, far under the 50 ms budget.
+    When: slice 15.
+
+39. **[data] `rng.ts` (mulberry32) is the one source of seeded randomness.** It is
+    injected everywhere. When: slice 14.
+
+40. **[arith] Every production speed is a roofline ceiling.** A step costs
+    max(bytes ÷ bandwidth, FLOPs ÷ dense FLOP/s). FLOPs per token are 2 × matmul
+    parameters plus attention (4 × layers × heads × head size × context), following
+    kipply's inference arithmetic. Decode has a per-sequence and a whole-batch number,
+    both with an optional precision. When: slice 18.
+
+41. **[arith] The MoE counterfactual is a named assumption, `llamaAsMoe()`.** Attention
+    and embeddings are shared, and each expert is a full copy of the MLPs. It is labelled
+    hypothetical everywhere it appears. When: slice 18.
+
+42. **[arith] Units are branded types (`Bytes`, `Seconds`, `TokensPerSec`).**
+    Compile-time tests check that they cannot mix. When: slice 18.
+
+43. **[app] Numbers show 3 significant figures, with decimal SI bytes.** Examples:
+    "131 kB", "16.1 GB", "99.9%". Decimal matches the H100 spec sheet's "80 GB". Shares
+    never round to a false 0% or 100%; they show "<1%" or ">99%". Seconds and nats are
+    their own formats. When: slices 04, 11, 18 and 27.
+
+44. **[app] Stat chips bind to the slider or a probe (`ArithArg`).** A chip can feed the
+    slider's value or a probe's value into a formula, so no number is typed in by hand
+    (D25). `MODEL_METRICS` is the one owner of model metrics, and `validateChapter`
+    rejects a model stat on a chapter with no model. When: slices 04 and 31.
+
+45. **[app] The loop plays the slider until the reader moves it.** `SliderDef.loop`
+    plus `AppState.sliderSet`: the HUD samples the loop channel at 10 Hz, and the first
+    reader input takes over, as D32 requires. Used by chapters 3, 11 and 12. When:
+    slice 31.
+
+46. **[app] Only scene controls pause the loop.** Follow, the slider, a scenario and the
+    view pause it. Reading aids (Analogy/Precise, Precisely, help) only change text.
+    Arriving at a chapter resets its Follow, slider, scenario, view, Precisely and typed
+    text; the label reading and help stay as the reader left them. A `loopEpoch` counter
+    restarts the loop, so the reducer stays pure. Keys: ←/→ step chapters, Space plays or
+    pauses, ? toggles help, Esc closes it. When: slice 04.
+
+47. **[app] Chapter validation is hand-written, not zod.** Chapters are TypeScript, so
+    the compiler checks shapes. `validateChapter` checks what types cannot: loop length,
+    caption budget, and unknown anchors, shots, colours, kit primitives and scales. It
+    returns a list of problems. Timelines are cyclic: after the last keyframe, a value
+    blends back to the first, so the loop seam is invisible (D24). When: slices 03 and 13.
+
+48. **[app] The tokenizer counts as a chapter "model".** A `LoadedTokenizer` is a
+    `ModelSource`, so stats, the HUD text box and runs treat chapter 1 like any other
+    model chapter. The app hands the HUD only the model that matches the current chapter,
+    which fixed a page error on ←/→. When: slice 19.
+
+49. **[app] The HUD is the holo-tactical game UI, taken whole (the human's pick).** Its
+    cyan is a HUD-only `hud.accent`, so restyling the HUD can never change the scene.
+    Chakra Petch (600 and 700 only) is used for headings, controls, chips and labels;
+    body copy stays in Inter for legibility; numbers use JetBrains Mono. All are
+    self-hosted, latin subset (plus Inter Greek for Σ), OFL-1.1. When: slices 04 and 04b.
+
+50. **[app] Labels are sentence case, not the mock's all caps.** Caps overflowed the
+    renderer's 220 px label box. When: slice 04b.
+
+51. **[app] HUD motion is brief and skippable.** Stat chips count up over 400 ms and
+    then show the exact settled text. Panels slide in over 360 ms on arrival. A held
+    or stepped clock, or a reader who asked for reduced motion, skips both. The help panel plate is opaque. When:
+    slice 04b.
+
+52. **[app] TinyStories is credited once, in the help panel.** It covers every chapter,
+    so it isn't repeated per chapter. The help panel also gives each chip's source, and
+    `help.notes` holds per-chapter disclosures. When: slices 04 and 20.
+
+53. **[app] Share copies the chapter's `/c/N/` link.** That page has per-chapter
+    link-preview metadata (D34). "Copy link" feature-detects the clipboard and falls back
+    to showing the link (`copyOrShow`). When: slice 12 and the Codex review.
+
+54. **[app] The harness drives the UI with real key presses.** The probe
+    (`window.__explainer`) also exposes `goto` and `setUi` for the app, and `verify.ts`
+    offers `--press` and `--ui`. When: slice 04.
+
+55. **[runtime] Each chapter's run is one file, `runtime/runs/<scene>.ts`.**
+    `computeRun` dispatches through the `RUNS` table in `scene-run.ts`. The worker and
+    the in-process session share one inference core, `createInference`. When: slices
+    26–28.
+
+56. **[runtime] Every inference request names its model.** The worker keeps each loaded
+    model by id and has no "current" model. `session.run` takes an options object
+    (trace, window, model, mlpOff). Each run's calls are wrapped in `sessionScope`, so a
+    superseded chapter's late replies are dropped. Cancel messages go only to
+    generations. When: slices 26–28 and the Codex review.
+
+57. **[runtime] Speculative decoding stops at an accepted `<eos>` and checks context
+    room before each round.** `speculativeStep` throws `RangeError` when the context is
+    full. When: the Codex review.
+
+58. **[runtime] A GPU failure after a successful adapter probe shows the video
+    fallback.** `withGpu` destroys the partial GPU root, and `App.onUnsupported` switches
+    to the fallback. When: the Codex review.
+
+59. **[runtime] The arrival move is a 2.5 s smoothstep from `room-wide` to the hero
+    shot.** The loop clock is paused until landing (D42). `?clock=step` lets the recorder
+    advance frame by frame; `clockIsDriven` (held or stepped) skips HUD motion and the
+    arrival move, because a looping video must not open with a one-off camera move. When:
+    slices 11c and 12.
+
+60. **[renderer] Shaders are WGSL templates resolved by TypeGPU; pipelines are raw
+    WebGPU with every bind-group index pinned.** Structs come from the TypeGPU schemas,
+    and frame encoding stays allocation-free. This departs from the renderer skill's "pin
+    only group 0", which assumes TypeGPU-managed pipelines. Group 0 carries the frame and
+    look uniforms, and `setLook()` swaps a look without recreating the renderer.
+    `LookConfig` is linear numbers only; the app's `look.ts` converts tokens. When:
+    slices 05–09.
+
+61. **[renderer] Part transforms are per-frame data.** The renderer repacks instances
+    every frame without allocating, and `revision` signals only a change in structure.
+    `partWorld` applies Exploded and `partCut` decides Cutaway; nothing else applies
+    them. When: slices 05, 10 and 13.
+
+62. **[renderer] Label occlusion is re-tested when a scene's layout changes.** A builder
+    bumps `SceneDesc.layout` when parts move, and the stage rebuilds occluders on a
+    revision, layout or view change. Translucent parts never occlude, meshes are tested
+    per triangle (node boxes were too coarse), cut parts stop occluding, and tube
+    occluders ignore stretch along the path (a stretched unit tube had occluded the
+    whole scene). When: slices 09, 10, 19 and 26–28.
+
+63. **[renderer] Labels try up-right, up-left, down-right, then down-left.** They take
+    the first side that avoids other labels, scene text, HUD panel rects and the screen
+    edge. Scene text (bar words, card words, tags) is a separate overlay with the same
+    placement code, so D18's label cap still holds; lower-ranked tags hide on collision.
+    Labels and tags snap to whole pixels, so captures are deterministic. When: slices 09,
+    10, 11 and 36.
+
+64. **[renderer] The room is lit by baked vertex colours.** R is ambient occlusion,
+    and G/B are baked warm and cool practical light tinted by
+    `look.room.practicals.*.spill`, because the renderer has no local lights and AO alone
+    left the room black. The environment is drawn in its own slot, never as a part, so it
+    never occludes labels. Its depth is read-only. `OrbitLimits.bounds` keeps the camera
+    in the room. When: slices 07 and 11b.
+
+65. **[renderer] Specular reflects the room gradient analytically, and lights have an
+    apparent size.** Metal and glass didn't read with direct light alone; this is a
+    lightweight stand-in for image-based lighting. Glass has no diffuse term, and its
+    absorption rises toward grazing angles. AgX tonemapping gets a saturation knob (1.25)
+    so glows keep their colour. The human approved the look. When: slices 07–08.
+
+66. **[renderer] The floor light pool is a long soft falloff stretched 1.6× along the
+    ceiling tubes (`lights.pool.stretch`).** It replaced a disc that read as a stage
+    spotlight. The room's back wall left of the window stays plain, because the HUD title
+    sits over it. When: the polish pass.
+
+67. **[renderer] Contact shadows are per foot for subjects on legs.** Solid-bodied
+    subjects keep one soft blob. The shadow material's specular is 0, so it only
+    darkens. When: slice 11c and the polish pass.
+
+68. **[renderer] Cutaway is a fragment-stage clip plane from `look.views.cutaway`.** Back
+    faces seen through the cut are shaded as a hatched cap in the focus colour at 0.4
+    gain. Discard and no-cull pipeline variants run only while cutting. Views ease over
+    0.6 s. Coplanar faces are lifted 2 mm apart, because they z-fought in the cut. When:
+    slice 13.
+
+69. **[renderer] Bloom starts at half resolution, with the mip count computed from the
+    frame size.** GPU timing is opt-in (`timing: true`, `receipt.gpuMs`). When: slices 08
+    and 09.
+
+70. **[renderer] Tubes carry a per-vertex axis and flow coordinate, and identical tubes
+    share one geometry.** Vertices are 48 bytes. The GPU scales the radius by
+    `widthScale`, and a content-keyed cache lets repeated tubes (such as brick studs)
+    instance. When: slices 19 and 22.
+
+71. **[renderer] Props export without UVs, and mesh materials bind by node name.** No
+    UVs keeps Blender builds byte-reproducible. A mesh's material is the preset named by
+    its node name's last dotted segment, else the glTF material name. The counter board
+    became a tally board on two posts, because the first design read as a monitor. When:
+    slice 06.
+
+72. **[deploy] Media is recorded locally and committed.** Vercel's builders have no
+    WebGPU Chrome, so `bun run --cwd apps/explainer media` records under `public/media/`,
+    and a test fails when a chapter has no media. The fallback video shows the scene only
+    (the HUD is hidden but laid out), cropped to the safe rect, because at phone width
+    the whole app repeated the title as unreadable text. The link-preview card is the
+    whole app, laid out at 1440×756 and scaled to 1200×630, because an uncrowded scene
+    beats larger text. The poster is the first frame, and repeat recordings are
+    byte-identical. Share pages redirect with both a meta refresh and
+    `location.replace`, and their image origin is `SITE_URL`, else `https://$VERCEL_URL`.
+    Small screens (under 900 px, or a touch-only pointer) and missing WebGPU get the
+    fallback, with a device line that differs by reason. `main` is Vercel's production
+    branch, and a release is a merge into `main`; the lab entry is left out when
+    `VERCEL_ENV=production` (D40). When: slices 01, 12 and 36.
