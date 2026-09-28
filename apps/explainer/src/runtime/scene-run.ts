@@ -11,6 +11,7 @@ import type { ChapterDef } from "../chapters/types.ts";
 import type { SceneRun } from "../scene/build-frame.ts";
 import { autocompleteRun } from "./runs/autocomplete.ts";
 import { embeddingsRun } from "./runs/embeddings.ts";
+import { generationRun } from "./runs/generation.ts";
 import { mlpRun } from "./runs/mlp.ts";
 import { quantizationRun } from "./runs/quantization.ts";
 import { residualRun } from "./runs/residual.ts";
@@ -45,6 +46,7 @@ const RUNS: Partial<Record<SceneBuilderId, SceneRunFn>> = {
   mlp: mlpRun,
   residual: residualRun,
   stack: stackRun,
+  generation: generationRun,
   quantization: quantizationRun,
 };
 

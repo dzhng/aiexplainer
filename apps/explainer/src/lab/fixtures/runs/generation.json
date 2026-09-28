@@ -1,0 +1,31 @@
+{
+  "kind": "generation",
+  "prompt": "Once upon a time, there was a little",
+  "tokens": ["<bos>", "Once", " upon", " a", " time", ",", " there", " was", " a", " little"],
+  "steps": [
+    {
+      "word": " boy",
+      "fed": 10
+    },
+    {
+      "word": " named",
+      "fed": 11
+    },
+    {
+      "word": " Tim",
+      "fed": 12
+    },
+    {
+      "word": ".",
+      "fed": 13
+    },
+    {
+      "word": " Tim",
+      "fed": 14
+    },
+    {
+      "word": " had",
+      "fed": 15
+    }
+  ]
+}

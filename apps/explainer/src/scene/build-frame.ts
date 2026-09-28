@@ -10,6 +10,7 @@ import type { TimelineState } from "../chapters/timeline.ts";
 import type { SceneTags } from "../hud/SceneTags.tsx";
 import { autocomplete, type CountsRun } from "./builders/autocomplete.ts";
 import { embeddings } from "./builders/embeddings.ts";
+import { generation, type GenerationRun } from "./builders/generation.ts";
 import { mlp, type MlpRun } from "./builders/mlp.ts";
 import { residual, type ResidualRun } from "./builders/residual.ts";
 import { sampling, type LogitsRun } from "./builders/sampling.ts";
@@ -42,6 +43,7 @@ export type SceneRun =
   | MlpRun
   | ResidualRun
   | StackRun
+  | GenerationRun
   | QuantizationRun;
 
 /** Chapter 1's run (`runtime/runs/tokenizer.ts`). */
@@ -119,6 +121,7 @@ export const SCENE_BUILDERS: Record<SceneBuilderId, SceneBuilder> = {
   mlp,
   residual,
   stack,
+  generation,
   batching,
   quantization,
 };
