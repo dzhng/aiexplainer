@@ -26,7 +26,8 @@ setDefaultTimeout(60_000);
 const run = (await fixtureRun(finished)) as FinishedRun;
 const ui: SceneUi = { follow: null, slider: 1, sliderSet: false, view: "whole", text: null };
 const tlAt = (t: number) => evalTimeline(finished.loop, t, createTimelineState(finished.loop));
-const settled = (n: number) => arrivesAt(n) + 0.3;
+// Off any keyframe of the stations' own loops, so float rounding of their offset times cannot flip a step.
+const settled = (n: number) => arrivesAt(n) + 0.337;
 
 describe("the finished machine is the other chapters' scenes, composed", () => {
   test("its stations are every other written chapter, once each", () => {

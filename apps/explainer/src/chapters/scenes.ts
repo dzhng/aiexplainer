@@ -50,6 +50,7 @@ export const SCENE_ANCHORS = {
     "stack",
     "sampling",
     "generation",
+    "kv-cache",
     "speculative",
     "quantization",
     "batching",

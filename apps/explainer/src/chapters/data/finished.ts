@@ -16,6 +16,7 @@ import { batching } from "./batching.ts";
 import { embeddings } from "./embeddings.ts";
 import { experts } from "./experts.ts";
 import { generation } from "./generation.ts";
+import { kvCache } from "./kv-cache.ts";
 import { mlp } from "./mlp.ts";
 import { positions } from "./positions.ts";
 import { quantization } from "./quantization.ts";
@@ -54,6 +55,7 @@ export const STATIONS: readonly Station[] = [
   { def: stack, label: "line", scale: 0.15, shot: "stack-wide" },
   { def: sampling, label: "die", scale: 0.42 },
   { def: generation, label: "rail", scale: 0.26 },
+  { def: kvCache, label: "rack", scale: 0.26 },
   { def: speculative, label: "junior", scale: 0.31 },
   { def: quantization, label: "crates", scale: 0.34 },
   { def: batching, label: "bus", scale: 0.38 },
@@ -63,7 +65,8 @@ export const STATIONS: readonly Station[] = [
  * Where the stations stand: a grid on the floor, `columns` wide, walked in a serpentine (the
  * back row left to right, the next right to left …) so each stop is next to the one before.
  * `cell` is the spacing (x, z) in metres and `center` the grid's middle. At a stop the camera
- * looks down at least `minPitch` (radians), so it sees over the row in front.
+ * looks down at least `minPitch` (radians) where a row stands in front, so it sees over it;
+ * the front row keeps its own shot's pitch.
  */
 export const FLOOR = {
   columns: 5,

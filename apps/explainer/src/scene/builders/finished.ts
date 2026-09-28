@@ -34,7 +34,7 @@ import { shotPose } from "../shots.ts";
 
 /** How bright the station in view breathes (× its own emission), and the others while it does. */
 const PULSE = { low: 1.3, high: 2.1, periodSec: 0.8 };
-const DIM = 0.15;
+const DIM = 0.06;
 /** The closing wave: each station's flash, and the delay from one station to the next. */
 const WAVE = { peak: 1.4, sec: 0.6, stagger: 0.12 };
 /** How near a whole stop the tour must be for that station to count as in view. */
@@ -69,6 +69,10 @@ export function stationOrigin(n: number): Vec3 {
   ];
 }
 
+/** Whether another row of stations stands between station `n` and the camera. */
+const hasRowInFront = (n: number) =>
+  Math.floor(n / FLOOR.columns) < Math.ceil(STOPS / FLOOR.columns) - 1;
+
 /** Station `n`'s stop: its chapter's shot, scaled down and moved with it. */
 function stopPose(n: number): OrbitPose {
   const { def, scale, shot } = STATIONS[n]!;
@@ -81,7 +85,7 @@ function stopPose(n: number): OrbitPose {
       at[2] + pose.target[2] * scale,
     ],
     yaw: pose.yaw,
-    pitch: Math.max(pose.pitch, FLOOR.minPitch),
+    pitch: hasRowInFront(n) ? Math.max(pose.pitch, FLOOR.minPitch) : pose.pitch,
     distance: pose.distance * scale,
     fovY: pose.fovY,
   };
@@ -106,7 +110,8 @@ export function routePath(): Vec3[] {
     path.push(at(n));
   }
   const lastWay = Math.floor((STOPS - 1) / FLOOR.columns) % 2 === 0 ? 1 : -1;
-  path.push(at(STOPS - 1, lastWay * ROUTE.turn));
+  // It ends just past the last station: the word leaves the machine there.
+  path.push(at(STOPS - 1, (lastWay * ROUTE.turn) / 2));
   return path;
 }
 
