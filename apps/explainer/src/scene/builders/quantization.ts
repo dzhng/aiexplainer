@@ -25,9 +25,8 @@ import {
 import type { Vec3 } from "math";
 import { formatStat } from "../../chapters/format.ts";
 import type { SceneTags } from "../../hud/SceneTags.tsx";
-import type { SceneBuilder, SceneFrame, SceneRun } from "../build-frame.ts";
-
-export type QuantRun = Extract<SceneRun, { kind: "quantization" }>;
+import type { QuantizationRun, SceneBuilder, SceneFrame } from "../build-frame.ts";
+import { box } from "./parts.ts";
 
 const BARS = 32;
 /** The strip board: centre, size, and the bars' pitch, size and half-range, metres. */
@@ -52,7 +51,7 @@ const EXPLODE = {
 };
 
 /** Which strip weight the rounding moves most, in steps: the one the magnifier shows. */
-export function lensIndex(strip: QuantRun["strip"]): number {
+export function lensIndex(strip: QuantizationRun["strip"]): number {
   let best = 0;
   let worst = -1;
   strip.full.forEach((v, i) => {
@@ -63,13 +62,13 @@ export function lensIndex(strip: QuantRun["strip"]): number {
 }
 
 /** The magnifier's zoom over the strip: how much taller one 8-bit step is drawn. */
-function lensZoom(strip: QuantRun["strip"]): number {
+function lensZoom(strip: QuantizationRun["strip"]): number {
   const largest = Math.max(...strip.full.map(Math.abs));
   return LENS.step / ((strip.scale / largest) * BAR.half);
 }
 
 /** Words each machine shows, and how many of those match between the two. */
-function wordsShown(run: QuantRun, count: number) {
+function wordsShown(run: QuantizationRun, count: number) {
   const n = Math.max(0, Math.min(count, run.full.length, run.q8.length));
   const full = run.full.slice(0, n);
   const q8 = run.q8.slice(0, n);
@@ -117,17 +116,9 @@ export const quantization: SceneBuilder = {
   tagCount: 6,
 
   create(assets, revision) {
-    const block = (
-      id: string,
-      slot: number,
-      material: string,
-      center: Vec3,
-      size: Vec3,
-      explode: Vec3,
-    ) => KIT.block.build({ id, slot, material, center, size, explode }).parts[0] as BlockPart;
     const legs = (id: string, slot: number, x: number, w: number, explode: Vec3) =>
       [-1, 1].map((side, i) =>
-        block(
+        box(
           `${id}.leg.${i}`,
           slot,
           "metal",
@@ -139,7 +130,7 @@ export const quantization: SceneBuilder = {
     const boardLegs = legs("board", SLOT.board, BOARD.x, BOARD.w, EXPLODE.board);
     const lensLegs = legs("lens", SLOT.lens, LENS.x, LENS.w + 0.1, EXPLODE.lens);
     const board = [
-      block(
+      box(
         "board",
         SLOT.board,
         "housing",
@@ -148,7 +139,7 @@ export const quantization: SceneBuilder = {
         EXPLODE.board,
       ),
       ...boardLegs,
-      block(
+      box(
         "board.zero",
         SLOT.board,
         "card",
@@ -158,7 +149,7 @@ export const quantization: SceneBuilder = {
       ),
     ];
     const bars = Array.from({ length: BARS }, (_, i) =>
-      block(
+      box(
         `bar.${i}`,
         SLOT.bars + i,
         "bar",
@@ -168,7 +159,7 @@ export const quantization: SceneBuilder = {
       ),
     );
     const lens = [
-      block(
+      box(
         "lens",
         SLOT.lens,
         "housing",
@@ -178,7 +169,7 @@ export const quantization: SceneBuilder = {
       ),
       ...lensLegs,
       ...Array.from({ length: LENS.lines }, (_, k) =>
-        block(
+        box(
           `lens.grid.${k}`,
           SLOT.grid,
           "card",
@@ -189,7 +180,7 @@ export const quantization: SceneBuilder = {
       ),
     ];
     // The ghost stays where the 16-bit value was; the marker is the value now.
-    const ghost = block(
+    const ghost = box(
       "lens.ghost",
       SLOT.ghost,
       "prompt",
@@ -197,7 +188,7 @@ export const quantization: SceneBuilder = {
       [MARKER.w * 0.55, MARKER.h * 0.6, 0.02],
       EXPLODE.lens,
     );
-    const marker = block(
+    const marker = box(
       "lens.marker",
       SLOT.marker,
       "bar",
@@ -206,7 +197,7 @@ export const quantization: SceneBuilder = {
       EXPLODE.lens,
     );
     const bodies = MACHINE.xs.map((x, i) =>
-      block(
+      box(
         `machine.${i}`,
         SLOT.machines,
         "steel",
@@ -217,7 +208,7 @@ export const quantization: SceneBuilder = {
     );
     const machines = MACHINE.xs.flatMap((x, i) => [
       bodies[i]!,
-      block(
+      box(
         `machine.lamp.${i}`,
         SLOT.lamps,
         "bar",
@@ -226,7 +217,7 @@ export const quantization: SceneBuilder = {
         EXPLODE.machines,
       ),
     ]);
-    const crate16 = block(
+    const crate16 = box(
       "crate.16",
       SLOT.crates,
       "crate",
@@ -234,7 +225,7 @@ export const quantization: SceneBuilder = {
       [CRATE.w, CRATE.h, CRATE.d],
       EXPLODE.crates,
     );
-    const crate8 = block(
+    const crate8 = box(
       "crate.8",
       SLOT.crates,
       "crate",

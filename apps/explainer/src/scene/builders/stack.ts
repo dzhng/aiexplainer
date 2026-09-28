@@ -15,11 +15,11 @@
  * `write` (0 → 1 the continuation is written out) and `failure` (the page shrinks to the
  * one word a single pass predicts). Typed text shows every pipe, without the page.
  */
+import { clamp } from "math";
 import {
   KIT,
   pipePaths,
   placeSegment,
-  UNIT_SEGMENT,
   type BlockPart,
   type Part,
   type SceneAnchor,
@@ -31,6 +31,7 @@ import type { Vec3 } from "math";
 import type { SceneTags } from "../../hud/SceneTags.tsx";
 import type { SceneBuilder, SceneFrame } from "../build-frame.ts";
 import { nextRevision } from "../revision.ts";
+import { box, segment } from "./parts.ts";
 
 /** Chapter 8's run (`runtime/runs/stack.ts`). */
 export interface StackRun {
@@ -88,15 +89,7 @@ interface Built {
 
 const built = new WeakMap<SceneDesc, Built>();
 
-function box(id: string, slot: number, material: string, center: Vec3, size: Vec3): BlockPart {
-  return KIT.block.build({ id, slot, material, center, size }).parts[0] as BlockPart;
-}
-
-function segment(id: string, slot: number, material: string): TubePart {
-  return KIT.tube.build({ id, slot, material, path: UNIT_SEGMENT, radius: 1 }).parts[0] as TubePart;
-}
-
-/** Where block `b`'s word `i` of `n` and its reader `h` sit, for pipe ends. */
+/** Where block `b`'s word `i` of `n` sits, for pipe ends. */
 function wordTop(b: number, i: number, n: number): Vec3 {
   const [cx, cz] = CENTRES[b]!;
   return [cx + tokenX(i, n), RAIL.y + 0.1 + RAIL.tile[1], cz + RAIL.z];
@@ -340,7 +333,7 @@ function pose(
       // Words land left to right; slots past the text stay empty, but for the one word a
       // pass writes, which drops onto block 1's rail when the pass is done.
       const next = blk === 0 && i === n && i < STACK_TOKENS ? Math.max(0, state.pass * 5 - 4) : 0;
-      const landed = i < n ? Math.min(1, Math.max(0, state.tokens * n - i)) : next;
+      const landed = i < n ? clamp(state.tokens * n - i, 0, 1) : next;
       const scale = landed > 0 ? 1 : 1e-4;
       tile.transform[0] = RAIL.tile[0] * scale;
       tile.transform[5] = RAIL.tile[1] * scale;
@@ -351,7 +344,7 @@ function pose(
     }
     for (let h = 0; h < HEADS; h++) {
       // Head h's pipes grow once `heads` passes h / HEADS.
-      const grow = Math.min(1, Math.max(0, state.heads * HEADS - h));
+      const grow = clamp(state.heads * HEADS - h, 0, 1);
       for (let i = 0; i < STACK_TOKENS; i++) {
         const w = data && i < n ? data.weights[blk]![h]![i]! : 0;
         const shown = (data === null || i < n) && grow > 0;
@@ -380,7 +373,7 @@ function pose(
     for (let k = 0; k <= BLOCKS; k++)
       intensity[b.slots.belts + k] = 0.35 + (state.pass > 0 && state.pass * 5 >= k ? 1.2 : 0);
     for (let h = 0; h < HEADS; h++) {
-      const grow = Math.min(1, Math.max(0, state.heads * HEADS - h));
+      const grow = clamp(state.heads * HEADS - h, 0, 1);
       intensity[b.slots.lamps + h] = 0.2 + 0.9 * grow;
       for (let blk = 0; blk < BLOCKS; blk++)
         for (const pipe of b.pipes[blk]![h]!)

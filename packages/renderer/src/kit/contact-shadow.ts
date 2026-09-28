@@ -6,6 +6,7 @@
  * phase (depth read, no depth write) with a translucent `material`. A subject on legs names
  * its `feet`: each gets a tight footprint of its own, over a faint one under the whole body.
  */
+import { clamp } from "math";
 import type { Box3 } from "math/shapes";
 import type { BlockPart, ShadowPart } from "../frame-input.ts";
 import type { Geometry } from "./geometry.ts";
@@ -31,7 +32,7 @@ export function shadowGeometry(): Geometry {
       positions.set([x, 0, z], k * 3);
       normals.set([0, 1, 0], k * 3);
       const r = Math.pow(Math.pow(Math.abs(2 * x), 4) + Math.pow(Math.abs(2 * z), 4), 0.25);
-      const e = Math.min(1, Math.max(0, (r - 0.45) / 0.55));
+      const e = clamp((r - 0.45) / 0.55, 0, 1);
       ao[k] = 1 - e * e * (3 - 2 * e);
     }
   const indices = new Uint32Array((SIDE - 1) * (SIDE - 1) * 6);

@@ -16,6 +16,7 @@
  * to right; back to 0 puts them back), `ids` (0 → 1: ids are stamped on, left to right), `box` (glow on
  * the box of shapes), `pair` (glow on the failure pair). Typed text shows its bricks settled.
  */
+import { clamp } from "math";
 import {
   BRICK,
   KIT,
@@ -27,8 +28,10 @@ import {
 } from "@repo/renderer";
 import type { Vec3 } from "math";
 import type { SceneTags } from "../../hud/SceneTags.tsx";
-import type { SceneBuilder, SceneFrame, SceneRun } from "../build-frame.ts";
+import type { SceneBuilder, SceneFrame, PiecesRun, SceneRun } from "../build-frame.ts";
+import { stepAt } from "../step.ts";
 import { tableParts, tableTop, type TableSpec } from "./table.ts";
+import { smoothstep } from "../ease.ts";
 
 /** One stud's pitch, metres; a brick is this deep and 1.2× as tall. */
 const UNIT = 0.2;
@@ -69,9 +72,9 @@ const BOX_TOP = BOX.center[1] + BOX.size[1] / 2;
 const CARD = { width: 0.62, height: 0.2, depth: 0.03, travel: 1.6 };
 
 export type Colour = "brickLetter" | "brickEarly" | "brickLate";
-const COLOURS: readonly Colour[] = ["brickLetter", "brickEarly", "brickLate"];
+export const COLOURS: readonly Colour[] = ["brickLetter", "brickEarly", "brickLate"];
 
-type Piece = Extract<SceneRun, { kind: "pieces" }>["steps"][number]["pieces"][number];
+type Piece = PiecesRun["steps"][number]["pieces"][number];
 
 /** The frequency colour of a piece (see the header). */
 export function colourOf(piece: Piece): Colour {
@@ -368,8 +371,7 @@ export const tokenizer: SceneBuilder = {
     const b = built.get(scene)!;
     const steps = run?.kind === "pieces" ? run.steps : [];
     const typed = ui.text !== null;
-    const index = typed ? 0 : Math.round(tl.channels.input ?? 0);
-    const step = steps[Math.min(steps.length - 1, Math.max(0, index))];
+    const step = stepAt(steps, typed, tl.channels.input);
     const { pieces, spots } = laidOut(b, step?.pieces, Math.min(MAX_BRICKS, ui.slider));
     const arrive = typed ? 1 : (tl.channels.bricksIn ?? 1);
     const stamp = typed ? 1 : (tl.channels.ids ?? 1);
@@ -395,11 +397,11 @@ export const tokenizer: SceneBuilder = {
       const brick = b.pools[COLOURS[c]!][k];
       if (!brick) continue;
       // Left to right in, right to left out: brick i lands once `arrive` passes its turn.
-      const u = Math.min(1, Math.max(0, (arrive * (n - 1 + CASCADE) - i) / CASCADE));
+      const u = clamp((arrive * (n - 1 + CASCADE) - i) / CASCADE, 0, 1);
       if (u <= 0) continue;
       // Each brick is taken from the box of shapes: it arcs from above the box to its spot,
       // growing from the box's brick size, and goes back the same way.
-      const eased = u * u * (3 - 2 * u);
+      const eased = smoothstep(u);
       const spot = spots[i]!;
       const rest = PLATE_TOP + (BRICK.height * UNIT) / 2;
       const at = b.placement;

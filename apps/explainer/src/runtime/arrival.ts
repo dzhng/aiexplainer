@@ -4,21 +4,16 @@
  * (`stage.ts`) drives it: any orbit input cancels it, and the loop clock starts when it ends.
  */
 import type { OrbitPose } from "@repo/renderer";
+import { smoothstep } from "../scene/ease.ts";
 
 /** How long the arrival move takes, seconds (part of the ladder's skim time, D21). */
 export const ARRIVAL_SEC = 2.5;
-
-/** Ease in and out (smoothstep): at rest at both ends, without a long stall at the start. */
-export function easeInOut(t: number): number {
-  const x = Math.min(1, Math.max(0, t));
-  return x * x * (3 - 2 * x);
-}
 
 const lerp = (a: number, b: number, k: number) => a + (b - a) * k;
 
 /** The camera `t` (0–1, eased here) of the way from `from` to `to`, written into `out`. */
 export function arrivalPose(from: OrbitPose, to: OrbitPose, t: number, out: OrbitPose): OrbitPose {
-  const k = easeInOut(t);
+  const k = smoothstep(t);
   for (let i = 0; i < 3; i++) out.target[i] = lerp(from.target[i]!, to.target[i]!, k);
   // The short way round.
   const turn = Math.atan2(Math.sin(to.yaw - from.yaw), Math.cos(to.yaw - from.yaw));

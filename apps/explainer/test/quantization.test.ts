@@ -16,14 +16,23 @@ import { resolveStat } from "../src/chapters/stats.ts";
 import { createTimelineState, evalTimeline } from "../src/chapters/timeline.ts";
 import { validateChapter } from "../src/chapters/validate.ts";
 import { computeRun } from "../src/runtime/scene-run.ts";
-import { buildFrame, createSceneFrame, type SceneUi } from "../src/scene/build-frame.ts";
-import { lensIndex, type QuantRun } from "../src/scene/builders/quantization.ts";
+import {
+  buildFrame,
+  createSceneFrame,
+  type QuantizationRun,
+  type SceneUi,
+} from "../src/scene/build-frame.ts";
+import { lensIndex } from "../src/scene/builders/quantization.ts";
 
 const full = await shippedModel("full");
 const q8 = await shippedModel("full-q8");
-const run = (await computeRun(quantization, null, await shippedContext("full-q8"))) as QuantRun;
+const run = (await computeRun(
+  quantization,
+  null,
+  await shippedContext("full-q8"),
+)) as QuantizationRun;
 
-function frameAt(t: number, ui: Partial<SceneUi> = {}, r: QuantRun = run) {
+function frameAt(t: number, ui: Partial<SceneUi> = {}, r: QuantizationRun = run) {
   const frame = createSceneFrame({
     camera: { target: [0, 0, 0], yaw: 0, pitch: 0, distance: 5, fovY: 0.7 },
     view: { mode: "whole", t: 0 },

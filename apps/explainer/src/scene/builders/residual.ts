@@ -18,6 +18,7 @@
  * and `failure` (0 → 1 the readout says how unsure one pass still is). Typed text shows the
  * river version, filled.
  */
+import { clamp } from "math";
 import {
   KIT,
   placeKnob,
@@ -25,7 +26,6 @@ import {
   placeSegment,
   placeStretch,
   stretchSpan,
-  UNIT_SEGMENT,
   type BlockPart,
   type Part,
   type RiverParams,
@@ -40,6 +40,7 @@ import type { SceneTags } from "../../hud/SceneTags.tsx";
 import { look } from "../../look/look.ts";
 import type { SceneBuilder, SceneFrame } from "../build-frame.ts";
 import { share } from "../../chapters/format.ts";
+import { box, segment } from "./parts.ts";
 
 /** One model's pass over the text (`runtime/runs/residual.ts`). */
 export interface ResidualPass {
@@ -64,8 +65,10 @@ export interface ResidualRun {
 
 const STATIONS = [-1.8, -0.6, 0.6, 1.8];
 const STATION = { y: 1.35, size: [0.62, 0.7, 0.46] as Vec3, post: 0.08, postZ: -0.3 };
-/** The pipes of the no-river row: at mid-station height, from the entry to the readout. */
-/** A pipe the signal has died in still shows, dark, at `empty`. */
+/**
+ * The pipes of the no-river row: at mid-station height, from the entry to the readout. A pipe
+ * the signal has died in still shows, dark, at `empty`.
+ */
 const PIPE = { entry: -3.0, exit: 2.35, radius: 0.045, max: 0.09, empty: 0.018 };
 const READOUT = { x: 2.35, size: [1.15, 0.42, 0.06] as Vec3 };
 const RIVER: RiverParams = {
@@ -114,10 +117,6 @@ interface Built {
 
 const built = new WeakMap<SceneDesc, Built>();
 
-function box(id: string, slot: number, material: string, center: Vec3, size: Vec3): BlockPart {
-  return KIT.block.build({ id, slot, material, center, size }).parts[0] as BlockPart;
-}
-
 /** Pipe i's ends along X: into the first station, between each pair, out to the readout. */
 function pipeSpan(i: number): [number, number] {
   const half = STATION.size[0] / 2;
@@ -128,7 +127,6 @@ function pipeSpan(i: number): [number, number] {
 
 export const residual: SceneBuilder = {
   assets: {},
-  // The prompt, the readout, and the note at the row's end.
   // The prompt, the readout, the note at the row's end, and one per station (the slider's).
   tagCount: 7,
 
@@ -147,13 +145,7 @@ export const residual: SceneBuilder = {
     ]);
     const pipesSlot = slot;
     const pipes = Array.from({ length: STATIONS.length + 1 }, (_, i) => {
-      const part = KIT.tube.build({
-        id: i === 0 ? "pipe" : `pipe.${i}`,
-        slot: slot++,
-        material: "bar",
-        path: UNIT_SEGMENT,
-        radius: 1,
-      }).parts[0] as TubePart;
+      const part = segment(i === 0 ? "pipe" : `pipe.${i}`, slot++, "bar");
       part.explode = [0, 0.2, 0.4];
       return part;
     });
@@ -317,7 +309,7 @@ function pose(
   const without = data?.without;
   for (let i = 0; i <= n; i++) {
     const [left, right] = pipeSpan(i);
-    const reached = clamp01(state.flowA * (n + 1) - i);
+    const reached = clamp(state.flowA * (n + 1) - i, 0, 1);
     const ratio = without ? without.stream[i]! / without.stream[0]! : 1;
     const radius =
       Math.max(PIPE.empty, Math.min(PIPE.max, PIPE.radius * Math.sqrt(ratio))) * (1 - river);
@@ -335,7 +327,7 @@ function pose(
   const withRiver = data?.with;
   const embed = withRiver?.stream[0] ?? 1;
   for (let i = 0; i <= n; i++) {
-    const filled = clamp01(state.flowB * (n + 1) - i);
+    const filled = clamp(state.flowB * (n + 1) - i, 0, 1);
     const ratio = withRiver ? withRiver.stream[i]! / embed : 1;
     const water = river * filled;
     placeStretch(b.stretches[i]!.transform, RIVER, i, riverHeight(ratio) * water);
@@ -351,7 +343,7 @@ function pose(
     });
   }
   for (let k = 0; k < n; k++) {
-    const reached = clamp01(state.flowB * (n + 1) - k - 0.5);
+    const reached = clamp(state.flowB * (n + 1) - k - 0.5, 0, 1);
     const add = withRiver ? withRiver.adds[k]! / embed : 1;
     const top =
       RIVER.y + (riverHeight(withRiver ? withRiver.stream[k + 1]! / embed : 1) / 2) * river;
@@ -396,7 +388,7 @@ function pose(
       : "";
   // The slider's station: how big the river is on its way in, and what the knob makes of it.
   for (let k = 0; k < n; k++) {
-    const reached = clamp01(state.flowB * (n + 1) - k - 0.5);
+    const reached = clamp(state.flowB * (n + 1) - k - 0.5, 0, 1);
     const ratio = withRiver ? withRiver.stream[k]! / withRiver.stream[0]! : 0;
     text[3 + k] =
       withRiver && k + 1 === state.station && river > 0.5 && reached >= 1
@@ -410,8 +402,4 @@ function guess(pass: ResidualPass, failure: number): string {
   if (pass.p * pass.vocab < 1.5) return `no idea:\n1 in ${pass.vocab.toLocaleString("en-US")} each`;
   const word = `“${pass.answer.trim()}” ${share(pass.p)}`;
   return failure > 0.5 ? `${word}\nshaky guess` : `best guess\n${word}`;
-}
-
-function clamp01(v: number): number {
-  return v < 0 ? 0 : v > 1 ? 1 : v;
 }

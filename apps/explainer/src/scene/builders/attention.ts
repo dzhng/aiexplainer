@@ -23,6 +23,7 @@
  * places), `guess` (the next-word guess shows), `lost` (the order note shows).
  * Typed text shows its prompt settled at once, without the loop's motion.
  */
+import { clamp } from "math";
 import {
   KIT,
   pipePaths,
@@ -35,7 +36,7 @@ import {
   type TubePart,
 } from "@repo/renderer";
 import type { Mat4, Vec3 } from "math";
-import { formatStat, share } from "../../chapters/format.ts";
+import { formatStat, share, tokenLabel } from "../../chapters/format.ts";
 import { look } from "../../look/look.ts";
 import type { SceneTags } from "../../hud/SceneTags.tsx";
 import type { SceneBuilder, SceneFrame } from "../build-frame.ts";
@@ -176,11 +177,6 @@ const SLOT = {
   flows: 5 + FUTURE_WORDS + MAX_TOKENS,
   dials: 5 + FUTURE_WORDS + 2 * MAX_TOKENS,
 } as const;
-
-/** What a word block shows: `<bos>` is the start marker every prompt begins with. */
-export function tokenLabel(token: string): string {
-  return token === "<bos>" ? "start" : token.trim() || "␣";
-}
 
 interface Layout {
   /** Block centres and widths, per token. */
@@ -344,8 +340,6 @@ function followStep(scene: SceneDesc, b: Built, step: AttentionStep): void {
   b.layout = layout;
   scene.revision = nextRevision();
 }
-
-const clamp01 = (v: number) => Math.min(1, Math.max(0, v));
 
 /**
  * When `next`'s prompt (up to its focus) holds exactly `prev`'s prompt tokens in another order
@@ -571,7 +565,7 @@ function attentionScene(o: { dials: boolean }): SceneBuilder {
       const layout = b.layout!;
       // Typed text shows its prompt settled; the loop-only moments (a reorder, its note) are off.
       const channel = (id: string, typedValue = 1) =>
-        typed ? typedValue : clamp01(tl.channels[id] ?? typedValue);
+        typed ? typedValue : clamp(tl.channels[id] ?? typedValue, 0, 1);
       const blocks = channel("blocks");
       const grow = channel("pipes");
       const settle = channel("settle");
@@ -589,17 +583,16 @@ function attentionScene(o: { dials: boolean }): SceneBuilder {
       const n = step.focus + 1;
       const laterCount = step.tokens.length - n;
 
-      // The stand rises with the words (its height scales), and the words ride on it.
+      // The stand rises with the words (its height scales), and the words ride on it, so the
+      // loop's seam and a change of story start flat.
       const standUp = Math.max(0.02, blocks);
       b.steps.forEach((part, i) => {
         const s = layout.steps[i];
-        // The stand rises with the words, so the loop's seam and a change of story start flat.
-        const rise = standUp;
         if (s)
           place(
             part.transform,
-            [s.centre[0], s.centre[1] * rise, s.centre[2]],
-            [s.size[0], s.size[1] * rise, s.size[2]],
+            [s.centre[0], s.centre[1] * standUp, s.centre[2]],
+            [s.size[0], s.size[1] * standUp, s.size[2]],
           );
         else place(part.transform, PARKED, SLIVER);
       });
@@ -635,7 +628,7 @@ function attentionScene(o: { dials: boolean }): SceneBuilder {
         return sunk;
       };
       const lineUp = (i: number) =>
-        from ? blocks : clamp01(blocks * (layout.rows + 1) - layout.rowOf[i]!);
+        from ? blocks : clamp(blocks * (layout.rows + 1) - layout.rowOf[i]!, 0, 1);
       for (let i = 0; i < MAX_TOKENS; i++) {
         const part = b.words[i]!;
         const earlier = i < step.focus;
@@ -663,7 +656,7 @@ function attentionScene(o: { dials: boolean }): SceneBuilder {
         // The stub and cap ride their block up, then open once it is almost there.
         b.sealed[2 * j]!.transform[13] = -sunk;
         b.sealed[2 * j + 1]!.transform[13] = -sunk;
-        dynamics.widthScale[SLOT.sealed + j] = clamp01((up - 0.7) / 0.3);
+        dynamics.widthScale[SLOT.sealed + j] = clamp((up - 0.7) / 0.3, 0, 1);
         dynamics.intensity[SLOT.sealed + j] = PIPE_GLOW;
         if (here) {
           const anchor = frame.tags.anchors[TAG.words + i]!;
@@ -687,13 +680,12 @@ function attentionScene(o: { dials: boolean }): SceneBuilder {
 
       // The mix block hangs over the stand; it grows in with the words, so the loop starts on an
       // empty stand, and lights up as the blend arrives.
-      const grown = blocks;
-      if (grown < 0.02) place(b.mix.transform, PARKED, SLIVER);
+      if (blocks < 0.02) place(b.mix.transform, PARKED, SLIVER);
       else
         place(b.mix.transform, layout.mix.centre, [
-          layout.mix.width * grown,
-          MIX.height * grown,
-          MIX.depth * grown,
+          layout.mix.width * blocks,
+          MIX.height * blocks,
+          MIX.depth * blocks,
         ]);
       b.mixAnchor.local = blocks >= 0.9 ? MIX_PIN : OUT_OF_SIGHT;
       dynamics.intensity[SLOT.mix] = MIX.glow * (0.3 + 0.7 * fill);

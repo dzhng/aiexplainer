@@ -30,6 +30,7 @@ import type { Box3 } from "math/shapes";
 import { share } from "../../chapters/format.ts";
 import type { SceneTags } from "../../hud/SceneTags.tsx";
 import type { SceneBuilder, SceneFrame } from "../build-frame.ts";
+import { stepAt } from "../step.ts";
 
 /** Chapter 0's run (`runtime/runs/autocomplete.ts`). */
 export interface CountsRun {
@@ -213,8 +214,7 @@ export const autocomplete: SceneBuilder = {
     const { layout, bars, card: cardPart } = built.get(scene)!;
     const steps = run?.kind === "counts" ? run.steps : [];
     const typed = ui.text !== null;
-    const pick = (channel: number | undefined) =>
-      typed ? steps[0] : steps[Math.min(steps.length - 1, Math.max(0, Math.round(channel ?? 0)))];
+    const pick = (channel: number | undefined) => stepAt(steps, typed, channel);
     const step = pick(tl.channels.barsWord ?? tl.channels.railWord);
     const onCard = pick(tl.channels.railWord);
     const growth = typed ? 1 : (tl.channels.bars ?? 1);

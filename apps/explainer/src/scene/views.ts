@@ -5,9 +5,7 @@
  * reads only the result (`FrameView.mode` and eased `t`), through `partWorld`/`partCut`.
  */
 import type { FrameView, ViewMode } from "@repo/renderer";
-
-/** Smoothstep: eases in and out, so parts settle rather than stop. */
-const ease = (p: number) => p * p * (3 - 2 * p);
+import { smoothstep } from "./ease.ts";
 
 export class ViewTransition {
   #mode: ViewMode;
@@ -28,6 +26,6 @@ export class ViewTransition {
       if (this.#progress === 0) this.#mode = target;
     } else this.#progress = Math.min(1, this.#progress + rate);
     out.mode = this.#mode;
-    out.t = this.#mode === "whole" ? 1 : ease(this.#progress);
+    out.t = this.#mode === "whole" ? 1 : smoothstep(this.#progress);
   }
 }

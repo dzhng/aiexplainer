@@ -13,6 +13,7 @@
  * arrow but the input's shrinks away), `pairNote` and `itNote` (the scene notes). Typed text
  * shows its pins settled.
  */
+import { clamp } from "math";
 import {
   BRICK,
   KIT,
@@ -24,10 +25,12 @@ import {
 } from "@repo/renderer";
 import type { Vec3 } from "math";
 import type { SceneTags } from "../../hud/SceneTags.tsx";
-import type { SceneBuilder, SceneFrame, SceneRun } from "../build-frame.ts";
+import type { SceneBuilder, SceneFrame, PinsRun } from "../build-frame.ts";
+import { stepAt } from "../step.ts";
 import { EMBED_MAP, MAX_PINNED_INPUT, ORIGIN, type Vec3Tuple } from "../embed-map.ts";
 import { tableParts, tableTop, type TableSpec } from "./table.ts";
-import { colourOf, type Colour } from "./tokenizer.ts";
+import { colourOf, COLOURS, type Colour } from "./tokenizer.ts";
+import { smoothstep } from "../ease.ts";
 
 const TABLE: TableSpec = { center: [0, 0.74, 0], size: [3.8, 0.08, 2.9], legHeight: 0.7 };
 const MAP = { size: [3.6, 0.02, 2.7] as Vec3, grid: 0.3, line: 0.008 };
@@ -46,7 +49,6 @@ const PIN_GLOW = 1;
 /** Just above a pin head (in its unit-tube space), clear of the head itself for occlusion. */
 const ABOVE: Vec3 = [0, 2.5, 0];
 
-const COLOURS: readonly Colour[] = ["brickLetter", "brickEarly", "brickLate"];
 const BACKGROUND = EMBED_MAP.pins.length;
 const LABELLED_PIN = Math.max(
   0,
@@ -100,7 +102,7 @@ const built = new WeakMap<SceneDesc, Built>();
 
 /** Input word `i` of `n`'s progress, 0 → 1, as `fly` sweeps: words go one after another. */
 function landing(fly: number, n: number, i: number): number {
-  return Math.min(1, Math.max(0, (fly * (n + 3) - i) / 4));
+  return clamp((fly * (n + 3) - i) / 4, 0, 1);
 }
 /** The progress at which a word's brick has become its pin. */
 const LANDED = 0.85;
@@ -279,8 +281,7 @@ export const embeddings: SceneBuilder = {
     const b = built.get(scene)!;
     const steps = run?.kind === "pins" ? run.steps : [];
     const typed = ui.text !== null;
-    const index = typed ? 0 : Math.round(tl.channels.input ?? 0);
-    const step = steps[Math.min(steps.length - 1, Math.max(0, index))];
+    const step = stepAt(steps, typed, tl.channels.input);
     const fly = typed ? 1 : (tl.channels.fly ?? 1);
     const arrows = typed ? 1 : (tl.channels.arrows ?? 0);
     const pair = typed ? 1 : (tl.channels.pair ?? 0);
@@ -311,7 +312,7 @@ export const embeddings: SceneBuilder = {
       head[1] = MAP_TOP + (head[1]! - MAP_TOP) * (1 - sink);
       // 0–0.25 the brick appears in the hover row; 0.25–0.85 it flies; then it is the pin.
       const u = landing(fly, inputs.length, i);
-      const flight = Math.min(1, Math.max(0, (u - 0.25) / (LANDED - 0.25)));
+      const flight = clamp((u - 0.25) / (LANDED - 0.25), 0, 1);
       const landed = u >= LANDED && sink < 0.98;
       placePin(b.input, i, landed ? head : null, MAP_TOP, ORIGIN_POINT, arrows);
       frame.tags.text[b.tagOf.input + i] = landed ? pin.text.trim() : "";
@@ -322,7 +323,7 @@ export const embeddings: SceneBuilder = {
         hover[0] = -rowWidth / 2 + (i + 0.5) * (BRICK_UNIT * 2 + HOVER.gap);
         hover[1] = HOVER.y;
         hover[2] = HOVER.z;
-        const e = flight * flight * (3 - 2 * flight);
+        const e = smoothstep(flight);
         for (let a = 0; a < 3; a++) placement.center[a] = hover[a]! + (head[a]! - hover[a]!) * e;
         placement.center[1] += Math.sin(Math.PI * e) * 0.35 + BRICK.height * BRICK_UNIT * (1 - e);
         placement.unit = BRICK_UNIT * (1 - 0.7 * e) * Math.min(1, u / 0.1);
@@ -372,7 +373,7 @@ export const embeddings: SceneBuilder = {
   },
 };
 
-type PinsStep = Extract<SceneRun, { kind: "pins" }>["steps"][number];
+type PinsStep = PinsRun["steps"][number];
 
 /** The scene note for the loop's current beat, from the run's own numbers. */
 function noteFor(channels: Record<string, number>, step: PinsStep | undefined): string {

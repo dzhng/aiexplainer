@@ -26,6 +26,7 @@ import type { Vec3 } from "math";
 import { LOOP_ROUNDS, SPEC_RUN } from "../../chapters/data/speculative.ts";
 import type { SceneTags } from "../../hud/SceneTags.tsx";
 import type { SceneBuilder, SceneFrame, SpeculativeRun } from "../build-frame.ts";
+import { box } from "./parts.ts";
 
 const TILES = SPEC_RUN.maxK + 1;
 const TILE: Vec3 = [0.42, 0.26, 0.08];
@@ -84,15 +85,7 @@ export const speculative: SceneBuilder = {
   tagCount: TILES + 4,
 
   create(assets, revision) {
-    const block = (
-      id: string,
-      slot: number,
-      material: string,
-      center: Vec3,
-      size: Vec3,
-      explode: Vec3,
-    ) => KIT.block.build({ id, slot, material, center, size, explode }).parts[0] as BlockPart;
-    const junior = block(
+    const junior = box(
       "junior",
       SLOT.junior,
       "steel",
@@ -100,7 +93,7 @@ export const speculative: SceneBuilder = {
       JUNIOR.size,
       EXPLODE.junior,
     );
-    const senior = block(
+    const senior = box(
       "senior",
       SLOT.senior,
       "steel",
@@ -109,7 +102,7 @@ export const speculative: SceneBuilder = {
       EXPLODE.senior,
     );
     const lamps = [
-      block(
+      box(
         "junior.lamp",
         SLOT.lamps,
         "bar",
@@ -117,7 +110,7 @@ export const speculative: SceneBuilder = {
         [JUNIOR.size[0] * 0.55, LAMP.h, LAMP.d],
         EXPLODE.junior,
       ),
-      block(
+      box(
         "senior.lamp",
         SLOT.lamps + 1,
         "bar",
@@ -136,7 +129,7 @@ export const speculative: SceneBuilder = {
       explode: EXPLODE.strip,
       states: Array.from({ length: TILES }, () => "hidden"),
     });
-    const rail = block("rail", SLOT.rail, "metal", [0, RAIL.y, RAIL.z], RAIL.size, EXPLODE.rail);
+    const rail = box("rail", SLOT.rail, "metal", [0, RAIL.y, RAIL.z], RAIL.size, EXPLODE.rail);
     const shadow = KIT.contactShadow.build({
       id: "shadow",
       slot: SLOT.shadow,

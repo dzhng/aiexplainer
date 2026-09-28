@@ -13,8 +13,7 @@
  * Loop channels read: `step` (as chapter 9: steps done and the live step's phase), `ghost`
  * (0 → 1 → 0: the notes each reader would keep without sharing appear, smaller, then go),
  * `shared` (the note that says what sharing saves), `window` (0 → 1 notes outside the window
- * are evicted)
- * and `trip` (the failure beat's note). Typed text shows every step done.
+ * are evicted) and `trip` (the failure beat's note). Typed text shows every step done.
  */
 import { evalArith } from "@repo/llm";
 import {
@@ -29,10 +28,22 @@ import {
   type TubePart,
 } from "@repo/renderer";
 import type { Vec3 } from "math";
-import { formatStat } from "../../chapters/format.ts";
+import { formatStat, tokenLabel } from "../../chapters/format.ts";
 import type { SceneTags } from "../../hud/SceneTags.tsx";
 import type { SceneBuilder, SceneFrame } from "../build-frame.ts";
-import { buildLine, placeFeed, placeTile, RAIL_SLOTS, slotX, LINE } from "./generation.ts";
+import {
+  buildLine,
+  cardFlight,
+  LAYERS,
+  PHASE,
+  placeCard,
+  placeFeed,
+  placeTile,
+  RAIL_SLOTS,
+  slotX,
+  LINE,
+} from "./generation.ts";
+import { box } from "./parts.ts";
 
 /** Chapter 10's run (`runtime/runs/kv-cache.ts`). */
 export interface KvRun {
@@ -53,7 +64,6 @@ export interface KvRun {
 
 export const KV_STEPS = 4;
 export const KV_WINDOW = 4;
-const LAYERS = 4;
 /** Note slots per cell: a key/value pair per head without sharing (4 heads). */
 const SLOTS_PER_CELL = 4;
 
@@ -69,7 +79,6 @@ const RACK: NoteRackParams = {
   explode: [0, 0.3, -0.3],
 };
 
-const PHASE = { sweep: 0.5, run: 0.7 };
 /** Unshared notes are drawn at this share of a real note's size. */
 const GHOST_SIZE = 0.85;
 
@@ -85,10 +94,6 @@ interface Built {
 }
 
 const built = new WeakMap<SceneDesc, Built>();
-
-function box(id: string, slot: number, material: string, center: Vec3, size: Vec3): BlockPart {
-  return KIT.block.build({ id, slot, material, center, size }).parts[0] as BlockPart;
-}
 
 const noteIndex = (l: number, c: number, n: number) => (l * RAIL_SLOTS + c) * SLOTS_PER_CELL + n;
 
@@ -283,29 +288,17 @@ function pose(
     }
 
   // The new word: as in chapter 9, it appears above the machine and arcs to the rail.
-  const flying =
-    live >= PHASE.run ? (live - PHASE.run) / (1 - PHASE.run) : live >= PHASE.sweep ? 0 : -1;
-  if (flying >= 0 && done < total) {
-    const k = flying * flying * (3 - 2 * flying);
-    const to: Vec3 = [slotX(onRail), LINE.rail.y + 0.25, LINE.rail.z];
-    b.card.transform[0] = 0.5;
-    b.card.transform[5] = 0.2;
-    b.card.transform[12] = LINE.birth[0] + (to[0] - LINE.birth[0]) * k;
-    b.card.transform[13] =
-      LINE.birth[1] + (to[1] - LINE.birth[1]) * k + Math.sin(Math.PI * k) * 0.5;
-    b.card.transform[14] = LINE.birth[2] + (to[2] - LINE.birth[2]) * k;
-  } else {
-    b.card.transform[0] = 1e-4;
-    b.card.transform[5] = 1e-4;
-  }
+  const flying = cardFlight(live);
+  if (flying >= 0 && done < total)
+    placeCard(b.card, flying, [slotX(onRail), LINE.rail.y + 0.25, LINE.rail.z]);
+  else placeCard(b.card, -1);
 
   if (!text || !data) return;
   for (let i = 0; i < RAIL_SLOTS; i++) {
     const word = i < prompt ? data.tokens[i] : steps[i - prompt]?.word;
     // In the window phase, words whose notes were evicted drop out of the text shown.
     const dropped = state.window > 0.5 && i < oldest;
-    text[i] =
-      i < onRail && word && !dropped ? (word === "<bos>" ? "start" : word.trim() || "␣") : "";
+    text[i] = i < onRail && word && !dropped ? tokenLabel(word) : "";
   }
   text[RAIL_SLOTS] = flying >= 0 && done < total ? steps[done]!.word.trim() : "";
   const held = state.window > 0.5 ? kept : written;

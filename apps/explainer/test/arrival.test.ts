@@ -1,6 +1,7 @@
 import { expect, test } from "bun:test";
 import type { OrbitPose } from "@repo/renderer";
-import { Arrival, arrivalPose, easeInOut } from "../src/runtime/arrival.ts";
+import { Arrival, arrivalPose } from "../src/runtime/arrival.ts";
+import { smoothstep } from "../src/scene/ease.ts";
 import { shotPose } from "../src/scene/shots.ts";
 
 const wide = shotPose("room-wide");
@@ -23,15 +24,15 @@ test("arrivalPose starts exactly on room-wide and lands exactly on the hero shot
 });
 
 test("the ease starts and ends at rest, and never goes backwards", () => {
-  expect(easeInOut(0)).toBe(0);
-  expect(easeInOut(1)).toBe(1);
+  expect(smoothstep(0)).toBe(0);
+  expect(smoothstep(1)).toBe(1);
   const d = 1e-4;
-  expect((easeInOut(d) - easeInOut(0)) / d).toBeLessThan(1e-3);
-  expect((easeInOut(1) - easeInOut(1 - d)) / d).toBeLessThan(1e-3);
+  expect((smoothstep(d) - smoothstep(0)) / d).toBeLessThan(1e-3);
+  expect((smoothstep(1) - smoothstep(1 - d)) / d).toBeLessThan(1e-3);
   let last = 0;
   for (let t = 0.05; t <= 1; t += 0.05) {
-    expect(easeInOut(t)).toBeGreaterThanOrEqual(last);
-    last = easeInOut(t);
+    expect(smoothstep(t)).toBeGreaterThanOrEqual(last);
+    last = smoothstep(t);
   }
 });
 

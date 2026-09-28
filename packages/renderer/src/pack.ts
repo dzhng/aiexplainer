@@ -3,6 +3,7 @@
  * its byte size written beside it; a test holds the schema, the constant and the packer
  * to the same number.
  */
+import { clamp } from "math";
 import type { Mat3, Mat4, Vec3 } from "math";
 import { d } from "typegpu";
 import type { CameraMatrices } from "./camera.ts";
@@ -114,7 +115,7 @@ function packVec3(out: Float32Array, offset: number, v: Vec3): void {
   out[offset + 2] = v[2];
 }
 
-const unorm16 = (v: number) => Math.round(Math.min(1, Math.max(0, v)) * 65535);
+const unorm16 = (v: number) => Math.round(clamp(v, 0, 1) * 65535);
 
 /**
  * Writes a geometry's vertices as `Vertex` records from record `first`: AO defaults to open

@@ -5,7 +5,7 @@
  * pixel readback): block bounds, tube capsules, and mesh triangles behind a bounds test.
  * Label text never reaches this module; only anchor ids.
  */
-import { mat4, vec3, type Mat4, type Vec3 } from "math";
+import { type Mat4, type Vec3, clamp, mat4, vec3 } from "math";
 import { box3, raycast3, type Box3 } from "math/shapes";
 import {
   createProjected,
@@ -175,21 +175,21 @@ function segmentDistanceSq(p0: Vec3, p1: Vec3, q0: Vec3, q1: Vec3): number {
   let s = 0;
   let t = 0;
   if (a <= 1e-12 && e <= 1e-12) return vec3.dot(r, r);
-  if (a <= 1e-12) t = clamp01(f / e);
+  if (a <= 1e-12) t = clamp(f / e, 0, 1);
   else {
     const c = vec3.dot(d1, r);
-    if (e <= 1e-12) s = clamp01(-c / a);
+    if (e <= 1e-12) s = clamp(-c / a, 0, 1);
     else {
       const b = vec3.dot(d1, d2);
       const denom = a * e - b * b;
-      s = denom > 1e-12 ? clamp01((b * f - c * e) / denom) : 0;
+      s = denom > 1e-12 ? clamp((b * f - c * e) / denom, 0, 1) : 0;
       t = (b * s + f) / e;
       if (t < 0) {
         t = 0;
-        s = clamp01(-c / a);
+        s = clamp(-c / a, 0, 1);
       } else if (t > 1) {
         t = 1;
-        s = clamp01((b - c) / a);
+        s = clamp((b - c) / a, 0, 1);
       }
     }
   }
@@ -197,8 +197,6 @@ function segmentDistanceSq(p0: Vec3, p1: Vec3, q0: Vec3, q1: Vec3): number {
   const c2 = vec3.scaleAndAdd(scratch.c2, q0, d2, t);
   return vec3.squaredDistance(c1, c2);
 }
-
-const clamp01 = (x: number) => Math.min(1, Math.max(0, x));
 
 const scratch = {
   d1: [0, 0, 0] as Vec3,

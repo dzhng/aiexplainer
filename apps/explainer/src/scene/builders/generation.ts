@@ -17,7 +17,6 @@ import {
   KIT,
   placeBar,
   placeSegment,
-  UNIT_SEGMENT,
   type BarSlot,
   type BlockPart,
   type Part,
@@ -28,6 +27,9 @@ import {
 import type { Vec3 } from "math";
 import type { SceneTags } from "../../hud/SceneTags.tsx";
 import type { SceneBuilder, SceneFrame } from "../build-frame.ts";
+import { box, segment } from "./parts.ts";
+import { smoothstep } from "../ease.ts";
+import { tokenLabel } from "../../chapters/format.ts";
 
 /** Chapter 9's run (`runtime/runs/generation.ts`). */
 export interface GenerationRun {
@@ -43,7 +45,8 @@ export interface GenerationRun {
 export const GENERATION_STEPS = 6;
 /** Rail slots: a prompt of up to ten tokens plus the written words. */
 export const RAIL_SLOTS = 16;
-const LAYERS = 4;
+/** The machine's layers (its bands), and the note rack's in chapter 10. */
+export const LAYERS = 4;
 
 /** The shared layout of chapters 9 and 10: the rail in front, the machine behind it. */
 export const LINE = {
@@ -58,7 +61,7 @@ export const slotX = (i: number) => (i - (RAIL_SLOTS - 1) / 2) * LINE.rail.pitch
 const tileY = LINE.rail.y + 0.1 + LINE.rail.tile[1] / 2;
 
 /** Phases within one step (fractions of it). */
-const PHASE = { sweep: 0.5, run: 0.7 };
+export const PHASE = { sweep: 0.5, run: 0.7 };
 
 interface Built {
   tiles: BlockPart[];
@@ -71,10 +74,6 @@ interface Built {
 }
 
 const built = new WeakMap<SceneDesc, Built>();
-
-function box(id: string, slot: number, material: string, center: Vec3, size: Vec3): BlockPart {
-  return KIT.block.build({ id, slot, material, center, size }).parts[0] as BlockPart;
-}
 
 /** The rail, the machine and its bands, and the feed pipes: parts chapters 9 and 10 share. */
 export function buildLine(first: number) {
@@ -111,13 +110,7 @@ export function buildLine(first: number) {
   );
   const feedsSlot = slot;
   const feeds = Array.from({ length: RAIL_SLOTS }, (_, i) => {
-    const part = KIT.tube.build({
-      id: `feed.${i}`,
-      slot: feedsSlot + i,
-      material: "bar",
-      path: UNIT_SEGMENT,
-      radius: 1,
-    }).parts[0] as TubePart;
+    const part = segment(`feed.${i}`, feedsSlot + i, "bar");
     placeFeed(part.transform, i, 1, 0.012);
     return part;
   });
@@ -144,6 +137,30 @@ export function placeFeed(transform: number[], i: number, reach: number, radius:
 }
 
 /** Tile i shown or hidden (hidden tiles shrink to nothing), at its slot or at `at`. */
+/** How far the new word's card has flown at step phase `live`: -1 before it appears. */
+export function cardFlight(live: number): number {
+  return live >= PHASE.run ? (live - PHASE.run) / (1 - PHASE.run) : live >= PHASE.sweep ? 0 : -1;
+}
+
+/**
+ * The new word's card: it appears above the machine and arcs to `to` on the rail as `flying`
+ * goes 0 → 1; below 0 it is hidden.
+ */
+export function placeCard(card: BlockPart, flying: number, to?: Vec3) {
+  const t = card.transform;
+  if (flying < 0 || !to) {
+    t[0] = 1e-4;
+    t[5] = 1e-4;
+    return;
+  }
+  const k = smoothstep(flying);
+  t[0] = 0.5;
+  t[5] = 0.2;
+  t[12] = LINE.birth[0] + (to[0] - LINE.birth[0]) * k;
+  t[13] = LINE.birth[1] + (to[1] - LINE.birth[1]) * k + Math.sin(Math.PI * k) * 0.5;
+  t[14] = LINE.birth[2] + (to[2] - LINE.birth[2]) * k;
+}
+
 export function placeTile(tile: BlockPart, i: number, shown: number, at?: Vec3) {
   const s = shown > 0 ? 1 : 1e-4;
   tile.transform[0] = LINE.rail.tile[0] * s;
@@ -311,21 +328,10 @@ function pose(
         0.5 + (running * LAYERS > l ? 1.1 : 0) + (live >= PHASE.run ? 0.4 : 0);
 
   // The new word: appears above the machine, then flies to the rail's next slot.
-  const flying =
-    live >= PHASE.run ? (live - PHASE.run) / (1 - PHASE.run) : live >= PHASE.sweep ? 0 : -1;
-  if (flying >= 0 && done < total) {
-    const to: Vec3 = [slotX(prompt + done), tileY + 0.06, LINE.rail.z];
-    const k = flying * flying * (3 - 2 * flying);
-    const arc = Math.sin(Math.PI * k) * 0.5;
-    b.card.transform[0] = 0.5;
-    b.card.transform[5] = 0.2;
-    b.card.transform[12] = LINE.birth[0] + (to[0] - LINE.birth[0]) * k;
-    b.card.transform[13] = LINE.birth[1] + (to[1] - LINE.birth[1]) * k + arc;
-    b.card.transform[14] = LINE.birth[2] + (to[2] - LINE.birth[2]) * k;
-  } else {
-    b.card.transform[0] = 1e-4;
-    b.card.transform[5] = 1e-4;
-  }
+  const flying = cardFlight(live);
+  if (flying >= 0 && done < total)
+    placeCard(b.card, flying, [slotX(prompt + done), tileY + 0.06, LINE.rail.z]);
+  else placeCard(b.card, -1);
 
   // The work counter: tokens fed so far, against the whole loop's.
   const totalWork = steps.slice(0, total).reduce((sum, s) => sum + s.fed, 0) || 1;
@@ -337,7 +343,7 @@ function pose(
   for (let i = 0; i < RAIL_SLOTS; i++) {
     const shown = b.tiles[i]!.transform[0]! > 0.01;
     const word = i < prompt ? data?.tokens[i] : steps[i - prompt]?.word;
-    text[i] = shown && word ? (word === "<bos>" ? "start" : word.trim() || "␣") : "";
+    text[i] = shown && word ? tokenLabel(word) : "";
   }
   const card = flying >= 0 && done < total ? steps[done]!.word.trim() : "";
   text[RAIL_SLOTS] = card;

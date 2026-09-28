@@ -14,6 +14,7 @@
  * reader moves it), `crates` (0 lifted clear → 1 on the rack), `prefill` (1 while one prompt's
  * tokens fill the seats), `heavy` (the crates' glow).
  */
+import { clamp } from "math";
 import {
   KIT,
   type BlockPart,
@@ -327,7 +328,7 @@ export const batching: SceneBuilder = {
     for (let i = 0; i < crates.length; i++) {
       const crate = layout.crates[i]!;
       // They land one after another, rear first.
-      const lag = Math.min(1, Math.max(0, loaded * (1 + 0.15 * (crates.length - 1)) - 0.15 * i));
+      const lag = clamp(loaded * (1 + 0.15 * (crates.length - 1)) - 0.15 * i, 0, 1);
       crates[i]!.transform[13] = crate.center[1] + (1 - lag) * CRATE_LIFT;
       dynamics.intensity[SLOT.crates + i] = heavy * CRATE_GLOW;
     }

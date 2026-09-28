@@ -50,6 +50,11 @@ export function formatStat(value: number, format: StatFormat): string {
   }
 }
 
+/** A token as scene text: `<bos>` (every prompt's first token) reads "start", a bare space ␣. */
+export function tokenLabel(token: string): string {
+  return token === "<bos>" ? "start" : token.trim() || "␣";
+}
+
 /** "37%", "<1%", ">99%": a share of a whole in scene text, never rounded to a false 0 or 100. */
 export function share(p: number): string {
   const percent = Math.round(p * 100);

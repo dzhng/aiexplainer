@@ -17,6 +17,7 @@
  * readout bars rise), `teaser` (the teaser row rises) and `teaserFlow` (0 → 1 how far along
  * that row the arrow has travelled). Typed text shows everything lit, without the teaser.
  */
+import { clamp } from "math";
 import {
   KIT,
   blockFootprint,
@@ -25,7 +26,6 @@ import {
   placeBar,
   placePush,
   placeSegment,
-  UNIT_SEGMENT,
   type BarSlot,
   type BlockPart,
   type Part,
@@ -38,6 +38,7 @@ import type { Vec3 } from "math";
 import type { SceneTags } from "../../hud/SceneTags.tsx";
 import type { SceneBuilder, SceneFrame } from "../build-frame.ts";
 import { share } from "../../chapters/format.ts";
+import { box, segment } from "./parts.ts";
 
 /** Chapter 6's run (`runtime/runs/mlp.ts`). */
 export interface MlpRun {
@@ -115,15 +116,6 @@ interface Built {
 }
 
 const built = new WeakMap<SceneDesc, Built>();
-
-/** A straight pipe the scene stretches every frame (`placeSegment`). */
-function segment(id: string, slot: number, material: string): TubePart {
-  return KIT.tube.build({ id, slot, material, path: UNIT_SEGMENT, radius: 1 }).parts[0] as TubePart;
-}
-
-function box(id: string, slot: number, material: string, center: Vec3, size: Vec3): BlockPart {
-  return KIT.block.build({ id, slot, material, center, size }).parts[0] as BlockPart;
-}
 
 /** A diamond on the arrow's tip: a cube turned 45° about Z. */
 function placeTip(transform: number[], x: number, y: number, z: number, size: number) {
@@ -371,10 +363,10 @@ function pose(
     const rank = lamp?.rank ?? i;
     // Most active first: the lamp of rank r lights once `lamps` passes r / count.
     const off = data !== null && rank < data.offCount ? state.ablate : 0;
-    const on = shown ? clamp01(state.lamps * MLP_LAMPS - rank) * (1 - off) : 0;
+    const on = shown ? clamp(state.lamps * MLP_LAMPS - rank, 0, 1) * (1 - off) : 0;
     const strength = lamp ? (Math.abs(lamp.act) / maxAct) ** LAMP_GLOW.contrast : 0;
     // The pipe grows from its lamp once lit, in the same order; its width is the push.
-    const reach = shown ? clamp01(pushes * MLP_LAMPS - rank) * (1 - off) : 0;
+    const reach = shown ? clamp(pushes * MLP_LAMPS - rank, 0, 1) * (1 - off) : 0;
     const push = lamp && shown ? lamp.push : 0;
     const radius = PUSH_RADIUS.min + (PUSH_RADIUS.span * Math.abs(push)) / maxPush;
     placePush(b.pushes[i]!.transform, PANEL, i, reach > 0 ? radius : 1e-4, Math.max(reach, 1e-3));
@@ -395,7 +387,7 @@ function pose(
   for (let i = 0; i < ARROW_PIECES; i++) {
     const [left, right] = pieceSpan(i);
     if (i > 0 && i <= LAMP_COLS) sum += landed[i - 1]!;
-    const pushed = total > 0 ? clamp01(sum / total) : 0;
+    const pushed = total > 0 ? clamp(sum / total, 0, 1) : 0;
     const end = Math.min(right, head);
     placeSegment(
       b.arrow[i]!.transform,
@@ -423,7 +415,7 @@ function pose(
     const x1 = TEASER.x0 + i * TEASER.step - (i < TEASER.panels ? sw / 2 : -sw / 2 - 0.3);
     const x0 = i === 0 ? x1 - 0.6 : TEASER.x0 + (i - 1) * TEASER.step + sw / 2;
     const ly = sh * 0.5 - sink;
-    const reached = clamp01(teaserFlow * b.links.length - i);
+    const reached = clamp(teaserFlow * b.links.length - i, 0, 1);
     placeSegment(
       b.links[i]!.transform,
       [x0, ly, TEASER.z],
@@ -448,8 +440,4 @@ function pose(
   const left = fade.at(-1) ?? 0;
   text[5] =
     teaser > 0.6 && teaserFlow > 0.95 ? `arrow left: ${left === 0 ? "0%" : share(left)}` : "";
-}
-
-function clamp01(v: number): number {
-  return v < 0 ? 0 : v > 1 ? 1 : v;
 }

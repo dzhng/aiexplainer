@@ -104,7 +104,7 @@ const SLOT = {
   shadow: TRIAGE_SLOTS.lamps + EXPERTS + 2 + EXPERTS,
 } as const;
 
-/** The routing the scene shows for word `n`: its two bays and their weights, as shares. */
+/** The routing the scene shows for word `n`: its two bays and the router's weights for them. */
 function routing(run: ExpertsRun, n: number) {
   const token = run.tokens[Math.max(0, Math.min(n, run.tokens.length - 1))]!;
   return { text: token.text, bays: token.experts, weights: token.weights };
@@ -255,9 +255,9 @@ export const experts: SceneBuilder = {
         `“${text.trim()}” → bays ${bays.map((b) => b + 1).join(" and ")} (layer ${run.layer + 1} of ${run.layers})`;
     }
     for (let e = 0; e < EXPERTS; e++) {
-      const share = run.usage[e]!;
-      placeBar(bars[e]!.transform, barSlots[e]!, share * USAGE_HEIGHT * usage);
-      if (usage > 0.9) texts[TAG.usage + e] = `${(share * 100).toFixed(1)}%`;
+      const used = run.usage[e]!;
+      placeBar(bars[e]!.transform, barSlots[e]!, used * USAGE_HEIGHT * usage);
+      if (usage > 0.9) texts[TAG.usage + e] = `${(used * 100).toFixed(1)}%`;
     }
     for (let e = 0; e < EXPERTS; e++) {
       dynamics.intensity[SLOT.bars + e] = usage > 0 ? 1 : 0;

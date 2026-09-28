@@ -33,7 +33,9 @@ import { probabilities, seededRng } from "@repo/llm";
 import type { Vec3 } from "math";
 import type { SceneTags } from "../../hud/SceneTags.tsx";
 import type { SceneBuilder, SceneFrame } from "../build-frame.ts";
+import { stepAt } from "../step.ts";
 import { tableParts, tableTop, type TableSpec } from "./table.ts";
+import { share } from "../../chapters/format.ts";
 
 const TABLE: TableSpec = { center: [0, 0.74, 0], size: [3.0, 0.08, 1.7], legHeight: 0.7 };
 const TOP = tableTop(TABLE);
@@ -269,8 +271,7 @@ export const sampling: SceneBuilder = {
     const b = built.get(scene)!;
     const steps = run?.kind === "logits" ? run.steps : [];
     const typed = ui.text !== null;
-    const index = typed ? 0 : Math.round(tl.channels.input ?? 0);
-    const step = steps[Math.min(steps.length - 1, Math.max(0, index))];
+    const step = stepAt(steps, typed, tl.channels.input);
     const temperature =
       !typed && !ui.sliderSet && tl.channels.temperature !== undefined
         ? tl.channels.temperature
@@ -365,7 +366,7 @@ export const sampling: SceneBuilder = {
       const facing = Math.cos(phi) * eyeY + Math.sin(phi) * eyeZ;
       const word = f < WORD_FACES ? shown(top[f]!.text) : "every other word";
       tags[b.tagOf.faces + f] =
-        form > 0.9 && facing > 0.5 && shares[f]! > 0.035 ? `${word}\n${percent(shares[f]!)}` : "";
+        form > 0.9 && facing > 0.5 && shares[f]! > 0.035 ? `${word}\n${share(shares[f]!)}` : "";
     }
 
     tags[b.tagOf.card] = step.last.trim() || "␣";
@@ -381,14 +382,6 @@ export const sampling: SceneBuilder = {
     }
   },
 };
-
-/** "76%", "<1%", ">99%": a face's share, never rounded to a false 0 or 100. */
-export function percent(p: number): string {
-  const n = Math.round(p * 100);
-  if (n < 1) return "<1%";
-  if (n > 99 && p < 1) return ">99%";
-  return `${n}%`;
-}
 
 function spreadNote(temperature: number, probs: ArrayLike<number>): string {
   return `temperature ${temperature.toFixed(1)}: spread (entropy) ${entropyBits(probs).toFixed(1)} bits`;
@@ -408,7 +401,7 @@ function noteFor(
   if ((channels.landed ?? 0) > 0.5) {
     const word =
       onTop < WORD_FACES ? `“${step.top[onTop]!.text.trim()}”` : "one of the other words";
-    return `rolled ${word} (${percent(shares[onTop]!)} of the rim)`;
+    return `rolled ${word} (${share(shares[onTop]!)} of the rim)`;
   }
   return "";
 }

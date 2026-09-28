@@ -22,8 +22,8 @@ import {
   layoutTokens,
   MAX_LINES,
   MAX_TOKENS,
-  tokenLabel,
 } from "../src/scene/builders/attention.ts";
+import { tokenLabel } from "../src/chapters/format.ts";
 import {
   buildFrame,
   createSceneFrame,
