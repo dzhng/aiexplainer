@@ -12,6 +12,7 @@ import { attention, positions, type AttentionRun } from "./builders/attention.ts
 import { autocomplete, type CountsRun } from "./builders/autocomplete.ts";
 import { embeddings } from "./builders/embeddings.ts";
 import { generation, type GenerationRun } from "./builders/generation.ts";
+import { kvCache, type KvRun } from "./builders/kv-cache.ts";
 import { mlp, type MlpRun } from "./builders/mlp.ts";
 import { residual, type ResidualRun } from "./builders/residual.ts";
 import { sampling, type LogitsRun } from "./builders/sampling.ts";
@@ -48,6 +49,7 @@ export type SceneRun =
   | ResidualRun
   | StackRun
   | GenerationRun
+  | KvRun
   | QuantizationRun
   | SpeculativeRun
   | ExpertsRun
@@ -157,6 +159,7 @@ export const SCENE_BUILDERS: Record<SceneBuilderId, SceneBuilder> = {
   residual,
   stack,
   generation,
+  "kv-cache": kvCache,
   batching,
   quantization,
   speculative,

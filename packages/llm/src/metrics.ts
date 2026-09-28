@@ -30,6 +30,14 @@ export const MODEL_METRICS = {
     describe: "the longest text the model reads at once, in tokens, from its shape",
     read: (model) => transformerArch(model).ctx,
   },
+  kvBytesPerToken: {
+    describe:
+      "bytes of notes (keys and values) kept per token: 2 × layers × KV heads × head size × 4 (f32)",
+    read: (model) => {
+      const arch = transformerArch(model);
+      return 2 * arch.nLayers * arch.nKvHeads * (arch.dModel / arch.nHeads) * 4;
+    },
+  },
   heads: {
     describe: "attention heads (readers) in each block, from the model's shape",
     read: (model) => transformerArch(model).nHeads,

@@ -1,0 +1,29 @@
+{
+  "kind": "kv-cache",
+  "prompt": "Once upon a time, there was a little",
+  "tokens": ["<bos>", "Once", " upon", " a", " time", ",", " there", " was", " a", " little"],
+  "steps": [
+    {
+      "word": " boy",
+      "fed": 10
+    },
+    {
+      "word": " named",
+      "fed": 1
+    },
+    {
+      "word": " Tim",
+      "fed": 1
+    },
+    {
+      "word": ".",
+      "fed": 1
+    }
+  ],
+  "windowed": [" girl", " named", " Lily", "."],
+  "window": 4,
+  "layers": 4,
+  "heads": 4,
+  "kvHeads": 2,
+  "bytesPerToken": 2048
+}

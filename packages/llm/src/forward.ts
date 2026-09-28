@@ -9,6 +9,7 @@
 // Attention sums its keys in a canonical order (highest score first), so the result
 // is a function of the set of (score, value) pairs. Without positions, shuffling the
 // earlier tokens therefore leaves the output bit-identical (D35).
+import { kvRow, type KvCache } from "./kvcache.ts";
 import type { SwigluWeights, Transformer } from "./transformer.ts";
 
 /** Which values to record; an omitted list means all of them. */
@@ -79,16 +80,13 @@ export interface ForwardResult {
   trace?: ForwardTrace;
 }
 
-/** Keys and values of earlier positions, per layer, after RoPE. */
-export interface KvCache {
-  length: number;
-  k: Float32Array[];
-  v: Float32Array[];
-}
-
 export interface ForwardOptions {
   trace?: TraceSpec;
-  /** Earlier positions; `forward` appends this call's keys and values to it. */
+  /**
+   * Earlier positions' keys and values (`kvcache.ts`); `forward` appends this call's. A cache
+   * smaller than the context is a ring: it needs a window, and a call may feed at most
+   * `capacity − window + 1` tokens (longer calls are fed in pieces).
+   */
   kv?: KvCache;
   /** Sliding window: each position sees at most this many positions, itself included. */
   window?: number;
@@ -99,16 +97,6 @@ export interface ForwardOptions {
    * position (chapter 6's ablation; the same edit as the `mlp` probe's hook).
    */
   mlpOff?: { layer: number; neurons: number[] };
-}
-
-export function createKvCache(model: Transformer): KvCache {
-  const { ctx, nKvHeads, nLayers } = model.arch;
-  const size = ctx * nKvHeads * model.headDim;
-  return {
-    length: 0,
-    k: Array.from({ length: nLayers }, () => new Float32Array(size)),
-    v: Array.from({ length: nLayers }, () => new Float32Array(size)),
-  };
 }
 
 export function forward(
@@ -125,6 +113,19 @@ export function forward(
   if (total > arch.ctx) throw new Error(`${total} positions exceed the context of ${arch.ctx}`);
   const window = options.window ?? Infinity;
   const group = nHeads / nKvHeads;
+  const kv = options.kv;
+  if (kv && kv.capacity < arch.ctx) {
+    if (!(window <= kv.capacity)) throw new Error(`a ${kv.capacity}-position cache needs a window`);
+    // Keys a call writes must not overwrite keys its own earlier tokens still read.
+    const chunk = kv.capacity - window + 1;
+    if (T > chunk) {
+      if (options.allPositions || options.trace) throw new Error("feed a ring cache in pieces");
+      let result: ForwardResult | undefined;
+      for (let at = 0; at < T; at += chunk)
+        result = forward(model, Array.from(tokens).slice(at, at + chunk), { ...options });
+      return result!;
+    }
+  }
 
   const tracer = options.trace ? new Tracer(options.trace, T, nHeads, arch.nLayers) : undefined;
 
@@ -163,13 +164,17 @@ export function forward(
       const kvStride = nKvHeads * hd;
       let keys = k;
       let values = v;
-      if (options.kv) {
-        options.kv.k[l]!.set(k, past * kvStride);
-        options.kv.v[l]!.set(v, past * kvStride);
-        keys = options.kv.k[l]!;
-        values = options.kv.v[l]!;
+      if (kv) {
+        for (let t = 0; t < T; t++) {
+          const row = kvRow(kv, past + t) * kvStride;
+          kv.k[l]!.set(k.subarray(t * kvStride, (t + 1) * kvStride), row);
+          kv.v[l]!.set(v.subarray(t * kvStride, (t + 1) * kvStride), row);
+        }
+        keys = kv.k[l]!;
+        values = kv.v[l]!;
       }
-      const keyBase = options.kv ? 0 : past; // position of row 0 in `keys`
+      // The row holding position j: the cache's ring row, or j's place in this call.
+      const rowOf = (j: number) => (kv ? kvRow(kv, j) : j - past);
 
       const mixed = new Float32Array(T * nHeads * hd);
       const traceScores = lt ? tracer!.attnScores(total) : undefined;
@@ -182,7 +187,7 @@ export function forward(
           const qOff = (t * nHeads + head) * hd;
           let max = -Infinity;
           for (let j = first; j <= pos; j++) {
-            const kOff = (j - keyBase) * kvStride + kvHead * hd;
+            const kOff = rowOf(j) * kvStride + kvHead * hd;
             let dot = 0;
             for (let i = 0; i < hd; i++) dot += q[qOff + i]! * keys[kOff + i]!;
             const s = dot * scale;
@@ -195,7 +200,7 @@ export function forward(
           acc.fill(0);
           for (const j of keyOrder) {
             const w = exps[j]! / sum;
-            const vOff = (j - keyBase) * kvStride + kvHead * hd;
+            const vOff = rowOf(j) * kvStride + kvHead * hd;
             for (let i = 0; i < hd; i++) acc[i]! += w * values[vOff + i]!;
           }
           mixed.set(acc, qOff);
@@ -242,7 +247,7 @@ export function forward(
   const final = new Float32Array(rows * d);
   normRows(final, x.subarray((T - rows) * d, T * d), rows, d, model.norm, arch.normEps);
   const logits = matmulRows(model.lmHead, final, rows, vocab, d);
-  if (options.kv) options.kv.length = total;
+  if (kv) kv.length = total;
   return tracer ? { logits, trace: tracer.result() } : { logits };
 }
 

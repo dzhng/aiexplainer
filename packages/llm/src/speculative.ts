@@ -3,7 +3,8 @@
 // target checks them all in one forward pass, and each guess is kept with probability
 // min(1, p/q). The output has exactly the target's distribution; the drafter only changes how
 // many target passes it takes.
-import { createKvCache, forward, type KvCache } from "./forward.ts";
+import { forward } from "./forward.ts";
+import { createKvCache, type KvCache } from "./kvcache.ts";
 import type { Rng } from "./rng.ts";
 import { probabilities, sample } from "./sample.ts";
 import type { Transformer } from "./transformer.ts";
