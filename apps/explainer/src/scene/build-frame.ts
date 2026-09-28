@@ -8,7 +8,7 @@ import type { FrameInput, SceneDesc } from "@repo/renderer";
 import type { ChapterDef, FollowId, SceneBuilderId, ViewMode } from "../chapters/types.ts";
 import type { TimelineState } from "../chapters/timeline.ts";
 import type { SceneTags } from "../hud/SceneTags.tsx";
-import { attention, type AttentionRun } from "./builders/attention.ts";
+import { attention, positions, type AttentionRun } from "./builders/attention.ts";
 import { autocomplete, type CountsRun } from "./builders/autocomplete.ts";
 import { embeddings } from "./builders/embeddings.ts";
 import { generation, type GenerationRun } from "./builders/generation.ts";
@@ -122,6 +122,7 @@ export const SCENE_BUILDERS: Record<SceneBuilderId, SceneBuilder> = {
   embeddings,
   sampling,
   attention,
+  positions,
   mlp,
   residual,
   stack,

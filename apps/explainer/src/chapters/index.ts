@@ -3,6 +3,7 @@
  * written are absent; the ladder (`ladder.ts`) still numbers them.
  */
 import { attention } from "./data/attention.ts";
+import { positions } from "./data/positions.ts";
 import { autocomplete } from "./data/autocomplete.ts";
 import { embeddings } from "./data/embeddings.ts";
 import { sampling } from "./data/sampling.ts";
@@ -23,6 +24,7 @@ export const CHAPTERS: Partial<Record<ChapterSlug, ChapterDef>> = {
   embeddings,
   sampling,
   attention,
+  positions,
   mlp,
   residual,
   stack,
