@@ -23,6 +23,7 @@
     "accentSoft": "rgba(94,230,255,.1)",
     "glow": "rgba(94,230,255,.55)",
     "activeInk": "#04121c",
+    "live": "#4dff9a",
     "cut": "12px",
     "cutSmall": "7px"
   },

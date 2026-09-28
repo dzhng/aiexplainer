@@ -118,6 +118,8 @@ export function App(props: AppProps) {
   );
   const [model, setModel] = useState<ModelSource | null>(null);
   const [run, setRun] = useState<SceneRun | null>(null);
+  /** The text the last finished run answered, for the text box's receipt. */
+  const [answered, setAnswered] = useState<string | null>(null);
   const [session] = useState<Session>(() => createSession());
   const canvas = useRef<HTMLCanvasElement>(null);
   const labels = useRef<LabelsHandle>(null);
@@ -208,7 +210,11 @@ export function App(props: AppProps) {
     };
     let alive = true;
     void run().then(
-      (next) => alive && setRun(next),
+      (next) => {
+        if (!alive) return;
+        setRun(next);
+        setAnswered(text);
+      },
       (error: unknown) => {
         if (error instanceof Error && error.name === "CancelledError") return;
         throw error;
@@ -366,6 +372,7 @@ export function App(props: AppProps) {
           model={chapterModel}
           motion={hudMotion}
           slider={shownSlider(state, def, loopSlider)}
+          answered={answered}
         />
       )}
     </main>

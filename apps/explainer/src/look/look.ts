@@ -52,6 +52,8 @@ export interface LookTokens {
     accentSoft: string;
     glow: string;
     activeInk: string;
+    /** The "a real model is running" indicator (the room's own status-light green). */
+    live: string;
     cut: string;
     cutSmall: string;
   };

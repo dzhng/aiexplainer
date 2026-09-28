@@ -22,6 +22,7 @@ import {
   XIcon,
 } from "./icons.tsx";
 import { prefersReducedMotion, useArrivalIntro } from "./motion.ts";
+import { liveModel } from "./live.ts";
 import { StatChip } from "./StatChip.tsx";
 
 export interface HudProps {
@@ -38,6 +39,8 @@ export interface HudProps {
    * slider (`SliderDef.loop`). Chips that follow the slider read this too.
    */
   slider: number;
+  /** The text the scene's last finished run answered (`null`: the loop's own inputs). */
+  answered: string | null;
 }
 
 export function Hud(props: HudProps) {
@@ -58,7 +61,8 @@ export function Hud(props: HudProps) {
   );
 }
 
-function TitlePanel({ state, dispatch, def, model, motion, slider }: HudProps) {
+function TitlePanel(props: HudProps) {
+  const { state, dispatch, def, model, motion, slider } = props;
   const caption = (state.follow && def.caption.byFollow[state.follow]) || def.caption.default;
   return (
     <header className={css.tl} data-crop="panel:tl" data-intro="left">
@@ -95,22 +99,51 @@ function TitlePanel({ state, dispatch, def, model, motion, slider }: HudProps) {
         </button>
         {state.technicalOpen && <p className={css.technicalText}>{caption.technical}</p>}
       </section>
-      {def.model !== null && (
-        <label className={`${css.box} ${css.prompt}`} data-crop="panel:prompt">
-          <span className={css.promptLabel}>Your text</span>
-          <input
-            className={css.promptInput}
-            type="text"
-            value={state.text ?? ""}
-            placeholder="Type a word…"
-            spellCheck={false}
-            autoComplete="off"
-            maxLength={80}
-            onChange={(e) => dispatch({ type: "setText", text: e.target.value })}
-          />
-        </label>
-      )}
+      {def.model !== null && <LivePrompt {...props} />}
     </header>
+  );
+}
+
+/**
+ * The reader's own text, the chapter's call to action: it says a real model is running (and
+ * which kind, honestly), invites typing, and once the run has answered, says who answered.
+ */
+function LivePrompt({ state, dispatch, def, model, motion, answered }: HudProps) {
+  const live = model ? liveModel(model) : null;
+  const scenario = def.scenarios.find((s) => s.id === state.scenario);
+  const asked = state.text ?? scenario?.prompt ?? null;
+  const status = !live
+    ? null
+    : asked === null
+      ? live.invite
+      : answered === asked
+        ? live.receipt
+        : "running…";
+  return (
+    <label className={`${css.box} ${css.prompt}`} data-crop="panel:prompt">
+      <span className={css.live}>
+        <span className={`${css.liveDot} ${motion ? css.livePulse : ""}`} aria-hidden />
+        <b>Live</b> · {live?.what ?? "loading the model…"}
+      </span>
+      <span className={css.promptRow}>
+        <span className={css.promptLabel}>Your text</span>
+        <input
+          className={css.promptInput}
+          type="text"
+          value={state.text ?? ""}
+          placeholder="Type anything…"
+          spellCheck={false}
+          autoComplete="off"
+          maxLength={80}
+          onChange={(e) => dispatch({ type: "setText", text: e.target.value })}
+        />
+      </span>
+      {status && (
+        <span className={css.receipt} aria-live="polite">
+          {status}
+        </span>
+      )}
+    </label>
   );
 }
 
