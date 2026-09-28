@@ -28,6 +28,7 @@ import {
 import type { Vec3 } from "math";
 import type { SceneTags } from "../../hud/SceneTags.tsx";
 import type { SceneBuilder, SceneFrame, SceneRun } from "../build-frame.ts";
+import { tableParts, tableTop, type TableSpec } from "./table.ts";
 
 /** One stud's pitch, metres; a brick is this deep and 1.2× as tall. */
 const UNIT = 0.2;
@@ -55,8 +56,11 @@ const ARC = 0.3;
 /** Glow at the top of a highlight. */
 const GLOW = 0.2;
 
-const TABLE = { center: [0, 0.74, 0] as Vec3, size: [3.0, 0.08, 1.65] as Vec3, legHeight: 0.7 };
-const PLATE = { center: [0, 0.795, 0.25] as Vec3, size: [2.7, 0.03, 1.05] as Vec3 };
+const TABLE: TableSpec = { center: [0, 0.74, 0], size: [3.0, 0.08, 1.65], legHeight: 0.7 };
+const PLATE = {
+  center: [0, tableTop(TABLE) + 0.015, 0.25] as Vec3,
+  size: [2.7, 0.03, 1.05] as Vec3,
+};
 /** The top of the plate: where bricks stand. */
 const PLATE_TOP = PLATE.center[1] + PLATE.size[1] / 2;
 const BOX = { center: [-0.8, 0.91, -0.54] as Vec3, size: [0.95, 0.26, 0.42] as Vec3, wall: 0.03 };
@@ -164,15 +168,6 @@ function onPlate(x: number, y: number, z: number): Vec3 {
 }
 
 function staticParts(): Part[] {
-  const [tx, ty, tz] = TABLE.center;
-  const [sx, sy, sz] = TABLE.size;
-  const legY = ty - sy / 2 - TABLE.legHeight / 2;
-  const legs = [-1, 1].flatMap((i) =>
-    [-1, 1].map((j) => ({
-      center: [tx + i * (sx / 2 - 0.1), legY, tz + j * (sz / 2 - 0.1)] as Vec3,
-      size: [0.07, TABLE.legHeight, 0.07] as Vec3,
-    })),
-  );
   const [bx, by, bz] = BOX.center;
   const [bw, bh, bd] = BOX.size;
   const w = BOX.wall;
@@ -216,24 +211,7 @@ function staticParts(): Part[] {
     },
   ];
   return [
-    // The table stands on the floor; a soft contact shadow grounds its legs.
-    ...KIT.contactShadow.build({
-      id: "shadow",
-      slot: 0,
-      bounds: [tx - sx / 2, 0, tz - sz / 2, tx + sx / 2, ty, tz + sz / 2],
-      softness: 0.3,
-    }).parts,
-    ...KIT.block.build({
-      id: "table",
-      slot: 0,
-      material: "steel",
-      center: TABLE.center,
-      size: TABLE.size,
-    }).parts,
-    ...legs.flatMap(
-      (leg, i) =>
-        KIT.block.build({ id: `table.leg.${i}`, slot: 0, material: "steel", ...leg }).parts,
-    ),
+    ...tableParts(TABLE),
     ...KIT.block.build({
       id: "plate",
       slot: 0,

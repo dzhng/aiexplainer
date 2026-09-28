@@ -87,6 +87,11 @@ export function Help({ dispatch, def, model, slider }: HudProps) {
             </span>
           </p>
         ))}
+        {def.help.notes?.map((note) => (
+          <p key={note} className={css.helpStat}>
+            {note}
+          </p>
+        ))}
 
         <h3>Sources</h3>
         <ul>

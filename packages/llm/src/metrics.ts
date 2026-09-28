@@ -1,6 +1,6 @@
 // What a stat chip may read off a loaded model (`StatChip.value.kind: 'model' | 'probe'`).
 // A chapter names a metric or a probe; the number itself always comes from the model files.
-import type { LoadedModel, ModelSource } from "./load.ts";
+import { sourceId, type LoadedModel, type ModelSource } from "./load.ts";
 import type { ModelManifest, ProbeResult } from "./manifest.ts";
 
 export interface ModelMetricEntry {
@@ -17,6 +17,35 @@ export const MODEL_METRICS = {
   vocabSize: {
     describe: "entries in the model's vocabulary",
     read: vocabSize,
+  },
+  dModel: {
+    describe: "numbers in each token's embedding: the directions its arrow can point in",
+    read: (model) => {
+      if (!("manifest" in model) || model.manifest.kind !== "transformer")
+        throw new Error("dModel needs a transformer");
+      return model.manifest.arch.dModel;
+    },
+  },
+  context: {
+    describe: "the longest text the model reads at once, in tokens, from its shape",
+    read: (model) => transformerArch(model).ctx,
+  },
+  heads: {
+    describe: "attention heads (readers) in each block, from the model's shape",
+    read: (model) => transformerArch(model).nHeads,
+  },
+  kvHeads: {
+    describe: "sets of keys and values (notes) each block keeps, shared by its heads",
+    read: (model) => transformerArch(model).nKvHeads,
+  },
+  mlpNeurons: {
+    describe: "MLP neurons in each block, from the model's shape",
+    read: (model) => {
+      const manifest = "manifest" in model ? model.manifest : null;
+      if (manifest?.kind !== "transformer" || manifest.arch.mlp === "none")
+        throw new Error(`${sourceId(model)} has no MLP`);
+      return manifest.arch.mlp.hidden;
+    },
   },
 } satisfies Record<string, ModelMetricEntry>;
 
@@ -50,6 +79,12 @@ function vocabSize(model: ModelSource): number {
   const vocab = model.tensors.get(ref.vocabTensor);
   if (!vocab?.shape[0]) throw new Error(`${model.manifest.id}: vocab tensor has no rows`);
   return vocab.shape[0];
+}
+
+function transformerArch(model: ModelSource) {
+  const manifest = "manifest" in model ? model.manifest : null;
+  if (manifest?.kind !== "transformer") throw new Error(`${sourceId(model)} is not a transformer`);
+  return manifest.arch;
 }
 
 /** Shipped models always carry a training record; test fixtures and the tokenizer lack one. */

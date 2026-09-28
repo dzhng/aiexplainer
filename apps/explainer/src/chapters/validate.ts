@@ -114,6 +114,12 @@ export function validateChapter(
   }
 
   if (!Object.hasOwn(shots, def.shot)) problems.push(`unknown shot ${def.shot}`);
+  if (def.pullBack) {
+    if (!Object.hasOwn(shots, def.pullBack.shot))
+      problems.push(`pullBack: unknown shot ${def.pullBack.shot}`);
+    if (!Object.hasOwn(def.loop.channels, def.pullBack.channel))
+      problems.push(`pullBack: no loop channel ${def.pullBack.channel}`);
+  }
 
   if (def.stats.length !== 3) problems.push(`${def.stats.length} stats (need 3)`);
   for (const stat of def.stats) {

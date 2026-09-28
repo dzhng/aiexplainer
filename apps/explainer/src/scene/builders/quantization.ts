@@ -65,8 +65,8 @@ export function lensZoom(strip: QuantRun["strip"]): number {
 /** Words each machine shows, and how many of those match between the two. */
 export function wordsShown(run: QuantRun, count: number) {
   const n = Math.max(0, Math.min(count, run.full.length, run.q8.length));
-  const full = run.full.slice(0, n).map((t) => t.text);
-  const q8 = run.q8.slice(0, n).map((t) => t.text);
+  const full = run.full.slice(0, n);
+  const q8 = run.q8.slice(0, n);
   return { full, q8, same: full.filter((w, i) => w === q8[i]).length };
 }
 

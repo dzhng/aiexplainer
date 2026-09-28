@@ -4,14 +4,14 @@
 // reply to it is dropped. (The worker finishes the stale computation; it is never
 // interrupted mid-forward, only ignored.)
 import type {
+  ForwardOptions,
   ForwardResult,
+  GenerateStep,
   ModelId,
   ModelManifest,
   Neighbour,
   NextWord,
   ProbeResult,
-  TextContinuation,
-  TraceSpec,
   TransformerArch,
   WeightSlice,
 } from "@repo/llm";
@@ -24,15 +24,31 @@ export interface ModelInfo {
   evidence: ProbeResult[];
 }
 
+/**
+ * A forward pass's options, on the latest model loaded, or on `model` (any model this session
+ * loaded earlier: a chapter that compares two models loads both, then names each).
+ */
+export type RunOptions = Pick<ForwardOptions, "trace" | "window" | "mlpOff"> & { model?: ModelId };
+
+/** A seeded generation (`generate` in @repo/llm) on the latest model loaded, or on `model`. */
+export interface GenerateRequest {
+  model?: ModelId;
+  seed: number;
+  temperature: number;
+  maxNewTokens: number;
+  /** Without a cache every step rereads the whole text (chapter 9); default true. */
+  cache?: boolean;
+  window?: number;
+}
+
 export type WorkerRequest = { id: number } & (
   | { type: "load"; manifestUrl: string }
-  | { type: "run"; tokens: number[]; trace?: TraceSpec; window?: number }
+  | { type: "generate"; tokens: number[]; options: GenerateRequest }
+  | { type: "cancel"; target: number }
+  | { type: "run"; tokens: number[]; options?: RunOptions }
   | { type: "nextWords"; word: string; k: number }
   | { type: "neighbours"; token: number; k: number }
-  // These name their model: the worker keeps every model it has loaded, so a chapter can
-  // compare two (chapter 12's full and 8-bit copies) without reloading either.
-  | { type: "continue"; manifestUrl: string; text: string; count: number }
-  | { type: "weights"; manifestUrl: string; tensor: string; start: number; count: number }
+  | { type: "weights"; tensor: string; start: number; count: number; model?: ModelId }
 );
 
 export type WorkerReply = { id: number } & (
@@ -48,16 +64,19 @@ export class CancelledError extends Error {
 }
 
 export interface Session {
-  /** Loads a shipped model by id, or any manifest by URL (lab fixtures). */
+  /** Loads a shipped model by id, or any manifest by URL (lab fixtures), and makes it current. */
   load(model: ModelId | URL): Promise<ModelInfo>;
-  run(tokens: number[], trace?: TraceSpec, window?: number): Promise<ForwardResult>;
+  run(tokens: number[], options?: RunOptions): Promise<ForwardResult>;
+  /**
+   * Writes up to `maxNewTokens` after `tokens`. The worker pauses between tokens, so `cancel()`
+   * (or a newer request) stops a long generation part-way, not just its reply.
+   */
+  generate(tokens: number[], options: GenerateRequest): Promise<GenerateStep[]>;
   nextWords(word: string, k: number): Promise<NextWord[]>;
   /** The loaded transformer's nearest tokens in its input embedding table. */
   neighbours(token: number, k: number): Promise<Neighbour[]>;
-  /** A shipped transformer's greedy continuation of `text` (loaded on first use, then kept). */
-  continueText(model: ModelId, text: string, count: number): Promise<TextContinuation>;
-  /** A run of a shipped model's stored weights (`weightSlice`). */
-  weights(model: ModelId, tensor: string, start: number, count: number): Promise<WeightSlice>;
+  /** A run of a loaded model's stored weights (`weightSlice`), on `model` or the latest. */
+  weights(tensor: string, start: number, count: number, model?: ModelId): Promise<WeightSlice>;
   /** Rejects the live request, if any, and drops its eventual reply. */
   cancel(): void;
   dispose(): void;
@@ -97,6 +116,8 @@ export function createSession(options: SessionOptions = {}): Session {
 
   const cancel = () => {
     if (live === undefined) return;
+    // A generation still running stops at its next token; anything else just loses its reply.
+    worker.postMessage({ id: nextId++, type: "cancel", target: live } satisfies WorkerRequest);
     pending.get(live)?.reject(new CancelledError());
     pending.delete(live);
     live = undefined;
@@ -115,8 +136,16 @@ export function createSession(options: SessionOptions = {}): Session {
       cancel();
       return send<ModelInfo>({ id: nextId++, type: "load", manifestUrl: manifestUrl.href });
     },
-    run(tokens, trace, window) {
-      return exclusive<ForwardResult>({ id: nextId++, type: "run", tokens, trace, window });
+    run(tokens, options) {
+      return exclusive<ForwardResult>({ id: nextId++, type: "run", tokens, options });
+    },
+    generate(tokens, generation) {
+      return exclusive<GenerateStep[]>({
+        id: nextId++,
+        type: "generate",
+        tokens,
+        options: generation,
+      });
     },
     nextWords(word, k) {
       return exclusive<NextWord[]>({ id: nextId++, type: "nextWords", word, k });
@@ -124,26 +153,8 @@ export function createSession(options: SessionOptions = {}): Session {
     neighbours(token, k) {
       return send<Neighbour[]>({ id: nextId++, type: "neighbours", token, k });
     },
-    continueText(model, text, count) {
-      const manifestUrl = modelManifestUrl(model, options.modelsUrl).href;
-      return exclusive<TextContinuation>({
-        id: nextId++,
-        type: "continue",
-        manifestUrl,
-        text,
-        count,
-      });
-    },
-    weights(model, tensor, start, count) {
-      const manifestUrl = modelManifestUrl(model, options.modelsUrl).href;
-      return send<WeightSlice>({
-        id: nextId++,
-        type: "weights",
-        manifestUrl,
-        tensor,
-        start,
-        count,
-      });
+    weights(tensor, start, count, model) {
+      return send<WeightSlice>({ id: nextId++, type: "weights", tensor, start, count, model });
     },
     cancel,
     dispose() {

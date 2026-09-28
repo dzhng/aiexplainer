@@ -145,6 +145,29 @@ describe("forward properties", () => {
     expect(maxAbsDiff(logits, forward(model, reference.tokens).logits)).toBeGreaterThan(1e-3);
   });
 
+  test("switching MLP neurons off is the same as deleting their w2 columns", async () => {
+    const { model, reference } = await fixture("mlp");
+    const layer = model.layers.length - 1;
+    const neurons = [0, 3, 5];
+    const off = forward(model, reference.tokens, {
+      trace: { layers: [layer] },
+      mlpOff: { layer, neurons },
+    });
+    const act = off.trace!.layers[layer]!.mlp!.act;
+    const hidden = act.shape[1]!;
+    for (let t = 0; t < reference.tokens.length; t++)
+      for (const n of neurons) expect(act.data[t * hidden + n]).toBe(0);
+    const w2 = model.layers[layer]!.mlp!.w2.slice();
+    for (let row = 0; row < model.arch.dModel; row++)
+      for (const n of neurons) w2[row * hidden + n] = 0;
+    const cut: Transformer = {
+      ...model,
+      layers: model.layers.map((l, i) => (i === layer ? { ...l, mlp: { ...l.mlp!, w2 } } : l)),
+    };
+    expect(maxAbsDiff(off.logits, Array.from(forward(cut, reference.tokens).logits))).toBe(0);
+    expect(() => forward(model, reference.tokens, { mlpOff: { layer, neurons: [1e6] } })).toThrow();
+  });
+
   test("decoding one token at a time with a KV cache gives the same logits", async () => {
     const { model, reference } = await fixture("moe");
     const kv = createKvCache(model);

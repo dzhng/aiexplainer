@@ -83,7 +83,7 @@ export const batching: ChapterDef = {
     },
     {
       id: "bus-full",
-      label: "bus full at",
+      label: "riders a full bus holds",
       format: "int",
       scale: "Llama-3-8B on H100 SXM",
       value: { kind: "arith", fn: "computeBoundBatch", args: { ...BUS_ARITH } },

@@ -1,45 +1,55 @@
-// Greedy continuation: the model's own top pick, one token per forward pass, reusing the
-// KV cache. Chapter 12 runs it on `full` and `full-q8` to show both machines agree.
+// The generation loop (chapter 9): predict one token, append it, and run again. A generator,
+// so its consumer controls the pace and can stop at any step (the worker yields between
+// steps, which is what makes a long generation cancellable). Seeded through `rng`.
 import { createKvCache, forward } from "./forward.ts";
-import { probabilities } from "./sample.ts";
-import { promptTokens } from "./tokenizer.ts";
+import type { Rng } from "./rng.ts";
+import { probabilities, sample } from "./sample.ts";
 import type { Transformer } from "./transformer.ts";
 
-export interface Continuation {
-  /** The chosen token ids, in order (it stops early after end-of-story or at the context). */
-  tokens: number[];
-  /** The probability the model gave each chosen token. */
-  p: number[];
+export interface GenerateOptions {
+  maxNewTokens: number;
+  /** 0 is greedy. */
+  temperature: number;
+  rng: Rng;
+  /**
+   * With a KV cache (the default), each step feeds only the newest token; without one, each
+   * step rereads the whole text so far (chapter 9's loop, before chapter 10 fixes it).
+   */
+  cache?: boolean;
+  /** Sliding window: each position sees at most this many positions (chapter 10). */
+  window?: number;
 }
 
-/** Up to `count` greedy tokens after `prompt` (which must be non-empty). */
-export function greedyContinue(model: Transformer, prompt: number[], count: number): Continuation {
-  if (prompt.length === 0) throw new Error("greedyContinue needs a prompt");
+export interface GenerateStep {
+  token: number;
+  /** Tokens this step fed through the model: its work. */
+  fed: number;
+  /** The token's probability when it was drawn. */
+  p: number;
+}
+
+/**
+ * Yields one step per generated token, stopping after `maxNewTokens`, at `<eos>` (which is
+ * yielded, then ends the loop) or when the text fills the model's context.
+ */
+export function* generate(
+  model: Transformer,
+  prompt: number[],
+  options: GenerateOptions,
+): Generator<GenerateStep, void, undefined> {
+  if (prompt.length === 0) throw new Error("generate needs a prompt");
+  const { ctx } = model.arch;
   const eos = model.tokenizer.special.eos;
-  const kv = createKvCache(model);
-  const out: Continuation = { tokens: [], p: [] };
-  let logits = forward(model, prompt, { kv }).logits;
-  while (out.tokens.length < count) {
-    const probs = probabilities(logits, 1);
-    let best = 0;
-    for (let i = 1; i < probs.length; i++) if (probs[i]! > probs[best]!) best = i;
-    out.tokens.push(best);
-    out.p.push(probs[best]!);
-    if (best === eos || kv.length + 1 >= model.arch.ctx) break;
-    logits = forward(model, [best], { kv }).logits;
+  const kv = options.cache === false ? undefined : createKvCache(model);
+  const tokens = [...prompt];
+  for (let made = 0; made < options.maxNewTokens && tokens.length < ctx; made++) {
+    const input = kv ? tokens.slice(kv.length) : tokens;
+    const fed = input.length;
+    const { logits } = forward(model, input, { kv, window: options.window });
+    const probs = probabilities(logits, options.temperature);
+    const token = sample(probs, options.rng);
+    tokens.push(token);
+    yield { token, fed, p: probs[token]! };
+    if (token === eos) return;
   }
-  return out;
-}
-
-/** A greedy continuation of text, token by token, with each token's text and probability. */
-export interface TextContinuation {
-  tokens: { id: number; text: string; p: number }[];
-}
-
-/** Up to `count` greedy tokens after `text` (prefixed with the start-of-story token). */
-export function continueText(model: Transformer, text: string, count: number): TextContinuation {
-  const { tokens, p } = greedyContinue(model, promptTokens(model.tokenizer, text), count);
-  return {
-    tokens: tokens.map((id, i) => ({ id, text: model.tokenizer.decode([id]), p: p[i]! })),
-  };
 }

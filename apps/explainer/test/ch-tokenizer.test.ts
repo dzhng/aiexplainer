@@ -1,6 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { directSession } from "../scripts/direct-session.ts";
-import { shippedTokenizer } from "../scripts/shipped.ts";
+import { shippedContext, shippedTokenizer } from "../scripts/shipped.ts";
 import { tokenizer as chapter } from "../src/chapters/data/tokenizer.ts";
 import { SCENE_KIT } from "../src/chapters/scenes.ts";
 import { resolveStat } from "../src/chapters/stats.ts";
@@ -16,7 +15,7 @@ import {
 } from "../src/scene/builders/tokenizer.ts";
 
 const model = await shippedTokenizer();
-const ctx = { model, session: directSession(model) };
+const ctx = { ...(await shippedContext("tokenizer")), model };
 type PiecesRun = Extract<SceneRun, { kind: "pieces" }>;
 const runFor = async (text: string | null) => (await computeRun(chapter, text, ctx)) as PiecesRun;
 const loopRun = await runFor(null);

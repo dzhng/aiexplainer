@@ -26,7 +26,8 @@ export const STAT_SCALES = [
 ] as const;
 export type StatScale = (typeof STAT_SCALES)[number];
 
-export const STAT_FORMATS = ["int", "num", "bytes", "tok/s", "s", "pct", "x"] as const;
+/** `nats`: a loss, the average surprise per token (natural-log units). */
+export const STAT_FORMATS = ["int", "num", "bytes", "tok/s", "s", "pct", "x", "nats"] as const;
 export type StatFormat = (typeof STAT_FORMATS)[number];
 
 export interface ChapterDef {
@@ -47,7 +48,16 @@ export interface ChapterDef {
   labels: LabelDef[];
   loop: Timeline;
   shot: ShotId;
-  help: { sources: SourceRef[] };
+  /**
+   * The one zoom-out (D5): while loop channel `channel` rises from 0 to 1 the camera eases from
+   * wherever the reader has it to `shot`, and back as it falls. Only the stack chapter has one.
+   */
+  pullBack?: { shot: ShotId; channel: ChannelId };
+  /**
+   * `notes` say how the scene itself was made where that is not obvious (e.g. a projection
+   * computed offline); the help panel lists them under the chapter's numbers.
+   */
+  help: { sources: SourceRef[]; notes?: string[] };
   /** Loop time captured for the chapter's link-preview image. */
   ogTimeSec: number;
 }

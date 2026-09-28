@@ -2,7 +2,8 @@
  * `/lab/scene/<slug>`: one chapter's scene with no HUD, driven by its committed fixture run
  * (`fixtures/runs/<slug>.json`) at the clock's time (hold it with `?clock=held&t=`), so no
  * inference runs. Controls sit at the chapter's defaults. Every chapter slice reviews its
- * scene here; it is the same `chapterScene` the app draws.
+ * scene here; it is the same `chapterScene` the app draws. `?yaw=<degrees>` turns the camera
+ * around the shot's target, for label sweeps.
  */
 import type { FrameInput, SceneDesc } from "@repo/renderer";
 import { useEffect, useRef } from "react";
@@ -59,6 +60,8 @@ export function ScenePage({ slug, reading, debug, clock, probe, onReady }: Scene
       text: null,
     };
     const scene = chapterScene(def, assets, () => ({ def, ui, run, loopTime: clock.now() }));
+    // Filmstrips burn the loop's beat in under each frame.
+    probe.beat = scene.beat;
     // `?yaw=<degrees>` turns the camera around the shot's target: a label sweep's azimuths.
     const yaw = (Number(new URLSearchParams(location.search).get("yaw") ?? 0) * Math.PI) / 180;
     void loadSceneAssets(def, assets)

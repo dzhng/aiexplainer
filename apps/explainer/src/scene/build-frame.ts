@@ -4,12 +4,15 @@
  * scene text the overlay draws. Each chapter names a scene builder; the builder creates its
  * parts once (a new `revision`) and then updates transforms and dynamics in place every frame.
  */
-import type { NextWord } from "@repo/llm";
 import type { FrameInput, SceneDesc } from "@repo/renderer";
 import type { ChapterDef, FollowId, SceneBuilderId, ViewMode } from "../chapters/types.ts";
 import type { TimelineState } from "../chapters/timeline.ts";
 import type { SceneTags } from "../hud/SceneTags.tsx";
-import { autocomplete } from "./builders/autocomplete.ts";
+import { autocomplete, type CountsRun } from "./builders/autocomplete.ts";
+import { embeddings } from "./builders/embeddings.ts";
+import { mlp, type MlpRun } from "./builders/mlp.ts";
+import { residual, type ResidualRun } from "./builders/residual.ts";
+import { stack, type StackRun } from "./builders/stack.ts";
 import { tokenizer } from "./builders/tokenizer.ts";
 import { batching } from "./builders/batching.ts";
 import { quantization } from "./builders/quantization.ts";
@@ -26,46 +29,70 @@ export interface SceneUi {
   text: string | null;
 }
 
-/** The chapter's model output for what the scene shows (`runtime/scene-run.ts`). */
+/**
+ * The chapter's model output for what the scene shows (`runtime/scene-run.ts`). Each scene's
+ * builder reads its own kind.
+ */
 export type SceneRun =
-  | {
-      kind: "counts";
-      /** One step per loop input (or one for typed text): the word and its real successors. */
-      steps: { word: string; next: NextWord[] }[];
-    }
-  | {
-      kind: "pieces";
-      /** Entries in the tokenizer's vocabulary: the box of shapes. */
-      vocab: number;
-      /**
-       * One step per loop input (or one for typed text): the text and its tokenizer pieces,
-       * each with its id, its text (a leading space included) and its length in bytes.
-       */
-      steps: { text: string; pieces: { id: number; text: string; bytes: number }[] }[];
-    }
-  | {
-      kind: "quantization";
-      /** The text both machines continue (the loop's input, or the reader's text). */
-      prompt: string;
-      /** Each machine's greedy words after it: the 16-bit `full` and its 8-bit copy. */
-      full: { text: string; p: number }[];
-      q8: { text: string; p: number }[];
-      /**
-       * One q8_0 group of weights: `full`'s stored 16-bit values, and `full-q8`'s `scale · q`
-       * with its scale and integers.
-       */
-      strip: {
-        tensor: string;
-        start: number;
-        count: number;
-        full: number[];
-        q8: number[];
-        scale: number;
-        q: number[];
-      };
-      /** The measured weights-file ratio, 8-bit ÷ 16-bit (the `q8-bytes` probe). */
-      byteRatio: number;
-    };
+  | CountsRun
+  | PiecesRun
+  | PinsRun
+  | MlpRun
+  | ResidualRun
+  | StackRun
+  | QuantizationRun;
+
+/** Chapter 1's run (`runtime/runs/tokenizer.ts`). */
+export interface PiecesRun {
+  kind: "pieces";
+  /** Entries in the tokenizer's vocabulary: the box of shapes. */
+  vocab: number;
+  /**
+   * One step per loop input (or one for typed text): the text and its tokenizer pieces,
+   * each with its id, its text (a leading space included) and its length in bytes.
+   */
+  steps: { text: string; pieces: { id: number; text: string; bytes: number }[] }[];
+}
+
+/** Chapter 2's run (`runtime/runs/embeddings.ts`). */
+export interface PinsRun {
+  kind: "pins";
+  /**
+   * One step per loop input (or one for typed text): its tokens, each at its embedding's
+   * projection on the map (`scene/embed-map.ts`), and the cosine similarity of the first
+   * two tokens' embeddings when there are two.
+   */
+  steps: {
+    text: string;
+    pins: { id: number; text: string; bytes: number; at: [number, number, number] }[];
+    cosine: number | null;
+  }[];
+}
+
+/** Chapter 12's run (`runtime/runs/quantization.ts`). */
+export interface QuantizationRun {
+  kind: "quantization";
+  /** The text both machines continue (the loop's input, or the reader's text). */
+  prompt: string;
+  /** Each machine's greedy words after it: the 16-bit `full` and its 8-bit copy. */
+  full: string[];
+  q8: string[];
+  /**
+   * One q8_0 group of weights: `full`'s stored 16-bit values, and `full-q8`'s `scale · q`
+   * with its scale and integers.
+   */
+  strip: {
+    tensor: string;
+    start: number;
+    count: number;
+    full: number[];
+    q8: number[];
+    scale: number;
+    q: number[];
+  };
+  /** The measured weights-file ratio, 8-bit ÷ 16-bit (the `q8-bytes` probe). */
+  byteRatio: number;
+}
 
 export interface SceneBuilder {
   /** Prop URLs by asset id; the app loads them before the first frame. */
@@ -85,6 +112,10 @@ export interface SceneBuilder {
 export const SCENE_BUILDERS: Record<SceneBuilderId, SceneBuilder> = {
   autocomplete,
   tokenizer,
+  embeddings,
+  mlp,
+  residual,
+  stack,
   batching,
   quantization,
 };

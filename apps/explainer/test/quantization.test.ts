@@ -1,15 +1,16 @@
 import { describe, expect, test } from "bun:test";
 import {
-  continueText,
   evalArith,
+  generate,
   probeResult,
+  promptTokens,
+  seededRng,
   transformerModel,
   weightSlice,
   type LoadedModel,
 } from "@repo/llm";
 import type { BlockPart, SceneDesc } from "@repo/renderer";
-import { directSession } from "../scripts/direct-session.ts";
-import { shippedModel } from "../scripts/shipped.ts";
+import { shippedContext, shippedModel } from "../scripts/shipped.ts";
 import { CONTINUE_WORDS, STRIP, quantization } from "../src/chapters/data/quantization.ts";
 import { resolveStat } from "../src/chapters/stats.ts";
 import { createTimelineState, evalTimeline } from "../src/chapters/timeline.ts";
@@ -20,10 +21,7 @@ import { lensIndex, type QuantRun } from "../src/scene/builders/quantization.ts"
 
 const full = await shippedModel("full");
 const q8 = await shippedModel("full-q8");
-const run = (await computeRun(quantization, null, {
-  model: q8,
-  session: directSession(q8),
-})) as QuantRun;
+const run = (await computeRun(quantization, null, await shippedContext("full-q8"))) as QuantRun;
 
 function frameAt(t: number, ui: Partial<SceneUi> = {}, r: QuantRun = run) {
   const frame = createSceneFrame({
@@ -81,10 +79,17 @@ describe("chapter 12's numbers equal their sources", () => {
       part(input.scene, "crate.8").transform[5]! / part(input.scene, "crate.16").transform[5]!;
     expect(ratio).toBeCloseTo(run.byteRatio, 6);
     const [prompt] = quantization.loop.inputs!;
-    const words = (m: LoadedModel) =>
-      continueText(transformerModel(m), prompt!, CONTINUE_WORDS).tokens.map((t) => t.text);
-    expect(run.full.map((t) => t.text)).toEqual(words(full));
-    expect(run.q8.map((t) => t.text)).toEqual(words(q8));
+    const words = (m: LoadedModel) => {
+      const t = transformerModel(m);
+      const steps = generate(t, promptTokens(t.tokenizer, prompt!), {
+        maxNewTokens: CONTINUE_WORDS,
+        temperature: 0,
+        rng: seededRng(0),
+      });
+      return [...steps].map((s) => t.tokenizer.decode([s.token]));
+    };
+    expect(run.full).toEqual(words(full));
+    expect(run.q8).toEqual(words(q8));
     expect(tags[0]).toContain(words(full).join(""));
   });
 

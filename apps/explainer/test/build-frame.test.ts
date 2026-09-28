@@ -2,8 +2,7 @@ import { describe, expect, test } from "bun:test";
 import { countsModel, nextWords } from "@repo/llm";
 import { parseGlb, type SceneDesc } from "@repo/renderer";
 import path from "node:path";
-import { directSession } from "../scripts/direct-session.ts";
-import { shippedModel } from "../scripts/shipped.ts";
+import { shippedContext } from "../scripts/shipped.ts";
 import { autocomplete } from "../src/chapters/data/autocomplete.ts";
 import { createTimelineState, evalTimeline } from "../src/chapters/timeline.ts";
 import { SCENE_KIT } from "../src/chapters/scenes.ts";
@@ -15,15 +14,14 @@ import {
 } from "../src/scene/build-frame.ts";
 import { share } from "../src/scene/builders/autocomplete.ts";
 import { computeRun as runFor } from "../src/runtime/scene-run.ts";
+import type { CountsRun } from "../src/scene/builders/autocomplete.ts";
 
 const publicDir = path.resolve(import.meta.dirname, "../public");
 const board = parseGlb(
   await Bun.file(path.join(publicDir, "props/counter_board.glb")).arrayBuffer(),
 );
-const loaded = await shippedModel("counts");
-const model = countsModel(loaded);
-const ctx = { model: loaded, session: directSession(loaded) };
-type CountsRun = Extract<SceneRun, { kind: "counts" }>;
+const ctx = await shippedContext("counts");
+const model = countsModel(ctx.model as Parameters<typeof countsModel>[0]);
 const computeRun = async (def: typeof autocomplete, text: string | null) =>
   (await runFor(def, text, ctx)) as CountsRun;
 
