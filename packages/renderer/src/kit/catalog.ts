@@ -14,6 +14,7 @@ import { die } from "./die.ts";
 import { draftStrip } from "./draft-strip.ts";
 import { triageBays } from "./triage-bays.ts";
 import { mesh } from "./mesh.ts";
+import { noteRack } from "./note-rack.ts";
 import { pipes } from "./pipes.ts";
 import { sealed } from "./sealed.ts";
 import type { KitPrimitive } from "./primitive.ts";
@@ -37,6 +38,7 @@ export const KIT = {
   questionPanel,
   river,
   volumeKnob,
+  noteRack,
   die,
   draftStrip,
   triageBays,

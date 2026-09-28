@@ -1,7 +1,8 @@
 // The generation loop (chapter 9): predict one token, append it, and run again. A generator,
 // so its consumer controls the pace and can stop at any step (the worker yields between
 // steps, which is what makes a long generation cancellable). Seeded through `rng`.
-import { createKvCache, forward } from "./forward.ts";
+import { forward } from "./forward.ts";
+import { createKvCache } from "./kvcache.ts";
 import type { Rng } from "./rng.ts";
 import { probabilities, sample } from "./sample.ts";
 import type { Transformer } from "./transformer.ts";
@@ -40,7 +41,10 @@ export function* generate(
   if (prompt.length === 0) throw new Error("generate needs a prompt");
   const { ctx } = model.arch;
   const eos = model.tokenizer.special.eos;
-  const kv = options.cache === false ? undefined : createKvCache(model);
+  // With a window, the cache keeps only the last `window` positions: older notes are
+  // overwritten (forward feeds a longer prompt in pieces).
+  const capacity = options.window ? Math.min(ctx, options.window) : ctx;
+  const kv = options.cache === false ? undefined : createKvCache(model, capacity);
   const tokens = [...prompt];
   for (let made = 0; made < options.maxNewTokens && tokens.length < ctx; made++) {
     const input = kv ? tokens.slice(kv.length) : tokens;

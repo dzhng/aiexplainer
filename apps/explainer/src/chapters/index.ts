@@ -10,6 +10,7 @@ import { sampling } from "./data/sampling.ts";
 import { tokenizer } from "./data/tokenizer.ts";
 import { mlp } from "./data/mlp.ts";
 import { generation } from "./data/generation.ts";
+import { kvCache } from "./data/kv-cache.ts";
 import { residual } from "./data/residual.ts";
 import { stack } from "./data/stack.ts";
 import { batching } from "./data/batching.ts";
@@ -32,6 +33,7 @@ export const CHAPTERS: Partial<Record<ChapterSlug, ChapterDef>> = {
   residual,
   stack,
   generation,
+  "kv-cache": kvCache,
   batching,
   quantization,
   speculative,

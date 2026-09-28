@@ -13,6 +13,7 @@ import { attentionRun } from "./runs/attention.ts";
 import { autocompleteRun } from "./runs/autocomplete.ts";
 import { embeddingsRun } from "./runs/embeddings.ts";
 import { generationRun } from "./runs/generation.ts";
+import { kvCacheRun } from "./runs/kv-cache.ts";
 import { mlpRun } from "./runs/mlp.ts";
 import { quantizationRun } from "./runs/quantization.ts";
 import { speculativeRun } from "./runs/speculative.ts";
@@ -58,6 +59,7 @@ const RUNS: Partial<Record<SceneBuilderId, SceneRunFn>> = {
   residual: residualRun,
   stack: stackRun,
   generation: generationRun,
+  "kv-cache": kvCacheRun,
   quantization: quantizationRun,
   speculative: speculativeRun,
   experts: expertsRun,
