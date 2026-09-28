@@ -35,6 +35,7 @@ import type { Clock } from "./clock.ts";
 import { ARRIVAL_SEC } from "./arrival.ts";
 import { LoopTime } from "./loop-time.ts";
 import { fetchModel } from "./models.ts";
+import { onceUntilFailure } from "./once.ts";
 import { computeRun } from "./scene-run.ts";
 import { createSession, sessionScope, type Session } from "./session.ts";
 import { runStage, type Stage } from "./stage.ts";
@@ -109,18 +110,13 @@ export function App(props: AppProps) {
   // Every shipped model the main thread fetched, kept for the session: the chapter's (the HUD's
   // stats read it) and any other a run asks for (the finished machine reads every chapter's).
   const models = useRef(new Map<ChapterModelId, ModelSource>());
-  const fetching = useRef(new Map<ChapterModelId, Promise<ModelSource>>());
-  const [source] = useState(() => (id: ChapterModelId) => {
-    let fetched = fetching.current.get(id);
-    if (!fetched) {
-      fetched = fetchModel(id).then((loaded) => {
-        models.current.set(id, loaded);
-        return loaded;
-      });
-      fetching.current.set(id, fetched);
-    }
-    return fetched;
-  });
+  const [source] = useState(() =>
+    onceUntilFailure(async (id: ChapterModelId) => {
+      const loaded = await fetchModel(id);
+      models.current.set(id, loaded);
+      return loaded;
+    }),
+  );
   const [model, setModel] = useState<ModelSource | null>(null);
   const [run, setRun] = useState<SceneRun | null>(null);
   const [session] = useState<Session>(() => createSession());

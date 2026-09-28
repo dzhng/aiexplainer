@@ -44,6 +44,8 @@ def drafter(model_id: str, model: Transformer) -> tuple[list[dict[str, Any]], li
     # stories they never touched before the choice is final.
     held_alpha, held_speedup = acceptance(target, model, held_out_windows(40, 128, used=(*CHOSEN_ON, 17)))
     evidence = [
+        # A measurement, not a test: the chapter's speedup chip reads it (threshold 0 always passes).
+        result("draft-cost", "", f"{model_id}'s weight parameters as a fraction of full's", cost, 0.0),
         result("draft-acceptance", "", f"α: mean acceptance probability of a guess by {model_id} for full", alpha, ALPHA_THRESHOLD),
         result("draft-speedup", "", f"expected speedup with k={K} (cost ratio {cost:.3f})", speedup, SPEEDUP_THRESHOLD),
         result(

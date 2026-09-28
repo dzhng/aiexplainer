@@ -9,7 +9,7 @@ import {
   transformerModel,
 } from "@repo/llm";
 import { shippedContext, shippedModel } from "../scripts/shipped.ts";
-import { DRAFT_COST, SPEC_RUN, speculative } from "../src/chapters/data/speculative.ts";
+import { SPEC_RUN, speculative } from "../src/chapters/data/speculative.ts";
 import { resolveStat, statSource } from "../src/chapters/stats.ts";
 import { validateChapter } from "../src/chapters/validate.ts";
 import { computeRun } from "../src/runtime/scene-run.ts";
@@ -64,8 +64,11 @@ describe("chapter 13's numbers equal their sources", () => {
 
   test("the speedup chip follows the slider's k, and at k = 4 it is the drafter probe's speedup", () => {
     const speedup = speculative.stats.find((s) => s.id === "speedup")!;
-    // The cost ratio is the models' weight ratio, as the probe computes it.
-    expect(DRAFT_COST).toBe(parameterCounts(drafter).total / parameterCounts(full).total);
+    // The recorded cost ratio is the shipped models' weight ratio.
+    expect(probe("draft-cost")).toBeCloseTo(
+      parameterCounts(drafter).total / parameterCounts(full).total,
+      12,
+    );
     expect(resolveStat(speedup, drafter, 4)).toBeCloseTo(probe("draft-speedup-heldout"), 12);
     const byK = [1, 2, 4, 8].map((k) => resolveStat(speedup, drafter, k));
     expect(new Set(byK).size).toBe(byK.length);

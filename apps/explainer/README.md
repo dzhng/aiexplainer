@@ -22,7 +22,10 @@ Each step below has one owner. Change a step in its owner, never beside it.
    `runtime/runs/<scene>.ts`. `runtime/scene-run.ts` picks it and owns what a run reads:
    its prompt, its inputs, and the transformer it needs. Anything that runs a network goes
    through the inference worker (`runtime/session.ts`, D38). Table lookups stay on the
-   main thread.
+   main thread. Every request names its model, and a run's requests are scoped to it
+   (`sessionScope`), so a superseded chapter can never touch the next one. Model files are
+   fetched once per model, on both threads, and a failed fetch is forgotten so the next
+   visit retries (`runtime/once.ts`).
 4. **Scene.** `scene/build-frame.ts` is the pure adapter from domain state to the
    renderer's `FrameInput`. Each scene has one builder in `scene/builders/`, and a builder
    composes only the kit primitives its scene declares in `chapters/scenes.ts`. Helpers

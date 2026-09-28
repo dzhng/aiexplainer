@@ -33,6 +33,7 @@ import type {
   RunOptions,
   SpeculateRequest,
 } from "./session.ts";
+import { onceUntilFailure } from "./once.ts";
 
 type Held = { loaded: LoadedModel } & (
   | { kind: "transformer"; transformer: Transformer }
@@ -63,8 +64,6 @@ export interface Inference {
 
 export function createInference(): Inference {
   const held = new Map<string, Held>();
-  /** Each manifest URL's load, fetched once. */
-  const loads = new Map<string, Promise<ModelInfo>>();
 
   const transformer = (id: HeldId, what: string): Transformer => {
     const model = held.get(id);
@@ -88,17 +87,11 @@ export function createInference(): Inference {
     return info;
   };
 
+  /** Each manifest URL's load, fetched once. */
+  const loadOnce = onceUntilFailure((href: string) => fetchAndHold(new URL(href)));
+
   return {
-    load(manifestUrl) {
-      let load = loads.get(manifestUrl.href);
-      if (!load) {
-        load = fetchAndHold(manifestUrl);
-        loads.set(manifestUrl.href, load);
-        // A failed fetch may succeed later: forget it.
-        load.catch(() => loads.delete(manifestUrl.href));
-      }
-      return load;
-    },
+    load: (manifestUrl) => loadOnce(manifestUrl.href),
     run(tokens, options) {
       const { model, ...forwardOptions } = options;
       return forward(transformer(model, "run"), tokens, forwardOptions);

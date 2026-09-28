@@ -10,12 +10,6 @@ import type { ChapterDef } from "../types.ts";
 
 /** The seeded runs the scene shows (the seed was picked from 1–12, see specs/done/llm-explainer/choices.md). */
 export const SPEC_RUN = { seed: 11, temperature: 1, maxNewTokens: 16, maxK: 8 } as const;
-/**
- * The drafter's cost per token as a fraction of the target's: drafter-64's weights ÷ full's
- * (323,776 ÷ 1,508,480), the cost ratio the drafter probe states. A test checks it against the
- * shipped models and the probe's speedup at k = 4.
- */
-export const DRAFT_COST = 323_776 / 1_508_480;
 /** Rounds the loop plays. */
 export const LOOP_ROUNDS = 3;
 
@@ -91,7 +85,8 @@ export const speculative: ChapterDef = {
         args: {
           alpha: { probe: "draft-acceptance-heldout" },
           k: { slider: true },
-          cost: DRAFT_COST,
+          // The drafter's cost per token as a fraction of full's (their weight ratio).
+          cost: { probe: "draft-cost" },
         },
       },
     },

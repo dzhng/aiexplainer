@@ -251,10 +251,10 @@ Each entry carries a subject tag: [data], [arith], [app], [renderer], [scene],
    When: slice 32.
 
 10. **[arith] Chapter 13's speedup chip is computed live from the slider's k.** It uses
-    the held-out acceptance rate α and the drafter/full cost ratio in Leviathan et al.'s
-    Theorem 3.8 (`specSpeedup`). The label is "speed vs no junior, drafting included",
-    so values below 1× read correctly (0.912× at k = 8). When: slice 33 and the Codex
-    review.
+    the held-out acceptance rate α and the drafter/full cost ratio (the `draft-cost` probe,
+    the models' weight ratio) in Leviathan et al.'s Theorem 3.8 (`specSpeedup`). The label is "speed vs no junior, drafting included",
+    so values below 1× read correctly (0.912× at k = 8). When: slice 33, the Codex
+    review, and the final /review (which replaced a hand-typed ratio with the probe).
 
 11. **[scene] Chapter 14's router choices come from layer 1 of 4.** The usage
     histogram comes from `expert-usage-<e>` evidence measured on held-out text. The chips

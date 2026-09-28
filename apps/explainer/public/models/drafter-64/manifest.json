@@ -150,6 +150,14 @@
   },
   "evidence": [
     {
+      "probe": "draft-cost",
+      "prompt": "",
+      "metric": "drafter-64's weight parameters as a fraction of full's",
+      "value": 0.21463725074246925,
+      "threshold": 0.0,
+      "pass": true
+    },
+    {
       "probe": "draft-acceptance",
       "prompt": "",
       "metric": "\u03b1: mean acceptance probability of a guess by drafter-64 for full",
