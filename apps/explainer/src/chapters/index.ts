@@ -2,6 +2,7 @@
  * Every written chapter, keyed by slug and validated at load time. Chapters not yet
  * written are absent; the ladder (`ladder.ts`) still numbers them.
  */
+import { attention } from "./data/attention.ts";
 import { autocomplete } from "./data/autocomplete.ts";
 import { embeddings } from "./data/embeddings.ts";
 import { sampling } from "./data/sampling.ts";
@@ -23,6 +24,7 @@ export const CHAPTERS: Partial<Record<ChapterSlug, ChapterDef>> = {
   tokenizer,
   embeddings,
   sampling,
+  attention,
   mlp,
   residual,
   stack,

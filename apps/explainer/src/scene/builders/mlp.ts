@@ -36,7 +36,7 @@ import {
 import type { Vec3 } from "math";
 import type { SceneTags } from "../../hud/SceneTags.tsx";
 import type { SceneBuilder, SceneFrame } from "../build-frame.ts";
-import { share } from "./autocomplete.ts";
+import { share } from "../../chapters/format.ts";
 
 /** Chapter 6's run (`runtime/runs/mlp.ts`). */
 export interface MlpRun {

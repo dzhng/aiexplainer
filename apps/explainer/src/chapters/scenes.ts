@@ -13,6 +13,8 @@ export const SCENE_ANCHORS = {
   /** Chapter 3: the die, the score strip, and the word on the card. */
   sampling: ["die", "scores", "word"],
   /** Chapter 6: the question panel, the token arrow, the readout bars, the no-river teaser. */
+  /** Chapter 4: the word blocks, the widest pipe, the focus word's mix, the sealed later words. */
+  attention: ["sentence", "pipes", "mix", "sealed"],
   mlp: ["panel", "arrow", "readout", "teaser"],
   /** Chapter 7: the stations, the river under them, their volume knobs, the best guess. */
   residual: ["stations", "river", "knob", "readout"],
@@ -39,9 +41,10 @@ export const SCENE_KIT: Record<keyof typeof SCENE_ANCHORS, readonly string[]> = 
   tokenizer: ["block", "brick", "contactShadow"],
   embeddings: ["block", "pins", "brick", "contactShadow"],
   sampling: ["block", "bars", "die", "contactShadow"],
+  attention: ["block", "pipes", "sealed", "flows", "tube"],
   mlp: ["questionPanel", "tube", "block", "bars", "contactShadow"],
   residual: ["block", "tube", "river", "volumeKnob", "contactShadow"],
-  stack: ["block", "tube", "contactShadow"],
+  stack: ["block", "tube", "pipes", "contactShadow"],
   generation: ["block", "tube", "bars", "contactShadow"],
   batching: ["mesh", "block", "contactShadow"],
   quantization: ["block", "contactShadow"],

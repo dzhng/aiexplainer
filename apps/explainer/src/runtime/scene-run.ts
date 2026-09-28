@@ -9,6 +9,7 @@ import type { ModelSource } from "@repo/llm";
 import type { SceneBuilderId } from "../chapters/scenes.ts";
 import type { ChapterDef } from "../chapters/types.ts";
 import type { SceneRun } from "../scene/build-frame.ts";
+import { attentionRun } from "./runs/attention.ts";
 import { autocompleteRun } from "./runs/autocomplete.ts";
 import { embeddingsRun } from "./runs/embeddings.ts";
 import { generationRun } from "./runs/generation.ts";
@@ -45,6 +46,7 @@ const RUNS: Partial<Record<SceneBuilderId, SceneRunFn>> = {
   tokenizer: tokenizerRun,
   embeddings: embeddingsRun,
   sampling: samplingRun,
+  attention: attentionRun,
   mlp: mlpRun,
   residual: residualRun,
   stack: stackRun,

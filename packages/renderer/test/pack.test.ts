@@ -55,7 +55,7 @@ test("packFrame fills exactly FRAME_UNIFORM_BYTES", () => {
     createCameraMatrices(),
   );
   const out = packed(FRAME_UNIFORM_BYTES, (o) =>
-    packFrame(o, m, 1.5, 640, 480, 1, 0, { normal: [0, 0, 1], offset: 0.25 }),
+    packFrame(o, m, 1.5, 640, 480, 1, 0, 1, { normal: [0, 0, 1], offset: 0.25 }),
   );
   expectFillsExactly(out, FRAME_UNIFORM_BYTES);
   expect(out[35]).toBe(1.5);
@@ -88,22 +88,31 @@ test("packMaterial and packLook fill exactly their records", () => {
   );
 });
 
-test("packVertices packs AO and baked light; unbaked geometry is open and unlit", () => {
+test("packVertices packs AO, baked light and the axis; plain geometry is open, unlit, on-axis", () => {
   const positions = new Float32Array([1, 2, 3, 4, 5, 6]);
   const normals = new Float32Array([0, 1, 0, 0, 0, 1]);
   const ao = new Float32Array([0.25, 0.75]);
   const light = new Float32Array([1, 0, 0.5, 1]);
+  const axis = new Float32Array([0, 2, 3, 4, 0, 6]);
+  const along = new Float32Array([0.5, 2.5]);
+  const stride = VERTEX_BYTES / 4;
   const baked = packed(2 * VERTEX_BYTES, (out) =>
-    packVertices(out, 0, { positions, normals, ao, light }),
+    packVertices(out, 0, { positions, normals, ao, light, axis, along }),
   );
-  expect(Number.isNaN(baked[16]!)).toBe(true); // the next record is untouched
+  expect(Number.isNaN(baked[2 * stride]!)).toBe(true); // the next record is untouched
   expect([...baked.subarray(0, 7)]).toEqual([1, 2, 3, 0.25, 0, 1, 0]);
-  expect(baked[11]).toBe(0.75);
+  expect(baked[stride + 3]).toBe(0.75);
+  expect([...baked.subarray(8, 11)]).toEqual([0, 2, 3]);
+  expect([...baked.subarray(stride + 8, stride + 11)]).toEqual([4, 0, 6]);
+  expect([baked[11], baked[stride + 11]]).toEqual([0.5, 2.5]);
   // unpack2x16unorm order: warm in the low 16 bits, cool in the high.
   const u32 = new Uint32Array(baked.buffer);
   expect(u32[7]).toBe(0x0000ffff);
-  expect(u32[15]).toBe(0xffff8000);
+  expect(u32[stride + 7]).toBe(0xffff8000);
   const open = packed(2 * VERTEX_BYTES, (out) => packVertices(out, 0, { positions, normals }));
   const openU32 = new Uint32Array(open.buffer);
-  expect([open[3], open[11], openU32[7], openU32[15]]).toEqual([1, 1, 0, 0]);
+  expect([open[3], open[stride + 3], openU32[7], openU32[stride + 7]]).toEqual([1, 1, 0, 0]);
+  // Without an axis, each vertex is its own axis point, so width scaling leaves it put.
+  expect([...open.subarray(8, 11)]).toEqual([1, 2, 3]);
+  expect([...open.subarray(stride + 8, stride + 11)]).toEqual([4, 5, 6]);
 });

@@ -8,10 +8,13 @@ import { block } from "./block.ts";
 import { brick } from "./brick.ts";
 import { pins } from "./pins.ts";
 import { contactShadow } from "./contact-shadow.ts";
+import { flows } from "./flows.ts";
 import { die } from "./die.ts";
 import { draftStrip } from "./draft-strip.ts";
 import { triageBays } from "./triage-bays.ts";
 import { mesh } from "./mesh.ts";
+import { pipes } from "./pipes.ts";
+import { sealed } from "./sealed.ts";
 import type { KitPrimitive } from "./primitive.ts";
 import { questionPanel } from "./question-panel.ts";
 import { river } from "./river.ts";
@@ -25,6 +28,9 @@ export const KIT = {
   bars,
   contactShadow,
   brick,
+  pipes,
+  sealed,
+  flows,
   pins,
   questionPanel,
   river,

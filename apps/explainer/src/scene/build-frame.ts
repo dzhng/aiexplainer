@@ -8,6 +8,7 @@ import type { FrameInput, SceneDesc } from "@repo/renderer";
 import type { ChapterDef, FollowId, SceneBuilderId, ViewMode } from "../chapters/types.ts";
 import type { TimelineState } from "../chapters/timeline.ts";
 import type { SceneTags } from "../hud/SceneTags.tsx";
+import { attention, type AttentionRun } from "./builders/attention.ts";
 import { autocomplete, type CountsRun } from "./builders/autocomplete.ts";
 import { embeddings } from "./builders/embeddings.ts";
 import { generation, type GenerationRun } from "./builders/generation.ts";
@@ -21,6 +22,7 @@ import { quantization } from "./builders/quantization.ts";
 import { speculative } from "./builders/speculative.ts";
 import { experts } from "./builders/experts.ts";
 import { withEnvironment } from "./environment.ts";
+import { nextRevision } from "./revision.ts";
 
 /** The HUD controls a scene reads. */
 export interface SceneUi {
@@ -48,7 +50,8 @@ export type SceneRun =
   | GenerationRun
   | QuantizationRun
   | SpeculativeRun
-  | ExpertsRun;
+  | ExpertsRun
+  | AttentionRun;
 
 /** Chapter 1's run (`runtime/runs/tokenizer.ts`). */
 export interface PiecesRun {
@@ -148,6 +151,7 @@ export const SCENE_BUILDERS: Record<SceneBuilderId, SceneBuilder> = {
   tokenizer,
   embeddings,
   sampling,
+  attention,
   mlp,
   residual,
   stack,
@@ -164,8 +168,6 @@ export interface SceneFrame {
   input: Omit<FrameInput, "timeSec" | "viewport">;
   tags: SceneTags;
 }
-
-let revisions = 0;
 
 export function createSceneFrame(input: SceneFrame["input"]): SceneFrame {
   return { builder: null, input, tags: { anchors: [], text: [], emphasis: [] } };
@@ -185,7 +187,7 @@ export function buildFrame(
 ): SceneFrame["input"] {
   const builder = SCENE_BUILDERS[def.scene];
   if (out.builder !== def.scene) {
-    const created = builder.create(out.input.scene.assets, ++revisions);
+    const created = builder.create(out.input.scene.assets, nextRevision());
     out.input.scene = withEnvironment(created.scene);
     out.tags = created.tags;
     const slots = created.scene.parts.reduce((n, p) => Math.max(n, p.slot + 1), 1);
