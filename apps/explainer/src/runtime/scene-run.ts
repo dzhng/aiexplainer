@@ -15,6 +15,7 @@ import { generationRun } from "./runs/generation.ts";
 import { mlpRun } from "./runs/mlp.ts";
 import { quantizationRun } from "./runs/quantization.ts";
 import { speculativeRun } from "./runs/speculative.ts";
+import { expertsRun } from "./runs/experts.ts";
 import { residualRun } from "./runs/residual.ts";
 import { samplingRun } from "./runs/sampling.ts";
 import { stackRun } from "./runs/stack.ts";
@@ -50,6 +51,7 @@ const RUNS: Partial<Record<SceneBuilderId, SceneRunFn>> = {
   generation: generationRun,
   quantization: quantizationRun,
   speculative: speculativeRun,
+  experts: expertsRun,
 };
 
 /** The scene's run, or null for a chapter whose scene shows no model output. */

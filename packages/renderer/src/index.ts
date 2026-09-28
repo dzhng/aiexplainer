@@ -54,3 +54,4 @@ export {
   type DraftStripParams,
   type DraftTileState,
 } from "./kit/draft-strip.ts";
+export { TRIAGE_SLOTS, bayCenter, deskCenter, type TriageBaysParams } from "./kit/triage-bays.ts";

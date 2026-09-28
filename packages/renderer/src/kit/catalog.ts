@@ -10,6 +10,7 @@ import { pins } from "./pins.ts";
 import { contactShadow } from "./contact-shadow.ts";
 import { die } from "./die.ts";
 import { draftStrip } from "./draft-strip.ts";
+import { triageBays } from "./triage-bays.ts";
 import { mesh } from "./mesh.ts";
 import type { KitPrimitive } from "./primitive.ts";
 import { questionPanel } from "./question-panel.ts";
@@ -30,6 +31,7 @@ export const KIT = {
   volumeKnob,
   die,
   draftStrip,
+  triageBays,
 } as const;
 export type KitPrimitiveId = keyof typeof KIT;
 

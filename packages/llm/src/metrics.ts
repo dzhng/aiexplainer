@@ -47,7 +47,33 @@ export const MODEL_METRICS = {
       return manifest.arch.mlp.hidden;
     },
   },
+  "params.total": {
+    describe: "weights stored in the model file, counted tensor by tensor",
+    read: (model) => parameterCounts(model).total,
+  },
+  "params.perToken": {
+    describe:
+      "weights one token's forward pass uses: all of them, less the experts the router skips",
+    read: (model) => parameterCounts(model).perToken,
+  },
 } satisfies Record<string, ModelMetricEntry>;
+
+/**
+ * A transformer's parameter count, and how many one token uses: in a mixture of experts each
+ * token runs only `topK` of the `experts` in every layer, so the others' weights sit idle.
+ */
+export function parameterCounts(model: ModelSource): { total: number; perToken: number } {
+  const arch = transformerArch(model);
+  if (!("manifest" in model)) throw new Error("parameter counts need a model file");
+  const total = model.manifest.tensors.reduce(
+    (sum, t) => sum + t.shape.reduce((a, b) => a * b, 1),
+    0,
+  );
+  if (arch.mlp === "none" || arch.mlp.kind !== "moe") return { total, perToken: total };
+  const perExpert = 3 * arch.dModel * arch.mlp.hidden;
+  const idle = arch.nLayers * (arch.mlp.experts - arch.mlp.topK) * perExpert;
+  return { total, perToken: total - idle };
+}
 
 export type ModelMetric = keyof typeof MODEL_METRICS;
 

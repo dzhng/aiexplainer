@@ -6,6 +6,7 @@ import { parseGlb } from "../src/gltf.ts";
 import { blockGeometry } from "../src/kit/block.ts";
 import { placeBrick } from "../src/kit/brick.ts";
 import { KIT, KIT_ENTRIES } from "../src/kit/catalog.ts";
+import { TRIAGE_SLOTS, bayCenter } from "../src/kit/triage-bays.ts";
 import { PARTS_PER_TILE, setDraftTile } from "../src/kit/draft-strip.ts";
 import { shadowGeometry } from "../src/kit/contact-shadow.ts";
 import { faceAt } from "../src/kit/die.ts";
@@ -275,4 +276,16 @@ test("draft strip: each tile shows exactly one face, the one for its state", () 
   expect(visible(4)).toEqual(["draft.4"]);
   setDraftTile(parts, 4, "hidden", [0, 1, 0], params.tile);
   expect(visible(4)).toEqual([]);
+});
+
+test("triage bays: a booth and a lamp per bay, each lamp on its own slot, and a desk", () => {
+  const params = KIT.triageBays.example({});
+  const { parts } = KIT.triageBays.build(params);
+  const lamps = parts.filter((p) => p.id.endsWith(".lamp"));
+  expect(lamps.map((p) => p.slot)).toEqual(
+    Array.from({ length: params.bays }, (_, i) => params.slot + TRIAGE_SLOTS.lamps + i),
+  );
+  // Each lamp sits over its own bay.
+  lamps.forEach((lamp, i) => expect(lamp.transform[12]).toBeCloseTo(bayCenter(params, i)[0], 6));
+  expect(parts.filter((p) => p.id.endsWith(".desk"))).toHaveLength(1);
 });
