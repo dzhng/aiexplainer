@@ -25,7 +25,7 @@ slice uses this harness to verify itself.
   - Exposed on `window.__explainer`.
   - Members: `ready: Promise<void>`, `adapter: { vendor, architecture, isFallbackAdapter }`, `setTime(t)`, `errors: string[]`.
   - Later slices add `goto`, `setUi`, `receipt`, `labels` and `crops`.
-- **Lab entry** (D40): `apps/explainer/lab.html`, with the route `/lab/adapter`.
+- **Lab entry** (D40): `apps/explainer/lab/index.html`, with the route `/lab/adapter`.
 - **Harness** (`apps/explainer/scripts/verify.ts`), modelled on `~/dev/3d-harness/apps/workbench/scripts/verify.mjs`:
   - Launch with `chromium.launch({ headless: true, channel: 'chrome' })`.
   - Serve the Vite preview on `http://localhost` (WebGPU needs a secure context).
@@ -35,7 +35,7 @@ slice uses this harness to verify itself.
 
 ## Playable
 
-`bun run --cwd apps/explainer dev`, then open `/lab/adapter.html`. It prints the adapter info.
+`bun run --cwd apps/explainer dev`, then open `/lab/adapter`. It prints the adapter info.
 `bun apps/explainer/scripts/verify.ts --route /lab/adapter` passes headless.
 
 ## Verify

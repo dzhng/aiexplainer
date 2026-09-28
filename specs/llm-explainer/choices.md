@@ -594,3 +594,24 @@ standalone. Entries are appended per pass and consolidated when the spec closes.
 - **Left for the release check:** chapter 10's scene note sits under the controls panel, a
   lavender input bar floats beside chapter 8's left HUD, and chapter 3's ":" and "," words are
   tiny.
+
+## Whole-spec review
+
+- **Duplicated helpers across about 20 parallel passes were collapsed into single owners:**
+  - scene helpers: builder parts, easing, loop-step lookup, token labels, generation's flying
+    card;
+  - runs, llm and renderer: run inputs, `argmax`, camera pose math, dynamics packing, the kit's
+    parked height;
+  - clamps now use `math`'s `clamp`;
+  - training: the story separator, story starts, and the MoE entropy gate.
+
+  About 35 dead exports were un-exported, and tests that pinned config values were rewritten to
+  check behaviour. Verdict: sound; the full sheet is pixel-identical.
+
+- **Deliberately left:** some per-frame allocations (occluders during a view transition, kit
+  place helpers), shader and orbit constants in code (each has one owner), camera matrices
+  computed twice per frame (stage and renderer), and low-payoff duplication in tests and
+  type mirrors. Verdict: acceptable; performance and boundary changes are out of scope for a
+  behaviour-neutral review.
+- **The `sheet` script moved into `apps/explainer`** (`bun run --cwd apps/explainer sheet`).
+  Verdict: sound; the spec references were updated.

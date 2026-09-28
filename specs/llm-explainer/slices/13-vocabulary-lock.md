@@ -21,7 +21,7 @@ that introduces it, and that sub-step gets its own shot (see slices 19–34).
   - `partWorld` (slice 05) is the only place either is applied.
 - **`/lab/tokens`**, completed: palette swatches through the real bloom, emissive levels, type-scale specimens, HUD panel specimens, label specimens in both readings, flow-rhythm swatches, and the Cutaway and Exploded demo on the chapter-0 board.
 - **`/lab/kit/<primitive>`:** a turntable for any kit primitive.
-- **`apps/explainer/scripts/sheet.ts`:** `bun run sheet --variable <crop> --chapters all` makes a contact sheet of one crop across every finished chapter. This is the consistency check that later slices use.
+- **`apps/explainer/scripts/sheet.ts`:** `bun run --cwd apps/explainer sheet --variable <crop> --chapters all` makes a contact sheet of one crop across every finished chapter. This is the consistency check that later slices use.
 - **`validateChapter`** now also rejects unknown kit primitives, shot ids and colour tokens (this extends slice 03).
 
 ## Playable
@@ -91,7 +91,7 @@ Any token change. After this slice it propagates to every chapter automatically,
   - flow rhythm;
   - the three views as scaled full-size frames.
 
-  `/lab/kit/<primitive>` turntables each primitive's example. `bun run sheet --variable
+  `/lab/kit/<primitive>` turntables each primitive's example. `bun run --cwd apps/explainer sheet --variable
 <crop> --chapters all` joins one crop across the written chapters. `verify.ts` gains
   `--full`.
 

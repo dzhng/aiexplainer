@@ -26,7 +26,7 @@ this template:
    - Run screenshot-critique last.
 2. **Scene at the hero time** on `/lab/scene/<slug>?clock=held&t=<hero>`.
    - **Variable:** the chapter's named variable, on its named crop or mask.
-   - Run compare-screenshots against the `bun run sheet --variable hero --chapters all` contact sheet, to catch drift from the house style.
+   - Run compare-screenshots against the `bun run --cwd apps/explainer sheet --variable full --chapters all` contact sheet, to catch drift from the house style.
    - Run screenshot-critique last.
 3. **Loop filmstrip** at 1 fps with caption beats (`verify.ts --strip`).
    - **Variable:** pacing. The point lands by 10 s, and the loop is 20–30 s (D24).
