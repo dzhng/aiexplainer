@@ -28,6 +28,7 @@ import { share } from "../../chapters/format.ts";
 import type { SceneTags } from "../../hud/SceneTags.tsx";
 import type { SceneBuilder, SceneFrame } from "../build-frame.ts";
 import { stepAt } from "../step.ts";
+import { shown as named } from "./sampling.ts";
 
 /** Chapter 0's run (`runtime/runs/autocomplete.ts`). */
 export interface CountsRun {
@@ -202,7 +203,12 @@ export const autocomplete: SceneBuilder = {
         {
           id: "before",
           part: "board.rail",
-          local: [layout.card.x - CARD.width * 0.62, layout.card.y, layout.card.z + CARD.depth / 2],
+          // A little above the card's middle: the smaller muted words then share its baseline.
+          local: [
+            layout.card.x - CARD.width * 0.62,
+            layout.card.y + 0.012,
+            layout.card.z + CARD.depth / 2,
+          ],
           priority: 0,
         },
         { id: "header", part: "board.housing", local: header, priority: 0 },
@@ -236,7 +242,7 @@ export const autocomplete: SceneBuilder = {
       const next = step?.next[i];
       const shown = next !== undefined;
       placeBar(bars[i]!.transform, slot, shown ? next.p * growth * slot.maxHeight : 0);
-      frame.tags.text[i] = shown && growth > 0.05 ? `${next.word}\n${share(next.p)}` : "";
+      frame.tags.text[i] = shown && growth > 0.05 ? `${named(next.word)}\n${share(next.p)}` : "";
       dynamics.intensity[1 + i] = i === 0 ? 1 + flash * FLASH_GAIN : 1;
     }
 

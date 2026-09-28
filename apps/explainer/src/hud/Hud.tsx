@@ -277,23 +277,25 @@ function StoryPanel(props: HudProps) {
             onSelect={(mode) => mode !== state.labelMode && dispatch({ type: "toggleLabelMode" })}
           />
         </div>
-        <button
-          className={css.iconButton}
-          aria-label={state.playing ? "Pause the loop" : "Play the loop"}
-          title={state.playing ? "Pause (Space)" : "Play (Space)"}
-          onClick={() => dispatch({ type: "togglePlay" })}
-        >
-          {state.playing ? <PauseIcon /> : <PlayIcon />}
-        </button>
-        <button
-          className={css.iconButton}
-          aria-label="Help"
-          aria-pressed={state.helpOpen}
-          title="Help (?)"
-          onClick={() => dispatch({ type: "toggleHelp" })}
-        >
-          <HelpIcon />
-        </button>
+        <div className={css.loopControls}>
+          <button
+            className={css.iconButton}
+            aria-label={state.playing ? "Pause the loop" : "Play the loop"}
+            title={state.playing ? "Pause the loop (Space)" : "Play the loop (Space)"}
+            onClick={() => dispatch({ type: "togglePlay" })}
+          >
+            {state.playing ? <PauseIcon /> : <PlayIcon />}
+          </button>
+          <button
+            className={css.iconButton}
+            aria-label="Help"
+            aria-pressed={state.helpOpen}
+            title="Help (?)"
+            onClick={() => dispatch({ type: "toggleHelp" })}
+          >
+            <HelpIcon />
+          </button>
+        </div>
       </div>
     </nav>
   );

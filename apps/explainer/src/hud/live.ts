@@ -21,17 +21,17 @@ export function liveModel(model: ModelSource): LiveModel {
   if (!("manifest" in model))
     return {
       invite: "The real tokenizer every model here uses splits your text as you type.",
-      receipt: `split by the tokenizer: ${count(modelMetric(model, "vocabSize"))} pieces it knows`,
+      receipt: `Split by the tokenizer: ${count(modelMetric(model, "vocabSize"))} pieces it knows`,
     };
   const { manifest } = model;
   if (manifest.kind === "word-counts")
     return {
       invite: "A real word-pair counts model looks up your last word as you type.",
-      receipt: `looked up in the counts model: ${count(modelMetric(model, "vocabSize"))} words it kept`,
+      receipt: `Looked up in the counts model: ${count(modelMetric(model, "vocabSize"))} words it kept`,
     };
   const layers = manifest.arch.nLayers;
   return {
     invite: "A real tiny language model in your browser answers as you type.",
-    receipt: `answered by the “${sourceId(model)}” model: ${layers} ${layers === 1 ? "layer" : "layers"}, ${count(modelMetric(model, "params.total"))} weights`,
+    receipt: `Answered by the “${sourceId(model)}” model: ${layers} ${layers === 1 ? "layer" : "layers"}, ${count(modelMetric(model, "params.total"))} weights`,
   };
 }

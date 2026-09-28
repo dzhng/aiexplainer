@@ -476,6 +476,75 @@
   min-width: 0;
 }
 
+.labelMode .seg {
+  flex-wrap: nowrap;
+}
+
+/* Play and help: set apart from the label wording by a rule. */
+.loopControls {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding-left: 10px;
+  border-left: 1px dashed var(--hud-line);
+}
+
+/*
+ * A window short of about 920 px: the column tightens (no series line, a smaller title,
+ * snugger panels) so the whole story still fits at 1440×900 and 1200×800.
+ */
+@media (max-height: 920px) {
+  .series {
+    display: none;
+  }
+
+  .title {
+    margin-top: 10px;
+    font-size: var(--text-xl);
+  }
+
+  .why {
+    margin-top: 8px;
+  }
+
+  .stats {
+    margin-top: 10px;
+  }
+
+  .chip {
+    padding: 6px 10px 7px;
+  }
+
+  .caption {
+    padding: 9px 14px 9px 20px;
+  }
+
+  .column {
+    gap: 9px;
+  }
+
+  .story {
+    gap: 8px;
+    padding: 9px 14px;
+  }
+}
+
+/* Shorter still (1200×800): the caption and the chips set a size smaller. */
+@media (max-height: 840px) {
+  .caption p {
+    font-size: var(--text-sm);
+  }
+
+  .story .seg button {
+    padding: 4px 9px;
+    font-size: var(--text-xs);
+  }
+
+  .step {
+    gap: 4px;
+  }
+}
+
 .labelModeHead {
   font-family: var(--font-display);
   font-size: var(--text-xs);

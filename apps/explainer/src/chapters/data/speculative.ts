@@ -98,7 +98,7 @@ export const speculative: ChapterDef = {
   ],
   slider: {
     id: "k",
-    label: "Words drafted per round (k)",
+    label: "Words drafted (k)",
     hint: "Words the junior guesses before the senior checks.",
     min: 1,
     max: 8,
