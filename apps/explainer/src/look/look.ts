@@ -4,7 +4,7 @@
  * the renderer only ever sees them converted to linear. Every number is checked here, where
  * it is loaded.
  */
-import type { CutPlane, LightLook, LinearRgb, LookConfig, MaterialLook } from "@repo/renderer";
+import type { LightLook, LinearRgb, LookConfig, MaterialLook } from "@repo/renderer";
 import raw from "./look.json";
 
 export type PaletteToken = keyof typeof raw.palette;
@@ -75,18 +75,6 @@ export interface LookTokens {
    * pulses, and the lit share of that gap.
    */
   flow: { cyclesPerSec: number; spacing: number; duty: number };
-  /**
-   * The view vocabulary: how long a view change takes, and the Cutaway view's cap colour
-   * (a palette token × `capGain`) and cut plane, per scene (`default` otherwise).
-   */
-  views: {
-    durationSec: number;
-    cutaway: {
-      cap: PaletteToken;
-      capGain: number;
-      planes: Record<string, { normal: number[]; offset: number }>;
-    };
-  };
   /** The environment: the lab room prop's own glows and AO, and the reflected gradient. */
   room: {
     /** Specular surfaces reflect this vertical gradient (and it fills any gap in the room). */
@@ -231,18 +219,6 @@ function glow(name: string, color: ColourValue, gain: number): MaterialLook {
   };
 }
 
-/** The Cutaway plane for a scene: its own from `views.cutaway.planes`, else the default. */
-export function cutPlane(scene: string): CutPlane {
-  const planes = look.views.cutaway.planes;
-  const plane = planes[scene] ?? planes.default;
-  if (!plane) throw new Error("look: views.cutaway.planes.default is required");
-  const [x = 0, y = 0, z = 0] = plane.normal;
-  const length = Math.hypot(x, y, z);
-  if (plane.normal.length !== 3 || !(length > 0))
-    throw new Error(`look: views.cutaway.planes.${scene} normal must be a non-zero [x, y, z]`);
-  return { normal: [x / length, y / length, z / length], offset: plane.offset };
-}
-
 /** The light a room practical casts, at a baked light value of 1. */
 function spill(name: string, p: { color: ColourValue; spill: number }): LinearRgb {
   const gain = positive(`room.practicals.${name}.spill`, p.spill);
@@ -318,12 +294,6 @@ export function lookConfig(extraMaterials: Record<string, MaterialToken> = {}): 
     },
     ambient: colour(ambient.color).map((c) => c * ambient.intensity) as LinearRgb,
     materials,
-    cutaway: {
-      plane: cutPlane("default"),
-      cap: linear(look.views.cutaway.cap).map(
-        (c) => c * positive("views.cutaway.capGain", look.views.cutaway.capGain),
-      ) as LinearRgb,
-    },
     tonemap: {
       exposure: positive("tonemap.exposure", tonemap.exposure),
       saturation: positive("tonemap.saturation", tonemap.saturation),

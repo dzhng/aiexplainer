@@ -289,7 +289,7 @@ async function buildRenderer(
         s = built.value;
       }
       // Part transforms are per-frame data (bars grow, cards slide); repacking is allocation-free.
-      packInstances(s.compiled, input.view, s.instanceF32, s.instanceU32);
+      packInstances(s.compiled, s.instanceF32, s.instanceU32);
       device.queue.writeBuffer(s.instances, 0, s.instanceF32);
       packDynamics(
         input.dynamics,
@@ -305,7 +305,6 @@ async function buildRenderer(
       const bloomOn = input.debug?.bloom !== false;
       const emissive = layers & Layer.emissive ? 1 : 0;
       const flows = layers & Layer.flows ? 1 : 0;
-      const cut = input.view.cut ?? look.look.cutaway.plane;
       packFrame(
         frameData,
         camera,
@@ -315,13 +314,11 @@ async function buildRenderer(
         emissive,
         bloomOn ? 1 : 0,
         flows,
-        cut,
       );
       device.queue.writeBuffer(gpuFrameUniform, 0, frameData);
 
       const swapchain = context.getCurrentTexture().createView();
-      const cutting = input.view.mode === "cutaway" && input.view.t > 0;
-      encodeFrame(device, swapchain, pipelines, t, s, look, bloomOn, cutting, receipt, timer);
+      encodeFrame(device, swapchain, pipelines, t, s, look, bloomOn, receipt, timer);
       receipt.gpuMs = timer?.lastMs ?? null;
       registry.stats(receipt.registry);
       return receipt;

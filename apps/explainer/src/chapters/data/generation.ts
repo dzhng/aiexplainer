@@ -75,7 +75,6 @@ export const generation: ChapterDef = {
     { id: "rail", label: "The text", anchor: "rail" },
     { id: "counter", label: "Work counter", anchor: "counter" },
   ],
-  slider: { id: "words", label: "Words to write", min: 1, max: 6, step: 1, initial: 6 },
   scenarios: [
     {
       id: "little",
@@ -90,7 +89,6 @@ export const generation: ChapterDef = {
       probe: "val-loss",
     },
   ],
-  views: ["whole", "exploded"],
   labels: [
     { anchor: "machine", analogy: "The whole machine", technical: "Forward pass (4 layers)" },
     { anchor: "rail", analogy: "The text so far", technical: "Input tokens" },

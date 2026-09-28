@@ -78,7 +78,6 @@ const PANEL: QuestionPanelParams = {
   lampSize: 0.2,
   arrow: { y: 1.6, z: 0.42 },
   materials: { housing: "housing", rim: "metal", lamp: "neuron", push: "bar" },
-  explode: [0, 0, -0.4],
 };
 const PANEL_SLOTS = 1 + 2 * MLP_LAMPS;
 
@@ -153,7 +152,6 @@ export const mlp: SceneBuilder = {
       segment(i === 0 ? "arrow" : `arrow.${i}`, slot++, "bar"),
     );
     const tip = box("arrow.tip", arrowSlot + ARROW_PIECES - 1, "bar", [0, 0, 0], [1, 1, 1]);
-    for (const part of [...arrow, tip]) part.explode = [0, 0, 0.35];
 
     const barSlots: BarSlot[] = [0, 1].map((i) => ({
       x: READOUT.x + (i - 0.5) * READOUT.gap,
@@ -170,7 +168,6 @@ export const mlp: SceneBuilder = {
       slot: barsSlot,
       material: "bar",
       slots: barSlots,
-      explode: [0.3, 0, 0.35],
     });
     const plainSlot = slot++;
     const plinth = box(
@@ -180,7 +177,6 @@ export const mlp: SceneBuilder = {
       [READOUT.x, READOUT.floor / 2, READOUT.z],
       [READOUT.gap + READOUT.width + 0.24, READOUT.floor, READOUT.depth + 0.2],
     );
-    plinth.explode = [0.3, 0, 0.35];
     // Each bar stands in a glass track its full height tall, so a short bar reads as a gauge.
     const tracks = barSlots.map((bar, i) => {
       const track = box(
@@ -190,7 +186,6 @@ export const mlp: SceneBuilder = {
         [bar.x, bar.floor + bar.maxHeight / 2, bar.z],
         [bar.width + 0.06, bar.maxHeight, bar.depth + 0.06],
       );
-      track.explode = [0.3, 0, 0.35];
       return track;
     });
     const panels = Array.from({ length: TEASER.panels }, (_, i) =>
@@ -302,7 +297,6 @@ export const mlp: SceneBuilder = {
       ablate: ch("ablate", 0),
       teaser: ch("teaser", 0),
       teaserFlow: ch("teaserFlow", 0),
-      shown: ui.slider,
     };
     const b = built.get(frame.input.scene)!;
     const data = run?.kind === "mlp" ? run : null;
@@ -321,8 +315,6 @@ interface Pose {
   ablate: number;
   teaser: number;
   teaserFlow: number;
-  /** How many of the most active lamps to show (the slider). */
-  shown: number;
 }
 
 /** Everything at full reach with the teaser down: how the scene is built. */
@@ -335,7 +327,6 @@ const BUILT_POSE: Pose = {
   ablate: 0,
   teaser: 0,
   teaserFlow: 0,
-  shown: MLP_LAMPS,
 };
 
 /**
@@ -359,7 +350,7 @@ function pose(
   let total = 0;
   for (let i = 0; i < MLP_LAMPS; i++) {
     const lamp = lamps[i];
-    const shown = data === null || (lamp !== undefined && lamp.rank < state.shown);
+    const shown = data === null || lamp !== undefined;
     const rank = lamp?.rank ?? i;
     // Most active first: the lamp of rank r lights once `lamps` passes r / count.
     const off = data !== null && rank < data.offCount ? state.ablate : 0;

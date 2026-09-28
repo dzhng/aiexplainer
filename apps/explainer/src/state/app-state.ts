@@ -3,11 +3,11 @@
  * Pure: `reduce` takes the written chapters as context and never reads the DOM or the clock.
  *
  * D32: arriving at a chapter restarts its loop (`loopEpoch` bumps, `playing` turns on); a scene
- * control (Follow, slider, scenario, view, typed text) pauses it; ▶ resumes. The reading aids (Analogy /
+ * control (Follow, slider, scenario, typed text) pauses it; ▶ resumes. The reading aids (Analogy /
  * Technical labels, the "Technical" caption line, help) change what text is shown, not the scene, so they don't pause.
  */
 import { LADDER, displayNumber, slugAt } from "../chapters/ladder.ts";
-import type { ChapterDef, ChapterSlug, FollowId, ViewMode } from "../chapters/types.ts";
+import type { ChapterDef, ChapterSlug, FollowId } from "../chapters/types.ts";
 
 export type Chapters = Partial<Record<ChapterSlug, ChapterDef>>;
 export type LabelMode = "analogy" | "technical";
@@ -16,6 +16,7 @@ export interface AppState {
   chapter: ChapterSlug;
   /** `null` is "All". */
   follow: FollowId | null;
+  /** The chapter slider's value (0 in a chapter without one). */
   slider: number;
   /**
    * Whether the reader has moved the slider since arriving. Until they do, a scene may play
@@ -26,7 +27,6 @@ export interface AppState {
   scenario: string | null;
   /** What the reader typed; `null` (or empty) plays the loop's own inputs. */
   text: string | null;
-  view: ViewMode;
   playing: boolean;
   /** Bumps on every arrival; the frame loop restarts loop time when it changes. */
   loopEpoch: number;
@@ -43,7 +43,6 @@ export type Action =
   | { type: "setSlider"; value: number }
   | { type: "setScenario"; scenario: string | null }
   | { type: "setText"; text: string }
-  | { type: "setView"; view: ViewMode }
   | { type: "togglePlay" }
   | { type: "toggleLabelMode" }
   | { type: "toggleTechnical" }
@@ -66,11 +65,10 @@ function arrive(chapters: Chapters, slug: ChapterSlug, from: AppState | null): A
   return {
     chapter: slug,
     follow: null,
-    slider: def.slider.initial,
+    slider: def.slider?.initial ?? 0,
     sliderSet: false,
     scenario: null,
     text: null,
-    view: def.views[0] ?? "whole",
     playing: true,
     loopEpoch: (from?.loopEpoch ?? -1) + 1,
     labelMode: from?.labelMode ?? "analogy",
@@ -85,8 +83,9 @@ export function initialState(chapters: Chapters, slug: ChapterSlug): AppState {
 
 const clamp = (v: number, min: number, max: number) => Math.min(max, Math.max(min, v));
 
-/** `value` on the chapter slider's step, inside its range. */
+/** `value` on the chapter slider's step, inside its range (0 without a slider). */
 export function snapSlider(def: ChapterDef, value: number): number {
+  if (!def.slider) return 0;
   const { min, max, step } = def.slider;
   // `toFixed` drops the float residue of a fractional step (3 × 0.1 is 0.30000000000000004).
   const snapped = Number((min + Math.round((value - min) / step) * step).toFixed(9));
@@ -98,7 +97,7 @@ export function snapSlider(def: ChapterDef, value: number): number {
  * loop's own value when the chapter's loop plays the slider (`SliderDef.loop`).
  */
 export function shownSlider(state: AppState, def: ChapterDef, loopValue: number | null): number {
-  if (state.sliderSet || def.slider.loop === undefined || loopValue === null) return state.slider;
+  if (state.sliderSet || def.slider?.loop === undefined || loopValue === null) return state.slider;
   return snapSlider(def, loopValue);
 }
 
@@ -118,6 +117,7 @@ export function reduce(state: AppState, action: Action, chapters: Chapters): App
       if (action.follow !== null && !def.follow.some((f) => f.id === action.follow)) return state;
       return { ...paused, follow: action.follow };
     case "setSlider":
+      if (!def.slider) return state;
       return { ...paused, slider: snapSlider(def, action.value), sliderSet: true };
     case "setScenario":
       if (action.scenario !== null && !def.scenarios.some((s) => s.id === action.scenario))
@@ -125,8 +125,6 @@ export function reduce(state: AppState, action: Action, chapters: Chapters): App
       return { ...paused, scenario: action.scenario, text: null };
     case "setText":
       return { ...paused, scenario: null, text: action.text === "" ? null : action.text };
-    case "setView":
-      return def.views.includes(action.view) ? { ...paused, view: action.view } : state;
     case "togglePlay":
       return { ...state, playing: !state.playing };
     case "toggleLabelMode":

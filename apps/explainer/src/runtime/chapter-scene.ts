@@ -17,10 +17,7 @@ import {
 } from "../scene/build-frame.ts";
 import { ENVIRONMENT } from "../scene/environment.ts";
 import { shotPose } from "../scene/shots.ts";
-import { ViewTransition } from "../scene/views.ts";
 import { arrivalPose } from "./arrival.ts";
-import { motionClock } from "./clock.ts";
-import { cutPlane, look } from "../look/look.ts";
 
 export interface ChapterSceneState {
   def: ChapterDef;
@@ -77,7 +74,6 @@ export function chapterScene(
 ): ChapterScene {
   const input: ChapterScene["input"] = {
     camera: shotPose(first.shot),
-    view: { mode: first.views[0] ?? "whole", t: 0 },
     // The room shows from the first frame (the stage starts once `loadSceneAssets` is done).
     scene: { revision: 0, parts: [], anchors: [], assets, environment: ENVIRONMENT.id },
     dynamics: {
@@ -89,10 +85,6 @@ export function chapterScene(
   const frame = createSceneFrame(input);
   let timelineFor: ChapterDef | null = null;
   let tl: TimelineState | null = null;
-  // View changes are UI motion on the wall clock, not loop time: they ease in even while a
-  // lab page holds the loop clock, and a page that opens in a view starts settled in it.
-  let views: ViewTransition | null = null;
-  let lastSec = motionClock.now();
   // The reader's camera, kept while a pull-back eases away from it.
   const held = createPose();
   return {
@@ -113,15 +105,10 @@ export function chapterScene(
       if (timelineFor !== def || !tl) {
         tl = createTimelineState(def.loop);
         timelineFor = def;
-        views = new ViewTransition(ui.view);
       }
       evalTimeline(def.loop, loopTime, tl);
       frame.input = stageInput;
       buildFrame(def, tl, ui, run, frame);
-      const now = motionClock.now();
-      views!.step(ui.view, now - lastSec, look.views.durationSec, stageInput.view);
-      lastSec = now;
-      stageInput.view.cut = cutPlane(def.scene);
       // The chapter's one zoom-out (D5): ease the camera toward its wide shot and back.
       const pull = def.pullBack ? (tl.channels[def.pullBack.channel] ?? 0) : 0;
       if (def.pullBack && pull > 0) {

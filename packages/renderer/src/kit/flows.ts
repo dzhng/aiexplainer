@@ -33,8 +33,6 @@ export const flows: KitPrimitive<FlowsParams> = {
       path,
       radius: p.radius * SLEEVE,
       transform: mat4.create(),
-      explode: p.explode,
-      cutaway: p.cutaway,
       primitive: "flows",
     }));
     const first = parts[0]!.path;
@@ -49,7 +47,6 @@ export const flows: KitPrimitive<FlowsParams> = {
           priority: 1,
         },
       ],
-      explode: p.explode ?? [0, 0, 0],
     };
   },
   example: () => ({

@@ -13,6 +13,7 @@ import { ROUTED_TOKENS, ROUTER_LAYER, experts } from "../src/chapters/data/exper
 import { resolveStat } from "../src/chapters/stats.ts";
 import { validateChapter } from "../src/chapters/validate.ts";
 import type { ExpertsRun } from "../src/scene/build-frame.ts";
+import { createTimelineState, evalTimeline } from "../src/chapters/timeline.ts";
 import { chapterRun, frameAt } from "./scene-harness.ts";
 
 const moe = await shippedModel("moe");
@@ -36,10 +37,18 @@ describe("chapter 14's numbers equal their sources", () => {
   });
 
   test("the lit bays are exactly the word's two experts; the other six stay dark", () => {
-    for (let n = 0; n < ROUTED_TOKENS; n++) {
-      const { intensity } = frameAt(experts, run, 0, { slider: n + 1, sliderSet: true });
+    // Every word the loop routes, at each moment its copies stand in their bays.
+    const routed = new Set<number>();
+    const tl = createTimelineState(experts.loop);
+    for (let t = 0; t < experts.loop.durationSec; t += 0.05) {
+      const c = evalTimeline(experts.loop, t, tl).channels;
+      if ((c.route ?? 0) < 0.999 || (c.usage ?? 0) > 0) continue;
+      const n = Math.round(c.token ?? 0);
+      const { intensity } = frameAt(experts, run, t);
       expect(lit(intensity)).toEqual([...run.tokens[n]!.experts].sort((a, b) => a - b));
+      routed.add(n);
     }
+    expect(routed.size).toBe(ROUTED_TOKENS);
     // Between words, with the copies still at the desk, no bay is lit.
     expect(lit(frameAt(experts, run, 0.2).intensity)).toEqual([]);
   });

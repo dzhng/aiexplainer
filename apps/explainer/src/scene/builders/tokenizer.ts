@@ -39,7 +39,7 @@ const UNIT = 0.2;
 /** Characters of face text one stud of length holds at the hero shot. */
 const CHARS_PER_UNIT = 5;
 const MAX_UNITS = 3;
-/** The most bricks on show at once (the slider's range); each colour's pool holds this many. */
+/** The most bricks on show at once; each colour's pool holds this many. */
 export const MAX_BRICKS = 16;
 /** Gap before a brick that starts a new word, metres. */
 const WORD_GAP = 0.08;
@@ -373,7 +373,7 @@ export const tokenizer: SceneBuilder = {
     const steps = run?.kind === "pieces" ? run.steps : [];
     const typed = ui.text !== null;
     const step = stepAt(steps, typed, tl.channels.input);
-    const { pieces, spots } = laidOut(b, step?.pieces, Math.min(MAX_BRICKS, ui.slider));
+    const { pieces, spots } = laidOut(b, step?.pieces, MAX_BRICKS);
     const arrive = typed ? 1 : (tl.channels.bricksIn ?? 1);
     const stamp = typed ? 1 : (tl.channels.ids ?? 1);
     const pair = typed ? 0 : (tl.channels.pair ?? 0);

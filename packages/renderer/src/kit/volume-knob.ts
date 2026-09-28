@@ -52,8 +52,6 @@ export const volumeKnob: KitPrimitive<VolumeKnobParams> = {
       path: UNIT_SEGMENT,
       radius: 1,
       transform: mat4.create(),
-      explode: p.explode,
-      cutaway: p.cutaway,
       primitive: "volumeKnob",
     };
     placeSegment(dial.transform, [x, y, z], [x, y, z + DIAL_DEPTH], p.radius);
@@ -63,7 +61,6 @@ export const volumeKnob: KitPrimitive<VolumeKnobParams> = {
       slot: p.slot + 1,
       material: p.materials.pointer,
       transform: mat4.create(),
-      explode: p.explode,
       primitive: "volumeKnob",
     };
     placeKnob(pointer.transform, p, 0);
@@ -73,7 +70,6 @@ export const volumeKnob: KitPrimitive<VolumeKnobParams> = {
       bounds: [x - r, y - r, z, x + r, y + r, z + DIAL_DEPTH + 0.03],
       // The rim at the top-right, in the unit segment's frame (+Y runs out of the face).
       anchors: [{ id: p.id, part: dial.id, local: [0.7, 1, 0.7], priority: 1 }],
-      explode: p.explode ?? [0, 0, 0],
     };
   },
   example: () => ({

@@ -107,8 +107,6 @@ export const pipes: KitPrimitive<PipesParams> = {
       path,
       radius: p.radius,
       transform: mat4.create(),
-      explode: p.explode,
-      cutaway: p.cutaway,
       primitive: "pipes",
     }));
     // The first pipe's midpoint (its anchor is on the path, inside the bounds).
@@ -118,7 +116,6 @@ export const pipes: KitPrimitive<PipesParams> = {
       parts,
       bounds: unionBounds(parts.map((part) => tubeGeometry(part.path, part.radius).bounds)),
       anchors: [{ id: p.id, part: parts[0]!.id, local: vec3.clone(middle), priority: 1 }],
-      explode: p.explode ?? [0, 0, 0],
     };
   },
   example: () => ({

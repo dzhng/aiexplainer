@@ -82,7 +82,6 @@ export const experts: ChapterDef = {
     { id: "bays", label: "Experts", anchor: "bays" },
     { id: "usage", label: "Usage", anchor: "usage" },
   ],
-  slider: { id: "token", label: "Word to route", min: 1, max: ROUTED_TOKENS, step: 1, initial: 1 },
   scenarios: [
     {
       id: "little",
@@ -91,7 +90,6 @@ export const experts: ChapterDef = {
       probe: "expert-usage-entropy",
     },
   ],
-  views: ["whole", "exploded"],
   labels: [
     { anchor: "desk", analogy: "Triage desk: picks 2 bays", technical: "Router (top-2 of 8)" },
     { anchor: "bays", analogy: "Expert bays", technical: "8 expert MLPs" },

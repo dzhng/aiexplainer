@@ -12,7 +12,6 @@ import {
 } from "../src/labels.ts";
 import { testLook } from "./look.ts";
 
-const view = { mode: "whole" as const, t: 0 };
 const identity: Part["transform"] = [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1];
 const block = (id: string, [x, y, z]: Vec3, [sx, sy, sz]: Vec3): Part => ({
   kind: "block",
@@ -45,8 +44,8 @@ function place(
   );
   const placements = placeLabels(
     matrices,
-    sceneAnchors(scene, view),
-    sceneOccluders(scene, view, testLook()),
+    sceneAnchors(scene),
+    sceneOccluders(scene, testLook()),
     [],
     DEFAULT_LABEL_BOX,
     obstacles,
@@ -106,7 +105,6 @@ test("a pipe stretched along its length keeps its radius as an occluder", () => 
   };
   const [capsule] = sceneOccluders(
     { revision: 1, parts: [pipe], anchors: [], assets: {} },
-    view,
     testLook(),
   );
   expect(capsule).toMatchObject({ kind: "capsule", a: [-2, 0, 0], b: [2, 0, 0] });

@@ -77,13 +77,11 @@ export const embeddings: ChapterDef = {
     { id: "arrows", label: "Arrows", anchor: "arrows" },
     { id: "text", label: "Your text", anchor: "text" },
   ],
-  slider: { id: "pinned", label: "Words pinned", min: 2, max: 60, step: 2, initial: 60 },
   scenarios: [
     { id: "sun", label: "sun moon", prompt: "sun moon", probe: "neighbours" },
     { id: "said", label: "said asked", prompt: "said asked", probe: "neighbours" },
     { id: "sad", label: "sad upset", prompt: "sad upset", probe: "neighbours" },
   ],
-  views: ["whole"],
   labels: [
     {
       anchor: "map",

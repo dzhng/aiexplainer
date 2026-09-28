@@ -64,7 +64,7 @@ test("partWorldBounds places local bounds with the part transform", () => {
     ...block("s", "metal"),
     transform: [2, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 5, 0, 0, 1],
   };
-  const out = partWorldBounds(part, {}, { mode: "whole", t: 0 }, [0, 0, 0, 0, 0, 0]);
+  const out = partWorldBounds(part, {}, [0, 0, 0, 0, 0, 0]);
   expect(out).toEqual([4, -0.5, -0.5, 6, 0.5, 0.5]);
 });
 
@@ -98,8 +98,6 @@ test("mesh nodes bind presets by name and instance across parts", () => {
     asset: "board",
     node: n,
     transform: identity,
-    explode: [0, 0, 0],
-    cutaway: "keep",
   });
   const compiled = compileScene(
     {

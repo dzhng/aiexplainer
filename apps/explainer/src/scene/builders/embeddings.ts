@@ -96,7 +96,7 @@ interface Built {
     used: number[];
   };
   /** What the pins were placed from last frame; a change re-tests label occlusion. */
-  motion: { fly: number; arrows: number; sink: number; step: unknown; slider: number };
+  motion: { fly: number; arrows: number; sink: number; step: unknown };
 }
 
 const built = new WeakMap<SceneDesc, Built>();
@@ -274,7 +274,7 @@ export const embeddings: SceneBuilder = {
         placement: { center: [0, 0, 0], unit: BRICK_UNIT, length: 1 },
         used: COLOURS.map(() => 0),
       },
-      motion: { fly: -1, arrows: -1, sink: -1, step: null, slider: -1 },
+      motion: { fly: -1, arrows: -1, sink: -1, step: null },
     });
     return { scene, tags };
   },
@@ -337,13 +337,13 @@ export const embeddings: SceneBuilder = {
       }
     }
 
-    // The background pins, the slider's first N; a word the input pins itself yields to it.
+    // The background pins; a word the input pins itself yields to it.
     for (let i = 0; i < BACKGROUND; i++) {
       const id = EMBED_MAP.pins[i]!.id;
       let covered = false;
       for (let k = 0; k < inputs.length && !covered; k++)
         covered = inputs[k]!.id === id && landing(fly, inputs.length, k) >= LANDED;
-      const shown = i < ui.slider && !covered;
+      const shown = !covered;
       const grow = arrows * (1 - focus);
       placePin(b.background, i, shown ? BACKGROUND_HEADS[i]! : null, MAP_TOP, ORIGIN_POINT, grow);
       frame.tags.text[b.tagOf.background + i] = shown ? EMBED_MAP.pins[i]!.word : "";
@@ -363,14 +363,12 @@ export const embeddings: SceneBuilder = {
       motion.fly !== fly ||
       motion.arrows !== arrows ||
       motion.sink !== sink ||
-      motion.step !== step ||
-      motion.slider !== ui.slider
+      motion.step !== step
     ) {
       motion.fly = fly;
       motion.arrows = arrows;
       motion.sink = sink;
       motion.step = step;
-      motion.slider = ui.slider;
       scene.layout = (scene.layout ?? 0) + 1;
     }
   },

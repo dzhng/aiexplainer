@@ -42,13 +42,6 @@ const FACE_GLOW = 0.3;
 /** How far a discarded guess falls out of the row, metres. */
 const DROP = -0.3;
 
-const EXPLODE = {
-  junior: [-0.8, 0, 0] as Vec3,
-  senior: [0.8, 0, 0] as Vec3,
-  strip: [0, 0.5, 0.6] as Vec3,
-  rail: [0, -0.2, 0.6] as Vec3,
-};
-
 /** One round as the scene shows it at `phase`. */
 export function roundView(round: SpeculativeRun["byK"][number]["rounds"][number], phase: number) {
   const k = round.drafted.length;
@@ -92,7 +85,6 @@ export const speculative: SceneBuilder = {
       "steel",
       [JUNIOR.x, JUNIOR.size[1] / 2, 0],
       JUNIOR.size,
-      EXPLODE.junior,
     );
     const senior = box(
       "senior",
@@ -100,7 +92,6 @@ export const speculative: SceneBuilder = {
       "steel",
       [SENIOR.x, SENIOR.size[1] / 2, 0],
       SENIOR.size,
-      EXPLODE.senior,
     );
     const lamps = [
       box(
@@ -109,7 +100,6 @@ export const speculative: SceneBuilder = {
         "bar",
         [JUNIOR.x, JUNIOR.size[1] * 0.72, JUNIOR.size[2] / 2 + LAMP.d / 2],
         [JUNIOR.size[0] * 0.55, LAMP.h, LAMP.d],
-        EXPLODE.junior,
       ),
       box(
         "senior.lamp",
@@ -117,7 +107,6 @@ export const speculative: SceneBuilder = {
         "bar",
         [SENIOR.x, SENIOR.size[1] * 0.78, SENIOR.size[2] / 2 + LAMP.d / 2],
         [SENIOR.size[0] * 0.6, LAMP.h, LAMP.d],
-        EXPLODE.senior,
       ),
     ];
     const strip = KIT.draftStrip.build({
@@ -127,10 +116,9 @@ export const speculative: SceneBuilder = {
       count: TILES,
       tile: TILE,
       gap: GAP,
-      explode: EXPLODE.strip,
       states: Array.from({ length: TILES }, () => "hidden"),
     });
-    const rail = box("rail", SLOT.rail, "metal", [0, RAIL.y, RAIL.z], RAIL.size, EXPLODE.rail);
+    const rail = box("rail", SLOT.rail, "metal", [0, RAIL.y, RAIL.z], RAIL.size);
     const shadow = KIT.contactShadow.build({
       id: "shadow",
       slot: SLOT.shadow,

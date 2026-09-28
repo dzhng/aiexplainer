@@ -104,8 +104,6 @@ export const batching: ChapterDef = {
     loop: "batch",
   },
   scenarios: [],
-  // No Cutaway: both sides are windows already, so a section would only paint the shell.
-  views: ["whole", "exploded"],
   labels: [
     { anchor: "bus", analogy: "The bus: one trip per word", technical: "One decode step" },
     {

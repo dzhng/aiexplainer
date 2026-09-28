@@ -49,20 +49,6 @@ const CRATE_GLOW = 0.1;
 /** Where a hidden cube waits: under the floor. */
 const HIDDEN_Y = -5;
 
-const EXPLODE: Record<string, Vec3> = {
-  "bus.body": [0, 0, -0.45],
-  "bus.frame": [0, 0, 0.5],
-  "bus.glass": [0, 0, 0.7],
-  "bus.trim": [0, 0, 0.35],
-  "bus.wheels": [0, -0.15, 0],
-  "bus.hubs": [0, -0.15, 0],
-  "bus.rack": [0, 0.35, 0],
-  "bus.seat": [0, 0, 0.15],
-};
-const RIDERS_EXPLODE: Vec3 = [0, 0, 0.15];
-const CRATES_EXPLODE: Vec3 = [0, 0.7, 0];
-const STOP_EXPLODE: Vec3 = [-0.4, 0, 0.3];
-
 /** The capacity the bus is built for: arithmetic, never a typed number. */
 export function busCapacity(): number {
   return evalArith("computeBoundBatch", BUS_ARITH);
@@ -165,13 +151,7 @@ const TAG = { trip: 0, crates: 1, stop: 2 } as const;
 const SLOT = { riders: 1, tokens: 2, queue: 3, crates: 4, stop: 4 + CRATES } as const;
 
 /** `count` cubes named `<id>.<n>`, all in one dynamics slot, built hidden. */
-function cubes(
-  id: string,
-  count: number,
-  slot: number,
-  material: string,
-  explode: Vec3,
-): BlockPart[] {
+function cubes(id: string, count: number, slot: number, material: string): BlockPart[] {
   return Array.from(
     { length: count },
     (_, n) =>
@@ -181,7 +161,6 @@ function cubes(
         material,
         center: [0, HIDDEN_Y, 0],
         size: [CUBE, CUBE, CUBE],
-        explode,
       }).parts[0] as BlockPart,
   );
 }
@@ -213,12 +192,10 @@ export const batching: SceneBuilder = {
       assetId: "bus",
       asset: bus,
       split: true,
-      nodeExplode: EXPLODE,
-      clip: ["bus.body", "bus.frame", "bus.glass", "bus.trim"],
     });
-    const riders = cubes("rider", SEATS * PER_SPOT, SLOT.riders, "bar", RIDERS_EXPLODE);
-    const tokens = cubes("token", PREFILL_TOKENS, SLOT.tokens, "prompt", RIDERS_EXPLODE);
-    const queue = cubes("waiting", QUEUE * PER_SPOT, SLOT.queue, "bar", STOP_EXPLODE);
+    const riders = cubes("rider", SEATS * PER_SPOT, SLOT.riders, "bar");
+    const tokens = cubes("token", PREFILL_TOKENS, SLOT.tokens, "prompt");
+    const queue = cubes("waiting", QUEUE * PER_SPOT, SLOT.queue, "bar");
     const crates = layout.crates.map((c, i) =>
       KIT.block.build({
         id: `crate.${i}`,
@@ -226,7 +203,6 @@ export const batching: SceneBuilder = {
         material: "crate",
         center: c.center,
         size: c.size,
-        explode: CRATES_EXPLODE,
       }),
     );
     const [px, pz] = STOP.post;
@@ -236,7 +212,6 @@ export const batching: SceneBuilder = {
       material: "metal",
       center: [px, 1, pz],
       size: [0.06, 2, 0.06],
-      explode: STOP_EXPLODE,
     });
     const sign = KIT.block.build({
       id: "stop.sign",
@@ -244,7 +219,6 @@ export const batching: SceneBuilder = {
       material: "card",
       center: [px, 1.85, pz],
       size: [0.36, 0.26, 0.03],
-      explode: STOP_EXPLODE,
     });
     // The bus's wheels stand on the floor; the shadow grounds it (the last slot).
     const shadow = KIT.contactShadow.build({

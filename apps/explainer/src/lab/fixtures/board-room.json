@@ -16,9 +16,7 @@
       "id": "board",
       "slot": 0,
       "asset": "board",
-      "transform": [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1],
-      "explode": [0, 0, 0],
-      "cutaway": "clip"
+      "transform": [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]
     },
     {
       "kind": "block",

@@ -63,8 +63,6 @@ export const dial: KitPrimitive<DialParams> = {
         ],
         radius: r,
         transform: mat4.create(),
-        explode: p.explode,
-        cutaway: p.cutaway,
         primitive: "dial",
       };
       const block = (id: string): BlockPart => ({
@@ -73,8 +71,6 @@ export const dial: KitPrimitive<DialParams> = {
         slot: p.slot + i,
         material: p.handMaterial,
         transform: mat4.create(),
-        explode: p.explode,
-        cutaway: p.cutaway,
         primitive: "dial",
       });
       const tick = block(`${p.id}.${i}.tick`);
@@ -114,7 +110,6 @@ export const dial: KitPrimitive<DialParams> = {
         ]),
       ),
       anchors: [{ id: p.id, part: parts[0]!.id, local: [...p.centres[0]!] as Vec3, priority: 1 }],
-      explode: p.explode ?? [0, 0, 0],
     };
   },
   example: () => ({

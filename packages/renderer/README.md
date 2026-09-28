@@ -20,10 +20,9 @@ land here.
 - **Depth convention.** Reverse-Z on `depth32float`, clear 0, compare `greater`. These
   change together or not at all.
 - **Camera and poses.** `camera.ts` owns the view and projection matrices, `project()`,
-  the orbit pose math (eye, direction, a pose from an eye and a target, pose copies) and
-  each part's world transform under the Exploded and Cutaway views. GPU packing, label
-  placement, picking and crops all call these functions, so the CPU and GPU agree bit
-  for bit. `orbit.ts` is the pointer-driven orbit as a pure state machine.
+  and the orbit pose math (eye, direction, a pose from an eye and a target, pose copies).
+  GPU packing, label placement, picking and crops all call these functions and read each
+  part's own `transform`, so the CPU and GPU agree bit for bit. `orbit.ts` is the pointer-driven orbit as a pure state machine.
 - **Packing.** `pack.ts` owns every uniform and storage layout and turns math tuples
   into `Float32Array`s. Each struct has a byte-size constant, and a test checks it.
   `scene.ts` turns a `SceneDesc` into GPU-ready arrays and stays pure, so it can be
@@ -38,8 +37,8 @@ land here.
 
 `src/kit/` holds the only primitives a chapter's scene may be built from. The catalogue
 is `kit/catalog.ts`, and each primitive is one module whose `build(params)` returns its
-parts, bounds, anchors and explode vector together (`kit/primitive.ts`). The meshes,
-occluders, anchors and views therefore agree. Per-frame placement helpers (`placeBar`,
+parts, bounds and anchors together (`kit/primitive.ts`). The meshes, occluders and
+anchors therefore agree. Per-frame placement helpers (`placeBar`,
 `placeBrick`, …) live beside each primitive and write into existing transforms without
 allocating. A scene that needs a new shape adds a primitive here with its own lab shot
 (`/lab/kit/<id>`) rather than drawing geometry in the app.

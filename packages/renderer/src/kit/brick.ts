@@ -82,7 +82,7 @@ function setBox(t: number[], x: number, y: number, z: number, sx: number, sy: nu
 
 export const brick: KitPrimitive<BrickParams> = {
   build(p) {
-    const common = { slot: p.slot, explode: p.explode, cutaway: p.cutaway, primitive: "brick" };
+    const common = { slot: p.slot, primitive: "brick" };
     const body: BlockPart = {
       ...common,
       transform: mat4.create(),
@@ -114,7 +114,6 @@ export const brick: KitPrimitive<BrickParams> = {
         z + half[2]!,
       ],
       anchors: [{ id: p.id, part: p.id, local: [0, 0, 0.5], priority: 1 }],
-      explode: p.explode ?? [0, 0, 0],
     };
   },
   example: () => ({

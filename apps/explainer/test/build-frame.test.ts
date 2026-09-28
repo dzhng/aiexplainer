@@ -24,7 +24,6 @@ function frameAt(t: number, ui: Partial<SceneUi> = {}, text: string | null = nul
   const assets: SceneDesc["assets"] = { board };
   const frame = createSceneFrame({
     camera: { target: [0, 0, 0], yaw: 0, pitch: 0, distance: 5, fovY: 0.7 },
-    view: { mode: "whole", t: 0 },
     scene: { revision: 0, parts: [], anchors: [], assets },
     dynamics: {
       intensity: new Float32Array(1),

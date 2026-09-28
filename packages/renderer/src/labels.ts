@@ -5,17 +5,10 @@
  * pixel readback): block bounds, tube capsules, and mesh triangles behind a bounds test.
  * Label text never reaches this module; only anchor ids.
  */
-import { type Mat4, type Vec3, clamp, mat4, vec3 } from "math";
+import { type Mat4, type Vec3, clamp, vec3 } from "math";
 import { box3, raycast3, type Box3 } from "math/shapes";
-import {
-  createProjected,
-  partCut,
-  partWorld,
-  project,
-  type CameraMatrices,
-  type ScreenRect,
-} from "./camera.ts";
-import type { FrameInput, LookConfig, Part, SceneAnchor, SceneDesc } from "./frame-input.ts";
+import { createProjected, project, type CameraMatrices, type ScreenRect } from "./camera.ts";
+import type { LookConfig, Part, SceneAnchor, SceneDesc } from "./frame-input.ts";
 import { meshMaterial, meshNodes, partLocalBounds } from "./scene.ts";
 
 export type Occluder =
@@ -58,8 +51,6 @@ export interface LabelBox {
 
 export const DEFAULT_LABEL_BOX: LabelBox = { dx: 18, dy: -40, width: 220, height: 26 };
 
-const model: Mat4 = mat4.create();
-
 /**
  * How much `model` scales a tube's radius around the segment `a`→`b`: the largest stretch
  * of the two directions across it (a pipe stretched along its length keeps its radius).
@@ -79,20 +70,14 @@ function crossScale(model: Mat4, a: Vec3, b: Vec3): number {
 }
 
 /**
- * Occluders for every solid part in the current view, in world space. Translucent parts
- * (glass) never hide a label; `look` says which materials are translucent.
+ * Occluders for every solid part, in world space. Translucent parts (glass) never hide a
+ * label; `look` says which materials are translucent.
  */
-export function sceneOccluders(
-  scene: SceneDesc,
-  view: FrameInput["view"],
-  look: LookConfig,
-): Occluder[] {
+export function sceneOccluders(scene: SceneDesc, look: LookConfig): Occluder[] {
   const solid = (material: string) => (look.materials[material]?.opacity ?? 1) >= 1;
   const out: Occluder[] = [];
   for (const part of scene.parts) {
-    // A part the Cutaway view is cutting no longer hides what is behind it.
-    if (partCut(part, view) > 0) continue;
-    partWorld(part, view, model);
+    const model = part.transform;
     if (part.kind !== "mesh" && !solid(part.material)) continue;
     if (part.kind === "block") {
       out.push({
@@ -145,7 +130,6 @@ export function sceneOccluders(
  */
 export function sceneAnchors(
   scene: SceneDesc,
-  view: FrameInput["view"],
   anchors: readonly SceneAnchor[] = scene.anchors,
   out: WorldAnchor[] = [],
 ): WorldAnchor[] {
@@ -159,7 +143,7 @@ export function sceneAnchors(
     world.id = anchor.id;
     world.part = anchor.part;
     world.priority = anchor.priority;
-    vec3.transformMat4(world.position, anchor.local, partWorld(part, view, model));
+    vec3.transformMat4(world.position, anchor.local, part.transform);
   }
   return out;
 }

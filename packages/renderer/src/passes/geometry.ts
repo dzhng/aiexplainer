@@ -4,14 +4,6 @@
  * tube's radius follows `widthScale` (every other part's axis is the vertex itself).
  * The depth prepass and both colour variants share this one vertex stage, whose position
  * is `@invariant`, so the `equal` depth test in the colour pass matches bit for bit.
- *
- * The Cutaway view is a fragment-stage clip: an instance with `cut > 0` discards what lies
- * past the cut plane (swept in from `CUT_TRAVEL` beyond it as `cut` goes 0 → 1), in the
- * prepass and colour pass alike. Only while cutting, the frame swaps in the `*Cut` variants:
- * a prepass with a discard-only fragment stage, and no culling, so through the cut the
- * inside of a closed part shows its back faces, painted as the cut face: the look's cap colour,
- * lit as a surface facing out of the plane, under fine diagonal section hatching (drafting's
- * sign for a cut). Whole and Exploded keep the fragment-less prepass and back-face culling.
  */
 import type { TgpuRoot } from "typegpu";
 import { LIGHTING_WGSL } from "./lighting.ts";
@@ -58,36 +50,6 @@ fn vs(@builtin(vertex_index) vertexIndex: u32, @builtin(instance_index) instance
 
 ${LIGHTING_WGSL}
 
-/** Metres beyond the plane the cut starts from, so a cut of 0 removes nothing. */
-const CUT_TRAVEL = 4.0;
-/** The cap's section hatching: line pitch (metres), line width (share of it), darkening. */
-const HATCH_PITCH = 0.06;
-const HATCH_WIDTH = 0.28;
-const HATCH_DEPTH = 0.45;
-
-/**
- * 1 on a hatch line of the cut face at worldPos, 0 between lines: diagonals in the cut plane,
- * antialiased by their screen-space rate. Called in uniform control flow (it takes
- * derivatives), before any branch on the fragment.
- */
-fn hatch(worldPos: vec3f) -> f32 {
-  let n = normalize(frameLayout.$.frame.cutPlane.xyz);
-  let helper = select(vec3f(0.0, 1.0, 0.0), vec3f(1.0, 0.0, 0.0), abs(n.y) > 0.9);
-  let u = normalize(cross(helper, n));
-  let v = cross(n, u);
-  let s = dot(worldPos, u + v) / HATCH_PITCH;
-  let aa = fwidth(s);
-  let fromLine = abs(fract(s) - 0.5);
-  return smoothstep(0.5 - HATCH_WIDTH / 2.0 - aa, 0.5 - HATCH_WIDTH / 2.0 + aa, fromLine);
-}
-
-/** Whether the Cutaway plane removes this fragment of the instance. */
-fn cutAway(instance: u32, worldPos: vec3f) -> bool {
-  let cut = sceneLayout.$.instances[instance].cut;
-  let plane = frameLayout.$.frame.cutPlane;
-  return cut > 0.0 && dot(plane.xyz, worldPos) > plane.w + (1.0 - cut) * CUT_TRAVEL;
-}
-
 /**
  * A flow pulse's brightness at this fragment, or 0 off the pulses: dashes along the part,
  * \`flowSpacing\` apart and \`flowDuty\` of that long, moved on by the slot's flow phase (in
@@ -104,30 +66,11 @@ fn pulse(along: f32, slot: u32) -> f32 {
   return smoothstep(0.0, 0.8, u) * (1.0 - smoothstep(0.8, 1.0, u));
 }
 
-/** Depth prepass: only the cut needs a fragment stage (no colour target). */
-@fragment
-fn fsDepth(in: VertexOut) {
-  if (cutAway(in.instance, in.worldPos)) {
-    discard;
-  }
-}
-
 @fragment
 fn fs(in: VertexOut, @builtin(front_facing) frontFacing: bool) -> @location(0) vec4f {
-  let section = hatch(in.worldPos);
-  if (cutAway(in.instance, in.worldPos)) {
-    discard;
-  }
   let instance = sceneLayout.$.instances[in.instance];
   let material = sceneLayout.$.materials[instance.material];
   let v = normalize(frameLayout.$.frame.eye.xyz - in.worldPos);
-  if (instance.cut > 0.0 && !frontFacing) {
-    // Seen through the cut: the part's inside, capped as if it were the cut face, hatched.
-    let cap = frameLayout.$.look.capColor * (1.0 - HATCH_DEPTH * section);
-    let n = -normalize(frameLayout.$.frame.cutPlane.xyz);
-    let capShading = shadeSurface(Surface(cap, 0.0, 0.85, 1.0, vec2f(0.0)), n, v, in.worldPos);
-    return vec4f(capShading.diffuse + capShading.specular, 1.0);
-  }
   if (material.pulses > 0.5) {
     // Flow pulses only add light: nothing between the dashes, no surface of their own.
     let lit = pulse(in.along, instance.slot) * frameLayout.$.frame.debug.z;
@@ -164,20 +107,6 @@ const base = {
 /** The three geometry pipelines' fixed state, exported so tests can inspect the contract. */
 export const GEOMETRY_PIPELINES = {
   prepass: { ...base, label: "geometry.prepass", depthStencil: DEPTH.prepass },
-  prepassCut: {
-    ...base,
-    label: "geometry.prepassCut",
-    depthStencil: DEPTH.prepass,
-    cullMode: "none",
-    fragment: { entryPoint: "fsDepth", targets: [] },
-  },
-  opaqueCut: {
-    ...base,
-    label: "geometry.opaqueCut",
-    depthStencil: DEPTH.prepassed,
-    cullMode: "none",
-    fragment: { entryPoint: "fs", targets: [{ format: HDR_FORMAT }] },
-  },
   opaque: {
     ...base,
     label: "geometry.opaque",

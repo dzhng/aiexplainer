@@ -9,7 +9,7 @@
  * bars are the export gate's evidence, each bay's share of routing slots on held-out text.
  *
  * Loop channels read: `token` (which word is at the desk), `route` (0 at the desk → 1 in the
- * bays), `usage` (the histogram rising). The slider picks a word and holds it routed.
+ * bays), `usage` (the histogram rising). Typed text holds its first word routed.
  */
 import {
   KIT,
@@ -40,7 +40,6 @@ const BAYS: TriageBaysParams = {
   // Front left of the row, so the words walk across to their bays in plain view.
   deskAt: [-2.95, 1.25],
   materials: { booth: "housing", wall: "metal", desk: "steel", lamp: "bar" },
-  explode: [0, 0, -0.5],
 };
 const TILE: Vec3 = [0.36, 0.2, 0.06];
 /**
@@ -123,7 +122,6 @@ export const experts: SceneBuilder = {
         material: "card",
         center: [0, HIDDEN_Y, 0],
         size: TILE,
-        explode: [0, 0, 0.4],
       }).parts[0] as BlockPart;
     const queue = Array.from({ length: QUEUE }, (_, i) => tile(`word.${i}`));
     const copies = [tile("copy.0"), tile("copy.1")];
@@ -143,7 +141,6 @@ export const experts: SceneBuilder = {
       slot: SLOT.bars,
       material: "prompt",
       slots: barSlots,
-      explode: [0, 0, 0.3],
     });
     const shadow = KIT.contactShadow.build({
       id: "shadow",
@@ -160,7 +157,6 @@ export const experts: SceneBuilder = {
       material: "card",
       center: [(x0 + x1) / 2, HIDDEN_Y, barSlots[0]!.z],
       size: [x1 - x0 + 0.4, 0.012, 0.012],
-      explode: [0, 0, 0.3],
     }).parts[0] as BlockPart;
     const parts = [...shadow.parts, ...triage.parts, ...queue, ...copies, ...bars.parts, even];
     const anchors: SceneAnchor[] = [
@@ -215,8 +211,8 @@ export const experts: SceneBuilder = {
     for (let e = 0; e < EXPERTS; e++) dynamics.intensity[TRIAGE_SLOTS.lamps + e] = 0;
     if (run?.kind !== "experts") return;
     const c = tl.channels;
-    const held = ui.sliderSet || ui.text !== null;
-    const at = held ? (ui.sliderSet ? ui.slider - 1 : 0) : Math.round(c.token ?? 0);
+    const held = ui.text !== null;
+    const at = held ? 0 : Math.round(c.token ?? 0);
     const route = held ? 1 : (c.route ?? 0);
     const usage = held ? 1 : (c.usage ?? 0);
     const n = Math.max(0, Math.min(at, run.tokens.length - 1));

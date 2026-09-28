@@ -78,9 +78,7 @@ export const autocomplete: ChapterDef = {
     { id: "next", label: "Next word", anchor: "bars" },
     { id: "text", label: "Your text", anchor: "rail" },
   ],
-  slider: { id: "shown", label: "Next words shown", min: 1, max: 10, step: 1, initial: 5 },
   scenarios: [{ id: "once", label: "Once upon a", prompt: "once upon a", probe: "top-successor" }],
-  views: ["whole", "cutaway", "exploded"],
   labels: [
     {
       anchor: "bars",

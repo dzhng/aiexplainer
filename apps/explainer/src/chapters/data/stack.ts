@@ -78,7 +78,6 @@ export const stack: ChapterDef = {
     { id: "words", label: "The words", anchor: "words" },
     { id: "block", label: "The line", anchor: "block" },
   ],
-  slider: { id: "block", label: "Block to light up", min: 1, max: 4, step: 1, initial: 1 },
   scenarios: [
     {
       id: "bird",
@@ -93,7 +92,6 @@ export const stack: ChapterDef = {
       probe: "heads-differ",
     },
   ],
-  views: ["whole", "exploded"],
   labels: [
     { anchor: "readers", analogy: "Readers", technical: "Attention heads" },
     { anchor: "words", analogy: "The words so far", technical: "Token positions" },

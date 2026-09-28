@@ -5,8 +5,7 @@
  */
 import { mat3, mat4, type Mat3, type Mat4 } from "math";
 import { box3, type Box3 } from "math/shapes";
-import { partCut, partWorld } from "./camera.ts";
-import type { FrameInput, LookConfig, MeshPart, Part, SceneDesc } from "./frame-input.ts";
+import type { LookConfig, MeshPart, Part, SceneDesc } from "./frame-input.ts";
 import type { MeshAsset, MeshNode } from "./gltf.ts";
 import { blockGeometry } from "./kit/block.ts";
 import { shadowGeometry } from "./kit/contact-shadow.ts";
@@ -99,16 +98,9 @@ export function partLocalBounds(part: Part, assets: Assets): Box3 {
   }
 }
 
-const model: Mat4 = mat4.create();
-
-/** World-space bounds of a part in the current view. */
-export function partWorldBounds(
-  part: Part,
-  assets: Assets,
-  view: FrameInput["view"],
-  out: Box3,
-): Box3 {
-  return box3.transformMat4(out, partLocalBounds(part, assets), partWorld(part, view, model));
+/** World-space bounds of a part as it is placed now. */
+export function partWorldBounds(part: Part, assets: Assets, out: Box3): Box3 {
+  return box3.transformMat4(out, partLocalBounds(part, assets), part.transform);
 }
 
 const identity: Mat4 = mat4.create();
@@ -127,8 +119,6 @@ function drawnParts(scene: SceneDesc): { parts: Part[]; environmentSlot?: number
     asset: scene.environment,
     slot: environmentSlot,
     transform: identity,
-    explode: [0, 0, 0],
-    cutaway: "keep",
   };
   return { parts: [...scene.parts, room], environmentSlot };
 }
@@ -206,18 +196,12 @@ export function compileScene(scene: SceneDesc, look: LookConfig): CompiledScene 
 
 const normalMatrix: Mat3 = mat3.create();
 
-/** Packs every instance's world transform for the current view. Allocation-free. */
-export function packInstances(
-  compiled: CompiledScene,
-  view: FrameInput["view"],
-  f32: Float32Array,
-  u32: Uint32Array,
-): void {
+/** Packs every instance's world transform. Allocation-free. */
+export function packInstances(compiled: CompiledScene, f32: Float32Array, u32: Uint32Array): void {
   for (let i = 0; i < compiled.instanceParts.length; i++) {
     const part = compiled.instanceParts[i]!;
-    partWorld(part, view, model);
-    mat3.normalFromMat4(normalMatrix, model);
+    mat3.normalFromMat4(normalMatrix, part.transform);
     const material = compiled.materialIndex[i]!;
-    packInstance(f32, u32, i, model, normalMatrix, material, part.slot, partCut(part, view));
+    packInstance(f32, u32, i, part.transform, normalMatrix, material, part.slot);
   }
 }

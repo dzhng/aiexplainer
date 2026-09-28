@@ -168,17 +168,7 @@ export const finished: ChapterDef = {
     { id: "blocks", label: "The blocks", anchor: "stack" },
     { id: "serving", label: "Serving", anchor: "batching" },
   ],
-  slider: {
-    id: "stop",
-    label: "Part to visit",
-    min: 1,
-    max: STOPS,
-    step: 1,
-    initial: 1,
-    loop: "stop",
-  },
   scenarios: [],
-  views: ["whole"],
   // Each station's own label, in both readings: one owner for the words.
   labels: STATIONS.map(({ def, label }) => {
     const own = def.labels.find((l) => l.anchor === label);

@@ -101,9 +101,7 @@ export const attention: ChapterDef = {
     { id: "mix", label: "The mix", anchor: "mix" },
     { id: "sealed", label: "Sealed", anchor: "sealed" },
   ],
-  slider: { id: "shares", label: "Pipe shares shown", min: 0, max: 5, step: 1, initial: 3 },
   scenarios,
-  views: ["whole", "exploded"],
   labels: [
     { anchor: "sentence", analogy: "The story so far", technical: "Tokens in context" },
     { anchor: "pipes", analogy: "Wider pipe, more drawn", technical: "Attention weight (width)" },

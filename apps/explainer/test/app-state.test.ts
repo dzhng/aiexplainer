@@ -12,21 +12,23 @@ import {
 } from "../src/state/app-state.ts";
 import { actionForKey } from "../src/state/keys.ts";
 
-/** Chapter 0's data re-registered under another slug, so the ladder has more than one rung. */
+/** A knob for the test chapters (chapter 0 itself has none). */
+const KNOB = { id: "knob", label: "Knob", min: 1, max: 10, step: 1, initial: 5 };
+/** Chapter 0's data with a knob. */
+const base: ChapterDef = { ...structuredClone(autocomplete), slider: KNOB };
+
+/** The base re-registered under another slug, so the ladder has more than one rung. */
 const as = (slug: ChapterSlug, patch: Partial<ChapterDef> = {}): ChapterDef => ({
-  ...structuredClone(autocomplete),
+  ...structuredClone(base),
   slug,
   ...patch,
 });
 
-// Written: 0, 1 and 4. Unwritten rungs in between must be skipped.
+// Written: 0, 1 and 4 (4 without a knob). Unwritten rungs in between must be skipped.
 const chapters: Chapters = {
-  autocomplete,
-  tokenizer: as("tokenizer", {
-    follow: [{ id: "only", label: "Only", anchor: "board" }],
-    views: ["cutaway", "whole"],
-  }),
-  attention: as("attention"),
+  autocomplete: base,
+  tokenizer: as("tokenizer", { follow: [{ id: "only", label: "Only", anchor: "board" }] }),
+  attention: as("attention", { slider: undefined }),
 };
 
 const run = (state: AppState, ...actions: Action[]) =>
@@ -67,7 +69,6 @@ describe("loop (D32)", () => {
       { type: "setFollow", follow: null },
       { type: "setSlider", value: 3 },
       { type: "setScenario", scenario: "once" },
-      { type: "setView", view: "cutaway" },
       { type: "setText", text: "the" },
     ];
     for (const control of controls) {
@@ -95,16 +96,16 @@ describe("loop (D32)", () => {
       playing: true,
       loopEpoch: start.loopEpoch + 1,
       follow: null,
-      slider: autocomplete.slider.initial,
+      slider: KNOB.initial,
       technicalOpen: false,
       labelMode: "technical",
     });
   });
 
-  test("arriving by ← / → also restarts the loop, with the new chapter's first view", () => {
+  test("arriving by ← / → also restarts the loop", () => {
     const paused = run(start, { type: "togglePlay" });
     const at1 = run(paused, { type: "next" });
-    expect(at1).toMatchObject({ playing: true, loopEpoch: start.loopEpoch + 1, view: "cutaway" });
+    expect(at1).toMatchObject({ playing: true, loopEpoch: start.loopEpoch + 1 });
   });
 });
 
@@ -122,8 +123,14 @@ describe("typed text", () => {
 describe("controls", () => {
   test("the slider snaps to its step and stays in range", () => {
     expect(run(start, { type: "setSlider", value: 3.4 }).slider).toBe(3);
-    expect(run(start, { type: "setSlider", value: 99 }).slider).toBe(autocomplete.slider.max);
-    expect(run(start, { type: "setSlider", value: -5 }).slider).toBe(autocomplete.slider.min);
+    expect(run(start, { type: "setSlider", value: 99 }).slider).toBe(KNOB.max);
+    expect(run(start, { type: "setSlider", value: -5 }).slider).toBe(KNOB.min);
+  });
+
+  test("a chapter without a knob has no slider to set", () => {
+    const noKnob = initialState(chapters, "attention");
+    expect(noKnob.slider).toBe(0);
+    expect(run(noKnob, { type: "setSlider", value: 3 })).toBe(noKnob);
   });
 
   test("moving the slider marks it set until the next arrival", () => {
@@ -134,21 +141,18 @@ describe("controls", () => {
   });
 
   test("a loop that plays the slider shows its value until the reader moves it", () => {
-    const def = { ...autocomplete, slider: { ...autocomplete.slider, loop: "bars" } };
+    const def: ChapterDef = { ...base, slider: { ...KNOB, loop: "bars" } };
     expect(shownSlider(start, def, 7.4)).toBe(7);
-    expect(shownSlider(start, def, 99)).toBe(def.slider.max);
+    expect(shownSlider(start, def, 99)).toBe(KNOB.max);
     expect(shownSlider(start, def, null)).toBe(start.slider);
-    expect(shownSlider(start, autocomplete, 7)).toBe(start.slider);
+    expect(shownSlider(start, base, 7)).toBe(start.slider);
     const set = run(start, { type: "setSlider", value: 3 });
     expect(shownSlider(set, def, 7)).toBe(3);
   });
 
-  test("a follow target, scenario or view the chapter doesn't have is ignored", () => {
+  test("a follow target or scenario the chapter doesn't have is ignored", () => {
     expect(run(start, { type: "setFollow", follow: "nope" })).toBe(start);
     expect(run(start, { type: "setScenario", scenario: "nope" })).toBe(start);
-    const wholeOnly: Chapters = { autocomplete: as("autocomplete", { views: ["whole"] }) };
-    const state = initialState(wholeOnly, "autocomplete");
-    expect(reduce(state, { type: "setView", view: "exploded" }, wholeOnly)).toBe(state);
   });
 });
 

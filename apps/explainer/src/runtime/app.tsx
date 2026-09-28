@@ -60,7 +60,6 @@ function sceneUi(state: AppState, def: ChapterDef): SceneUi {
     follow: state.follow,
     slider: state.slider,
     sliderSet: state.sliderSet,
-    view: state.view,
     text: state.text ?? scenario?.prompt ?? null,
   };
 }
@@ -129,10 +128,10 @@ export function App(props: AppProps) {
   // 10 Hz and snapped to the slider's steps: the chips follow the loop without a React render
   // per frame.
   const [loopSlider, setLoopSlider] = useState<number | null>(null);
-  const playsSlider = def.slider.loop !== undefined && !state.sliderSet;
+  const playsSlider = def.slider?.loop !== undefined && !state.sliderSet;
   useEffect(() => {
     setLoopSlider(null);
-    const channel = def.slider.loop;
+    const channel = def.slider?.loop;
     if (!playsSlider || channel === undefined) return;
     const sample = () => {
       const value = sceneRef.current?.channel(channel) ?? null;
@@ -230,11 +229,11 @@ export function App(props: AppProps) {
   }, [def, assets]);
 
   // The reader took the camera from a tour (by orbiting): it stays theirs until the chapter's
-  // loop restarts or they pick a stop with the slider.
+  // loop restarts.
   const cameraTaken = useRef(false);
   useEffect(() => {
     cameraTaken.current = false;
-  }, [def, state.loopEpoch, state.slider]);
+  }, [def, state.loopEpoch]);
 
   // The stage: one renderer and frame loop for the app's lifetime.
   useEffect(() => {
@@ -320,7 +319,8 @@ export function App(props: AppProps) {
       if (ui.follow !== undefined)
         dispatch({ type: "setFollow", follow: ui.follow as string | null });
       if (ui.slider !== undefined) dispatch({ type: "setSlider", value: Number(ui.slider) });
-      if (ui.view !== undefined) dispatch({ type: "setView", view: ui.view as AppState["view"] });
+      if (ui.scenario !== undefined)
+        dispatch({ type: "setScenario", scenario: ui.scenario as string | null });
       if (ui.playing === false && live.current.state.playing) dispatch({ type: "togglePlay" });
     };
   }, [probe]);

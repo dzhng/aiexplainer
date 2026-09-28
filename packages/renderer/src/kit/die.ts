@@ -122,7 +122,7 @@ export function faceAt(shares: ArrayLike<number>, angle: number, reading = 0): n
 export const die: KitPrimitive<DieParams> = {
   build(p) {
     const faces = p.materials.length;
-    const common = { explode: p.explode, cutaway: p.cutaway, primitive: "die" };
+    const common = { primitive: "die" };
     const parts: Part[] = [];
     for (let f = 0; f < faces; f++)
       for (let s = 0; s < p.staves; s++) {
@@ -158,7 +158,6 @@ export const die: KitPrimitive<DieParams> = {
       parts,
       bounds: [x - p.length / 2, y - r, z - r, x + p.length / 2, y + r, z + r],
       anchors: [{ id: p.id, part: core.id, local: [0, 0, 0], priority: 1 }],
-      explode: p.explode ?? [0, 0, 0],
     };
   },
   example: () => ({

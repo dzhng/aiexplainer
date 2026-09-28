@@ -8,7 +8,6 @@ import {
   type Part,
   type SceneAnchor,
   type SceneDesc,
-  type ViewMode,
 } from "@repo/renderer";
 import type { LabelDef } from "../chapters/types.ts";
 import { lookConfig, type MaterialToken } from "../look/look.ts";
@@ -17,7 +16,6 @@ import { ENVIRONMENT, withEnvironment } from "../scene/environment.ts";
 
 export interface FixtureJson {
   camera: OrbitPose;
-  view?: { mode: ViewMode; t: number };
   /** Lab-only swatch materials, added to the product presets. */
   materials?: Record<string, MaterialToken>;
   /** Prop URLs by asset id, e.g. `{ "board": "/props/counter_board.glb" }`. */
@@ -64,14 +62,12 @@ export async function loadAsset(url: string): Promise<MeshAsset> {
 export function frameFromParts(
   camera: OrbitPose,
   parts: Part[],
-  view: FrameInput["view"] = { mode: "whole", t: 0 },
   assets: SceneDesc["assets"] = {},
   anchors: SceneAnchor[] = [],
 ): LabScene["input"] {
   const slots = parts.reduce((n, p) => Math.max(n, p.slot + 1), 1);
   return {
     camera,
-    view,
     scene: { revision: 1, parts, assets, anchors },
     dynamics: {
       intensity: new Float32Array(slots).fill(1),
@@ -93,7 +89,6 @@ export async function loadFixture(name: string): Promise<LabScene> {
   const input = frameFromParts(
     structuredClone(fixture.camera),
     fixture.parts,
-    fixture.view,
     assets,
     fixture.anchors,
   );

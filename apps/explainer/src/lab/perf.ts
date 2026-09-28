@@ -26,7 +26,6 @@ export async function sceneFixture(slug: string, t: number): Promise<LabScene> {
   await loadSceneAssets(def, assets);
   const frame = createSceneFrame({
     camera: shotPose(def.shot),
-    view: { mode: def.views[0] ?? "whole", t: 0 },
     scene: { revision: 0, parts: [], anchors: [], assets, environment: ENVIRONMENT.id },
     dynamics: {
       intensity: new Float32Array(1),

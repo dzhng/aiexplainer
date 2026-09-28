@@ -5,13 +5,7 @@
  * parts once (a new `revision`) and then updates transforms and dynamics in place every frame.
  */
 import type { FrameInput, OrbitPose, SceneDesc } from "@repo/renderer";
-import type {
-  ChapterDef,
-  ChapterSlug,
-  FollowId,
-  SceneBuilderId,
-  ViewMode,
-} from "../chapters/types.ts";
+import type { ChapterDef, ChapterSlug, FollowId, SceneBuilderId } from "../chapters/types.ts";
 import type { TimelineState } from "../chapters/timeline.ts";
 import type { SceneTags } from "../hud/SceneTags.tsx";
 import { attention, positions, type AttentionRun } from "./builders/attention.ts";
@@ -35,10 +29,10 @@ import { nextRevision } from "./revision.ts";
 /** The HUD controls a scene reads. */
 export interface SceneUi {
   follow: FollowId | null;
+  /** The chapter slider's value (0 in a chapter without one). */
   slider: number;
   /** Whether the reader moved the slider; until then a scene may play its own value for it. */
   sliderSet: boolean;
-  view: ViewMode;
   /** Text the reader typed (or a scenario's prompt); it replaces the loop's inputs. */
   text: string | null;
 }
@@ -47,9 +41,8 @@ export interface SceneUi {
 export function defaultUi(def: ChapterDef): SceneUi {
   return {
     follow: null,
-    slider: def.slider.initial,
+    slider: def.slider?.initial ?? 0,
     sliderSet: false,
-    view: def.views[0] ?? "whole",
     text: null,
   };
 }

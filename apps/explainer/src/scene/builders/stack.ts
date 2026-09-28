@@ -264,7 +264,6 @@ export const stack: SceneBuilder = {
       write: ch("write", 0, 0),
       failure: ch("failure", 0, 0),
       pass: ch("pass", 0, 0),
-      lit: ui.slider,
     };
     const data = run?.kind === "stack" ? run : null;
     const b = built.get(frame.input.scene)!;
@@ -293,12 +292,12 @@ interface Pose {
   failure: number;
   /** 0 → 1 one pass runs down the line, belt by belt, and its one word lands on the rail. */
   pass: number;
-  /** The block (1-based) whose pipes glow at full strength: the slider. */
-  lit: number;
 }
 
-const BUILT_POSE: Pose = { tokens: 1, heads: 1, zoom: 0, write: 0, failure: 0, pass: 0, lit: 1 };
-/** Glow of the blocks the slider is not on. */
+const BUILT_POSE: Pose = { tokens: 1, heads: 1, zoom: 0, write: 0, failure: 0, pass: 0 };
+/** The block (1-based) whose pipes glow at full strength: the one the hero shot frames. */
+const LIT_BLOCK = 1;
+/** Glow of the other blocks. */
 const DIM = 0.35;
 
 /** A pipe's radius for attention weight `w` (0–1). */
@@ -379,7 +378,7 @@ function pose(
       intensity[b.slots.lamps + h] = 0.2 + 0.9 * grow;
       for (let blk = 0; blk < BLOCKS; blk++)
         for (const pipe of b.pipes[blk]![h]!)
-          intensity[pipe.slot] = (0.3 + 0.7 * grow) * (blk + 1 === state.lit ? 1 : DIM);
+          intensity[pipe.slot] = (0.3 + 0.7 * grow) * (blk + 1 === LIT_BLOCK ? 1 : DIM);
     }
   }
   if (!text) return;

@@ -7,7 +7,7 @@ import { forward, promptTokens, transformerModel } from "@repo/llm";
 import type { BlockPart } from "@repo/renderer";
 import path from "node:path";
 import { ORDER_PROMPTS } from "../src/chapters/data/attention.ts";
-import { ORDER_PAIRS, positions } from "../src/chapters/data/positions.ts";
+import { positions } from "../src/chapters/data/positions.ts";
 import { SCENE_KIT } from "../src/chapters/scenes.ts";
 import { computeRun } from "../src/runtime/scene-run.ts";
 import { totalVariation } from "../src/runtime/runs/attention.ts";
@@ -32,11 +32,21 @@ const run = (await computeRun(positions, null, ctx)) as AttentionRun;
 const handAngle = (hand: BlockPart) => Math.atan2(hand.transform[4]!, hand.transform[5]!);
 
 describe("chapter 5: clock hands turned by position", () => {
-  test("the loop's orders and every scenario are the rope model's measured order pairs", async () => {
+  test("the loop's orders and the two Try chips are the rope model's measured order pair", async () => {
     const measured = await Bun.file(path.join(models, "rope/scenarios.json")).json();
-    for (const s of positions.scenarios) expect(measured.order).toContain(s.prompt);
-    expect(Object.values(ORDER_PAIRS)).toContain(positions.loop.inputs!.join(" / "));
+    expect(measured.order).toContain(ORDER_PROMPTS.join(" / "));
     expect(positions.loop.inputs).toEqual([...ORDER_PROMPTS]);
+    expect(positions.scenarios.map((s) => s.prompt)).toEqual([...ORDER_PROMPTS]);
+  });
+
+  test("each chip shows its own order: different pipes, a different guess", async () => {
+    const [a, b] = await Promise.all(
+      positions.scenarios.map(
+        async (s) => ((await computeRun(positions, s.prompt, ctx)) as AttentionRun).steps[0]!,
+      ),
+    );
+    expect(a!.weights).not.toEqual(b!.weights);
+    expect(a!.guess.token).not.toBe(b!.guess.token);
   });
 
   test("hand angles are position × θ, θ from the manifest's ropeTheta and dModel", () => {
@@ -59,7 +69,7 @@ describe("chapter 5: clock hands turned by position", () => {
     expect(a!.weights).not.toEqual(b!.weights);
     expect(a!.guess.token).not.toBe(b!.guess.token);
     const probe = loaded.manifest.evidence.find(
-      (e) => e.probe === "order-sensitivity" && e.prompt === ORDER_PAIRS.dogCat,
+      (e) => e.probe === "order-sensitivity" && e.prompt === ORDER_PROMPTS.join(" / "),
     )!;
     expect(probe.pass).toBe(true);
     expect(run.positions!.change!).toBeCloseTo(probe.value, 12);

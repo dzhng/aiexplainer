@@ -22,7 +22,6 @@ import {
   type SceneAnchor,
   type SceneDesc,
 } from "@repo/renderer";
-import type { Vec3 } from "math";
 import { formatStat } from "../../chapters/format.ts";
 import type { SceneTags } from "../../hud/SceneTags.tsx";
 import type { QuantizationRun, SceneBuilder, SceneFrame } from "../build-frame.ts";
@@ -41,14 +40,6 @@ const CRATE = { w: 0.48, d: 0.46, h: 0.95 };
 const LAMP = { w: 0.34, h: 0.05, d: 0.02 };
 const FOCUS_GAIN = 2.5;
 const TRIP_GAIN = 0.9;
-
-const EXPLODE = {
-  strip: [0, 0, 0.45] as Vec3,
-  board: [0, 0, -0.35] as Vec3,
-  lens: [0.35, 0, 0.45] as Vec3,
-  crates: [0, 0.3, 0.2] as Vec3,
-  machines: [0.35, 0, 0] as Vec3,
-};
 
 /** Which strip weight the rounding moves most, in steps: the one the magnifier shows. */
 export function lensIndex(strip: QuantizationRun["strip"]): number {
@@ -116,7 +107,7 @@ export const quantization: SceneBuilder = {
   tagCount: 6,
 
   create(assets, revision) {
-    const legs = (id: string, slot: number, x: number, w: number, explode: Vec3) =>
+    const legs = (id: string, slot: number, x: number, w: number) =>
       [-1, 1].map((side, i) =>
         box(
           `${id}.leg.${i}`,
@@ -124,49 +115,20 @@ export const quantization: SceneBuilder = {
           "metal",
           [x + side * (w / 2 - 0.12), (BOARD.y - BOARD.h / 2) / 2, -0.05],
           [0.06, BOARD.y - BOARD.h / 2, 0.06],
-          explode,
         ),
       );
-    const boardLegs = legs("board", SLOT.board, BOARD.x, BOARD.w, EXPLODE.board);
-    const lensLegs = legs("lens", SLOT.lens, LENS.x, LENS.w + 0.1, EXPLODE.lens);
+    const boardLegs = legs("board", SLOT.board, BOARD.x, BOARD.w);
+    const lensLegs = legs("lens", SLOT.lens, LENS.x, LENS.w + 0.1);
     const board = [
-      box(
-        "board",
-        SLOT.board,
-        "housing",
-        [BOARD.x, BOARD.y, -0.05],
-        [BOARD.w, BOARD.h, 0.06],
-        EXPLODE.board,
-      ),
+      box("board", SLOT.board, "housing", [BOARD.x, BOARD.y, -0.05], [BOARD.w, BOARD.h, 0.06]),
       ...boardLegs,
-      box(
-        "board.zero",
-        SLOT.board,
-        "card",
-        [BOARD.x, BOARD.y, 0.0],
-        [BOARD.w - 0.12, 0.006, 0.01],
-        EXPLODE.strip,
-      ),
+      box("board.zero", SLOT.board, "card", [BOARD.x, BOARD.y, 0.0], [BOARD.w - 0.12, 0.006, 0.01]),
     ];
     const bars = Array.from({ length: BARS }, (_, i) =>
-      box(
-        `bar.${i}`,
-        SLOT.bars + i,
-        "bar",
-        [barX(i), BOARD.y, 0.02],
-        [BAR.width, 0.01, BAR.depth],
-        EXPLODE.strip,
-      ),
+      box(`bar.${i}`, SLOT.bars + i, "bar", [barX(i), BOARD.y, 0.02], [BAR.width, 0.01, BAR.depth]),
     );
     const lens = [
-      box(
-        "lens",
-        SLOT.lens,
-        "housing",
-        [LENS.x, LENS.y, -0.05],
-        [LENS.w, LENS.h, 0.06],
-        EXPLODE.lens,
-      ),
+      box("lens", SLOT.lens, "housing", [LENS.x, LENS.y, -0.05], [LENS.w, LENS.h, 0.06]),
       ...lensLegs,
       ...Array.from({ length: LENS.lines }, (_, k) =>
         box(
@@ -175,7 +137,6 @@ export const quantization: SceneBuilder = {
           "card",
           [LENS.x, LENS.y + (k - (LENS.lines - 1) / 2) * LENS.step, 0.0],
           [LENS.w - 0.08, 0.012, 0.012],
-          EXPLODE.lens,
         ),
       ),
     ];
@@ -186,7 +147,6 @@ export const quantization: SceneBuilder = {
       "prompt",
       [LENS.x, LENS.y, 0.015],
       [MARKER.w * 0.55, MARKER.h * 0.6, 0.02],
-      EXPLODE.lens,
     );
     const marker = box(
       "lens.marker",
@@ -194,7 +154,6 @@ export const quantization: SceneBuilder = {
       "bar",
       [LENS.x, LENS.y, 0.025],
       [MARKER.w, MARKER.h, 0.03],
-      EXPLODE.lens,
     );
     const bodies = MACHINE.xs.map((x, i) =>
       box(
@@ -203,7 +162,6 @@ export const quantization: SceneBuilder = {
         "steel",
         [x, MACHINE.h / 2, 0],
         [MACHINE.w, MACHINE.h, MACHINE.d],
-        EXPLODE.machines,
       ),
     );
     const machines = MACHINE.xs.flatMap((x, i) => [
@@ -214,7 +172,6 @@ export const quantization: SceneBuilder = {
         "bar",
         [x, MACHINE.h * 0.7, MACHINE.d / 2 + LAMP.d / 2],
         [LAMP.w, LAMP.h, LAMP.d],
-        EXPLODE.machines,
       ),
     ]);
     const crate16 = box(
@@ -223,7 +180,6 @@ export const quantization: SceneBuilder = {
       "crate",
       [MACHINE.xs[0], crateY(CRATE.h), 0],
       [CRATE.w, CRATE.h, CRATE.d],
-      EXPLODE.crates,
     );
     const crate8 = box(
       "crate.8",
@@ -231,7 +187,6 @@ export const quantization: SceneBuilder = {
       "crate",
       [MACHINE.xs[1], crateY(0.004), 0],
       [CRATE.w, 0.004, CRATE.d],
-      EXPLODE.crates,
     );
     const shadow = KIT.contactShadow.build({
       id: "shadow",

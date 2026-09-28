@@ -61,8 +61,6 @@ export const sealed: KitPrimitive<SealedParams> = {
       path,
       radius,
       transform: mat4.create(),
-      explode: p.explode,
-      cutaway: p.cutaway,
       primitive: "sealed",
     });
     const parts = sealedPaths(p.sources, p.radius, p.length).flatMap(({ stub, cap }, i) => [
@@ -81,7 +79,6 @@ export const sealed: KitPrimitive<SealedParams> = {
           priority: 1,
         },
       ],
-      explode: p.explode ?? [0, 0, 0],
     };
   },
   example: () => ({

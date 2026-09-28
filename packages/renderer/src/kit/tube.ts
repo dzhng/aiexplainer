@@ -208,8 +208,6 @@ export const tube: KitPrimitive<TubeParams> = {
       path: p.path,
       radius: p.radius,
       transform: mat4.create(),
-      explode: p.explode,
-      cutaway: p.cutaway,
       primitive: "tube",
     };
     // The middle of the path by vertex count: a vertex, or the midpoint of the middle segment.
@@ -219,7 +217,6 @@ export const tube: KitPrimitive<TubeParams> = {
       parts: [part],
       bounds: tubeGeometry(p.path, p.radius).bounds,
       anchors: [{ id: p.id, part: p.id, local: vec3.lerp([0, 0, 0], a, b, 0.5), priority: 1 }],
-      explode: p.explode ?? [0, 0, 0],
     };
   },
   example: () => ({

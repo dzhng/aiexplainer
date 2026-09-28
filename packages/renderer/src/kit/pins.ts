@@ -135,7 +135,7 @@ function axes(
 
 export const pins: KitPrimitive<PinFieldParams> = {
   build(p) {
-    const common = { explode: p.explode, cutaway: p.cutaway, primitive: "pins" };
+    const common = { primitive: "pins" };
     const parts: Part[] = p.heads.flatMap((_, i) => {
       const slot = p.slot + i;
       const id = `${p.id}.${i}`;
@@ -185,7 +185,6 @@ export const pins: KitPrimitive<PinFieldParams> = {
         [...p.origin, ...p.origin],
       ] as [number, number, number, number, number, number][]),
       anchors: [{ id: p.id, part: `${p.id}.0.head`, local: [0, 1, 0], priority: 1 }],
-      explode: p.explode ?? [0, 0, 0],
     };
   },
   example: () => ({

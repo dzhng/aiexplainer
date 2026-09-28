@@ -28,7 +28,7 @@ export const mlp: ChapterDef = {
           "Nobody wrote these questions; training found them, so most don't match any one idea we could name.",
         ],
         technical:
-          "Lamp brightness is |activation| of this tiny model's most active neurons at the last word (the slider sets how many); the rest of the panel is not drawn.",
+          "Lamp brightness is |activation| of this tiny model's 24 most active neurons at the last word; the rest of the panel is not drawn.",
       },
       arrow: {
         story: [
@@ -76,13 +76,11 @@ export const mlp: ChapterDef = {
     { id: "arrow", label: "The arrow", anchor: "arrow" },
     { id: "readout", label: "Next word", anchor: "readout" },
   ],
-  slider: { id: "lamps", label: "Lamps shown", min: 4, max: 24, step: 4, initial: 24 },
   scenarios: [
     { id: "time", label: "Once upon a", prompt: "Once upon a", probe: "mlp-neurons" },
     { id: "after", label: "happily ever", prompt: "They lived happily ever", probe: "mlp-neurons" },
     { id: "book", label: "She read a", prompt: "She read a", probe: "mlp-neurons" },
   ],
-  views: ["whole", "exploded"],
   labels: [
     { anchor: "panel", analogy: "Yes/no questions", technical: "MLP neurons (SwiGLU)" },
     { anchor: "arrow", analogy: "The word's arrow", technical: "Last token's vector" },

@@ -38,7 +38,6 @@ const STAVES = 12;
 function sceneAt(t: number, run: LogitsRun, slider?: number, text: string | null = null) {
   const frame = createSceneFrame({
     camera: { target: [0, 1, 0], yaw: -0.3, pitch: 0.35, distance: 5, fovY: 0.7 },
-    view: { mode: "whole", t: 0 },
     scene: { revision: 0, parts: [], anchors: [], assets: {} },
     dynamics: {
       intensity: new Float32Array(1),
@@ -52,9 +51,8 @@ function sceneAt(t: number, run: LogitsRun, slider?: number, text: string | null
     tl,
     {
       follow: null,
-      slider: slider ?? chapter.slider.initial,
+      slider: slider ?? chapter.slider!.initial,
       sliderSet: slider !== undefined,
-      view: "whole",
       text,
     },
     run,

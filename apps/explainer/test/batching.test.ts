@@ -32,7 +32,7 @@ const args = (batch: number) => ({ batch, ...BUS_ARITH });
 describe("chapter 11's chips are arithmetic that follows the slider", () => {
   test("every chip equals its arith output across the slider range", () => {
     const [rider, all, full] = batching.stats;
-    for (let batch = batching.slider.min; batch <= batching.slider.max; batch += 17) {
+    for (let batch = batching.slider!.min; batch <= batching.slider!.max; batch += 17) {
       expect(resolveStat(rider, null, batch)).toBe(
         evalArith("decodeCeilingTokPerSec", args(batch)),
       );
@@ -55,10 +55,10 @@ describe("chapter 11's chips are arithmetic that follows the slider", () => {
     expect(resolveStat(rider, null, 1)).toBeCloseTo(208.6, 0);
     const knee = busCapacity();
     expect(knee).toBeGreaterThan(295);
-    expect(knee).toBeLessThan(batching.slider.max);
+    expect(knee).toBeLessThan(batching.slider!.max);
     const total = (b: number) => resolveStat(all, null, b);
     expect(total(64) / total(1)).toBeGreaterThan(60);
-    expect(total(batching.slider.max) / total(Math.ceil(knee))).toBeCloseTo(1, 3);
+    expect(total(batching.slider!.max) / total(Math.ceil(knee))).toBeCloseTo(1, 3);
   });
 
   test("the validator accepts slider and probe bindings, and rejects a probe without a model", () => {

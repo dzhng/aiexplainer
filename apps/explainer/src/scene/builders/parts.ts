@@ -12,9 +12,8 @@ export function box(
   material: string,
   center: Vec3,
   size: Vec3,
-  explode?: Vec3,
 ): BlockPart {
-  return KIT.block.build({ id, slot, material, center, size, explode }).parts[0] as BlockPart;
+  return KIT.block.build({ id, slot, material, center, size }).parts[0] as BlockPart;
 }
 
 /** A straight pipe the scene stretches every frame (`placeSegment`). */

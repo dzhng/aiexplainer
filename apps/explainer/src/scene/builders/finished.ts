@@ -123,8 +123,7 @@ function tourPoses(def: ChapterDef): OrbitPose[] {
 }
 
 /** Where the tour is: stops counted from the wide shot (0), fractional while moving. */
-function tourStop(def: ChapterDef, tl: TimelineState, ui: SceneUi): number {
-  if (ui.sliderSet) return ui.slider;
+function tourStop(def: ChapterDef, tl: TimelineState): number {
   return def.tour ? (tl.channels[def.tour.channel] ?? 0) : 0;
 }
 
@@ -172,15 +171,11 @@ function prefixed(b: Built, prefix: string, id: string): string {
 
 /** The machine's copy of a station part: the same part, renamed, re-slotted and scaled. */
 function copyPart(p: Placed, part: Part): Part {
-  const { scale } = p.station;
   return {
     ...part,
     id: p.prefix + part.id,
     slot: p.slotBase + part.slot,
     transform: [...part.transform] as Part["transform"],
-    ...(part.explode && {
-      explode: [part.explode[0] * scale, part.explode[1] * scale, part.explode[2] * scale] as Vec3,
-    }),
   };
 }
 
@@ -246,7 +241,6 @@ export function finishedScene(
           builder: null,
           input: {
             camera: shotPose(station.def.shot),
-            view: { mode: "whole", t: 0 },
             scene: { revision: 0, parts: [], anchors: [], assets },
             dynamics: {
               intensity: new Float32Array(1),
@@ -258,9 +252,8 @@ export function finishedScene(
         };
         const ui: SceneUi = {
           follow: null,
-          slider: station.def.slider.initial,
+          slider: station.def.slider?.initial ?? 0,
           sliderSet: false,
-          view: "whole",
           text: null,
         };
         const tl = createTimelineState(station.def.loop);
@@ -305,7 +298,7 @@ export function finishedScene(
       const { scene, dynamics } = frame.input;
       const b = built.get(scene)!;
       const runs = run?.kind === "finished" ? run.runs : null;
-      const stop = tourStop(def, tl, ui);
+      const stop = tourStop(def, tl);
       const inView = stationInView(stop);
       let restructured = false;
       let layout = 0;
@@ -359,7 +352,7 @@ export function finishedScene(
 
     tourPose(def, tl, ui, out) {
       const all = tourPoses(def);
-      const stop = Math.min(Math.max(tourStop(def, tl, ui), 0), all.length - 1);
+      const stop = Math.min(Math.max(tourStop(def, tl), 0), all.length - 1);
       const from = Math.min(Math.floor(stop), all.length - 2);
       return arrivalPose(all[from]!, all[from + 1]!, stop - from, out);
     },

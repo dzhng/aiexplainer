@@ -1,31 +1,17 @@
 /**
  * Chapter 5: positions (RoPE), as a clock hand on every word, turned by its place in the
  * sentence. The loop replays chapter 4's shuffle on the one-layer `rope` model: the same words
- * with "dog" and "cat" swapped now give different pipes and a different guess. The pairs are
- * the order prompts measured into `public/models/rope/scenarios.json` (the order-sensitivity
- * probe).
+ * with "dog" and "cat" swapped now give different pipes and a different guess. The two orders
+ * are a pair measured into `public/models/rope/scenarios.json` (the order-sensitivity probe),
+ * and each is a Try chip, so the reader can flip between them.
  */
 import type { ChapterDef, ScenarioDef } from "../types.ts";
 import { ORDER_PROMPTS } from "./attention.ts";
 
-/** The `rope` model's measured order pairs, each "first order / second order". */
-export const ORDER_PAIRS = {
-  dogCat: ORDER_PROMPTS.join(" / "),
-  olive:
-    "Once upon a time, there was a little girl named Olive / Once named a time, there was a little girl upon Olive",
-  pilot:
-    "Once upon a time, there was a curious pilot / Once a a time, there was upon curious pilot",
-} as const;
-
+const [dogFirst, catFirst] = ORDER_PROMPTS;
 const scenarios: ScenarioDef[] = [
-  {
-    id: "dog-cat",
-    label: "Dog chased cat",
-    prompt: ORDER_PAIRS.dogCat,
-    probe: "order-sensitivity",
-  },
-  { id: "olive", label: "Olive, shuffled", prompt: ORDER_PAIRS.olive, probe: "order-sensitivity" },
-  { id: "pilot", label: "Pilot, shuffled", prompt: ORDER_PAIRS.pilot, probe: "order-sensitivity" },
+  { id: "dog-cat", label: "Dog chased cat", prompt: dogFirst, probe: "order-sensitivity" },
+  { id: "cat-dog", label: "Cat chased dog", prompt: catFirst, probe: "order-sensitivity" },
 ];
 
 export const positions: ChapterDef = {
@@ -98,9 +84,7 @@ export const positions: ChapterDef = {
     { id: "pipes", label: "Pipes", anchor: "pipes" },
     { id: "mix", label: "The mix", anchor: "mix" },
   ],
-  slider: { id: "order", label: "Order shown", min: 0, max: 1, step: 1, initial: 0 },
   scenarios,
-  views: ["whole", "exploded"],
   labels: [
     { anchor: "sentence", analogy: "The story so far", technical: "Tokens in context" },
     { anchor: "dials", analogy: "Clock hand: its place", technical: "RoPE angle, one pair" },

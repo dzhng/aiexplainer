@@ -7,11 +7,6 @@
  * so the bars read as that word's row of the tally, and the rail holds the whole text: the
  * earlier words muted, the last one on the lit card, the only word the machine looks at.
  *
- * Views: Exploded pulls the housing back and the slots, bars, rail and card forward in
- * layers; Cutaway takes a section through the front of the slot channels, rail and housing
- * (`look.json` `views.cutaway.planes.autocomplete`), so each bar stands in an open, capped
- * channel.
- *
  * Loop channels read: `railWord` (which step's word is on the card), `barsWord` (which step's
  * counts the bars show; it may lag the card), `railSlide` (0 → 1 as the card slides in),
  * `bars` (0 → 1 bar growth), `topFlash` (glow on the tallest bar).
@@ -27,7 +22,7 @@ import {
   type SceneDesc,
 } from "@repo/renderer";
 import type { NextWord } from "@repo/llm";
-import type { Mat4, Vec3 } from "math";
+import type { Mat4 } from "math";
 import type { Box3 } from "math/shapes";
 import { share } from "../../chapters/format.ts";
 import type { SceneTags } from "../../hud/SceneTags.tsx";
@@ -61,16 +56,6 @@ const CARD_TRAVEL = 1.4;
 const FOOT = 0.2;
 /** Extra glow on the tallest bar at the top of its flash. */
 const FLASH_GAIN = 3;
-
-/** Exploded-view offsets, metres: layers pulled apart front to back. */
-const EXPLODE: Record<string, Vec3> = {
-  "board.housing": [0, 0, -0.35],
-  "board.stand": [0, 0, -0.35],
-  "board.slot": [0, 0, 0.3],
-  "board.rail": [-0.4, -0.2, 0.55],
-};
-/** Bars ride with their slots, so each stays standing in its channel. */
-const BARS_EXPLODE: Vec3 = [0, 0, 0.3];
 
 interface Box {
   min: [number, number, number];
@@ -155,15 +140,12 @@ export const autocomplete: SceneBuilder = {
       assetId: "board",
       asset: board,
       split: true,
-      nodeExplode: EXPLODE,
-      clip: ["board.housing", "board.slot", "board.rail"],
     });
     const barsKit = KIT.bars.build({
       id: "bar",
       slot: 1,
       material: "bar",
       slots: layout.slots,
-      explode: BARS_EXPLODE,
     });
     const cardKit = KIT.block.build({
       id: "card",
@@ -171,7 +153,6 @@ export const autocomplete: SceneBuilder = {
       material: "card",
       center: [layout.card.x, layout.card.y, layout.card.z],
       size: [CARD.width, CARD.height, CARD.depth],
-      explode: EXPLODE["board.rail"],
     });
     // The board's own feet stand on the floor; the shadow grounds each (slot after the card).
     // The stand's two feet are its x extremes, FOOT wide, and its full depth.
@@ -253,7 +234,7 @@ export const autocomplete: SceneBuilder = {
     for (let i = 0; i < SLOTS; i++) {
       const slot = layout.slots[i]!;
       const next = step?.next[i];
-      const shown = next !== undefined && i < ui.slider;
+      const shown = next !== undefined;
       placeBar(bars[i]!.transform, slot, shown ? next.p * growth * slot.maxHeight : 0);
       frame.tags.text[i] = shown && growth > 0.05 ? `${next.word}\n${share(next.p)}` : "";
       dynamics.intensity[1 + i] = i === 0 ? 1 + flash * FLASH_GAIN : 1;

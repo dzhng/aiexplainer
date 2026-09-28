@@ -145,7 +145,11 @@ export function validateChapter(
           if (def.model === null)
             problems.push(`stat ${stat.id}: ${name} reads a probe but the chapter has no model`);
           args[name] = 0;
-        } else args[name] = def.slider.initial;
+        } else if (def.slider) args[name] = def.slider.initial;
+        else {
+          problems.push(`stat ${stat.id}: ${name} follows the slider but the chapter has none`);
+          args[name] = 0;
+        }
       }
       const argProblems = arithProblems(fn, args);
       problems.push(...argProblems.map((p) => `stat ${stat.id}: ${p}`));
@@ -163,11 +167,12 @@ export function validateChapter(
   for (const s of def.scenarios)
     if (!s.probe?.trim()) problems.push(`scenario ${s.id}: must cite a probe`);
 
-  const { min, max, initial } = def.slider;
-  if (!(min <= initial && initial <= max))
-    problems.push(`slider ${def.slider.id}: initial outside range`);
-  if (def.slider.loop !== undefined && !Object.hasOwn(def.loop.channels, def.slider.loop))
-    problems.push(`slider ${def.slider.id}: no loop channel ${def.slider.loop}`);
+  if (def.slider) {
+    const { id, min, max, initial, loop } = def.slider;
+    if (!(min <= initial && initial <= max)) problems.push(`slider ${id}: initial outside range`);
+    if (loop !== undefined && !Object.hasOwn(def.loop.channels, loop))
+      problems.push(`slider ${id}: no loop channel ${loop}`);
+  }
 
   checkLoop(def, def.loop, problems);
   return problems;

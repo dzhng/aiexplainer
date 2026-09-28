@@ -321,8 +321,7 @@ try {
       return true;
     }, ui);
     if (!set) failures.push("--ui: this page has no setUi");
-    // The scene's model output comes back from the worker asynchronously, and a view change
-    // eases in over `look.views.durationSec` (0.6 s) of real time.
+    // The scene's model output comes back from the worker asynchronously.
     await page.waitForTimeout(900);
   }
   // React commits what the keys changed, then the browser paints it.

@@ -12,8 +12,11 @@
  *
  * Loop channels read: `step` (as chapter 9: steps done and the live step's phase), `ghost`
  * (0 → 1 → 0: the notes each reader would keep without sharing appear, smaller, then go),
- * `shared` (the note that says what sharing saves), `window` (0 → 1 notes outside the window
- * are evicted) and `trip` (the failure beat's note). Typed text shows every step done.
+ * `shared` (the note that says what sharing saves), `keep` (the window the loop shows, which
+ * the HUD slider plays), `window` (0 → 1 notes outside the window are evicted) and `trip` (the
+ * failure beat's note). Typed text shows every step done. Once the reader sets the window,
+ * the scene holds every step done with that window's notes and words; at the slider's top
+ * ("all") nothing is evicted.
  */
 import { evalArith } from "@repo/llm";
 import {
@@ -52,9 +55,8 @@ export interface KvRun {
   tokens: string[];
   /** The cached generation: each word, and the tokens its step fed (the prompt, then one). */
   steps: { word: string; fed: number }[];
-  /** The same draw with only the last `window` positions' notes kept. */
-  windowed: string[];
-  window: number;
+  /** The same draw for each window the slider offers, keeping only its last positions' notes. */
+  windowed: { window: number; words: string[] }[];
   layers: number;
   heads: number;
   kvHeads: number;
@@ -63,7 +65,6 @@ export interface KvRun {
 }
 
 export const KV_STEPS = 4;
-export const KV_WINDOW = 4;
 /** Note slots per cell: a key/value pair per head without sharing (4 heads). */
 const SLOTS_PER_CELL = 4;
 
@@ -76,7 +77,6 @@ const RACK: NoteRackParams = {
   notes: SLOTS_PER_CELL,
   pitch: [0.22, 0.2],
   materials: { frame: "housing", note: "neuron" },
-  explode: [0, 0.3, -0.3],
 };
 
 /** Unshared notes are drawn at this share of a real note's size. */
@@ -181,17 +181,20 @@ export const kvCache: SceneBuilder = {
     return { scene, tags };
   },
 
-  update(frame: SceneFrame, _def, tl, ui, run) {
-    const typed = ui.text !== null;
+  update(frame: SceneFrame, def, tl, ui, run) {
+    // The slider's top keeps every note: no window.
+    const all = def.slider?.max ?? Infinity;
+    const keep = ui.sliderSet ? ui.slider : Math.round(tl.channels.keep ?? all);
+    const held = ui.text !== null || ui.sliderSet;
     const ch = (id: string, loop: number, still: number) =>
-      typed ? still : (tl.channels[id] ?? loop);
+      held ? still : (tl.channels[id] ?? loop);
     const state: Pose = {
       step: ch("step", KV_STEPS, KV_STEPS),
       ghost: ch("ghost", 0, 0),
       shared: ch("shared", 0, 0),
-      window: ch("window", 0, 0),
+      window: ui.sliderSet ? (keep < all ? 1 : 0) : ch("window", 0, 0),
       trip: ch("trip", 0, 0),
-      words: ui.slider,
+      keep: keep < all ? keep : null,
     };
     const data = run?.kind === "kv-cache" ? run : null;
     pose(
@@ -210,7 +213,8 @@ interface Pose {
   shared: number;
   window: number;
   trip: number;
-  words: number;
+  /** The window: how many words' notes each block keeps (`null`: all of them). */
+  keep: number | null;
 }
 
 const BUILT_POSE: Pose = {
@@ -219,8 +223,17 @@ const BUILT_POSE: Pose = {
   shared: 0,
   window: 0,
   trip: 0,
-  words: KV_STEPS,
+  keep: null,
 };
+
+/** What a window did to the words: changed them, or (measured) left them as they were. */
+function windowNote(windowed: KvRun["windowed"][number], wrote: string): string {
+  const words = windowed.words.join("").trim();
+  const keep = `keep only the last ${windowed.window}`;
+  return words === wrote
+    ? `${keep}: here it still writes “${words}”\n(a smaller window can change it; not how Llama-3-8B runs)`
+    : `${keep}: it writes “${words}”\ninstead of “${wrote}” (not how Llama-3-8B runs)`;
+}
 
 /** Notes held after `done` steps of a `prompt`-token text (each word's notes written once). */
 export function notesWritten(prompt: number, done: number): number {
@@ -236,7 +249,7 @@ function pose(
 ): void {
   const prompt = data?.tokens.length ?? 10;
   const steps = data?.steps ?? [];
-  const total = Math.min(steps.length, KV_STEPS, state.words);
+  const total = Math.min(steps.length, KV_STEPS);
   const done = Math.min(Math.floor(state.step), total);
   const phase = state.step - Math.floor(state.step);
   const live = done < total ? phase : 0;
@@ -271,7 +284,8 @@ function pose(
   // window evicts every column older than its last `window` positions.
   const written =
     notesWritten(prompt, done) + (live > 0 ? Math.round(sweep * (onRail - first)) : 0);
-  const kept = data ? Math.min(written, data.window) : written;
+  const windowed = data?.windowed.find((w) => w.window === state.keep);
+  const kept = windowed ? Math.min(written, windowed.window) : written;
   const oldest = written - kept;
   for (let l = 0; l < LAYERS; l++)
     for (let c = 0; c < RAIL_SLOTS; c++) {
@@ -319,8 +333,8 @@ function pose(
       ? `if each of the ${data.heads} readers kept its own:\n${data.heads} notes per word per block`
       : state.shared > 0.5
         ? `${data.heads} readers share ${data.kvHeads} sets of notes:\n${fraction(data.kvHeads, data.heads)} the memory`
-        : state.window > 0.5
-          ? `keep only the last ${data.window}: it writes “${data.windowed.join("").trim()}”\ninstead of “${wrote}” (not how Llama-3-8B runs)`
+        : state.window > 0.5 && windowed
+          ? windowNote(windowed, wrote)
           : state.trip > 0.5
             ? `still, every new word waits while\nLlama-3-8B reads all ${weights} of weights`
             : "";

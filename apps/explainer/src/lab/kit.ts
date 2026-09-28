@@ -44,7 +44,7 @@ async function primitiveScene(name: string): Promise<StageScene> {
     distance: 1.6 + size * 1.8,
     fovY: 0.75,
   };
-  const input = frameFromParts(camera, built.parts, undefined, { board }, built.anchors);
+  const input = frameFromParts(camera, built.parts, { board }, built.anchors);
   return { look: lookConfig(), input, pose: turntable };
 }
 
@@ -70,7 +70,7 @@ export async function kitScene(name: string): Promise<StageScene> {
       axisY: { color: "#46a758", opacity: 1 },
       axisZ: { color: "#3e63dd", opacity: 1 },
     }),
-    input: frameFromParts(structuredClone(prop.camera), [part], undefined, { [name]: asset }),
+    input: frameFromParts(structuredClone(prop.camera), [part], { [name]: asset }),
     pose: turntable,
   };
 }

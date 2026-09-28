@@ -93,8 +93,6 @@ export const draftStrip: KitPrimitive<DraftStripParams> = {
           slot: p.slot + k,
           material: STATE_MATERIALS[face],
           transform: mat4.create(),
-          explode: p.explode,
-          cutaway: p.cutaway,
           primitive: "draftStrip",
         }),
       );
@@ -119,7 +117,6 @@ export const draftStrip: KitPrimitive<DraftStripParams> = {
       anchors: [
         { id: p.id, part: faceId(p.id, 0, p.states?.[0]), local: [0, 0, 0.5], priority: 1 },
       ],
-      explode: p.explode ?? [0, 0, 0],
     };
   },
   example: () => ({

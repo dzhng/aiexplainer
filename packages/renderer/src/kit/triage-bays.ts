@@ -72,8 +72,6 @@ export const triageBays: KitPrimitive<TriageBaysParams> = {
         slot: p.slot + slot,
         material,
         transform: box(c, s),
-        explode: p.explode,
-        cutaway: p.cutaway,
         primitive: "triageBays",
       });
       return [
@@ -127,7 +125,6 @@ export const triageBays: KitPrimitive<TriageBaysParams> = {
       parts,
       bounds: unionBounds(boxes),
       anchors: [{ id: p.id, part: `${p.id}.desk`, local: [0, 0.5, 0.5], priority: 1 }],
-      explode: p.explode ?? [0, 0, 0],
     };
   },
   example: () => ({

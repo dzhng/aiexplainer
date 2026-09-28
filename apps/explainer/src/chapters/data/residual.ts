@@ -76,7 +76,6 @@ export const residual: ChapterDef = {
     { id: "knob", label: "Volume knob", anchor: "knob" },
     { id: "readout", label: "Best guess", anchor: "readout" },
   ],
-  slider: { id: "station", label: "Station to read", min: 1, max: 4, step: 1, initial: 3 },
   scenarios: [
     {
       id: "little",
@@ -85,7 +84,6 @@ export const residual: ChapterDef = {
       probe: "residual-loss",
     },
   ],
-  views: ["whole", "exploded"],
   labels: [
     { anchor: "stations", analogy: "Stations", technical: "Transformer blocks" },
     { anchor: "river", analogy: "The river", technical: "Residual stream" },

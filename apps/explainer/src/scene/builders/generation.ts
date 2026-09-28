@@ -225,13 +225,7 @@ export const generation: SceneBuilder = {
       slots: { feeds: line.slots.feeds, bands: line.slots.bands, counter: counterBar },
     };
     built.set(scene, b);
-    pose(
-      b,
-      { step: GENERATION_STEPS, failure: 0, fade: 1, words: GENERATION_STEPS },
-      null,
-      null,
-      null,
-    );
+    pose(b, { step: GENERATION_STEPS, failure: 0, fade: 1 }, null, null, null);
     const tags: SceneTags = {
       anchors: [
         ...Array.from({ length: RAIL_SLOTS }, (_, i) => ({
@@ -254,12 +248,11 @@ export const generation: SceneBuilder = {
   update(frame: SceneFrame, _def, tl, ui, run) {
     const typed = ui.text !== null;
     const state: Pose = typed
-      ? { step: GENERATION_STEPS, failure: 0, fade: 1, words: ui.slider }
+      ? { step: GENERATION_STEPS, failure: 0, fade: 1 }
       : {
           step: tl.channels.step ?? GENERATION_STEPS,
           failure: tl.channels.failure ?? 0,
           fade: tl.channels.fade ?? 1,
-          words: ui.slider,
         };
     const data = run?.kind === "generation" ? run : null;
     pose(
@@ -276,8 +269,6 @@ interface Pose {
   step: number;
   failure: number;
   fade: number;
-  /** How many of the run's words the loop writes (the slider). */
-  words: number;
 }
 
 /** Tokens fed through the model by the steps done so far, plus the part of the live one. */
@@ -299,7 +290,7 @@ function pose(
 ): void {
   const prompt = data?.tokens.length ?? 10;
   const steps = data?.steps ?? [];
-  const total = Math.min(steps.length, GENERATION_STEPS, state.words);
+  const total = Math.min(steps.length, GENERATION_STEPS);
   const done = Math.min(Math.floor(state.step), total);
   const phase = state.step - Math.floor(state.step);
   const live = done < total ? phase : 0;

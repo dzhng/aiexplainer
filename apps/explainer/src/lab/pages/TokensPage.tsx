@@ -3,11 +3,9 @@
  * judged against. Each section is a specimen built from the same tokens and components the
  * app uses, so a token change shows here first:
  *   palette (DOM swatches, and through the real renderer and bloom at every emissive level),
- *   type scale, HUD panel, stat chips (once per scale), labels (both readings), flow rhythm,
- *   and the views (Whole, Cutaway, Exploded) on the chapter-0 board.
- * `?section=<id>` shows one section. The renderer sections are frames of their own lab
- * routes (`?section=emissive`, `/lab/scene/autocomplete?view=…`); the page is ready once
- * every frame is.
+ *   type scale, HUD panel, stat chips (once per scale), labels (both readings) and flow rhythm.
+ * `?section=<id>` shows one section. The palette's renderer swatches are a frame of their own
+ * lab route (`?section=emissive`); the page is ready once it is.
  */
 import type { ModelSource } from "@repo/llm";
 import type { LabelPlacement } from "@repo/renderer";
@@ -57,7 +55,7 @@ const SPECIMENS: Record<StatScale, StatChipDef> = {
   },
 };
 
-const SECTIONS = ["palette", "type", "hud", "chips", "labels", "flow", "views"] as const;
+const SECTIONS = ["palette", "type", "hud", "chips", "labels", "flow"] as const;
 type SectionId = (typeof SECTIONS)[number];
 
 const s = {
@@ -190,7 +188,7 @@ function TypeSection() {
 }
 
 function HudSection() {
-  const [view, setView] = useState("whole");
+  const [follow, setFollow] = useState<string | null>(null);
   const caption = autocomplete.caption.default;
   return (
     <Section
@@ -214,11 +212,16 @@ function HudSection() {
         </div>
         <div className={hudCss.box} style={{ position: "relative", padding: "12px 14px" }}>
           <div className={hudCss.group}>
-            <div className={hudCss.groupHead}>View</div>
-            <div className={hudCss.seg} role="group" aria-label="View">
-              {["whole", "cutaway", "exploded"].map((v) => (
-                <button key={v} type="button" aria-pressed={v === view} onClick={() => setView(v)}>
-                  {v[0]!.toUpperCase() + v.slice(1)}
+            <div className={hudCss.groupHead}>Follow</div>
+            <div className={hudCss.seg} role="group" aria-label="Follow">
+              {[{ id: null, label: "All" }, ...autocomplete.follow].map((f) => (
+                <button
+                  key={f.label}
+                  type="button"
+                  aria-pressed={f.id === follow}
+                  onClick={() => setFollow(f.id)}
+                >
+                  {f.label}
                 </button>
               ))}
             </div>
@@ -351,31 +354,6 @@ function FlowSection() {
   );
 }
 
-function ViewsSection({ onReady }: { onReady: () => void }) {
-  const views = ["whole", "cutaway", "exploded"] as const;
-  return (
-    <Section
-      id="views"
-      title="Views"
-      note="Chapter 0's board in each view: Cutaway caps what it cuts in the cap colour; Exploded pulls the layers apart."
-    >
-      <div style={s.row}>
-        {views.map((view) => (
-          <LabFrame
-            key={view}
-            src={`/lab/scene/autocomplete?labels=0&view=${view}&clock=held&t=5.4`}
-            width={1440}
-            height={900}
-            scale={0.3}
-            caption={view}
-            onReady={onReady}
-          />
-        ))}
-      </div>
-    </Section>
-  );
-}
-
 /** Calls `onReady` once `count` parts of the page have each reported ready. */
 function useCountdown(count: number, onReady: () => void): () => void {
   const left = useRef(count);
@@ -388,8 +366,8 @@ function useCountdown(count: number, onReady: () => void): () => void {
 export function TokensPage({ section, onReady }: { section: string | null; onReady: () => void }) {
   const shown: readonly SectionId[] =
     section === null ? SECTIONS : SECTIONS.filter((id) => id === section);
-  // Palette: 1 frame; chips: model + fonts; views: 3 frames.
-  const waits = { palette: 1, chips: 1, views: 3 } as Partial<Record<SectionId, number>>;
+  // Palette: 1 frame; chips: model + fonts.
+  const waits = { palette: 1, chips: 1 } as Partial<Record<SectionId, number>>;
   const total = shown.reduce((n, id) => n + (waits[id] ?? 0), 0);
   const ready = useCountdown(total, onReady);
   useEffect(() => {
@@ -413,7 +391,6 @@ export function TokensPage({ section, onReady }: { section: string | null; onRea
       {shown.includes("chips") && <ChipsSection onReady={ready} />}
       {shown.includes("labels") && <LabelsSection />}
       {shown.includes("flow") && <FlowSection />}
-      {shown.includes("views") && <ViewsSection onReady={ready} />}
     </main>
   );
 }

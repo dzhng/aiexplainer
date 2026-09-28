@@ -7,8 +7,6 @@
  * ones this model writes next) stand in a dim line after it, each with a capped stub: their
  * pipes are sealed, and their weights in the trace are exactly 0.
  *
- * Views: Exploded lifts the mix and its pipes off the words and drops the stand away.
- *
  * Pulses of light run up every pipe into the mix (kit: `flows`), as bright as the pipe is wide,
  * and a needle on the mix (kit: `tube`) tilts toward the word it drew the most from, by the
  * angle attention really turned the focus word's vector. The run can hold several prompts
@@ -124,14 +122,13 @@ const OUT_OF_SIGHT: Vec3 = [0, -1e6, 0];
 /** The mix block's pin: its right end (in its own unit space), clear of its word. */
 const MIX_PIN: Vec3 = [0.5, 0, 0.5];
 
-/** Exploded view: the mix and its pipes lift off the words; the stand drops away. */
-const EXPLODE = { mix: [0, 0.45, 0] as Vec3, stand: [0, -0.3, 0] as Vec3 };
-
 /**
  * At most this many of the widest pipes show their share, written on their word's block after
  * the word (the slider picks how many); their blocks are laid out wide enough for it.
  */
 const MAX_SHARES = 5;
+/** How many of the widest pipes have their share written on their word. */
+const SHARES_SHOWN = 3;
 const SHARE_ROOM = " 00%  ";
 /** The note over the sealed words (the chapter's analogy, from the map's ladder). */
 export const SEALED_NOTE = "you can't read tomorrow's newspaper";
@@ -404,10 +401,10 @@ function attentionScene(o: { dials: boolean }): SceneBuilder {
 
     create(assets, revision) {
       // Built parked; the first update lays everything out for the real prompt.
-      const block = (id: string, slot: number, material: string, explode?: Vec3) =>
-        KIT.block.build({ id, slot, material, center: PARKED, size: SLIVER, explode });
+      const block = (id: string, slot: number, material: string) =>
+        KIT.block.build({ id, slot, material, center: PARKED, size: SLIVER });
       const stand = Array.from({ length: MAX_LINES }, (_, i) =>
-        block(`stand.${i}`, SLOT.stand, "steel", EXPLODE.stand),
+        block(`stand.${i}`, SLOT.stand, "steel"),
       );
       const words = Array.from({ length: MAX_TOKENS }, (_, i) =>
         block(`word.${i}`, SLOT.words, "housing"),
@@ -416,7 +413,7 @@ function attentionScene(o: { dials: boolean }): SceneBuilder {
         block(`later.${j}`, SLOT.words, "futureWord"),
       );
       const focusWord = block("focus-word", SLOT.focus, "focusWord");
-      const mix = block("mix", SLOT.mix, "focusWord", EXPLODE.mix);
+      const mix = block("mix", SLOT.mix, "focusWord");
       const placeholder: PipeFan = {
         sources: Array.from({ length: MAX_TOKENS }, (_, i): Vec3 => [i * 0.05, 0.5, 0]),
         sink: [0, 2, 0],
@@ -426,7 +423,6 @@ function attentionScene(o: { dials: boolean }): SceneBuilder {
         slot: SLOT.pipes,
         material: "pipe",
         radius: PIPE_RADIUS,
-        explode: EXPLODE.mix,
         ...placeholder,
       });
       const sealed = KIT.sealed.build({
@@ -443,7 +439,6 @@ function attentionScene(o: { dials: boolean }): SceneBuilder {
         material: "pulse",
         radius: PIPE_RADIUS,
         paths: pipes.parts.map((p) => (p as TubePart).path),
-        explode: EXPLODE.mix,
       });
       // A unit rod up +y; each frame's transform stands it on the mix and tilts it.
       const needle = KIT.tube.build({
@@ -455,7 +450,6 @@ function attentionScene(o: { dials: boolean }): SceneBuilder {
           [0, 1, 0],
         ],
         radius: NEEDLE.radius,
-        explode: EXPLODE.mix,
       });
       const dials = o.dials
         ? KIT.dial.build({
@@ -557,8 +551,8 @@ function attentionScene(o: { dials: boolean }): SceneBuilder {
       const text = frame.tags.text;
       const typed = ui.text !== null;
       const steps = run?.kind === "attention" ? run.steps : [];
-      // Chapter 5's slider picks which order typed text (or a scenario's pair) shows.
-      const at = typed ? (o.dials ? ui.slider : 0) : Math.round(tl.channels.step ?? 0);
+      // Typed text (or a scenario's prompt) is one step; the loop steps through its inputs.
+      const at = typed ? 0 : Math.round(tl.channels.step ?? 0);
       const step = steps[Math.min(Math.max(0, at), steps.length - 1)];
       if (!step) {
         text.fill("");
@@ -604,8 +598,7 @@ function attentionScene(o: { dials: boolean }): SceneBuilder {
       // The widest pipes' shares, written on their words once the widths have settled.
       const order = widestFirst(step);
       // Shares stay on the words while a reorder carries them to their new places.
-      const sharesWanted = o.dials ? 3 : ui.slider;
-      const shown = settle >= 0.9 || swap < 1 ? Math.min(sharesWanted, MAX_SHARES) : 0;
+      const shown = settle >= 0.9 || swap < 1 ? SHARES_SHOWN : 0;
       const label = (i: number) => {
         const rank = order.indexOf(i);
         const word = tokenLabel(step.tokens[i]!);

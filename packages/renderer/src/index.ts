@@ -8,8 +8,6 @@ export {
   createProjected,
   orbitDirection,
   orbitPoseAt,
-  partCut,
-  partWorld,
   project,
   projectBox,
   type CameraMatrices,

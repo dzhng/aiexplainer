@@ -100,7 +100,6 @@ export const quantization: ChapterDef = {
       probe: "q8-kl",
     },
   ],
-  views: ["whole", "exploded"],
   labels: [
     {
       anchor: "strip",

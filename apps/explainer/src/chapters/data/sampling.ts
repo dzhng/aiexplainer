@@ -107,7 +107,6 @@ export const sampling: ChapterDef = {
       probe: "temperature-entropy",
     },
   ],
-  views: ["whole"],
   labels: [
     { anchor: "die", analogy: "The loaded die", technical: "Next-token distribution" },
     { anchor: "scores", analogy: "How well each word lines up", technical: "Logits (the highest)" },

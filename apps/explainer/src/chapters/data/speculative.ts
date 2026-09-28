@@ -105,7 +105,6 @@ export const speculative: ChapterDef = {
       probe: "draft-acceptance-heldout",
     },
   ],
-  views: ["whole", "exploded"],
   labels: [
     { anchor: "junior", analogy: "The junior: drafts fast", technical: "Drafter (1 layer)" },
     { anchor: "senior", analogy: "The senior: checks in one read", technical: "Target model" },

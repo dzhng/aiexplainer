@@ -362,27 +362,6 @@
     "spacing": 0.3,
     "duty": 0.4
   },
-  "views": {
-    "durationSec": 0.6,
-    "cutaway": {
-      "cap": "focus",
-      "capGain": 0.4,
-      "planes": {
-        "default": {
-          "normal": [0, 0, 1],
-          "offset": 0
-        },
-        "autocomplete": {
-          "normal": [0, 0, 1],
-          "offset": 0.08
-        },
-        "batching": {
-          "normal": [0, 0, 1],
-          "offset": 0.4
-        }
-      }
-    }
-  },
   "room": {
     "wallTop": "bgDeep",
     "wallBottom": "bgHigh",

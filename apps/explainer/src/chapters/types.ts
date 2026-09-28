@@ -16,7 +16,6 @@ export type ChapterModelId = ModelId | "tokenizer";
 export type ShotId = keyof typeof shots;
 export type FollowId = string;
 export type ChannelId = string;
-export type ViewMode = "whole" | "cutaway" | "exploded";
 
 export const STAT_SCALES = [
   "this tiny model",
@@ -41,9 +40,12 @@ export interface ChapterDef {
   stats: [StatChip, StatChip, StatChip];
   /** At most 3; "All" is implicit. Keys 1–4 select All then these, in order. */
   follow: FollowTarget[];
-  slider: SliderDef;
+  /**
+   * The chapter's one knob, only where it is a real knob of the mechanism (temperature, batch
+   * size, bytes per weight, draft length, window size); a chapter without one has no slider.
+   */
+  slider?: SliderDef;
   scenarios: ScenarioDef[];
-  views: ViewMode[];
   /** Key parts only, at most 5 (D18). */
   labels: LabelDef[];
   loop: Timeline;
@@ -93,8 +95,8 @@ export interface StatChip {
 
 /**
  * An arithmetic argument: a fixed number, the HUD slider's value (so the chip follows the
- * reader's control), or a probe measured on the chapter's model (so a measured rate feeds a
- * formula without being typed in).
+ * reader's control; only in a chapter with a slider), or a probe measured on the chapter's
+ * model (so a measured rate feeds a formula without being typed in).
  */
 export type ArithArg = number | { slider: true } | { probe: string };
 
@@ -118,6 +120,8 @@ export interface SliderDef {
   max: number;
   step: number;
   initial: number;
+  /** What the HUD writes at the slider's top instead of its number (chapter 10: "all"). */
+  maxLabel?: string;
   /**
    * A loop channel that plays the slider until the reader moves it: the HUD shows the
    * channel's value (rounded into range), so the chips follow the loop (chapter 11's riders).

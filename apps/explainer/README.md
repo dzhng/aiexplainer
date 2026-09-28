@@ -9,7 +9,7 @@ D29). It ships as a static Vite build on Vercel.
 Each step below has one owner. Change a step in its owner, never beside it.
 
 1. **Chapters are data.** Each chapter is one `ChapterDef` in `src/chapters/data/<slug>.ts`.
-   The def holds its copy, stats, loop timeline, shot, views and the scene it builds. The
+   The def holds its copy, stats, loop timeline, shot, controls and the scene it builds. The
    ladder order is `chapters/ladder.ts`, and a chapter's display number is its index there
    (D31). `validateChapter` (`chapters/validate.ts`) checks what the types can't: the copy
    budget, the loop budget, and that every anchor, shot, colour and kit primitive a def

@@ -9,7 +9,7 @@ test("every written chapter's stats resolve against its shipped model, with a so
   for (const def of Object.values(CHAPTERS)) {
     const model = def.model === null ? null : await shipped(def.model);
     for (const stat of def.stats) {
-      expect(Number.isFinite(resolveStat(stat, model, def.slider.initial))).toBe(true);
+      expect(Number.isFinite(resolveStat(stat, model, def.slider?.initial))).toBe(true);
       expect(statSource(stat, model)).not.toBe("");
     }
   }

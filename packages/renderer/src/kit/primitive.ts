@@ -1,22 +1,18 @@
 /**
  * The kit contract: every primitive is one module whose `build(params)` returns
- * its parts, their bounds, its anchors and its explode vector from a single source, so the
- * meshes the GPU draws, the label occluders, the anchors and the Cutaway/Exploded views all
- * agree. A chapter composes scenes only from `KIT` (`kit/catalog.ts`).
+ * its parts, their bounds and its anchors from a single source, so the meshes the GPU draws,
+ * the label occluders and the anchors all agree. A chapter composes scenes only from `KIT` (`kit/catalog.ts`).
  */
-import type { Vec3 } from "math";
 import type { Box3 } from "math/shapes";
 import type { MeshAsset } from "../gltf.ts";
 import type { Part, SceneAnchor } from "../frame-input.ts";
 
 export interface KitBuild {
   parts: Part[];
-  /** World bounds of every part as built (Whole view). */
+  /** World bounds of every part as built. */
   bounds: Box3;
   /** Where labels may pin: at least one, inside `bounds`. */
   anchors: SceneAnchor[];
-  /** The primitive's Exploded-view offset as a whole (its parts carry their own). */
-  explode: Vec3;
 }
 
 export interface KitPrimitive<P> {
@@ -31,8 +27,6 @@ export interface KitCommon {
   id: string;
   /** The dynamics slot of its (first) part. */
   slot: number;
-  explode?: Vec3;
-  cutaway?: "keep" | "clip";
 }
 
 export function unionBounds(boxes: Box3[]): Box3 {

@@ -76,8 +76,6 @@ export const river: KitPrimitive<RiverParams> = {
         slot: p.slot + i,
         material: p.materials.water,
         transform: mat4.create(),
-        explode: p.explode,
-        cutaway: p.cutaway,
         primitive: "river",
       };
       placeStretch(part.transform, p, i, p.maxHeight / 2);
@@ -92,7 +90,6 @@ export const river: KitPrimitive<RiverParams> = {
         path: UNIT_SEGMENT,
         radius: 1,
         transform: mat4.create(),
-        explode: p.explode,
         primitive: "river",
       };
       placePour(part.transform, p, k, 0.03, p.y + p.maxHeight / 4);
@@ -114,7 +111,6 @@ export const river: KitPrimitive<RiverParams> = {
       anchors: [
         { id: p.id, part: stretches[Math.min(1, n)]!.id, local: [0, 0.5, 0.5], priority: 1 },
       ],
-      explode: p.explode ?? [0, 0, 0],
     };
   },
   example: () => ({

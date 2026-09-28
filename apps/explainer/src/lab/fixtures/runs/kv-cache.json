@@ -20,8 +20,28 @@
       "fed": 1
     }
   ],
-  "windowed": [" girl", " named", " Lily", "."],
-  "window": 4,
+  "windowed": [
+    {
+      "window": 4,
+      "words": [" girl", " named", " Lily", "."]
+    },
+    {
+      "window": 5,
+      "words": [" boy", " named", " Tim", "."]
+    },
+    {
+      "window": 6,
+      "words": [" boy", " named", " Tim", "."]
+    },
+    {
+      "window": 7,
+      "words": [" boy", " named", " Tim", "."]
+    },
+    {
+      "window": 8,
+      "words": [" boy", " named", " Tim", "."]
+    }
+  ],
   "layers": 4,
   "heads": 4,
   "kvHeads": 2,

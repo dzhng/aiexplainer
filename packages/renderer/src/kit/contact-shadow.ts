@@ -93,8 +93,6 @@ function footprint(
     slot: p.slot,
     material,
     transform: [sx, 0, 0, 0, 0, 1, 0, 0, 0, 0, sz, 0, (b[0] + b[3]) / 2, y, (b[2] + b[5]) / 2, 1],
-    explode: p.explode,
-    cutaway: p.cutaway,
     primitive: "contactShadow",
   };
 }
@@ -132,7 +130,6 @@ export const contactShadow: KitPrimitive<ContactShadowParams> = {
       parts,
       bounds,
       anchors: [{ id: p.id, part: p.id, local: [0, 0, 0], priority: 0 }],
-      explode: p.explode ?? [0, 0, 0],
     };
   },
   example: () => ({

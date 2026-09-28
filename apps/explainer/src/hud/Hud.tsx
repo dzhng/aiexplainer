@@ -6,7 +6,7 @@
 import type { ModelSource } from "@repo/llm";
 import { useRef, useState, type CSSProperties, type Dispatch } from "react";
 import { LADDER, displayNumber } from "../chapters/ladder.ts";
-import type { ChapterDef, ViewMode } from "../chapters/types.ts";
+import type { ChapterDef, SliderDef } from "../chapters/types.ts";
 import { BRAND_NAME, SERIES_TITLE, X_PROFILE } from "../look/brand.ts";
 import { sharePathFor, type Action, type AppState, type Chapters } from "../state/app-state.ts";
 import { copyOrShow } from "../fallback/copy.ts";
@@ -23,12 +23,6 @@ import {
 } from "./icons.tsx";
 import { prefersReducedMotion, useArrivalIntro } from "./motion.ts";
 import { StatChip } from "./StatChip.tsx";
-
-const VIEW_NAMES: Record<ViewMode, string> = {
-  whole: "Whole",
-  cutaway: "Cutaway",
-  exploded: "Exploded",
-};
 
 export interface HudProps {
   state: AppState;
@@ -142,8 +136,6 @@ function Segmented<T>({ label, options, selected, onSelect, className }: Segment
 }
 
 function Controls({ state, dispatch, def, slider: value }: HudProps) {
-  const { slider } = def;
-  const fill = ((value - slider.min) / (slider.max - slider.min || 1)) * 100;
   const followKeys = def.follow.length > 0 ? `keys 1–${def.follow.length + 1}` : "";
   return (
     <nav
@@ -156,62 +148,15 @@ function Controls({ state, dispatch, def, slider: value }: HudProps) {
         <div className={css.groupHead}>
           Follow <span className={css.keys}>{followKeys}</span>
         </div>
-        <Segmented
-          label="Follow"
-          options={[
-            { value: null, label: "All" },
-            ...def.follow.map((f) => ({ value: f.id as string | null, label: f.label })),
-          ]}
-          selected={state.follow}
-          onSelect={(follow) => dispatch({ type: "setFollow", follow })}
-        />
-      </div>
-      <div className={css.group}>
-        <label className={css.groupHead} htmlFor="hud-slider">
-          {slider.label}
-        </label>
-        <div className={css.slider}>
-          <input
-            id="hud-slider"
-            type="range"
-            min={slider.min}
-            max={slider.max}
-            step={slider.step}
-            value={value}
-            style={{ "--fill": `${fill}%` } as CSSProperties}
-            onChange={(e) => dispatch({ type: "setSlider", value: Number(e.target.value) })}
-          />
-          <output className={css.sliderValue} htmlFor="hud-slider">
-            {value}
-          </output>
-        </div>
-      </div>
-      {def.scenarios.length > 0 && (
-        <div className={css.group}>
-          <div className={css.groupHead}>Try</div>
-          <Segmented
-            label="Try a prompt"
-            options={def.scenarios.map((s) => ({
-              value: s.id as string | null,
-              // A scenario is a prompt the machine continues, so it reads as quoted, unfinished text.
-              label: `“${s.label}…”`,
-            }))}
-            selected={state.scenario}
-            onSelect={(id) =>
-              dispatch({ type: "setScenario", scenario: id === state.scenario ? null : id })
-            }
-            className={css.quoted}
-          />
-        </div>
-      )}
-      <div className={css.group}>
-        <div className={css.groupHead}>View</div>
         <div className={css.groupRow}>
           <Segmented
-            label="View"
-            options={def.views.map((v) => ({ value: v, label: VIEW_NAMES[v] }))}
-            selected={state.view}
-            onSelect={(view) => dispatch({ type: "setView", view })}
+            label="Follow"
+            options={[
+              { value: null, label: "All" },
+              ...def.follow.map((f) => ({ value: f.id as string | null, label: f.label })),
+            ]}
+            selected={state.follow}
+            onSelect={(follow) => dispatch({ type: "setFollow", follow })}
           />
           <button
             className={css.iconButton}
@@ -232,7 +177,61 @@ function Controls({ state, dispatch, def, slider: value }: HudProps) {
           </button>
         </div>
       </div>
+      {def.slider && <Knob slider={def.slider} value={value} dispatch={dispatch} />}
+      {def.scenarios.length > 0 && (
+        <div className={css.group}>
+          <div className={css.groupHead}>Try</div>
+          <Segmented
+            label="Try a prompt"
+            options={def.scenarios.map((s) => ({
+              value: s.id as string | null,
+              // A scenario is a prompt the machine continues, so it reads as quoted, unfinished text.
+              label: `“${s.label}…”`,
+            }))}
+            selected={state.scenario}
+            onSelect={(id) =>
+              dispatch({ type: "setScenario", scenario: id === state.scenario ? null : id })
+            }
+            className={css.quoted}
+          />
+        </div>
+      )}
     </nav>
+  );
+}
+
+/** The chapter's one knob: a real quantity of the mechanism, live in the scene and the chips. */
+function Knob({
+  slider,
+  value,
+  dispatch,
+}: {
+  slider: SliderDef;
+  value: number;
+  dispatch: Dispatch<Action>;
+}) {
+  const fill = ((value - slider.min) / (slider.max - slider.min || 1)) * 100;
+  return (
+    <div className={css.group}>
+      <label className={css.groupHead} htmlFor="hud-slider">
+        {slider.label}
+      </label>
+      <div className={css.slider}>
+        <input
+          id="hud-slider"
+          type="range"
+          min={slider.min}
+          max={slider.max}
+          step={slider.step}
+          value={value}
+          style={{ "--fill": `${fill}%` } as CSSProperties}
+          onChange={(e) => dispatch({ type: "setSlider", value: Number(e.target.value) })}
+        />
+        <output className={css.sliderValue} htmlFor="hud-slider">
+          {value === slider.max && slider.maxLabel ? slider.maxLabel : value}
+        </output>
+      </div>
+    </div>
   );
 }
 

@@ -20,8 +20,8 @@ const runFor = async (text: string | null) => (await computeRun(chapter, text, c
 const loopRun = await runFor(null);
 
 /** The scene at loop time `t`: the bricks on show (in pool order) and every tag's text. */
-function sceneAt(t: number, run: PiecesRun, text: string | null = null, slider = MAX_BRICKS) {
-  const { frame } = frameAt(chapter, run, t, { slider, text });
+function sceneAt(t: number, run: PiecesRun, text: string | null = null) {
+  const { frame } = frameAt(chapter, run, t, { text });
   const { input } = frame;
   const bodies = input.scene.parts.filter(
     (p) => /^brick\.\w+\.\d+$/.test(p.id) && p.transform[13]! > 0,
@@ -93,11 +93,6 @@ describe("chapter 1: bricks are the real tokenizer's pieces", () => {
     // The pair glows, the rest do not.
     const glowing = failure.bodies.filter((b) => failure.input.dynamics.intensity[b.slot]! > 0);
     expect(glowing.length).toBe(2);
-  });
-
-  test("the slider shows the first N bricks", async () => {
-    const run = await runFor(chapter.scenarios[0]!.prompt);
-    expect(sceneAt(0, run, chapter.scenarios[0]!.prompt, 3).bodies.length).toBe(3);
   });
 
   test("the loop's seam: nothing is on the plate at its start or its end", () => {

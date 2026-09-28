@@ -82,7 +82,6 @@ const RIVER: RiverParams = {
   pourFrom: STATION.y - STATION.size[1] / 2,
   maxHeight: 0.62,
   materials: { water: "river", pour: "bar" },
-  explode: [0, -0.2, 0.4],
 };
 /** River height at the embedding's size; it grows with √(stream ÷ embedding). */
 const RIVER_BASE = 0.07;
@@ -146,7 +145,6 @@ export const residual: SceneBuilder = {
     const pipesSlot = slot;
     const pipes = Array.from({ length: STATIONS.length + 1 }, (_, i) => {
       const part = segment(i === 0 ? "pipe" : `pipe.${i}`, slot++, "bar");
-      part.explode = [0, 0.2, 0.4];
       return part;
     });
     const riverSlot = slot;
@@ -158,7 +156,6 @@ export const residual: SceneBuilder = {
       center: [x - 0.14, STATION.y + 0.12, STATION.size[2] / 2],
       radius: KNOB.radius,
       materials: { dial: "metal", pointer: "bar" },
-      explode: [0, 0, 0.3],
     }));
     const pointerSlots: number[] = [];
     const knobParts = knobs.flatMap((knob) => {
@@ -182,7 +179,6 @@ export const residual: SceneBuilder = {
           [((right - left) / 2) * pace, h, d],
         ]);
       }),
-      explode: RIVER.explode,
     }).parts as TubePart[];
     slot += currents.length;
     const card = box(
@@ -258,7 +254,6 @@ export const residual: SceneBuilder = {
       river: ch("river", 1, 1),
       flowB: ch("flowB", 1, 1),
       failure: ch("failure", 0, 0),
-      station: ui.slider,
     };
     const b = built.get(frame.input.scene)!;
     const data = run?.kind === "residual" ? run : null;
@@ -277,11 +272,11 @@ interface Pose {
   river: number;
   flowB: number;
   failure: number;
-  /** The station (1-based) whose river and knob numbers are written beside it (the slider). */
-  station: number;
 }
 
-const BUILT_POSE: Pose = { flowA: 1, river: 1, flowB: 1, failure: 0, station: 1 };
+const BUILT_POSE: Pose = { flowA: 1, river: 1, flowB: 1, failure: 0 };
+/** The station (1-based) whose river and knob numbers are written beside it. */
+const NOTED_STATION = 3;
 
 /** River height for a stream `ratio` times the embedding's size. */
 export function riverHeight(ratio: number): number {
@@ -386,12 +381,12 @@ function pose(
         ? `signal left: ${end === 0 ? "0%" : share(end)}`
         : `this text: river ${end.toPrecision(2)}× its start`
       : "";
-  // The slider's station: how big the river is on its way in, and what the knob makes of it.
+  // The noted station: how big the river is on its way in, and what the knob makes of it.
   for (let k = 0; k < n; k++) {
     const reached = clamp(state.flowB * (n + 1) - k - 0.5, 0, 1);
     const ratio = withRiver ? withRiver.stream[k]! / withRiver.stream[0]! : 0;
     text[3 + k] =
-      withRiver && k + 1 === state.station && river > 0.5 && reached >= 1
+      withRiver && k + 1 === NOTED_STATION && river > 0.5 && reached >= 1
         ? `in: river ${ratio.toPrecision(2)}×\nknob sets it to 1×`
         : "";
   }

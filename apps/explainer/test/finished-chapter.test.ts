@@ -24,7 +24,7 @@ const assets: SceneDesc["assets"] = {
 // Every frame here builds every station, and one test runs every chapter's model.
 setDefaultTimeout(60_000);
 const run = (await fixtureRun(finished)) as FinishedRun;
-const ui: SceneUi = { follow: null, slider: 1, sliderSet: false, view: "whole", text: null };
+const ui: SceneUi = { follow: null, slider: 1, sliderSet: false, text: null };
 const tlAt = (t: number) => evalTimeline(finished.loop, t, createTimelineState(finished.loop));
 // Off any keyframe of the stations' own loops, so float rounding of their offset times cannot flip a step.
 const settled = (n: number) => arrivesAt(n) + 0.337;
@@ -165,11 +165,6 @@ describe("the tour", () => {
       from = i + 1;
     });
     for (const p of path) expect(p[1]).toBeLessThan(0.05);
-  });
-
-  test("the slider holds the tour on a station", () => {
-    const { scene } = frameAt(finished, run, 0.5, { slider: 4, sliderSet: true }, assets);
-    expect(scene.anchors.map((a) => a.id)).toEqual([STATIONS[3]!.def.slug]);
   });
 });
 

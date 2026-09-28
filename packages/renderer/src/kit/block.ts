@@ -75,15 +75,12 @@ export const block: KitPrimitive<BlockParams> = {
       slot: p.slot,
       material: p.material,
       transform: [sx, 0, 0, 0, 0, sy, 0, 0, 0, 0, sz, 0, x, y, z, 1],
-      explode: p.explode,
-      cutaway: p.cutaway,
       primitive: "block",
     };
     return {
       parts: [part],
       bounds: [x - sx / 2, y - sy / 2, z - sz / 2, x + sx / 2, y + sy / 2, z + sz / 2],
       anchors: [{ id: p.id, part: p.id, local: [0, 0.5, 0], priority: 1 }],
-      explode: p.explode ?? [0, 0, 0],
     };
   },
   example: () => ({

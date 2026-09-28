@@ -76,7 +76,6 @@ export const tokenizer: ChapterDef = {
     { id: "ids", label: "Ids", anchor: "ids" },
     { id: "text", label: "Your text", anchor: "text" },
   ],
-  slider: { id: "pieces", label: "Bricks shown", min: 1, max: 16, step: 1, initial: 16 },
   scenarios: [
     {
       id: "tim",
@@ -91,7 +90,6 @@ export const tokenizer: ChapterDef = {
       probe: "rare-word-split",
     },
   ],
-  views: ["whole"],
   labels: [
     { anchor: "bricks", analogy: "A brick: one known piece", technical: "Token" },
     { anchor: "ids", analogy: "The number stamped on it", technical: "Token id" },

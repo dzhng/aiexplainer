@@ -3,6 +3,10 @@
  * (each word's keys and values written once, read by every later word), then GQA's shared
  * notes, then a sliding window that keeps only the last few (it changes the words written;
  * Llama-3-8B does not run this way). The failure beat: each word still waits on the weights.
+ *
+ * The knob is the window: the notes each block keeps, from 4 words up to all of them. Every
+ * stop is a real generation with that window (`runtime/runs/kv-cache.ts`); on this prompt only
+ * the smallest changes the words, and the scene says so.
  */
 import type { ChapterDef } from "../types.ts";
 
@@ -76,7 +80,16 @@ export const kvCache: ChapterDef = {
     { id: "machine", label: "Sharing & window", anchor: "machine" },
     { id: "rail", label: "The text", anchor: "rail" },
   ],
-  slider: { id: "words", label: "Words to write", min: 1, max: 4, step: 1, initial: 4 },
+  slider: {
+    id: "window",
+    label: "Notes kept per block (words)",
+    min: 4,
+    max: 9,
+    step: 1,
+    initial: 9,
+    maxLabel: "all",
+    loop: "keep",
+  },
   scenarios: [
     {
       id: "little",
@@ -91,7 +104,6 @@ export const kvCache: ChapterDef = {
       probe: "val-loss",
     },
   ],
-  views: ["whole", "exploded"],
   labels: [
     { anchor: "rack", analogy: "Sticky notes", technical: "KV cache" },
     { anchor: "machine", analogy: "The whole machine", technical: "Forward pass (4 layers)" },
@@ -123,6 +135,12 @@ export const kvCache: ChapterDef = {
         { t: 15.2, v: 1, ease: "step" },
         { t: 17.3, v: 1 },
         { t: 17.4, v: 0, ease: "step" },
+      ],
+      /** The window the loop shows, and the HUD slider with it: all, then the last 4. */
+      keep: [
+        { t: 0, v: 9, ease: "step" },
+        { t: 17.4, v: 4, ease: "step" },
+        { t: 23.2, v: 9, ease: "step" },
       ],
       /** Keep only the last few: older columns are evicted. */
       window: [

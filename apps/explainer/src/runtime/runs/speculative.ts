@@ -15,6 +15,7 @@ export const speculativeRun: SceneRunFn = async (def, text, { model, session }) 
   await session.load("full");
   await session.load("drafter-64");
   const word = (id: number) => tokenizer.decode([id]);
+  if (!def.slider) throw new Error("speculative decoding needs its k slider");
   const byK: SpeculativeRun["byK"] = [];
   for (let k = def.slider.min; k <= SPEC_RUN.maxK; k++) {
     const { rounds } = await session.speculate(tokens, {

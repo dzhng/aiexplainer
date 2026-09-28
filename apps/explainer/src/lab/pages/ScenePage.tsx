@@ -16,7 +16,6 @@ import { lookConfig } from "../../look/look.ts";
 import { defaultUi, SCENE_BUILDERS } from "../../scene/build-frame.ts";
 import { chapterScene, loadSceneAssets } from "../../runtime/chapter-scene.ts";
 import type { Clock } from "../../runtime/clock.ts";
-import type { ViewMode } from "../../chapters/types.ts";
 import { runStage } from "../../runtime/stage.ts";
 import { fixtureRun } from "../fixtures.ts";
 import type { ProbeApi } from "../probe.ts";
@@ -47,10 +46,7 @@ export function ScenePage({ slug, reading, debug, clock, probe, onReady }: Scene
     let dispose = () => {};
     let alive = true;
     const assets: SceneDesc["assets"] = {};
-    // `?view=cutaway|exploded` opens the scene in that view (settled), for view shots.
-    const asked = new URLSearchParams(location.search).get("view") as ViewMode | null;
     const ui = defaultUi(def);
-    if (asked && def.views.includes(asked)) ui.view = asked;
     const scene = chapterScene(def, assets, () => ({
       def,
       ui,

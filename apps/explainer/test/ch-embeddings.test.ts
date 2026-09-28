@@ -20,8 +20,8 @@ const ctx = { ...(await shippedContext("embed")), model: loaded };
 const runFor = async (text: string | null) => (await computeRun(chapter, text, ctx)) as PinsRun;
 const loopRun = await runFor(null);
 
-function sceneAt(t: number, run: PinsRun, text: string | null = null, slider = 60) {
-  const { frame } = frameAt(chapter, run, t, { slider, text });
+function sceneAt(t: number, run: PinsRun, text: string | null = null) {
+  const { frame } = frameAt(chapter, run, t, { text });
   const { input } = frame;
   const part = (id: string) => input.scene.parts.find((p) => p.id === id)!;
   const shown = (prefix: string) =>
@@ -130,10 +130,6 @@ describe("chapter 2's loop", () => {
       expect(at.shown("word.").length).toBe(0);
       expect(at.part("pin.4.arrow").transform[13]!).toBeLessThan(-10);
     }
-  });
-
-  test("the slider pins the first N words", () => {
-    expect(sceneAt(12.5, loopRun, null, 10).shown("pin.").length).toBe(10 - 2);
   });
 
   test("the scene builds only from the primitives its scene declares", () => {

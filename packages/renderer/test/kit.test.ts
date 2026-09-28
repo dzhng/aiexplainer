@@ -3,7 +3,6 @@ import path from "node:path";
 import { mat4, vec3, type Vec3 } from "math";
 import type { Box3 } from "math/shapes";
 import type { ShadowPart } from "../src/frame-input.ts";
-import { partWorld } from "../src/camera.ts";
 import { parseGlb } from "../src/gltf.ts";
 import { blockGeometry } from "../src/kit/block.ts";
 import { placeBrick } from "../src/kit/brick.ts";
@@ -234,7 +233,6 @@ test("every kit primitive's anchors lie inside its bounds, and its parts are tag
       path.resolve(import.meta.dirname, "../../../apps/explainer/public/props/counter_board.glb"),
     ).arrayBuffer(),
   );
-  const whole = { mode: "whole" as const, t: 0 };
   for (const [id, primitive] of KIT_ENTRIES) {
     const built = primitive.build(primitive.example({ board }));
     expect(built.parts.length).toBeGreaterThan(0);
@@ -243,11 +241,7 @@ test("every kit primitive's anchors lie inside its bounds, and its parts are tag
     for (const anchor of built.anchors) {
       const part = built.parts.find((p) => p.id === anchor.part);
       expect(part).toBeDefined();
-      const world = vec3.transformMat4(
-        [0, 0, 0],
-        anchor.local,
-        partWorld(part!, whole, mat4.create()),
-      );
+      const world = vec3.transformMat4([0, 0, 0], anchor.local, part!.transform);
       for (let a = 0; a < 3; a++) {
         expect(world[a]!).toBeGreaterThanOrEqual(built.bounds[a]! - 1e-5);
         expect(world[a]!).toBeLessThanOrEqual(built.bounds[a + 3]! + 1e-5);
@@ -256,7 +250,7 @@ test("every kit primitive's anchors lie inside its bounds, and its parts are tag
   }
 });
 
-test("the mesh primitive splits a prop into one part per node, with per-node views", async () => {
+test("the mesh primitive splits a prop into one part per node", async () => {
   const board = parseGlb(
     await Bun.file(
       path.resolve(import.meta.dirname, "../../../apps/explainer/public/props/counter_board.glb"),
@@ -268,16 +262,11 @@ test("the mesh primitive splits a prop into one part per node, with per-node vie
     assetId: "board",
     asset: board,
     split: true,
-    nodeExplode: { "board.": [0, 0, -1], "board.rail": [0, 0, 1] },
-    clip: ["board.housing"],
   });
   const byId = Object.fromEntries(built.parts.map((p) => [p.id, p]));
   expect(Object.keys(byId)).toContain("board.housing");
   expect(Object.keys(byId)).toContain("board.slot.3");
-  expect(byId["board.rail"]!.explode).toEqual([0, 0, 1]);
-  expect(byId["board.stand"]!.explode).toEqual([0, 0, -1]);
-  expect(byId["board.housing"]!.cutaway).toBe("clip");
-  expect(byId["board.rail"]!.cutaway).toBe("keep");
+  expect(byId["board.rail"]).toMatchObject({ kind: "mesh", node: "board.rail" });
 });
 
 test("equal tubes share one geometry (one instanced draw); a changed path gets its own", () => {

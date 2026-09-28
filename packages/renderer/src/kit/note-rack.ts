@@ -78,8 +78,6 @@ export const noteRack: KitPrimitive<NoteRackParams> = {
         slot: p.slot,
         material: p.materials.frame,
         transform: [width, 0, 0, 0, 0, height, 0, 0, 0, 0, BOARD_DEPTH, 0, cx, cy, cz, 1],
-        explode: p.explode,
-        cutaway: p.cutaway,
         primitive: "noteRack",
       },
       // A thin shelf under each layer's row of notes.
@@ -91,7 +89,6 @@ export const noteRack: KitPrimitive<NoteRackParams> = {
           slot: p.slot,
           material: p.materials.frame,
           transform: [width, 0, 0, 0, 0, 0.02, 0, 0, 0, 0, 0.12, 0, cx, y, cz + 0.06, 1],
-          explode: p.explode,
           primitive: "noteRack",
         };
       }),
@@ -106,7 +103,6 @@ export const noteRack: KitPrimitive<NoteRackParams> = {
             slot: noteSlot(p, l, c),
             material: p.materials.note,
             transform: mat4.create(),
-            explode: p.explode,
             primitive: "noteRack",
           };
           placeNote(note.transform, p, l, c, n, 1);
@@ -124,7 +120,6 @@ export const noteRack: KitPrimitive<NoteRackParams> = {
         cz + 0.12,
       ],
       anchors: [{ id: p.id, part: frame[0]!.id, local: [-0.4, 0.5, 0.5], priority: 1 }],
-      explode: p.explode ?? [0, 0, 0],
     };
   },
   example: () => ({

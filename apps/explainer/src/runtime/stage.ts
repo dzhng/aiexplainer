@@ -48,7 +48,7 @@ export interface StageOptions {
   /** Debug layers and bloom, e.g. from `?emissive=0&bloom=0`. */
   debug?: FrameInput["debug"];
   /**
-   * Runs before each frame is drawn; mutates `input` (scene, transforms, dynamics, view).
+   * Runs before each frame is drawn; mutates `input` (scene, transforms, dynamics).
    * Returning true means it steered the camera: the orbit continues from `input.camera`.
    */
   update?: (input: FrameInput, timeSec: number) => boolean | void;
@@ -119,34 +119,27 @@ export async function runStage(o: StageOptions): Promise<Stage | null> {
   const tagAnchors: WorldAnchor[] = [];
   const tagPlacements: LabelPlacement[] = [];
   const obstacles: ScreenRect[] = [];
-  // Occluders change with the scene's structure, its layout or the view; anchors move every frame.
-  const occludedFor = { revision: -1, layout: -1, mode: input.view.mode, t: Number.NaN };
+  // Occluders change with the scene's structure or its layout; anchors move every frame.
+  const occludedFor = { revision: -1, layout: -1 };
   let occluders: Occluder[] = [];
   const placeAll = () => {
-    const { scene, view } = input;
-    if (
-      occludedFor.revision !== scene.revision ||
-      occludedFor.layout !== (scene.layout ?? 0) ||
-      occludedFor.mode !== view.mode ||
-      occludedFor.t !== view.t
-    ) {
-      occluders = sceneOccluders(scene, view, o.look);
+    const { scene } = input;
+    if (occludedFor.revision !== scene.revision || occludedFor.layout !== (scene.layout ?? 0)) {
+      occluders = sceneOccluders(scene, o.look);
       occludedFor.revision = scene.revision;
       occludedFor.layout = scene.layout ?? 0;
-      occludedFor.mode = view.mode;
-      occludedFor.t = view.t;
     }
     cameraMatrices(input.camera, input.viewport, matrices);
     // Scene text first: labels then steer clear of it.
     if (o.tags) {
       const tags = o.tags.current();
-      sceneAnchors(scene, view, tags.anchors, tagAnchors);
+      sceneAnchors(scene, tags.anchors, tagAnchors);
       placeLabels(matrices, tagAnchors, occluders, tagPlacements, TAG_BOX);
       o.tags.layer?.update(tagPlacements, tags);
       o.tags.layer?.obstacles(obstacles);
     } else obstacles.length = 0;
     if (o.obstacles) for (const rect of o.obstacles()) obstacles.push(rect);
-    sceneAnchors(scene, view, scene.anchors, labelAnchors);
+    sceneAnchors(scene, scene.anchors, labelAnchors);
     const widths = o.labels?.pillWidths();
     for (const anchor of labelAnchors) anchor.pillWidth = widths?.[anchor.id];
     placeLabels(matrices, labelAnchors, occluders, labelPlacements, DEFAULT_LABEL_BOX, obstacles);
@@ -183,7 +176,7 @@ export async function runStage(o: StageOptions): Promise<Stage | null> {
     cameraMatrices(input.camera, input.viewport, matrices);
     const crops: Record<string, ScreenRect> = { ...o.labels?.rects() };
     for (const part of input.scene.parts) {
-      const rect = projectBox(matrices, partWorldBounds(part, input.scene.assets, input.view, box));
+      const rect = projectBox(matrices, partWorldBounds(part, input.scene.assets, box));
       if (rect) crops[`part:${part.id}`] = rect;
     }
     return crops;

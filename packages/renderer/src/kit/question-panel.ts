@@ -88,8 +88,6 @@ export const questionPanel: KitPrimitive<QuestionPanelParams> = {
       slot: p.slot,
       material: p.materials.housing,
       transform: [width, 0, 0, 0, 0, height, 0, 0, 0, 0, HOUSING_DEPTH, 0, cx, cy, cz, 1],
-      explode: p.explode,
-      cutaway: p.cutaway,
       primitive: "questionPanel",
     };
     // Two legs from the floor (y = 0) to the housing's underside.
@@ -117,7 +115,6 @@ export const questionPanel: KitPrimitive<QuestionPanelParams> = {
         cz,
         1,
       ],
-      explode: p.explode,
       primitive: "questionPanel",
     }));
     const lamps: BlockPart[] = Array.from({ length: count }, (_, i) => {
@@ -128,7 +125,6 @@ export const questionPanel: KitPrimitive<QuestionPanelParams> = {
         slot: p.slot + 1 + i,
         material: p.materials.lamp,
         transform: [p.lampSize, 0, 0, 0, 0, p.lampSize, 0, 0, 0, 0, LAMP_DEPTH, 0, x, y, z, 1],
-        explode: p.explode,
         primitive: "questionPanel",
       };
     });
@@ -141,7 +137,6 @@ export const questionPanel: KitPrimitive<QuestionPanelParams> = {
         path: UNIT_SEGMENT,
         radius: 1,
         transform: mat4.create(),
-        explode: p.explode,
         primitive: "questionPanel",
       };
       placePush(part.transform, p, i, 0.02, 1);
@@ -161,7 +156,6 @@ export const questionPanel: KitPrimitive<QuestionPanelParams> = {
       slot: p.slot,
       material: p.materials.rim,
       transform: [w!, 0, 0, 0, 0, h!, 0, 0, 0, 0, 0.03, 0, x!, y!, faceZ, 1],
-      explode: p.explode,
       primitive: "questionPanel",
     }));
     const parts: Part[] = [housing, ...rims, ...legs, ...lamps, ...pushes];
@@ -178,7 +172,6 @@ export const questionPanel: KitPrimitive<QuestionPanelParams> = {
         { id: p.id, part: rims[0]!.id, local: [-0.3, 0.5, 0.5], priority: 2 },
         { id: `${p.id}.lamps`, part: lamps[0]!.id, local: [0, 0.5, 0.5], priority: 1 },
       ],
-      explode: p.explode ?? [0, 0, 0],
     };
   },
   example: () => ({

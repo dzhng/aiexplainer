@@ -7,7 +7,7 @@ import { clamp } from "math";
 import type { Mat3, Mat4, Vec3 } from "math";
 import { d } from "typegpu";
 import type { CameraMatrices } from "./camera.ts";
-import type { CutPlane, FrameInput, LookConfig, MaterialLook } from "./frame-input.ts";
+import type { FrameInput, LookConfig, MaterialLook } from "./frame-input.ts";
 import type { Geometry } from "./kit/geometry.ts";
 
 export const FrameUniform = d
@@ -23,11 +23,9 @@ export const FrameUniform = d
      * z: flow pulse scale (0 when the flows layer is off).
      */
     debug: d.vec4f,
-    /** The Cutaway plane: xyz normal, w offset. */
-    cutPlane: d.vec4f,
   })
   .$name("FrameUniform");
-export const FRAME_UNIFORM_BYTES = 192;
+export const FRAME_UNIFORM_BYTES = 176;
 
 /**
  * One vertex: position, baked AO, normal, baked (warm, cool) light as two unorm16s, the axis
@@ -52,8 +50,6 @@ export const Instance = d
     normalMatrix: d.mat3x3f,
     material: d.u32,
     slot: d.u32,
-    /** How far the Cutaway plane has swept in on this instance (0 = not cut). */
-    cut: d.f32,
   })
   .$name("Instance");
 export const INSTANCE_BYTES = 128;
@@ -121,10 +117,9 @@ export const LookUniform = d
     bakeWarm: d.vec3f,
     poolStretch: d.f32,
     bakeCool: d.vec3f,
-    capColor: d.vec3f,
   })
   .$name("LookUniform");
-export const LOOK_UNIFORM_BYTES = 256;
+export const LOOK_UNIFORM_BYTES = 240;
 
 function packVec3(out: Float32Array, offset: number, v: Vec3): void {
   out[offset] = v[0];
@@ -181,7 +176,6 @@ export function packFrame(
   emissiveScale: number,
   bloomScale: number,
   flowScale: number,
-  cut: CutPlane,
 ): void {
   packMat4(out, 0, m.viewProj);
   packMat4(out, 16, m.invViewProj);
@@ -195,8 +189,6 @@ export function packFrame(
   out[41] = bloomScale;
   out[42] = flowScale;
   out[43] = 0;
-  packVec3(out, 44, cut.normal);
-  out[47] = cut.offset;
 }
 
 /** Writes instance `index` into views over the same instance buffer. */
@@ -208,14 +200,13 @@ export function packInstance(
   normalMatrix: Mat3,
   material: number,
   slot: number,
-  cut: number,
 ): void {
   const base = index * (INSTANCE_BYTES / 4);
   packMat4(f32, base, model);
   packMat3(f32, base + 16, normalMatrix);
   u32[base + 28] = material;
   u32[base + 29] = slot;
-  f32[base + 30] = cut;
+  u32[base + 30] = 0;
   u32[base + 31] = 0;
 }
 
@@ -263,6 +254,4 @@ export function packLook(out: Float32Array, look: LookConfig): void {
   out[55] = look.lights.pool.stretch;
   packVec3(out, 56, look.room.bake.cool);
   out[59] = 0;
-  packVec3(out, 60, look.cutaway.cap);
-  out[63] = 0;
 }

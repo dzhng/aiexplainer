@@ -33,7 +33,7 @@ TICKS = 5
 
 # Housing: the panel, a raised bezel, a header plate for the board's title, and tick marks
 # beside every slot so each channel reads as a gauge. Each stands 2 mm proud of the panel
-# face, so no back face is coplanar with it (the Cutaway view shows back faces).
+# face, so no back face is coplanar with it.
 housing_parts = [
     common.box("panel", (PANEL_W, PANEL_D, PANEL_H), (0, 0, PANEL_Z), housing, bevel=0.03, segments=3)
 ]
