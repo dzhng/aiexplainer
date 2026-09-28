@@ -237,7 +237,7 @@ export const sampling: ChapterDef = {
   help: {
     sources: [],
     notes: [
-      "The die's faces are the six most likely next words and one face for every other word, each exactly as wide around the rim as its probability at the temperature shown. Each roll stops at an angle drawn from a seeded random generator, so it lands on each face as often as that face's share.",
+      "The die's faces are the six most likely next words and one face for every other word, each exactly as wide around the rim as its probability at the temperature shown. Each roll stops at an angle drawn from a seeded random generator, so it lands on each face as often as that face's share. Punctuation tokens are written by name (period, comma) so a lone mark still reads.",
     ],
   },
   ogTimeSec: 8,

@@ -400,19 +400,31 @@ function noteFor(
   onTop: number,
 ): string {
   if ((channels.failure ?? 0) > 0.5)
-    return `only “${step.last.trim()}” counts: every story ending in it rolls this same die`;
+    return `only “${shown(step.last)}” counts: every story ending in it rolls this same die`;
   if ((channels.tempNote ?? 0) > 0.5) return spreadNote(temperature, probs);
   if ((channels.landed ?? 0) > 0.5) {
     const word =
-      onTop < WORD_FACES ? `“${step.top[onTop]!.text.trim()}”` : "one of the other words";
+      onTop < WORD_FACES ? `“${shown(step.top[onTop]!.text)}”` : "one of the other words";
     return `rolled ${word} (${share(shares[onTop]!)} of the rim)`;
   }
   return "";
 }
 
-/** A token as scene text: a bare space as ␣, punctuation in quotes so a lone "." still reads. */
+/** Punctuation marks by name: a lone "." has almost no ink at word size. */
+const MARK_NAMES: Record<string, string> = {
+  ".": "period",
+  ",": "comma",
+  "!": "exclamation",
+  "?": "question mark",
+  '"': "quote",
+  "'": "apostrophe",
+  ":": "colon",
+  ";": "semicolon",
+  "-": "dash",
+};
+
+/** A token as scene text: a bare space as ␣, a common punctuation mark by its name. */
 export function shown(token: string): string {
   const text = token.trim();
-  if (!text) return "␣";
-  return /[\p{L}\p{N}]/u.test(text) ? text : `“${text}”`;
+  return MARK_NAMES[text] ?? (text || "␣");
 }

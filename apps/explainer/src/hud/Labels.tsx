@@ -85,7 +85,9 @@ export const Labels = forwardRef<LabelsHandle, { labels: readonly LabelDef[]; re
             if (!node) continue;
             node.style.visibility = p.visible ? "visible" : "hidden";
             if (!p.visible) continue;
-            node.style.transform = `translate(${p.x}px, ${p.y}px)`;
+            // Whole pixels: the composited layer keeps the text raster of its first position, so a
+            // fractional offset would render glyphs differently depending on where it arrived from.
+            node.style.transform = `translate(${Math.round(p.x)}px, ${Math.round(p.y)}px)`;
             if (sides.current.get(p.id) !== p.side) {
               const side = SIDE_STYLE[p.side];
               Object.assign((node.querySelector("[data-pill]") as HTMLElement).style, side.pill);

@@ -69,7 +69,8 @@ const PIPE = { min: 0.0015, span: 0.05 };
 const PIPE_LIFT = 0.35;
 /** The pipe and lamp material of each key/value group. */
 const GROUP_MATERIAL = ["bar", "barAlt"];
-const BELT = { y: 1.1, radius: 0.05 };
+/** `end`: how far (x, z) the first belt starts before block 1 and the last runs past block 4. */
+const BELT = { y: 1.1, radius: 0.05, end: [1, 0.35] as const };
 /** The page: a sheet on the floor in front of block 1 and to its right. */
 const PAGE = { center: [-2.1, 0.01, 2.5] as Vec3, size: [1.0, 0.02, 0.6] as Vec3 };
 
@@ -357,9 +358,10 @@ function pose(
   }
   // Belts: from the left into block 1's rail end, block to block, out past block 4.
   for (let k = 0; k <= BLOCKS; k++) {
-    const left = k === 0 ? [CENTRES[0]![0] - 2.3, CENTRES[0]![1] + 0.8] : CENTRES[k - 1]!;
+    const [ex, ez] = BELT.end;
+    const left = k === 0 ? [CENTRES[0]![0] - ex, CENTRES[0]![1] + ez] : CENTRES[k - 1]!;
     const right =
-      k === BLOCKS ? [CENTRES[BLOCKS - 1]![0] + 2.3, CENTRES[BLOCKS - 1]![1] - 0.8] : CENTRES[k]!;
+      k === BLOCKS ? [CENTRES[BLOCKS - 1]![0] + ex, CENTRES[BLOCKS - 1]![1] - ez] : CENTRES[k]!;
     const from: Vec3 = [left[0]! + (k === 0 ? 0 : BLOCK.width / 2), BELT.y, left[1]! - 0.5];
     const to: Vec3 = [right[0]! - (k === BLOCKS ? 0 : BLOCK.width / 2), BELT.y, right[1]! - 0.5];
     placeSegment(b.belts[k]!.transform, from, to, BELT.radius);

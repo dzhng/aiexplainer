@@ -101,7 +101,8 @@ export const SceneTagsLayer = forwardRef<SceneTagsHandle, { count: number }>(
               node.style.visibility = "hidden";
               continue;
             }
-            node.style.transform = `translate(${p!.x}px, ${p!.y}px) translate(-50%, -${lift * 100}%)`;
+            // Whole pixels, like the labels: a composited layer keeps its first text raster.
+            node.style.transform = `translate(${Math.round(rect.x)}px, ${Math.round(rect.y)}px)`;
           }
         },
         obstacles(out) {
