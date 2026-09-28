@@ -6,7 +6,9 @@ import {
   LLAMA_3_8B,
   arithProblems,
   batchThroughput,
+  computeBoundBatch,
   decodeCeilingTokPerSec,
+  decodeStepSeconds,
   evalArith,
   flopsPerToken,
   kvBytesPerToken,
@@ -114,6 +116,25 @@ describe("dimensions", () => {
     expect(tp(Math.ceil(knee * 1.1))).toBeCloseTo(flat, 6);
   });
 
+  test("computeBoundBatch is the knee: memory-bound below it, flat throughput above it", () => {
+    for (const ctx of [1, 16, 128]) {
+      const knee = computeBoundBatch(cfg, gpu, ctx);
+      const step = (b: number) => decodeStepSeconds(cfg, gpu, b, ctx);
+      const tp = (b: number) => batchThroughput(cfg, gpu, b, ctx);
+      // Below the knee a step is exactly the memory trip: the weights plus every KV cache.
+      const b = Math.floor(knee * 0.9);
+      const trip = (weightBytes(cfg, 2) + b * ctx * kvBytesPerToken(cfg, 2)) / gpu.bandwidth;
+      expect(step(b)).toBeCloseTo(trip, 12);
+      // At it the sums take as long as the bytes; past it throughput is the compute ceiling.
+      const flat = gpu.flopsDense / flopsPerToken(cfg, ctx);
+      expect(tp(knee)).toBeCloseTo(flat, 3);
+      expect(tp(knee * 1.5)).toBeCloseTo(flat, 3);
+      expect(tp(knee * 0.5)).toBeLessThan(flat * 0.6);
+    }
+    // A context so long that each sequence's KV reads outlast its sums never gets there.
+    expect(computeBoundBatch(cfg, gpu, 1e7)).toBe(Infinity);
+  });
+
   test("a long prompt is compute-bound: prefill costs its FLOPs, not its bytes", () => {
     const tokens = 2048;
     const byFlops = (2 * matmulParams(cfg) * tokens) / gpu.flopsDense;
@@ -141,7 +162,8 @@ describe("the arithmetic registry", () => {
     alpha: 0.8,
     k: 4,
     batch: 8,
-    contextLen: 1024,
+    // Short enough that decode still reaches compute-bound (`computeBoundBatch` is finite).
+    contextLen: 256,
     tokens: 512,
     weightBytes: 2,
     kvBytes: 2,

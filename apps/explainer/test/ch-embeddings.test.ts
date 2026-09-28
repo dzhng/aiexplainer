@@ -33,7 +33,13 @@ function sceneAt(t: number, run: PinsRun, text: string | null = null, slider = 6
     },
   });
   const tl = evalTimeline(chapter.loop, t, createTimelineState(chapter.loop));
-  const input = buildFrame(chapter, tl, { follow: null, slider, view: "whole", text }, run, frame);
+  const input = buildFrame(
+    chapter,
+    tl,
+    { follow: null, slider, sliderSet: false, view: "whole", text },
+    run,
+    frame,
+  );
   const part = (id: string) => input.scene.parts.find((p) => p.id === id)!;
   const shown = (prefix: string) =>
     input.scene.parts.filter(

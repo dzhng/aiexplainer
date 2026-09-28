@@ -406,3 +406,49 @@ standalone. Entries are appended per pass and consolidated when the spec closes.
 - **The table is a shared `builders/table.ts` for chapters 1–3.** Verdict: sound.
 - **The noun cluster overlaps its word tags at the hero angle, because those are the real
   positions.** Verdict: polish item for the whole-spec review.
+
+## Slices 26–28 (chapters 6–8)
+
+- **Every chapter run is one file, `runtime/runs/<scene>.ts`, dispatched by `computeRun`.**
+  Verdict: sound; one owner per scene.
+- **One in-process inference core, `createInference`, is shared by the worker and
+  `localSession`.** `direct-session.ts`, which duplicated it, is deleted. Verdict: sound.
+- **`session.run(tokens, {trace, window, model, mlpOff})` takes an options object, and the
+  worker keeps every model it has loaded, keyed by id.** Verdict: sound; other lanes adapt on merge.
+- **Tube occluders ignore stretch along the path.** Why: a stretched unit tube occluded the whole
+  scene. Verdict: sound fix.
+- **A new stat format `nats` shows chapter 7's two val-loss chips,** backed by new
+  `val-loss-residual`/`val-loss-noresidual` evidence written by re-probing (`--probe-only`).
+  Verdict: sound.
+- **Chapter 8's prompt is "One day, a little bird was looking for"**, because on "Once upon a
+  time…" three of layer 0's four heads peak on the same word, which hides "readers look for
+  different things". Verdict: acceptable; picked for the effect, but it is a real model
+  output (D25).
+- **D5's zoom-out is `ChapterDef.pullBack {shot, channel}`, blended with `arrivalPose`.**
+  Verdict: sound; it reuses the one camera-tween owner.
+- **Chapter 8's head pipes are interim tube segments until lane B's `pipes` primitive lands.**
+  Verdict: short-lived seam; removed when slice 22's primitive merges.
+- **Polish items for review:** chapter 8's three-line title and a stray tube at the left edge
+  of the hero frame.
+
+## Slices 31–32 (chapters 11–12)
+
+- **Chapter 11 shows the ridge beat as the knee at batch 329 (new `ARITH.computeBoundBatch`,
+  where a step's arithmetic time equals its memory time), not the raw ridge figure of about
+  295 FLOP/byte.** Why: that is the batch where the seats fill. Verdict: sound, and the
+  arithmetic is exact.
+- **Stat chips take `ArithArg` bindings (`{slider: true}` or `{probe}`),** so chips follow the
+  slider or feed a probe into a formula without typing a number. Verdict: sound, and it
+  strengthens D25.
+- **`SliderDef.loop` plus `AppState.sliderSet`: the loop plays the slider until the reader moves
+  it,** and the HUD samples the channel at 10 Hz. Verdict: sound; it is compatible with D32
+  (a reader's input takes over).
+- **Chapter 11's prefill is a loop beat, not a HUD scenario,** because a model-less chapter has
+  no probe for a scenario to cite. Verdict: sound.
+- **Chapter 11 has no Cutaway view (the bus sides are windows).** Verdict: sound.
+- **Chapter 12's fp16/int8 toggle is the slider, and the HUD scenarios are `full-q8`'s two
+  KL-chosen prompts.** Verdict: sound.
+- **A `weights` request (Inference, Session, worker, local) serves raw tensor slices for the
+  weight strip.** Verdict: sound; one path through `weightSlice`.
+- **Copy violation found at merge:** the chapter-12 chip label "KL divergence (nats)" is jargon
+  (D2). Sent back for a plain relabel. Verdict: fix pending in lane D.

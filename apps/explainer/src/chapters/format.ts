@@ -31,8 +31,9 @@ export function formatStat(value: number, format: StatFormat): string {
     case "int":
       return Math.abs(value) >= 1e6 ? scaled(value, WORDS, "") : grouped(value);
     case "num":
-      // A measured average, e.g. characters per token: three figures, no unit.
-      return sig3(value);
+      // A measured average, e.g. characters per token: three figures, no unit. Below 0.01 the
+      // figures sit past en-US's three decimals, so they are written out in full.
+      return Math.abs(value) < 0.01 && value !== 0 ? value.toPrecision(3) : sig3(value);
     case "bytes":
       return scaled(value, SI, "B");
     case "tok/s":

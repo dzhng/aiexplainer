@@ -33,7 +33,7 @@ function sceneAt(t: number, run: PiecesRun, text: string | null = null, slider =
     },
   });
   const tl = evalTimeline(chapter.loop, t, createTimelineState(chapter.loop));
-  const ui = { follow: null, slider, view: "whole" as const, text };
+  const ui = { follow: null, slider, sliderSet: false, view: "whole" as const, text };
   const input = buildFrame(chapter, tl, ui, run, frame);
   const bodies = input.scene.parts.filter(
     (p) => /^brick\.\w+\.\d+$/.test(p.id) && p.transform[13]! > 0,

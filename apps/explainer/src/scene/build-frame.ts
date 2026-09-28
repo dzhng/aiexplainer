@@ -15,12 +15,16 @@ import { mlp, type MlpRun } from "./builders/mlp.ts";
 import { residual, type ResidualRun } from "./builders/residual.ts";
 import { stack, type StackRun } from "./builders/stack.ts";
 import { tokenizer } from "./builders/tokenizer.ts";
+import { batching } from "./builders/batching.ts";
+import { quantization } from "./builders/quantization.ts";
 import { withEnvironment } from "./environment.ts";
 
 /** The HUD controls a scene reads. */
 export interface SceneUi {
   follow: FollowId | null;
   slider: number;
+  /** Whether the reader moved the slider; until then a scene may play its own value for it. */
+  sliderSet: boolean;
   view: ViewMode;
   /** Text the reader typed (or a scenario's prompt); it replaces the loop's inputs. */
   text: string | null;
@@ -37,7 +41,8 @@ export type SceneRun =
   | MlpRun
   | ResidualRun
   | StackRun
-  | GenerationRun;
+  | GenerationRun
+  | QuantizationRun;
 
 /** Chapter 1's run (`runtime/runs/tokenizer.ts`). */
 export interface PiecesRun {
@@ -66,6 +71,31 @@ export interface PinsRun {
   }[];
 }
 
+/** Chapter 12's run (`runtime/runs/quantization.ts`). */
+export interface QuantizationRun {
+  kind: "quantization";
+  /** The text both machines continue (the loop's input, or the reader's text). */
+  prompt: string;
+  /** Each machine's greedy words after it: the 16-bit `full` and its 8-bit copy. */
+  full: string[];
+  q8: string[];
+  /**
+   * One q8_0 group of weights: `full`'s stored 16-bit values, and `full-q8`'s `scale · q`
+   * with its scale and integers.
+   */
+  strip: {
+    tensor: string;
+    start: number;
+    count: number;
+    full: number[];
+    q8: number[];
+    scale: number;
+    q: number[];
+  };
+  /** The measured weights-file ratio, 8-bit ÷ 16-bit (the `q8-bytes` probe). */
+  byteRatio: number;
+}
+
 export interface SceneBuilder {
   /** Prop URLs by asset id; the app loads them before the first frame. */
   assets: Record<string, string>;
@@ -89,6 +119,8 @@ export const SCENE_BUILDERS: Record<SceneBuilderId, SceneBuilder> = {
   residual,
   stack,
   generation,
+  batching,
+  quantization,
 };
 
 /** What one frame of a chapter's scene is: the renderer's input and the overlay's text. */

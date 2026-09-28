@@ -86,6 +86,18 @@ describe("inference session (worker)", () => {
     expect(after).toEqual(direct);
   });
 
+  test("reads a named model's stored weights: f16 as stored, q8_0 with its scale and ints", async () => {
+    await session.load("full");
+    await session.load("full-q8");
+    const f16 = await session.weights("layers.0.attn.wq", 0, 32, "full");
+    const int8 = await session.weights("layers.0.attn.wq", 0, 32, "full-q8");
+    expect(f16.q8).toBeUndefined();
+    expect(int8.q8!.q.map((q) => q * int8.q8!.scale)).toEqual(int8.values);
+    int8.values.forEach((v, i) =>
+      expect(Math.abs(v - f16.values[i]!)).toBeLessThanOrEqual(int8.q8!.scale / 2 + 1e-4),
+    );
+  });
+
   test("errors come back as rejections", async () => {
     await session.load("counts");
     expect((await rejection(session.run([1, 2])))?.message).toContain("needs a loaded transformer");
