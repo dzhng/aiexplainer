@@ -53,3 +53,29 @@ export async function initGpu(): Promise<Gpu | { unsupported: string }> {
     },
   };
 }
+
+/**
+ * Builds on a fresh GPU (`init`), or says why it cannot: no usable adapter, a refused device,
+ * or a build that throws, in which case the device and everything made on it are released.
+ * An adapter probe can pass and any of these still fail.
+ */
+export async function withGpu<T>(
+  build: (gpu: Gpu) => Promise<T>,
+  init: () => Promise<Gpu | { unsupported: string }> = initGpu,
+): Promise<T | { unsupported: string }> {
+  let gpu: Gpu | { unsupported: string };
+  try {
+    gpu = await init();
+  } catch (error) {
+    return { unsupported: `the WebGPU device failed: ${messageOf(error)}` };
+  }
+  if ("unsupported" in gpu) return gpu;
+  try {
+    return await build(gpu);
+  } catch (error) {
+    gpu.root.destroy();
+    return { unsupported: `the renderer failed to start: ${messageOf(error)}` };
+  }
+}
+
+const messageOf = (error: unknown) => (error instanceof Error ? error.message : String(error));

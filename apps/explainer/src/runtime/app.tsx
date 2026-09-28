@@ -95,9 +95,15 @@ export interface AppProps {
    * captures unless `?arrival=1`, so hero shots stay deterministic.
    */
   arrival: boolean;
+  /**
+   * The renderer could not start although the adapter probe passed (a refused device, a failed
+   * pipeline): the page shows the fallback instead.
+   */
+  onUnsupported: () => void;
 }
 
-export function App({ hud, hudMotion, clock, probe, debug, onReady, arrival }: AppProps) {
+export function App(props: AppProps) {
+  const { hud, hudMotion, clock, probe, debug, onReady, arrival, onUnsupported } = props;
   const [state, dispatch] = useReducer(reducer, undefined, startState);
   const def = CHAPTERS[state.chapter]!;
   // Every shipped model the main thread fetched, kept for the session: the chapter's (the HUD's
@@ -272,18 +278,23 @@ export function App({ hud, hudMotion, clock, probe, debug, onReady, arrival }: A
           obstacles: () => panelRects.current,
           onReady: () => {
             // Ready once the scene shows real model output (or has none to wait for).
-            const wait = () =>
-              live.current.run || live.current.def.model === null
-                ? requestAnimationFrame(() => requestAnimationFrame(() => markReady("scene")))
-                : setTimeout(wait, 50);
+            // A stage that failed (the page turns to the fallback) never marks the scene ready.
+            const wait = () => {
+              if (!alive) return;
+              if (live.current.run || live.current.def.model === null)
+                requestAnimationFrame(() =>
+                  requestAnimationFrame(() => alive && stage.current && markReady("scene")),
+                );
+              else setTimeout(wait, 50);
+            };
             wait();
           },
         }),
       )
       .then((created) => {
         if (!alive) return created?.dispose();
+        if (!created) return onUnsupported();
         stage.current = created;
-        if (!created) return;
         arrive(created, live.current.def.shot);
         probe.beat = scene.beat;
         const sceneCrops = probe.sceneCrops;

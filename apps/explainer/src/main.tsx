@@ -8,7 +8,7 @@ import { layersFrom } from "./runtime/debug-layers.ts";
 import { applyCssVars } from "./look/look.ts";
 import { App } from "./runtime/app.tsx";
 import { arrivalFromSearch, clockFromSearch, clockIsDriven } from "./runtime/clock.ts";
-import { browserSupportEnv, detectSupport } from "./runtime/support.ts";
+import { browserSupportEnv, detectSupport, type Support } from "./runtime/support.ts";
 import { chapterAt } from "./state/app-state.ts";
 
 const params = new URLSearchParams(location.search);
@@ -17,11 +17,20 @@ const { probe, markReady } = installProbe(clock);
 applyCssVars(document.documentElement);
 const root = createRoot(document.getElementById("root")!);
 
+/** Phones, small windows and browsers without WebGPU get the video (D20, D29). */
+function showFallback(reason: Exclude<Support, "webgpu">) {
+  probe.support = reason;
+  const def = CHAPTERS[chapterAt(location.hash, CHAPTERS)]!;
+  root.render(<Fallback def={def} reason={reason} />);
+  void document.fonts.ready.then(markReady);
+}
+
 probe.adapter = await probeAdapter(navigator.gpu);
-probe.support = detectSupport(
+const support = detectSupport(
   browserSupportEnv(probe.adapter !== null && !probe.adapter.isFallbackAdapter),
 );
-if (probe.support === "webgpu") {
+probe.support = support;
+if (support === "webgpu") {
   // `?emissive=0`, `?layers=` and `?bloom=0` isolate the renderer's layers for shots.
   const debug = {
     layers: layersFrom(params),
@@ -36,11 +45,8 @@ if (probe.support === "webgpu") {
       debug={debug}
       onReady={markReady}
       arrival={arrivalFromSearch(location.search)}
+      // The adapter probe passed but the device or renderer did not start.
+      onUnsupported={() => showFallback("no-webgpu")}
     />,
   );
-} else {
-  // Phones, small windows and browsers without WebGPU get the video (D20, D29).
-  const def = CHAPTERS[chapterAt(location.hash, CHAPTERS)]!;
-  root.render(<Fallback def={def} reason={probe.support} />);
-  void document.fonts.ready.then(markReady);
-}
+} else showFallback(support);
