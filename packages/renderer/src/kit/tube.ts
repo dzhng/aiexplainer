@@ -8,7 +8,8 @@ export const TUBE_SIDES = 24;
 /**
  * Sweeps a circle along a polyline. Rings sit in the bisecting plane at each joint and are
  * stretched across the bend (a miter), so the tube keeps its radius through corners.
- * Frames are parallel-transported so the tube never twists. Both ends get flat caps.
+ * Frames are parallel-transported so the tube never twists. Both ends get flat caps. Every
+ * vertex's `axis` is its ring's centreline point, so `widthScale` widens the tube in place, and its `along` is the arc length to that ring.
  */
 export function tubeGeometry(path: Vec3[], radius: number, sides = TUBE_SIDES): Geometry {
   if (path.length < 2) throw new Error("tube: a path needs at least two points");
@@ -32,6 +33,12 @@ function sweep(path: Vec3[], radius: number, sides: number): Geometry {
   const vertexCount = rings * sides + 2 * (sides + 1);
   const positions = new Float32Array(vertexCount * 3);
   const normals = new Float32Array(vertexCount * 3);
+  const axis = new Float32Array(vertexCount * 3);
+  const along = new Float32Array(vertexCount);
+  // Arc length to each ring: flow pulses are laid out along it.
+  const distance = [0];
+  for (let i = 1; i < rings; i++)
+    distance.push(distance[i - 1]! + vec3.distance(path[i - 1]!, path[i]!));
   const indices = new Uint32Array((rings - 1) * sides * 6 + 2 * sides * 3);
 
   const tIn: Vec3 = [0, 0, 0];
@@ -44,9 +51,11 @@ function sweep(path: Vec3[], radius: number, sides: number): Geometry {
   const tangents: Vec3[] = [];
 
   let v = 0;
-  const put = (p: Vec3, n: Vec3) => {
+  const put = (p: Vec3, n: Vec3, ring: number) => {
     positions.set(p, v * 3);
     normals.set(n, v * 3);
+    axis.set(path[ring]!, v * 3);
+    along[v] = distance[ring]!;
     return v++;
   };
 
@@ -80,7 +89,7 @@ function sweep(path: Vec3[], radius: number, sides: number): Geometry {
       vec3.scaleAndAdd(dir, dir, binormal, Math.sin(a));
       const p = vec3.scaleAndAdd([0, 0, 0], path[i]!, dir, radius);
       if (bent) vec3.scaleAndAdd(p, p, bend, radius * vec3.dot(dir, bend) * (1 / cosHalf - 1));
-      put(p, dir);
+      put(p, dir, i);
     }
   }
 
@@ -98,11 +107,11 @@ function sweep(path: Vec3[], radius: number, sides: number): Geometry {
 
   for (const end of [0, rings - 1]) {
     const n = vec3.scale([0, 0, 0], tangents[end]!, end === 0 ? -1 : 1);
-    const centre = put(path[end]!, n);
+    const centre = put(path[end]!, n, end);
     const first = v;
     for (let s = 0; s < sides; s++) {
       const ring = end * sides + s;
-      put([positions[ring * 3]!, positions[ring * 3 + 1]!, positions[ring * 3 + 2]!], n);
+      put([positions[ring * 3]!, positions[ring * 3 + 1]!, positions[ring * 3 + 2]!], n, end);
     }
     for (let s = 0; s < sides; s++) {
       const a = first + s;
@@ -112,7 +121,7 @@ function sweep(path: Vec3[], radius: number, sides: number): Geometry {
     }
   }
 
-  return { positions, normals, indices, bounds: boundsOf(positions) };
+  return { positions, normals, axis, along, indices, bounds: boundsOf(positions) };
 }
 
 /** A straight tube of radius 1 from the origin to +Y 1: `placeSegment` stretches it anywhere. */

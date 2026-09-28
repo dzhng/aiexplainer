@@ -10,18 +10,33 @@ The style reference is airsup.ai/rocket-engine
 
 Settled ground lives in the explore map,
 [explore/map.html](explore/map.html): decisions D1–D30 and L1, with their reasons.
-This README adds the decisions made while slicing (D31–D41), owns the build ladder,
+This README adds the decisions made while slicing and building (D31–D42), owns the build ladder,
 and supersedes the map's open-items list, kickoff prompt and tweakable plan.
 
 ## Next Agent Prompt
 
-**Status (2026-09-27):** M1–M3 are done (slices 01–18, incl. 04b, 11b and 11c), and chapter 0 is on a protected Vercel preview; see choices.md slice 12 for the deploy rule. Slices are merged into
-`llm-explainer`. Lanes in flight:
+**Status (2026-09-27):** M1–M3 are done. 15 of 16 chapters are merged (all but 10) into
+`llm-explainer` (pushed to github.com/dzhng/aiexplainer; every push builds a protected
+Vercel preview). In flight: lane C → slice 30 (chapter 10); slice 35 (the finished machine).
 
-- chapter lanes: A (19–21), B (22–25), C (26–30), D (31–34).
+**Next pickup, in order:**
 
-**Next pickup:** 35 (the finished machine) once every chapter lands, then a media
-re-record (`bun run --cwd apps/explainer media`) and 36.
+1. Merge 30.
+2. Slice 35 (the finished machine).
+3. Re-record all media (`bun run --cwd apps/explainer media`).
+4. The whole-spec review, taking the polish backlog below first.
+5. Slice 36.
+
+**Polish backlog** (from the choices ledger; judge each at the whole-spec review):
+
+- the room's floor pool reads as a stage spotlight, the shelf props are plain boxes, the
+  contact shadow is one blob, and a ceiling rafter crosses the HUD kicker;
+- the Cutaway cap colour is flat and bright;
+- chapter 2's noun cluster overlaps its tags;
+- chapter 3's HUD slider doesn't move during the loop's temperature demo;
+- chapter 8's title wraps to three lines;
+- chapter 14's queue reads right to left;
+- chapter 4's pipes cross back-row words; chapter 5's hands unwind at the loop seam.
 
 You are implementing this spec with [implement-spec](../../.agents/skills/implement-spec/SKILL.md).
 Work the slices in the order of the ladder below. Each slice file is a contract:
@@ -57,8 +72,8 @@ the checklist below, and any new blockers.
 
 - [x] M1 — Chapter 0 through every layer (D14): slices ✅[01](slices/01-scaffold-harness.md) · ✅[02](slices/02-manifest-and-counts-model.md) · ✅[03](slices/03-chapter-contract.md) · ✅[04](slices/04-hud-shell.md) · ✅[05](slices/05-renderer-foundation.md) · ✅[06](slices/06-gltf-pipeline.md) · ✅[07](slices/07-room-lighting.md) · ✅[08](slices/08-bloom.md) · ✅[09](slices/09-labels-occlusion.md) · ✅[10](slices/10-ch0-compose-framing.md) · ✅[11](slices/11-ch0-loop-pacing.md) · ✅[11b](slices/11b-lab-room.md) · ✅[11c](slices/11c-rich-room-arrival.md) · ✅[04b](slices/04b-game-ui.md) · ✅[12](slices/12-fallback-share-deploy.md)
 - [x] M2 — Vocabulary lock: ✅[13](slices/13-vocabulary-lock.md)
-- [ ] M3 — Model lab: ✅[14](slices/14-tokenizer.md) · ✅[15](slices/15-transformer-core.md) · ✅[16](slices/16-model-lab-early.md) · ✅[17](slices/17-model-lab-late.md) · ✅[18](slices/18-production-arithmetic.md)
-- [ ] M4 — Chapters: ✅[19](slices/19-ch-tokenizer.md) · ✅[20](slices/20-ch-embeddings.md) · [21](slices/21-ch-sampling.md) · [22](slices/22-ch-attention-width.md) · [23](slices/23-ch-attention-sealed.md) · [24](slices/24-ch-attention-flow.md) · [25](slices/25-ch-positions.md) · ✅[26](slices/26-ch-mlp.md) · ✅[27](slices/27-ch-residual.md) · ✅[28](slices/28-ch-stack.md) · [29](slices/29-ch-generation.md) · [30](slices/30-ch-kv-cache.md) · ✅[31](slices/31-ch-batching.md) · ✅[32](slices/32-ch-quantization.md) · [33](slices/33-ch-speculative.md) · [34](slices/34-ch-experts.md) · [35](slices/35-ch-finished.md)
+- [x] M3 — Model lab: ✅[14](slices/14-tokenizer.md) · ✅[15](slices/15-transformer-core.md) · ✅[16](slices/16-model-lab-early.md) · ✅[17](slices/17-model-lab-late.md) · ✅[18](slices/18-production-arithmetic.md)
+- [ ] M4 — Chapters: ✅[19](slices/19-ch-tokenizer.md) · ✅[20](slices/20-ch-embeddings.md) · ✅[21](slices/21-ch-sampling.md) · ✅[22](slices/22-ch-attention-width.md) · ✅[23](slices/23-ch-attention-sealed.md) · ✅[24](slices/24-ch-attention-flow.md) · ✅[25](slices/25-ch-positions.md) · ✅[26](slices/26-ch-mlp.md) · ✅[27](slices/27-ch-residual.md) · ✅[28](slices/28-ch-stack.md) · ✅[29](slices/29-ch-generation.md) · [30](slices/30-ch-kv-cache.md) · ✅[31](slices/31-ch-batching.md) · ✅[32](slices/32-ch-quantization.md) · ✅[33](slices/33-ch-speculative.md) · ✅[34](slices/34-ch-experts.md) · [35](slices/35-ch-finished.md)
 - [ ] M5 — Release candidate: [36](slices/36-release.md)
 
 ## Goal and non-goals
@@ -176,7 +191,7 @@ the human says otherwise.
 - **O1:** TinyStories is licensed CDLA-Sharing-1.0 (https://huggingface.co/datasets/roneneldan/TinyStories). Training on it and publishing the weights is fine. The raw data stays out of git, and the help panel credits it.
 - **O4:** H100 SXM: 3.35 TB/s HBM3, about 989 dense BF16 TFLOPS (1,979 with sparsity), 80 GB (https://www.nvidia.com/en-us/data-center/h100/). Confirmed in slice 18.
 - **O2:** every trained model's prompts are measured into its `scenarios.json` (slices 16–17).
-- **O3:** provisionally drafter-64 (α 0.595, expected speedup 1.23). Slice 33 finalises it.
+- **O3:** drafter-64, final (held-out α 0.601, speedup 1.24×; slice 33).
 - **O5** (public domain) stays OPEN until slice 36. It blocks only the public post.
 - **Repo and deploys:** public at https://github.com/dzhng/aiexplainer. Vercel builds a
   protected preview for every push. Production is `main`, and merging into `main` is the
@@ -210,8 +225,6 @@ exactly one owner. A second copy is a bug.
 | Verification harness, named crops, layer masks                                                                                          | `apps/explainer/scripts/verify.ts` plus `apps/explainer/src/lab/probe.ts`                                                                                        |
 
 **Short-lived seams:**
-
-- **Chapter 8's head pipes are interim tube segments → replaced by lane B's `pipes` kit primitive (slice 22) when both are merged.**
 
 - **Slice 05 → removed in slice 05.** The `/lab/typegpu-smoke` reproduction of an official example is deleted once `frame.ts` passes.
 

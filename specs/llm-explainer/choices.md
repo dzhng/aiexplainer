@@ -452,3 +452,75 @@ standalone. Entries are appended per pass and consolidated when the spec closes.
   weight strip.** Verdict: sound; one path through `weightSlice`.
 - **Copy violation found at merge:** the chapter-12 chip label "KL divergence (nats)" is jargon
   (D2). Sent back for a plain relabel. Verdict: fix pending in lane D.
+
+## Slice 21 (chapter 3)
+
+- **The die is a barrel whose faces are the top six words plus "every other word", each face
+  exactly as wide around the rim as its probability at the current temperature.** The stop
+  angle comes from the seeded generator, so the landed face equals `sample()` (tested).
+  Verdict: sound.
+- **The loop's temperature channel drives the die until the reader moves the slider; the HUD
+  slider itself doesn't move during the demo, and a scene note shows the live temperature.**
+  Verdict: acceptable; lane D's later `SliderDef.loop` pattern could unify this in review.
+- **The chapter-3 fixture run is 353 kB, because it stores the full logits the honesty test
+  needs.** Verdict: acceptable.
+- **The failure beat: two stories ending in "it" roll the identical die** (the model sees only
+  one word). Verdict: sound.
+
+## Slice 29 (chapter 9)
+
+- **The work counter adds each step's real `fed` token count (+10, +11, …),** and the failure
+  beat spells out the sum; the Llama chips use new arith `rereadTokens` (32,896 tokens reread
+  to write 256) and `maxContext`. Verdict: sound, and it counts operations, not time (D27).
+- **The slider is "Words to write" (1–6).** Verdict: sound.
+- **Chapter 9's line helpers (`LINE`, `buildLine`, `placeFeed`, `placeTile`) are exported from
+  `builders/generation.ts` for chapter 10 to reuse.** Verdict: sound; one owner for the text
+  line.
+
+## Slices 22–24 (chapter 4)
+
+- **Pipe width is linear in the attention weight (not area-proportional).** Why: with area
+  proportional to weight, an unprimed reviewer couldn't tell 22% from 7%. Verdict: sound; the
+  CPU-mirror test pins radius × widthScale to the weights.
+- **Tubes carry a per-vertex axis (Vertex is now 48 bytes, plus `along` for flow pulses), and
+  the GPU scales the radius by `widthScale`.** Verdict: sound.
+- **The focus word's self-pipe is kept, so the widths sum to 1.** `<bos>` shows as "start".
+  Verdict: sound.
+- **The sealed future words are the model's own greedy continuation, traced from the focus
+  position; their weights are exactly 0.** Verdict: sound.
+- **Flow pulse brightness scales with each pipe's weight relative to the widest, and the look
+  token `flow.cyclesPerSec` is 1.4.** Verdict: sound.
+- **A needle on the mix shows the real angle change of the focus word's vector toward "Mia"
+  (90.1° → 74.2°).** Verdict: sound, and a real value.
+- **The failure beat uses the attn order-probe pair: the cat↔dog swap gives bit-identical
+  logits ("cat", 35%).** Verdict: sound (D35).
+- **Chapter 8's head pipes moved onto the pipes kit; the interim tube seam is removed.**
+  Verdict: sound.
+
+## Slices 33–34 (chapters 13–14)
+
+- **O3 is final: drafter-64** (held-out α 0.601, speedup 1.24×; drafter-96 α 0.643, 1.03×), on
+  40 held-out stories disjoint from selection. Verdict: sound.
+- **Chapter 13's slider is k (1–8); the run holds seeded rounds for every k.** The loop uses
+  seed 11 of 1–12, picked so the three rounds show a bonus, a correction and an early reject.
+  The chips show the held-out averages, not this run. Verdict: acceptable; the choice of seed
+  is disclosed in the slice file.
+- **The senior's correction takes the first rejected slot, and rejected tiles drop out of the
+  row.** Verdict: sound.
+- **Chapter 14's router choices are real, from layer 1 of 4, and its histogram comes from new
+  `expert-usage-<e>` evidence.** The Llama chip uses `moeActiveParams` under the named
+  hypothetical `llamaAsMoe` (13.7 billion per word). No specialisation claims. Verdict: sound.
+- **Cutaway is omitted in chapters 11–14; a section adds nothing there.** Verdict: sound.
+- **Polish nits left:** chapter 14's queue reads right to left, some sweep azimuths are blocked
+  by room geometry, and a ceiling rafter crosses the HUD kicker (house-wide).
+
+## Slice 25 (chapter 5)
+
+- **Clock hands turn by position × pair 5's real RoPE angle (about 22° a word), not the slowest
+  pair.** Why: pair 5 needs no visibility scaling, so there is nothing to disclose. Verdict:
+  sound; it amends the slice's default.
+- **The shown difference between orders (7.45%) equals the probe value to 1e-12; the guess
+  differs ("dog" 32% vs "cat" 30%).** Verdict: sound.
+- **Polish items:** in chapter 4, front-row pipes cross back-row words and pipes regrow rather
+  than move during the swap. In chapter 5, the pair angle is written but not drawn, the last
+  dial washes out, and the hands unwind at the loop seam. Verdict: backlog.

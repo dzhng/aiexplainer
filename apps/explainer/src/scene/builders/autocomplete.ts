@@ -26,6 +26,7 @@ import {
 } from "@repo/renderer";
 import type { NextWord } from "@repo/llm";
 import type { Mat4, Vec3 } from "math";
+import { share } from "../../chapters/format.ts";
 import type { SceneTags } from "../../hud/SceneTags.tsx";
 import type { SceneBuilder, SceneFrame } from "../build-frame.ts";
 
@@ -115,14 +116,6 @@ function placeCard(transform: Mat4, x: number, y: number, z: number) {
   transform[12] = x;
   transform[13] = y;
   transform[14] = z;
-}
-
-/** "37%", "<1%", ">99%": a share of the kept successors, never rounded to a false 0 or 100. */
-export function share(p: number): string {
-  const percent = Math.round(p * 100);
-  if (percent < 1) return "<1%";
-  if (percent > 99 && p < 1) return ">99%";
-  return `${percent}%`;
 }
 
 export const autocomplete: SceneBuilder = {

@@ -1,7 +1,8 @@
-// Speculative decoding (chapter 13; Leviathan et al. 2023, https://arxiv.org/abs/2211.17192):
-// a small drafter guesses k tokens, the target checks them all in one forward pass, and
-// each guess is kept with probability min(1, p/q). The output has exactly the target's
-// distribution; the drafter only changes how many target passes it takes.
+// Speculative decoding (chapter 13; Leviathan et al. 2023, https://arxiv.org/abs/2211.17192;
+// Chen et al. 2023, https://arxiv.org/abs/2302.01318): a small drafter guesses k tokens, the
+// target checks them all in one forward pass, and each guess is kept with probability
+// min(1, p/q). The output has exactly the target's distribution; the drafter only changes how
+// many target passes it takes.
 import { forward } from "./forward.ts";
 import { createKvCache, type KvCache } from "./kvcache.ts";
 import type { Rng } from "./rng.ts";
@@ -30,73 +31,114 @@ export interface SpeculativeResult {
   rounds: SpeculativeRound[];
 }
 
+/**
+ * The Leviathan/Chen acceptance rule for one round. `q[i]` is the drafter's distribution the
+ * i-th guess was drawn from and `p[i]` the target's at the same position; `p` has one more row,
+ * after the last guess. Each guess is kept with probability min(1, p/q); at the first
+ * rejection the target's token is drawn from the leftover mass max(0, p − q), renormalised;
+ * if every guess is kept, a bonus token is drawn from the extra row.
+ */
+export function verifyDrafts(
+  p: ArrayLike<number>[],
+  q: ArrayLike<number>[],
+  drafted: number[],
+  rng: Rng,
+): { accepted: number; next: number } {
+  for (let i = 0; i < drafted.length; i++) {
+    const token = drafted[i]!;
+    const pi = p[i]!;
+    const qi = q[i]!;
+    if (rng() < Math.min(1, pi[token]! / qi[token]!)) continue;
+    const residual = Array.from(pi, (x, j) => Math.max(0, x - qi[j]!));
+    const mass = residual.reduce((a, b) => a + b, 0);
+    // A zero leftover mass only happens when p ≤ q everywhere, i.e. p = q; then p itself.
+    const next =
+      mass > 0
+        ? sample(
+            residual.map((r) => r / mass),
+            rng,
+          )
+        : sample(pi, rng);
+    return { accepted: i, next };
+  }
+  return { accepted: drafted.length, next: sample(p[drafted.length]!, rng) };
+}
+
+/** A speculative decode in progress: the committed tokens and both models' caches. */
+export interface SpeculativeState {
+  tokens: number[];
+  /** Each holds every committed token but the last; the rest is fed on demand. */
+  targetKv: KvCache;
+  draftKv: KvCache;
+}
+
+export function speculativeState(
+  target: Transformer,
+  drafter: Transformer,
+  prompt: number[],
+): SpeculativeState {
+  if (prompt.length === 0) throw new Error("speculative decoding needs a prompt");
+  return { tokens: [...prompt], targetKv: createKvCache(target), draftKv: createKvCache(drafter) };
+}
+
+/**
+ * One round: the drafter guesses up to `k` tokens (fewer near `room`'s end), the target checks
+ * them in one pass, the kept guesses and the target's own token are committed, and both caches
+ * roll back to the committed prefix.
+ */
+export function speculativeStep(
+  target: Transformer,
+  drafter: Transformer,
+  state: SpeculativeState,
+  options: Omit<SpeculativeOptions, "maxNewTokens"> & { room?: number },
+): SpeculativeRound {
+  const { temperature, rng } = options;
+  const { tokens, targetKv, draftKv } = state;
+  const ctx = Math.min(target.arch.ctx, drafter.arch.ctx);
+  const count = Math.max(0, Math.min(options.k, ctx - tokens.length - 1, options.room ?? Infinity));
+  const vocab = target.arch.vocab;
+  const feed = (model: Transformer, kv: KvCache, extra: number[], allPositions: boolean) =>
+    forward(model, [...tokens.slice(kv.length), ...extra], { kv, allPositions }).logits;
+
+  const drafted: number[] = [];
+  const q: Float64Array[] = [];
+  let draftLogits = feed(drafter, draftKv, [], false);
+  for (let i = 0; i < count; i++) {
+    const probs = probabilities(draftLogits, temperature);
+    const token = sample(probs, rng);
+    drafted.push(token);
+    q.push(probs);
+    if (i + 1 < count) draftLogits = forward(drafter, [token], { kv: draftKv }).logits;
+  }
+
+  const verify = feed(target, targetKv, drafted, true);
+  const firstRow = verify.length / vocab - drafted.length - 1;
+  const p = Array.from({ length: drafted.length + 1 }, (_, i) =>
+    probabilities(verify.subarray((firstRow + i) * vocab, (firstRow + i + 1) * vocab), temperature),
+  );
+  const { accepted, next } = verifyDrafts(p, q, drafted, rng);
+
+  tokens.push(...drafted.slice(0, accepted), next);
+  targetKv.length = Math.min(targetKv.length, tokens.length - 1);
+  draftKv.length = Math.min(draftKv.length, tokens.length - 1);
+  return { drafted, accepted, next };
+}
+
 export function speculate(
   target: Transformer,
   drafter: Transformer,
   prompt: number[],
   options: SpeculativeOptions,
 ): SpeculativeResult {
-  const { k, temperature, rng } = options;
-  if (prompt.length === 0) throw new Error("speculate needs a prompt");
   const eos = target.tokenizer.special.eos;
   const ctx = Math.min(target.arch.ctx, drafter.arch.ctx);
-  const tokens = [...prompt];
+  const state = speculativeState(target, drafter, prompt);
   const rounds: SpeculativeRound[] = [];
-  const targetKv = createKvCache(target);
-  const draftKv = createKvCache(drafter);
-  // Each cache holds every committed token but the last; the rest is fed on demand.
-  const feed = (model: Transformer, kv: KvCache, extra: number[], allPositions: boolean) =>
-    forward(model, [...tokens.slice(kv.length), ...extra], { kv, allPositions }).logits;
-  const vocab = target.arch.vocab;
-  const row = (logits: Float32Array, i: number) => logits.subarray(i * vocab, (i + 1) * vocab);
-
-  while (tokens.length - prompt.length < options.maxNewTokens && tokens.at(-1) !== eos) {
-    const room = Math.min(
-      k,
-      ctx - tokens.length - 1,
-      options.maxNewTokens - (tokens.length - prompt.length) - 1,
-    );
-    const drafted: number[] = [];
-    const draftProbs: Float64Array[] = [];
-    let draftLogits = feed(drafter, draftKv, [], false);
-    for (let i = 0; i < room; i++) {
-      const q = probabilities(draftLogits, temperature);
-      const token = sample(q, rng);
-      drafted.push(token);
-      draftProbs.push(q);
-      if (i + 1 < room) draftLogits = forward(drafter, [token], { kv: draftKv }).logits;
-    }
-
-    const verify = feed(target, targetKv, drafted, true);
-    const firstRow = verify.length / vocab - drafted.length - 1;
-    let accepted = 0;
-    let next = -1;
-    for (; accepted < drafted.length; accepted++) {
-      const p = probabilities(row(verify, firstRow + accepted), temperature);
-      const q = draftProbs[accepted]!;
-      const token = drafted[accepted]!;
-      if (rng() < Math.min(1, p[token]! / q[token]!)) continue;
-      // Rejected: draw from the leftover mass max(0, p - q), renormalised.
-      const residual = p.map((pi, i) => Math.max(0, pi - q[i]!));
-      const mass = residual.reduce((a, b) => a + b, 0);
-      next =
-        mass > 0
-          ? sample(
-              residual.map((r) => r / mass),
-              rng,
-            )
-          : sample(p, rng);
-      break;
-    }
-    if (next < 0)
-      next = sample(probabilities(row(verify, firstRow + drafted.length), temperature), rng);
-
-    tokens.push(...drafted.slice(0, accepted), next);
-    rounds.push({ drafted, accepted, next });
-    // Roll both caches back to the committed prefix (all tokens but the last).
-    targetKv.length = Math.min(targetKv.length, tokens.length - 1);
-    draftKv.length = Math.min(draftKv.length, tokens.length - 1);
-    if (tokens.length >= ctx) break;
+  const generated = () => state.tokens.length - prompt.length;
+  while (generated() < options.maxNewTokens && state.tokens.at(-1) !== eos) {
+    const room = options.maxNewTokens - generated() - 1;
+    rounds.push(speculativeStep(target, drafter, state, { ...options, room }));
+    if (state.tokens.length >= ctx) break;
   }
-  return { tokens, rounds };
+  return { tokens: state.tokens, rounds };
 }

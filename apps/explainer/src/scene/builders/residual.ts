@@ -35,7 +35,7 @@ import type { ModelId } from "@repo/llm";
 import type { Vec3 } from "math";
 import type { SceneTags } from "../../hud/SceneTags.tsx";
 import type { SceneBuilder, SceneFrame } from "../build-frame.ts";
-import { share } from "./autocomplete.ts";
+import { share } from "../../chapters/format.ts";
 
 /** One model's pass over the text (`runtime/runs/residual.ts`). */
 export interface ResidualPass {

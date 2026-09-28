@@ -10,6 +10,13 @@ export interface Geometry {
   ao?: Float32Array;
   /** Baked (warm, cool) practical light per vertex, 0–1; absent means none. */
   light?: Float32Array;
+  /**
+   * xyz per vertex: the point on the part's axis that the vertex's width scales away from
+   * (a tube's centreline). Absent means the vertex itself, so width scaling leaves it alone.
+   */
+  axis?: Float32Array;
+  /** Metres along the part's length per vertex (a tube's arc length), for flow pulses. */
+  along?: Float32Array;
   indices: Uint32Array;
   bounds: Box3;
 }

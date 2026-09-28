@@ -8,17 +8,22 @@ import type { FrameInput, SceneDesc } from "@repo/renderer";
 import type { ChapterDef, FollowId, SceneBuilderId, ViewMode } from "../chapters/types.ts";
 import type { TimelineState } from "../chapters/timeline.ts";
 import type { SceneTags } from "../hud/SceneTags.tsx";
+import { attention, positions, type AttentionRun } from "./builders/attention.ts";
 import { autocomplete, type CountsRun } from "./builders/autocomplete.ts";
 import { embeddings } from "./builders/embeddings.ts";
 import { generation, type GenerationRun } from "./builders/generation.ts";
 import { kvCache, type KvRun } from "./builders/kv-cache.ts";
 import { mlp, type MlpRun } from "./builders/mlp.ts";
 import { residual, type ResidualRun } from "./builders/residual.ts";
+import { sampling, type LogitsRun } from "./builders/sampling.ts";
 import { stack, type StackRun } from "./builders/stack.ts";
 import { tokenizer } from "./builders/tokenizer.ts";
 import { batching } from "./builders/batching.ts";
 import { quantization } from "./builders/quantization.ts";
+import { speculative } from "./builders/speculative.ts";
+import { experts } from "./builders/experts.ts";
 import { withEnvironment } from "./environment.ts";
+import { nextRevision } from "./revision.ts";
 
 /** The HUD controls a scene reads. */
 export interface SceneUi {
@@ -39,12 +44,16 @@ export type SceneRun =
   | CountsRun
   | PiecesRun
   | PinsRun
+  | LogitsRun
   | MlpRun
   | ResidualRun
   | StackRun
   | GenerationRun
   | KvRun
-  | QuantizationRun;
+  | QuantizationRun
+  | SpeculativeRun
+  | ExpertsRun
+  | AttentionRun;
 
 /** Chapter 1's run (`runtime/runs/tokenizer.ts`). */
 export interface PiecesRun {
@@ -71,6 +80,32 @@ export interface PinsRun {
     pins: { id: number; text: string; bytes: number; at: [number, number, number] }[];
     cosine: number | null;
   }[];
+}
+
+/** Chapter 14's run (`runtime/runs/experts.ts`). */
+export interface ExpertsRun {
+  kind: "experts";
+  prompt: string;
+  /** The layer whose router the desk shows (0-based), of `layers`. */
+  layer: number;
+  layers: number;
+  experts: number;
+  /** Each routed token: its text, its chosen experts (best first) and their weights. */
+  tokens: { text: string; experts: number[]; weights: number[] }[];
+  /** Each expert's share of routing slots on held-out text (the `expert-usage-<e>` probes). */
+  usage: number[];
+}
+
+/** Chapter 13's run (`runtime/runs/speculative.ts`). */
+export interface SpeculativeRun {
+  kind: "speculative";
+  /** The text being continued. */
+  prompt: string;
+  /**
+   * The seeded rounds for each k the slider offers: the drafter's guessed words, how many the
+   * target kept from the front, and the target's own word (a correction, or a bonus).
+   */
+  byK: { k: number; rounds: { drafted: string[]; accepted: number; next: string }[] }[];
 }
 
 /** Chapter 12's run (`runtime/runs/quantization.ts`). */
@@ -117,6 +152,9 @@ export const SCENE_BUILDERS: Record<SceneBuilderId, SceneBuilder> = {
   autocomplete,
   tokenizer,
   embeddings,
+  sampling,
+  attention,
+  positions,
   mlp,
   residual,
   stack,
@@ -124,6 +162,8 @@ export const SCENE_BUILDERS: Record<SceneBuilderId, SceneBuilder> = {
   "kv-cache": kvCache,
   batching,
   quantization,
+  speculative,
+  experts,
 };
 
 /** What one frame of a chapter's scene is: the renderer's input and the overlay's text. */
@@ -132,8 +172,6 @@ export interface SceneFrame {
   input: Omit<FrameInput, "timeSec" | "viewport">;
   tags: SceneTags;
 }
-
-let revisions = 0;
 
 export function createSceneFrame(input: SceneFrame["input"]): SceneFrame {
   return { builder: null, input, tags: { anchors: [], text: [], emphasis: [] } };
@@ -153,7 +191,7 @@ export function buildFrame(
 ): SceneFrame["input"] {
   const builder = SCENE_BUILDERS[def.scene];
   if (out.builder !== def.scene) {
-    const created = builder.create(out.input.scene.assets, ++revisions);
+    const created = builder.create(out.input.scene.assets, nextRevision());
     out.input.scene = withEnvironment(created.scene);
     out.tags = created.tags;
     const slots = created.scene.parts.reduce((n, p) => Math.max(n, p.slot + 1), 1);

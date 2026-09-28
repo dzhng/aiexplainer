@@ -1,5 +1,7 @@
 /**
  * Scene geometry: vertices are pulled from storage by index, instances by instance index.
+ * Each vertex's distance from its axis point is scaled by its part slot's widthScale, so a
+ * tube's radius follows `widthScale` (every other part's axis is the vertex itself).
  * The depth prepass and both colour variants share this one vertex stage, whose position
  * is `@invariant`, so the `equal` depth test in the colour pass matches bit for bit.
  *
@@ -31,13 +33,17 @@ struct VertexOut {
   @location(2) @interpolate(flat) instance: u32,
   @location(3) ao: f32,
   @location(4) light: vec2f,
+  @location(5) along: f32,
 }
 
 @vertex
 fn vs(@builtin(vertex_index) vertexIndex: u32, @builtin(instance_index) instanceIndex: u32) -> VertexOut {
   let vertex = sceneLayout.$.vertices[vertexIndex];
   let instance = sceneLayout.$.instances[instanceIndex];
-  let world = instance.model * vec4f(vertex.position, 1.0);
+  // widthScale multiplies the part's width about its axis (a tube's radius).
+  let widthScale = max(sceneLayout.$.dynamics[instance.slot].y, 0.0);
+  let local = vertex.axis + (vertex.position - vertex.axis) * widthScale;
+  let world = instance.model * vec4f(local, 1.0);
   var out: VertexOut;
   out.position = frameLayout.$.frame.viewProj * world;
   out.worldPos = world.xyz;
@@ -45,6 +51,7 @@ fn vs(@builtin(vertex_index) vertexIndex: u32, @builtin(instance_index) instance
   out.instance = instanceIndex;
   out.ao = vertex.ao;
   out.light = unpack2x16unorm(vertex.light);
+  out.along = vertex.along;
   return out;
 }
 
@@ -58,6 +65,22 @@ fn cutAway(instance: u32, worldPos: vec3f) -> bool {
   let cut = sceneLayout.$.instances[instance].cut;
   let plane = frameLayout.$.frame.cutPlane;
   return cut > 0.0 && dot(plane.xyz, worldPos) > plane.w + (1.0 - cut) * CUT_TRAVEL;
+}
+
+/**
+ * A flow pulse's brightness at this fragment, or 0 off the pulses: dashes along the part,
+ * \`flowSpacing\` apart and \`flowDuty\` of that long, moved on by the slot's flow phase (in
+ * spacings). Within a dash the light swells toward its leading end and fades at both ends,
+ * so it reads as a glow travelling, not a solid bead.
+ */
+fn pulse(along: f32, slot: u32) -> f32 {
+  let look = frameLayout.$.look;
+  let phase = fract(along / look.flowSpacing - sceneLayout.$.dynamics[slot].z);
+  if (phase >= look.flowDuty) {
+    return 0.0;
+  }
+  let u = phase / look.flowDuty;
+  return smoothstep(0.0, 0.8, u) * (1.0 - smoothstep(0.8, 1.0, u));
 }
 
 /** Depth prepass: only the cut needs a fragment stage (no colour target). */
@@ -82,6 +105,14 @@ fn fs(in: VertexOut, @builtin(front_facing) frontFacing: bool) -> @location(0) v
     let n = -normalize(frameLayout.$.frame.cutPlane.xyz);
     let capShading = shadeSurface(Surface(cap, 0.0, 0.85, 1.0, vec2f(0.0)), n, v, in.worldPos);
     return vec4f(capShading.diffuse + capShading.specular, 1.0);
+  }
+  if (material.pulses > 0.5) {
+    // Flow pulses only add light: nothing between the dashes, no surface of their own.
+    let lit = pulse(in.along, instance.slot) * frameLayout.$.frame.debug.z;
+    if (lit <= 0.0) {
+      discard;
+    }
+    return vec4f(material.emissive * sceneLayout.$.dynamics[instance.slot].x * lit, 0.0);
   }
   // Emission is scaled per part slot by the frame's dynamics (and zeroed by the debug layer).
   let emitted = material.emissive * sceneLayout.$.dynamics[instance.slot].x * frameLayout.$.frame.debug.x;

@@ -164,6 +164,22 @@
       "value": 1.0253517393227491,
       "threshold": 1.0,
       "pass": true
+    },
+    {
+      "probe": "draft-acceptance-heldout",
+      "prompt": "",
+      "metric": "\u03b1 of drafter-96 for full on 40 held-out stories (not the ones it was chosen on)",
+      "value": 0.643061607591154,
+      "threshold": 0.5,
+      "pass": true
+    },
+    {
+      "probe": "draft-speedup-heldout",
+      "prompt": "",
+      "metric": "expected speedup with k=4 on the held-out stories (cost ratio 0.353)",
+      "value": 1.0346499571600032,
+      "threshold": 1.0,
+      "pass": true
     }
   ]
 }

@@ -294,6 +294,7 @@ export async function createRenderer(
       const layers = input.debug?.layers ?? ~0;
       const bloomOn = input.debug?.bloom !== false;
       const emissive = layers & Layer.emissive ? 1 : 0;
+      const flows = layers & Layer.flows ? 1 : 0;
       const cut = input.view.cut ?? look.look.cutaway.plane;
       packFrame(
         frameData,
@@ -303,6 +304,7 @@ export async function createRenderer(
         t.height,
         emissive,
         bloomOn ? 1 : 0,
+        flows,
         cut,
       );
       device.queue.writeBuffer(gpuFrameUniform, 0, frameData);

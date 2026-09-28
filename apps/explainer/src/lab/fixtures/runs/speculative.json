@@ -1,0 +1,266 @@
+{
+  "kind": "speculative",
+  "prompt": "Once upon a time, there was a little",
+  "byK": [
+    {
+      "k": 1,
+      "rounds": [
+        {
+          "drafted": [" girl"],
+          "accepted": 1,
+          "next": " named"
+        },
+        {
+          "drafted": [" Lucy"],
+          "accepted": 1,
+          "next": "."
+        },
+        {
+          "drafted": [" She"],
+          "accepted": 1,
+          "next": " loved"
+        },
+        {
+          "drafted": [" to"],
+          "accepted": 1,
+          "next": " write"
+        },
+        {
+          "drafted": [" in"],
+          "accepted": 1,
+          "next": " her"
+        },
+        {
+          "drafted": [" house"],
+          "accepted": 0,
+          "next": " paper"
+        },
+        {
+          "drafted": ["."],
+          "accepted": 1,
+          "next": " One"
+        },
+        {
+          "drafted": [" day"],
+          "accepted": 1,
+          "next": ","
+        },
+        {
+          "drafted": [],
+          "accepted": 0,
+          "next": " she"
+        }
+      ]
+    },
+    {
+      "k": 2,
+      "rounds": [
+        {
+          "drafted": [" girl", " named"],
+          "accepted": 2,
+          "next": " Amy"
+        },
+        {
+          "drafted": [".", " She"],
+          "accepted": 2,
+          "next": " loved"
+        },
+        {
+          "drafted": [" to", " taste"],
+          "accepted": 1,
+          "next": " music"
+        },
+        {
+          "drafted": [".", " One"],
+          "accepted": 2,
+          "next": " day"
+        },
+        {
+          "drafted": [",", " her"],
+          "accepted": 1,
+          "next": " Amy"
+        },
+        {
+          "drafted": [" found", " a"],
+          "accepted": 2,
+          "next": " broken"
+        }
+      ]
+    },
+    {
+      "k": 3,
+      "rounds": [
+        {
+          "drafted": [" girl", " named", " Lucy"],
+          "accepted": 3,
+          "next": "."
+        },
+        {
+          "drafted": [" Lucy", " loved", " to"],
+          "accepted": 0,
+          "next": " She"
+        },
+        {
+          "drafted": [" had", " a", " yard"],
+          "accepted": 2,
+          "next": " pretty"
+        },
+        {
+          "drafted": [" flower", " that", " she"],
+          "accepted": 0,
+          "next": " imag"
+        },
+        {
+          "drafted": ["ined", " spicy", " potato"],
+          "accepted": 0,
+          "next": "ination"
+        },
+        {
+          "drafted": [".", " One", " day"],
+          "accepted": 0,
+          "next": " called"
+        },
+        {
+          "drafted": [" her", " friend", ","],
+          "accepted": 0,
+          "next": " a"
+        },
+        {
+          "drafted": [" colorful", " crystal", "."],
+          "accepted": 3,
+          "next": "\n"
+        }
+      ]
+    },
+    {
+      "k": 4,
+      "rounds": [
+        {
+          "drafted": [" girl", " named", " Lucy", "."],
+          "accepted": 4,
+          "next": " She"
+        },
+        {
+          "drafted": [" had", " a", " rich", " boy"],
+          "accepted": 3,
+          "next": " toy"
+        },
+        {
+          "drafted": [" car", " with", " her", " mom"],
+          "accepted": 1,
+          "next": " that"
+        },
+        {
+          "drafted": [" she", " loved", " very", " much"],
+          "accepted": 4,
+          "next": "."
+        }
+      ]
+    },
+    {
+      "k": 5,
+      "rounds": [
+        {
+          "drafted": [" girl", " named", " Lucy", ".", " Lucy"],
+          "accepted": 4,
+          "next": " She"
+        },
+        {
+          "drafted": [" lived", " in", " a", " small", " house"],
+          "accepted": 5,
+          "next": " with"
+        },
+        {
+          "drafted": [" her", " mom", ".", " Her"],
+          "accepted": 2,
+          "next": " and"
+        },
+        {
+          "drafted": [" dad"],
+          "accepted": 1,
+          "next": "."
+        }
+      ]
+    },
+    {
+      "k": 6,
+      "rounds": [
+        {
+          "drafted": [" girl", " named", " Lucy", ".", " Lucy", " loved"],
+          "accepted": 4,
+          "next": " She"
+        },
+        {
+          "drafted": [" had", " a", " yard", " with", " a", " sad"],
+          "accepted": 2,
+          "next": " big"
+        },
+        {
+          "drafted": [" yellow", " castle", " and", " blue", " line", " of"],
+          "accepted": 1,
+          "next": " ball"
+        },
+        {
+          "drafted": [",", " yellow", " mixer", ".", " Sue"],
+          "accepted": 0,
+          "next": " that"
+        },
+        {
+          "drafted": [" she", " loved", " Lily", "."],
+          "accepted": 2,
+          "next": " to"
+        },
+        {
+          "drafted": [" play"],
+          "accepted": 1,
+          "next": " with"
+        }
+      ]
+    },
+    {
+      "k": 7,
+      "rounds": [
+        {
+          "drafted": [" girl", " named", " Lucy", ".", " Lucy", " loved", " to"],
+          "accepted": 4,
+          "next": " She"
+        },
+        {
+          "drafted": [" loved", " to", " play", " with", " her", " ball", "."],
+          "accepted": 5,
+          "next": " toys"
+        },
+        {
+          "drafted": [" in", " the", " kitchen", "."],
+          "accepted": 2,
+          "next": " after"
+        },
+        {
+          "drafted": ["n"],
+          "accepted": 1,
+          "next": "oon"
+        }
+      ]
+    },
+    {
+      "k": 8,
+      "rounds": [
+        {
+          "drafted": [" girl", " named", " Lucy", ".", " Lucy", " loved", " to", " take"],
+          "accepted": 4,
+          "next": " She"
+        },
+        {
+          "drafted": [" loved", " to", " play", " with", " her", " toy", " cars", "."],
+          "accepted": 3,
+          "next": " outside"
+        },
+        {
+          "drafted": [" with", " her", " toy", " car", ".", " One"],
+          "accepted": 6,
+          "next": " day"
+        }
+      ]
+    }
+  ]
+}

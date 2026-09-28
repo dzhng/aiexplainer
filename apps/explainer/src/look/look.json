@@ -78,6 +78,38 @@
         "roughness": 0.45,
         "opacity": 1
       },
+      "pipe": {
+        "color": "flow",
+        "emissive": "flow",
+        "metallic": 0,
+        "roughness": 0.15,
+        "opacity": 0.4
+      },
+      "sealed": {
+        "color": "#6a7090",
+        "metallic": 0.7,
+        "roughness": 0.35,
+        "opacity": 1
+      },
+      "futureWord": {
+        "color": "#171b2c",
+        "metallic": 0.1,
+        "roughness": 0.7,
+        "opacity": 1
+      },
+      "pulse": {
+        "color": "flow",
+        "emissive": "flow",
+        "opacity": 0.5,
+        "pulses": true
+      },
+      "focusWord": {
+        "color": "focus",
+        "emissive": "focus",
+        "metallic": 0,
+        "roughness": 0.5,
+        "opacity": 1
+      },
       "river": {
         "color": "active",
         "emissive": "active",
@@ -152,6 +184,27 @@
         "roughness": 0.6,
         "opacity": 1
       },
+      "dieA": {
+        "color": "#d6a53c",
+        "emissive": "focus",
+        "metallic": 0,
+        "roughness": 0.4,
+        "opacity": 1
+      },
+      "dieB": {
+        "color": "#e8e0c8",
+        "emissive": "focus",
+        "metallic": 0,
+        "roughness": 0.4,
+        "opacity": 1
+      },
+      "dieOther": {
+        "color": "#4a5070",
+        "emissive": "focus",
+        "metallic": 0.1,
+        "roughness": 0.5,
+        "opacity": 1
+      },
       "plate": {
         "color": "#1f2a4d",
         "metallic": 0.1,
@@ -163,6 +216,26 @@
         "emissive": "focus",
         "metallic": 0.1,
         "roughness": 0.75,
+        "opacity": 1
+      },
+      "draftAccepted": {
+        "color": "focus",
+        "emissive": "focus",
+        "metallic": 0,
+        "roughness": 0.4,
+        "opacity": 1
+      },
+      "draftRejected": {
+        "color": "#4d4f55",
+        "metallic": 0.1,
+        "roughness": 0.8,
+        "opacity": 1
+      },
+      "draftAdded": {
+        "color": "active",
+        "emissive": "active",
+        "metallic": 0,
+        "roughness": 0.4,
         "opacity": 1
       },
       "prompt": {
@@ -248,8 +321,9 @@
     "radius": 1.0
   },
   "flow": {
-    "cyclesPerSec": 0.6,
-    "spacing": 0.25
+    "cyclesPerSec": 1.4,
+    "spacing": 0.3,
+    "duty": 0.4
   },
   "views": {
     "durationSec": 0.6,

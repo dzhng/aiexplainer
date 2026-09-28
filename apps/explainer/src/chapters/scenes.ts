@@ -10,7 +10,13 @@ export const SCENE_ANCHORS = {
   tokenizer: ["bricks", "ids", "box", "text"],
   /** Chapter 2: the map, a word's pin, the arrows, the origin, and your text's pin. */
   embeddings: ["map", "pins", "arrows", "origin", "text"],
+  /** Chapter 3: the die, the score strip, and the word on the card. */
+  sampling: ["die", "scores", "word"],
   /** Chapter 6: the question panel, the token arrow, the readout bars, the no-river teaser. */
+  /** Chapter 4: the word blocks, the widest pipe, the focus word's mix, the sealed later words. */
+  attention: ["sentence", "pipes", "mix", "sealed"],
+  /** Chapter 5: chapter 4 scene with a clock dial on every word. */
+  positions: ["sentence", "pipes", "mix", "dials"],
   mlp: ["panel", "arrow", "readout", "teaser"],
   /** Chapter 7: the stations, the river under them, their volume knobs, the best guess. */
   residual: ["stations", "river", "knob", "readout"],
@@ -24,6 +30,10 @@ export const SCENE_ANCHORS = {
   batching: ["bus", "riders", "crates", "stop"],
   /** Chapter 12: the weight strip, the magnifier, the two crates and the two machines. */
   quantization: ["strip", "lens", "crates", "machines"],
+  /** Chapter 13: the junior, the senior, the draft strip, and the story so far. */
+  speculative: ["junior", "senior", "draft", "output"],
+  /** Chapter 14: the triage desk, the expert bays, the waiting words, and the usage bars. */
+  experts: ["desk", "bays", "tokens", "usage"],
 } as const satisfies Record<string, readonly string[]>;
 
 /**
@@ -34,13 +44,18 @@ export const SCENE_KIT: Record<keyof typeof SCENE_ANCHORS, readonly string[]> = 
   autocomplete: ["mesh", "bars", "block", "contactShadow"],
   tokenizer: ["block", "brick", "contactShadow"],
   embeddings: ["block", "pins", "brick", "contactShadow"],
+  sampling: ["block", "bars", "die", "contactShadow"],
+  attention: ["block", "pipes", "sealed", "flows", "tube"],
+  positions: ["block", "pipes", "sealed", "flows", "tube", "dial"],
   mlp: ["questionPanel", "tube", "block", "bars", "contactShadow"],
   residual: ["block", "tube", "river", "volumeKnob", "contactShadow"],
-  stack: ["block", "tube", "contactShadow"],
+  stack: ["block", "tube", "pipes", "contactShadow"],
   generation: ["block", "tube", "bars", "contactShadow"],
   "kv-cache": ["block", "tube", "noteRack", "contactShadow"],
   batching: ["mesh", "block", "contactShadow"],
   quantization: ["block", "contactShadow"],
+  speculative: ["block", "draftStrip", "contactShadow"],
+  experts: ["triageBays", "block", "bars", "contactShadow"],
 };
 
 export type SceneBuilderId = keyof typeof SCENE_ANCHORS;

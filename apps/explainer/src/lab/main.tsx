@@ -1,6 +1,7 @@
-import { Layer, probeAdapter } from "@repo/renderer";
+import { probeAdapter } from "@repo/renderer";
 import { createRoot } from "react-dom/client";
 import "../look/global.css";
+import { layersFrom } from "../runtime/debug-layers.ts";
 import { applyCssVars } from "../look/look.ts";
 import { clockFromSearch } from "../runtime/clock.ts";
 import { calibScene } from "./calib.ts";
@@ -27,7 +28,7 @@ applyCssVars(document.documentElement);
 
 probe.adapter = await probeAdapter(navigator.gpu);
 const debug = {
-  layers: params.get("emissive") === "0" ? ~Layer.emissive : ~0,
+  layers: layersFrom(params),
   bloom: params.get("bloom") !== "0",
 };
 // `?labels=0` hides the label layer; `?reading=precise` shows the precise wording.

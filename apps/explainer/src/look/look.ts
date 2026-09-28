@@ -23,6 +23,8 @@ export interface MaterialToken {
   opacity: number;
   /** Specular scale, 0–1 (default 1); 0 for a surface that only darkens (a contact shadow). */
   specular?: number;
+  /** Shows only moving flow pulses (`flow`), in its emissive colour; needs opacity < 1. */
+  pulses?: boolean;
 }
 
 interface LightToken {
@@ -68,8 +70,11 @@ export interface LookTokens {
   };
   /** Bloom knobs (Jimenez 2014 / LearnOpenGL physically based bloom). */
   bloom: { threshold: number; knee: number; intensity: number; radius: number };
-  /** Flow rhythm on pipes: pulses per second and world-space gap between pulses. */
-  flow: { cyclesPerSec: number; spacing: number };
+  /**
+   * Flow rhythm on pipes: pulses passing a point per second, the world-space gap between
+   * pulses, and the lit share of that gap.
+   */
+  flow: { cyclesPerSec: number; spacing: number; duty: number };
   /**
    * The view vocabulary: how long a view change takes, and the Cutaway view's cap colour
    * (a palette token × `capGain`) and cut plane, per scene (`default` otherwise).
@@ -205,7 +210,14 @@ function material(name: string, m: MaterialToken): MaterialLook {
     roughness: unit(`${name}.roughness`, m.roughness ?? 0.6),
     opacity: m.opacity,
     specular: unit(`${name}.specular`, m.specular ?? 1),
+    pulses: pulsing(name, m),
   };
+}
+
+function pulsing(name: string, m: MaterialToken): boolean {
+  if (m.pulses && !(m.opacity < 1))
+    throw new Error(`look: ${name} shows pulses, so it must be translucent (opacity < 1)`);
+  return m.pulses ?? false;
 }
 
 /** A room glow: an unlit surface (black base) that emits `color × glow`. */
@@ -314,6 +326,10 @@ export function lookConfig(extraMaterials: Record<string, MaterialToken> = {}): 
     tonemap: {
       exposure: positive("tonemap.exposure", tonemap.exposure),
       saturation: positive("tonemap.saturation", tonemap.saturation),
+    },
+    flow: {
+      spacing: positive("flow.spacing", look.flow.spacing),
+      duty: unit("flow.duty", look.flow.duty),
     },
     bloom: {
       threshold: positive("bloom.threshold", bloom.threshold),

@@ -8,6 +8,7 @@ import {
   forward,
 } from "@repo/llm";
 import { stack as def } from "../src/chapters/data/stack.ts";
+import type { TubePart } from "@repo/renderer";
 import { SCENE_KIT } from "../src/chapters/scenes.ts";
 import { resolveStat } from "../src/chapters/stats.ts";
 import { validateChapter } from "../src/chapters/validate.ts";
@@ -28,17 +29,17 @@ test("the committed fixture is the app's run on the loop's prompt", async () => 
 
 test("every pipe in every block is that layer's head's real attention weight from the last word", () => {
   const trace = forward(model, tokens, { trace: { tokens: [tokens.length - 1] } }).trace!;
-  const { scene } = frameAt(def, run, HERO);
+  const { scene, frame } = frameAt(def, run, HERO);
+  const widthScale = frame.input.dynamics.widthScale;
   const n = tokens.length;
   trace.layers.forEach((layer, l) => {
     const w = layer!.attn!.weights.data;
     for (let h = 0; h < model.arch.nHeads; h++)
       for (let i = 0; i < n; i++) {
         expect(run.weights[l]![h]![i]).toBe(w[h * n + i]!);
-        const pipe = scene.parts.find((p) => p.id === `block.${l}.pipe.${h}.${i}`)!;
-        // The pipe's radius is its transform's side-axis length (a unit segment, `placeSegment`).
-        const t = pipe.transform;
-        expect(Math.hypot(t[0]!, t[1]!, t[2]!)).toBeCloseTo(pipeRadius(w[h * n + i]!), 6);
+        const pipe = scene.parts.find((p) => p.id === `block.${l}.pipe.${h}.${i}`) as TubePart;
+        // The pipe's drawn radius: the kit pipe's radius, scaled by its slot's widthScale.
+        expect(pipe.radius * widthScale[pipe.slot]!).toBeCloseTo(pipeRadius(w[h * n + i]!), 6);
       }
   });
 });
