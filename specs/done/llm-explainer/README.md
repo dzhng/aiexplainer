@@ -9,6 +9,12 @@ chapter is backed by a real tiny model trained for it.
 It is live at https://aiexplainer-red.vercel.app (the `main` branch). The spec closed on
 2026-09-28, with all 16 chapters shipped.
 
+**Follow-up (planned):** [specs/lab-hub](../../lab-hub/README.md) re-aims the app at
+readers with no tech background and replaces the chapter ladder with one lab hall. When it
+lands, it supersedes the audience (D2), the counts-model intro, the residual chapter, the
+chapter ladder, the arrival move and the chapter 15 page. Its decisions (H1–H18, P1–P16)
+say which ones.
+
 This record holds the _why_: the decisions, the principles that must keep holding, the
 dead ends, and the visual standard. The code holds the _how_. Start from the workspace
 READMEs: [apps/explainer](../../../apps/explainer/README.md),

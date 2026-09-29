@@ -8,7 +8,7 @@ Everything ships: cards re-shot, share routes per P7 (`/c/0/`–`/c/8/`, `/c/b1/
 
 ## Seam
 
-- `scripts/cards.ts` gains the lab card; `scripts/share.ts` writes the `/c/15/` redirect.
+- `scripts/cards.ts` gains the lab card; `scripts/share.ts` writes the `/c/9/`–`/c/15/` redirects to `/` (P7).
 - Update the archived spec's pointers (D4, D12, D21, D22, D31, D42 superseded by this spec) when closing this one.
 
 ## Playable

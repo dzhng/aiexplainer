@@ -10,7 +10,7 @@ Every camera move is a pure flight plan evaluated on the one clock (P3), replaci
 
 - `runtime/flight.ts`: `FlightLeg { to: OrbitPose; sec: number; holdSec?: number }`, `FlightPlan { from; legs }`, `flightPose(plan, t, out)`, `blendPose(a, b, k, out)` (today's easing: smoothstep, short-way yaw, log distance), `class Flight { at(now); land(); done }`.
 - `hall/flight-plan.ts`: `planTravel(from: PlaceKey | "entry", to: PlaceKey, pose, layout)`: lab→N `[hero(N)]`; N→lab `[hub]`; Next N→M `[hub + hold, hero(M)]`; entry→N from an approach pose. Legs pass an aisle waypoint above neighbours when needed.
-- `stage.fly(plan)`, `stage.flying()`, `stage.land()`. `pullBack` (chapter 8) and the tour use `blendPose`.
+- `stage.fly(plan)`, `stage.flying()`, `stage.land()`. `pullBack` (the stack chapter, 7 after renumbering) and the tour use `blendPose`.
 - `?fly=<from>><to>` builds a plan starting at t = 0 for held-clock filmstrips.
 
 ## Playable

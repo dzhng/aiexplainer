@@ -6,6 +6,16 @@ part is a machine drawn on the GPU and backed by a real tiny model trained for t
 chapter. Bun + Turborepo monorepo; why it is built this way, and the decisions behind it,
 live in [specs/done/llm-explainer](specs/done/llm-explainer/README.md).
 
+## Active work
+
+The live site is https://aiexplainer-red.vercel.app, deployed from `main`. Work happens on
+`llm-explainer` (each push builds a Vercel preview), and production is
+`git push origin llm-explainer:main`.
+
+The next feature is [specs/lab-hub](specs/lab-hub/README.md): it retells the explainer for
+people with no tech background, as a build-up story set in one lab hall you fly through.
+Start at its Next Agent Prompt.
+
 ## Layout
 
 The tree splits by what each part owns. A concept has exactly one home. A second copy is

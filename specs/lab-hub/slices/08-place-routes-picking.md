@@ -20,7 +20,7 @@ The whole flow in the dev app, with the old ladder still present (09 removes it)
 
 ## Verify
 
-- Reducer tests: every transition, Next from 14 → lab, Back mid-flight, stale epochs, browser Back.
+- Reducer tests: every transition, Next from 8 → lab, side-room chain → lab (P8), Back mid-flight, stale epochs, browser Back.
 - `pick.test.ts`: `project` → `screenRay` → `pick` round-trips every mount from the hub pose; the nearer machine wins; empty floor → none.
 - Harness: open `/`, click machine 4's projected centre, land in `#4` at the brief; `/#N` under a held clock is byte-identical across runs.
 - **Shot:** a hovered machine in the lab. Variable: hover feedback.

@@ -4,7 +4,7 @@
 
 ## Contract
 
-The intro runs `full` (chapter 8's model): greedy next-token steps over the whole text, the tally board shows its real next-word probabilities, and a sentence grows on the rail, ending on "An LLM guesses the next word, over and over — let's build one." The word-pair counts model is deleted end to end, and so is the residual chapter (H16).
+The intro runs `full` (today's chapter 8 model, which is chapter 7 after renumbering): greedy next-token steps over the whole text, the tally board shows its real next-word probabilities, and a sentence grows on the rail, ending on the caption in [story.md](../story.md) ("…Let's open it up and see how it guesses.") The word-pair counts model is deleted end to end, and so is the residual chapter (H16).
 
 ## Seam
 
