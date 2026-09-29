@@ -4,7 +4,7 @@
 
 ## Contract
 
-Everything ships: cards re-shot, share routes (`/c/0/`–`/c/14/`, `/c/15/` → `/` with a lab card), full verification, deploy to production.
+Everything ships: cards re-shot, share routes per P7 (`/c/0/`–`/c/8/`, `/c/b1/`–`/c/b5/`, old numbers → `/` with a lab card), full verification, deploy to production.
 
 ## Seam
 
@@ -17,7 +17,7 @@ The preview deployment.
 
 ## Verify
 
-- `bun run verify`; harness PASS with zero warnings on `/`, `/#0`–`/#14`, `?force=unsupported`; `share.ts --check`.
+- `bun run verify`; harness PASS with zero warnings on `/`, `/#0`–`/#8`, `/#b1`–`/#b5`, `?force=unsupported`; `share.ts --check`.
 - **Shots:** the hub (first and returning visit), mid-flight, a machine in each phase, the tour. Whole-frame integration.
 - Push `llm-explainer`, merge to `main`, verify production.
 - Run [compare-screenshots](../../../.agents/skills/compare-screenshots/SKILL.md) against the named prior shot before accepting. Target: the accepted shots from slices 03–11.

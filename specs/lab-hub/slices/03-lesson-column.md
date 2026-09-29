@@ -4,7 +4,7 @@
 
 ## Contract
 
-Before Your turn, the left column shows the brief (So far / Still broken / This lesson) and a clear locked note, with **no controls rendered** (no `fieldset disabled`). Start lives in the column; the centre brief card is deleted (P10). On Your turn the controls appear, with a "But…" card above Next. The Labels toggle and Help work in every phase.
+Before Your turn, the left column shows the brief (So far / Still missing / This lesson) and a clear locked note, with **no controls rendered** (no `fieldset disabled`). Start lives in the column; the centre brief card is deleted (P10). On Your turn the controls appear, with a "But…" card above Next. The Labels toggle and Help work in every phase.
 
 ## Seam
 

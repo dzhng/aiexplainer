@@ -4,7 +4,7 @@
 
 ## Contract
 
-In-world signs: each machine's floor plaque ("4 · Attention"), each zone's act name, ✓ on completed machines, and a pulsing ring with "Start here" or "Next" on the recommended one.
+In-world signs: each machine's floor plaque (number and question, e.g. "4 · How does it follow what I said?"), each zone's act name and the side room's "Behind the scenes", ✓ on completed machines, and a pulsing ring with "Start here" or "Next" on the recommended one.
 
 ## Seam
 

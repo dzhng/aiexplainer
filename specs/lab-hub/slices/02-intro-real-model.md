@@ -4,7 +4,7 @@
 
 ## Contract
 
-The intro runs `full` (chapter 8's model): greedy next-token steps over the whole text, the tally board shows its real next-word probabilities, and a sentence grows on the rail, ending on "An LLM guesses the next word, over and over — let's build one." The word-pair counts model is deleted end to end.
+The intro runs `full` (chapter 8's model): greedy next-token steps over the whole text, the tally board shows its real next-word probabilities, and a sentence grows on the rail, ending on "An LLM guesses the next word, over and over — let's build one." The word-pair counts model is deleted end to end, and so is the residual chapter (H16).
 
 ## Seam
 
@@ -13,6 +13,7 @@ The intro runs `full` (chapter 8's model): greedy next-token steps over the whol
 - New training probe `intro-whole-words` in `training/probes/`: search prompts for one whose greedy continuation is ≥ 6 whole-word tokens with no repeats; record the prompt and the continuation in `full`'s evidence; the intro's scenario cites it (D25). If none passes, apply D33 and say so in the caption.
 - Delete: `training/counts.py`, `apps/explainer/public/models/counts/`, the counts probes, `packages/llm/src/counts.ts`, counts metrics and schema variants, `nextWords` (llm, worker, session, runs), `CountsRun`, the old intro loop, counts tests. Keep the fixture corpus that the tokenizer tests use (rename it).
 - Chapter 1's loop starts from the intro's sentence instead of "onse" (P12).
+- Delete the residual chapter: `chapters/data/residual.ts`, its builder, run, fixtures and card, kit primitives only it uses, the `residual` and `noresidual` models with their probes and configs. The stack chapter's Technical line carries the river idea.
 - Intro stats read from `full` (`training.tokensSeen`, `params.total`) plus arith for Llama-3-8B.
 - Labels and Technical line per [story.md](../story.md) (tokens, greedy).
 

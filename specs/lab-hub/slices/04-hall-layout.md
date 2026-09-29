@@ -11,7 +11,7 @@ One owner for where every machine stands in the hall, shared by TypeScript and B
 - `apps/explainer/src/hall/layout.json`, validated by `hall/layout.ts`:
   `HallLayout { bounds; zones: { act: ActId; rect; title: { at; yaw } }[]; mounts: Record<ChapterSlug, { origin: [x, z]; yaw: number; footprint; plaque: [x, z] }>; hub: OrbitPose-like; camera: { lab: limits; machine: limits }; flight: { inSec; outSec; holdSec; entrySec }; idleGain: number }`.
 - `mountMatrix(slug, out)` (translate · rotY), `mountPose(slug, localPose, out)`, `heroPose(slug, out)` = the chapter's shot through its mount.
-- Layout: the intro in its own alcove (H6), then Act I, II, III zones; a U-shaped or long hall is the implementer's call within the gate.
+- Layout: the intro in its own alcove (H6), Act I, II, III zones along the main path, and the "Behind the scenes" side room off to one side and visibly separate (H15). A U-shaped or long hall is the implementer's call within the gate.
 - `/lab/hall-plan`: a top-down SVG of zones, footprints, plaques and each hero shot's view cone.
 
 ## Playable

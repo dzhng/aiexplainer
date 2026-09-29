@@ -4,7 +4,7 @@
 
 ## Contract
 
-In the lab, the left column shows the intro, the acts with their machines and ✓s, and a big Continue button (P8). Inside a machine: a breadcrumb "Lab › Act II › 4 Attention" and "← Back to the lab (Esc)". The bottom ladder is deleted.
+In the lab, the left column shows the intro, the acts with their machines (by their questions) and ✓s, the side room listed last and marked optional, and a big Continue button (P8). Inside a machine: a breadcrumb "Lab › Act II › 4 Attention" and "← Back to the lab (Esc)". The bottom ladder is deleted.
 
 ## Seam
 

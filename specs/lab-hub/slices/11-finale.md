@@ -4,7 +4,7 @@
 
 ## Contract
 
-When every machine is ✓, the lab offers "Tour the whole machine" (H9): today's tour, run from the hub through the full-scale hall, with the route pipe appearing only now (P13). The chapter 15 page is deleted.
+When the main path is ✓, the lab offers "Tour the whole machine" (H9): today's tour over the main-path machines, run from the hub through the full-scale hall, with the route pipe appearing only now (P13). It ends on the myth summary from [story.md](../story.md) ("No database. No mind reading. No magic."), with Share and "step behind the scenes". The chapter 15 page is deleted.
 
 ## Seam
 
