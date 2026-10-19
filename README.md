@@ -61,3 +61,7 @@ bun run format
 
 The browser harness, which runs on a real GPU, is described in
 [apps/explainer](apps/explainer/README.md#verification).
+
+## Ratchet Files
+
+Source files are limited to 8,000 estimated tokens (bytes divided by four). The pre-commit hook runs `scripts/check-file-size.mjs` through lint-staged, so a clone must install the repository dependencies before commits. Existing oversized authored files are frozen at their current size; generated and vendored paths are excluded through `.gitattributes`. A file may use `@ratchet-files-ignore` in its first 10 lines only when splitting it would cost more than it saves, with the reason beside the pragma.
