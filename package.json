@@ -28,7 +28,7 @@
     "training:test": "cd training && uv run pytest -q",
     "props:build": "bun assets/blender/build.ts",
     "training:train": "cd training && uv run python train.py",
-    "prepare": "husky"
+    "prepare": "node scripts/install-git-hooks.mjs"
   },
   "devDependencies": {
     "oxfmt": "0.57.0",
@@ -36,7 +36,6 @@
     "turbo": "2.10.3",
     "typescript": "catalog:",
     "linguist-languages": "9.5.0",
-    "husky": "9.1.7",
     "lint-staged": "17.6.0"
   },
   "engines": {
